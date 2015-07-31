@@ -8,6 +8,7 @@
 
 class Filter;
 typedef std::unordered_map<HeaderField,Filter, std::hash<int> > PacketFilter;
+#define for_fields_in_pf(it,pf) for (auto it=pf.begin(); it != pf.end(); ++it)
 
 //List of allowed click elements
 enum ElementType {

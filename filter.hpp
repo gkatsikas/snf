@@ -10,9 +10,10 @@
 
 
 typedef unsigned int uint32_t;
-typedef std::unordered_map<HeaderField,Filter, std::hash<int> > PacketFilter;
+#define in_range(x,lower,upper) (x>lower && x<upper)
 
-enum FilterType { //In order of generality
+enum FilterType { //By increasing generality
+	None,
 	Equals,
 	List,
 	Range
@@ -25,16 +26,28 @@ public:
 	Filter (const ElementType &element, std::string configuration);
 	Filter& operator+=(const Filter &rhs); //Intersects this and rhs
 	bool is_in_filter (uint32_t value);
-
-private:
+	
 	FilterType m_type;
 	uint32_t m_lowerLimit;
 	uint32_t m_upperLimit;
+	std::vector<uint32_t> m_allowedValues; 
+	//This must be ordered during construction with std::sort
 
+private:
 	void read_IPClassifier_conf(std::string configuration);
 	void read_RadixLookup_conf(std::string configuration);
 	void read_LinearLookup_conf(std::string configuration);
 	void read_IPMapper_conf(std::string configuration);
+	
+	//Intersect functions
+	void intersect_equals (uint32_t value);
+	void intersect_list(const std::vector<uint32_t>& list);
+	void intersect_range (uint32_t lower, uint32_t upper);
+	
+	void update_type_from_list(const std::vector<uint32_t>& list);
+	
+	//getters & setters
+	FilterType get_type ();
 
 };
 
