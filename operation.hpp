@@ -3,7 +3,6 @@
 
 #include <unordered_map>
 #include <vector>
-
 #include "headerFields.hpp"
 
 enum OperationType {

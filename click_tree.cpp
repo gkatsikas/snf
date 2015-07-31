@@ -1,15 +1,10 @@
 #include "click_tree.hpp"
 #include <stack>
 #include "output_port.hpp"
+#include <string>
 
-ClickTree::ClickTree (ClickElement &root) {
-	m_root = (ClickNode) {
-		root,
-		TrafficClass()
-	};
-	
-	m_trafficClasses = std::vector<TrafficClass>();
-	
+ClickTree::ClickTree (ClickElement &root) : m_root( {root, TrafficClass()}),
+											m_trafficClasses() {	
 	this->find_classes();
 }
 
