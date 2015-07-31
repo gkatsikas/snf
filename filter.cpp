@@ -6,6 +6,7 @@
 #define MIN(a,b) (a>b) ? b : a
 #define MAX(a,b) (a>b) ? a : b
 
+//TODO: if output type is None print error message
 Filter& Filter::operator += (const Filter &rhs) {
 	
 	FilterType rhs_type = rhs.m_type;
