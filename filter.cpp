@@ -1,6 +1,7 @@
 #include <algorithm>  //std::set_intersection std::sort
 
 #include "filter.hpp"
+#include "output_port.hpp"
 #define for_allowed_values(it) for (auto it=m_allowedValues.begin() ; \
 								it != m_allowedValues.end(); ++it)
 #define MIN(a,b) (a>b) ? b : a
@@ -159,7 +160,7 @@ void TrafficClass::addElement (const ClickElement &element, int port) {
 	if (port==-1) { //Last element of the chain -> no children
 		return;
 	}
-	PacketFilter pf = element.port_to_filter[port];
+	PacketFilter pf = (element.output_ports[port]).m_filter;
 	
 	for_fields_in_pf(it,pf) {
 		HeaderField field = it->first;

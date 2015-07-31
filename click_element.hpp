@@ -5,26 +5,20 @@
 #include <string>
 #include <unordered_map>
 #include "headerFields.hpp"
+#include "operation.hpp"
+#include "filter.hpp"
+#include "element_type.hpp"
 
-class Filter;
-typedef std::unordered_map<HeaderField,Filter, std::hash<int> > PacketFilter;
-#define for_fields_in_pf(it,pf) for (auto it=pf.begin(); it != pf.end(); ++it)
-
-//List of allowed click elements
-enum ElementType {
-	IPClassifier,
-	Discard,
-	FromDevice,
-	ToDevice
-};
+class OutputPort;
 
 //Abstract representation of a Click element
-struct ClickElement {
+//TODO: Create class output_port and merge the vector inside
+class ClickElement {
+public:
 	ElementType type;
 	std::string configuration; //FIXME: is this really necessary?
 	int nb_ports; //Number of output ports
-	std::vector<PacketFilter> port_to_filter;
-	std::vector<ClickElement> children;	
+	std::vector<OutputPort> output_ports;
 };
 
 void createElement(ClickElement* buffer, ElementType type, std::string conf);

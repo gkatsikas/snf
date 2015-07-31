@@ -1,5 +1,6 @@
 #include "click_tree.hpp"
 #include <stack>
+#include "output_port.hpp"
 
 ClickTree::ClickTree (ClickElement &root) {
 	m_root = (ClickNode) {
@@ -18,6 +19,7 @@ void ClickTree::find_classes () {
 	
 	ClickNode curr_node;
 	ClickElement curr_element;
+	OutputPort output_port;
 	ClickNode next_node;
 	TrafficClass curr_tc;
 	TrafficClass next_tc;
@@ -40,7 +42,7 @@ void ClickTree::find_classes () {
 					
 					//The updated child
 					next_node = (ClickNode) {
-						curr_element.children[i],
+						(curr_element.output_ports[i]).m_child,
 						next_tc						
 					 };
 					 nodes_to_visit.push (next_node);

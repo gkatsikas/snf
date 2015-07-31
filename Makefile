@@ -4,19 +4,22 @@ LFLAGS = -Wall -std=c++11
 
 #LIBS = 
 
-OBJS = click_tree.o filter.o
+OBJS = click_tree.o filter.o operation.o
 
 NFSynthetizer: $(OBJS)
 	$(CC) $(LFLAGS) $(OBJS) -o nf_synthetizer $(LIBS)
 
-click_tree.o : click_tree.cpp click_tree.hpp click_element.hpp filter.hpp
+click_tree.o : click_tree.cpp click_tree.hpp output_port.hpp operation.hpp element_type.hpp filter.hpp
 	$(CC) $(CFLAGS) click_tree.cpp
 	
-filter.o : filter.cpp filter.hpp headerFields.hpp click_element.hpp
+filter.o : filter.cpp filter.hpp headerFields.hpp element_type.hpp output_port.hpp
 	$(CC) $(CFLAGS) filter.cpp
+
+operation.o: operation.cpp operation.hpp headerFields.hpp
+	$(CC) $(CFLAGS) operation.cpp
 	
 clean:
 	\rm -f *.o
 	
-clean_dist: clean
+clean-dist: clean
 	\rm nf_synthetizer

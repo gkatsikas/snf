@@ -6,8 +6,9 @@
 #include <string>
 #include <unordered_map>
 #include "headerFields.hpp"
-#include "click_element.hpp"
+#include "element_type.hpp"
 
+class ClickElement;
 
 typedef unsigned int uint32_t;
 #define in_range(x,lower,upper) (x>lower && x<upper)
@@ -50,6 +51,10 @@ private:
 	FilterType get_type ();
 
 };
+
+
+typedef std::unordered_map<HeaderField, Filter, std::hash<int> > PacketFilter;
+#define for_fields_in_pf(it,pf) for (auto it=pf.begin(); it != pf.end(); ++it)
 
 //Class overlay for a collection of filters
 class TrafficClass {
