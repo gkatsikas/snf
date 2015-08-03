@@ -8,8 +8,6 @@
 struct ClickNode {
 	ClickElement element;
 	TrafficClass traffic_class;
-	std::vector<ClickElement> current_path;
-	
 };
 
 class ClickTree {

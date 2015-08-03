@@ -12,7 +12,7 @@ NFSynthetizer: $(OBJS)
 click_tree.o : click_tree.cpp click_tree.hpp output_port.hpp operation.hpp element_type.hpp filter.hpp
 	$(CC) $(CFLAGS) click_tree.cpp
 	
-filter.o : filter.cpp filter.hpp headerFields.hpp element_type.hpp output_port.hpp
+filter.o : filter.cpp filter.hpp headerFields.hpp element_type.hpp output_port.hpp operation.hpp
 	$(CC) $(CFLAGS) filter.cpp
 
 operation.o: operation.cpp operation.hpp headerFields.hpp

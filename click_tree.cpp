@@ -20,6 +20,7 @@ void ClickTree::find_classes () {
 	TrafficClass next_tc;
 	
 	int nb_ports=0;
+	int add_elem_failure=0;
 	
 	//DFS starting from m_root
 	while (!nodes_to_visit.empty()) {
@@ -32,15 +33,17 @@ void ClickTree::find_classes () {
 		
 		if(nb_ports) {
 			for(int i=0; i<curr_element.nb_ports; i++) {
+			
 					next_tc = curr_tc;
-					next_tc.addElement(curr_element, i);
+					add_elem_failure = next_tc.addElement(curr_element, i);
 					
-					//The updated child
-					next_node = (ClickNode) {
-						(curr_element.output_ports[i]).m_child,
-						next_tc						
-					 };
-					 nodes_to_visit.push (next_node);
+					if (!add_elem_failure) {
+						next_node = (ClickNode) {
+							(curr_element.output_ports[i]).m_child,
+							next_tc						
+						 };
+						 nodes_to_visit.push (next_node);
+					}
 			}
 		} else { //It's a leaf
 			curr_tc.addElement(curr_element);
