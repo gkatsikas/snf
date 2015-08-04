@@ -3,10 +3,8 @@
 
 //List of allowed click elements
 enum ElementType {
-	IPClassifier,
-	Discard,
-	FromDevice,
-	ToDevice
+	DecIPTTL,
+	FixIPSrc,
 };
 
 #endif

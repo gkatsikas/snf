@@ -4,6 +4,8 @@
 
 #include "filter.hpp"
 #include "output_port.hpp"
+#include "click_element.hpp"
+
 #define for_allowed_values(it) for (auto it=m_allowedValues.begin() ; \
 								it != m_allowedValues.end(); ++it)
 #define MIN(a,b) (a>b) ? b : a
@@ -214,7 +216,7 @@ int TrafficClass::addElement (const ClickElement &element, int port) {
 	if (port==-1) { //Last element of the chain -> no children
 		return 0;
 	}
-	const PacketFilter* pf = &((element.output_ports[port]).m_filter);
+	const PacketFilter* pf = &((element.m_outputPorts[port]).m_filter);
 	
 	for_fields_in_pf(it,pf) {
 		HeaderField field = it->first;
@@ -253,6 +255,6 @@ int TrafficClass::addElement (const ClickElement &element, int port) {
 			}
 		}
 	}
-	this->m_operation.compose_op((element.output_ports[port]).m_operation);
+	this->m_operation.compose_op((element.m_outputPorts[port]).m_operation);
 	return nb_none_filters;
 }

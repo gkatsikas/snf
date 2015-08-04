@@ -1,9 +1,18 @@
- * What if an element classifies from an already rewritten field
-	EXAMPLE: IPRewrite->RadixLookup
-	SOLUTIONS: IPRewrite makes the output of RadixLookup deterministic
-		--> We should store an actual state of the field in the TrafficClass
 
  * Change outputPort to createdClasses
  * Change exit(1) either to exit(EXIT_FAILURE) or to thrown exceptions to get
  	the stack trace
  * Check function class that returns Object to see whether we can use references
+ * Change enums to static class members
+ * Replace all direct access to class members by getters & setters
+
+
+ 
+###################
+# Element support #
+###################
+
+ * DecIPTTL -> MULTICAST keyword
+ * Routing: hierarchical routing such as:
+ 		10.0.0.8 -> eth1
+ 		10.0/16  -> eth2

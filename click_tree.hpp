@@ -1,12 +1,13 @@
 #ifndef CLICK_TREE_HPP
 #define CLICK_TREE_HPP
 
-#include "click_element.hpp"
 #include "filter.hpp"
+
+class ClickElement;
 
 //Overlay of Element to make it a node
 struct ClickNode {
-	ClickElement element;
+	ClickElement* element;
 	TrafficClass traffic_class;
 };
 

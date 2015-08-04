@@ -4,23 +4,24 @@
 #include <vector>
 #include <string>
 #include <unordered_map>
-#include "headerFields.hpp"
-#include "operation.hpp"
-#include "filter.hpp"
 #include "element_type.hpp"
 
 class OutputPort;
 
 //Abstract representation of a Click element
-//TODO: Create class output_port and merge the vector inside
 class ClickElement {
 public:
-	ElementType type;
-	std::string configuration; //FIXME: is this really necessary?
-	int nb_ports; //Number of output ports
-	std::vector<OutputPort> output_ports;
-};
+	ClickElement (ElementType type, std::string& configuration);
 
-void createElement(ClickElement* buffer, ElementType type, std::string conf);
+	ElementType m_type;
+	std::string m_configuration; //FIXME: is this really necessary?
+	int m_nbPorts; //Number of output ports
+	std::vector<OutputPort> m_outputPorts;
+	
+private:
+	void parse_dec_ttl_conf (std::string& configuration);
+	void parse_fix_ip_src (std::string& configuration);
+	void add_port (OutputPort & port);
+};
 
 #endif
