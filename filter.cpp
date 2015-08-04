@@ -11,6 +11,32 @@
 #define MIN(a,b) (a>b) ? b : a
 #define MAX(a,b) (a>b) ? a : b
 
+Filter Filter::get_range_filter(uint32_t lower,uint32_t upper) {
+	Filter f;
+	f.m_lowerLimit=lower;
+	f.m_upperLimit=upper;
+	return f;
+}
+
+Filter Filter::get_equals_filter(uint32_t value) {
+	Filter f;
+	f.m_upperLimit = f.m_lowerLimit = value;
+	f.m_type=Equals;
+	return f;
+}
+
+Filter Filter::get_filter_from_v4_prefix(uint32_t value, uint32_t prefix) {
+	Filter f;
+	uint32_t translation = 32 - prefix;
+	f.m_lowerLimit = (value>>translation)<<translation;
+	f.m_upperLimit = f.m_upperLimit + ((1<<translation)-1);	
+	
+	if(f.m_lowerLimit == f.m_upperLimit) {
+		f.m_type = Equals;
+	}
+	return f;
+}
+
 //TODO: if output type is None print error message
 Filter& Filter::operator += (const Filter &rhs) {
 	

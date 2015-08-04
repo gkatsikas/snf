@@ -28,4 +28,4 @@ clean:
 	\rm -f *.o *.plist
 	
 clean-dist: clean
-	\rm nf_synthetizer
+	\rm -f nf_synthetizer

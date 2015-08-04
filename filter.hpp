@@ -25,7 +25,10 @@ enum FilterType { //By increasing generality
 class Filter {
 public:
 	Filter () : m_type(Range), m_lowerLimit(0), m_upperLimit(MAX_UINT32) {};
-	Filter (const ElementType &element, std::string configuration);
+	static Filter get_range_filter(uint32_t lower,uint32_t upper);
+	static Filter get_equals_filter(uint32_t value);
+	static Filter get_filter_from_v4_prefix(uint32_t value, uint32_t prefix);
+	
 	Filter& operator+=(const Filter &rhs); //Intersects this and rhs
 	bool match (uint32_t value) const;
 	Filter translate(int value) const;

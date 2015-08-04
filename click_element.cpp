@@ -2,6 +2,7 @@
 #include <sstream>
 #include <vector>
 #include <cstdlib> //atoi
+#include <climits>
 
 #include "click_element.hpp"
 #include "output_port.hpp"
@@ -40,7 +41,7 @@ bool is_ip4_address (const std::string &address) {
 	return true;
 }
 
-static uint32_t aton (const std::string &address, int ip_version = 4 ) {
+uint32_t aton (const std::string &address, int ip_version) {
 	if (ip_version != 4) {
 		std::cerr << "IPv6 not supported yet" <<std::endl;
 		exit(1);
@@ -57,7 +58,9 @@ static uint32_t aton (const std::string &address, int ip_version = 4 ) {
 }
 
 
-//ClickElementClass
+//ClickElement class
+ClickElement ClickElement::discard_elem(Discard,(std::string&) "");
+
 ClickElement::ClickElement ( ElementType type, std::string& configuration ) :
 					m_type(type), m_configuration(configuration), m_nbPorts(0)
 {
@@ -67,6 +70,16 @@ ClickElement::ClickElement ( ElementType type, std::string& configuration ) :
 			break;
 		case FixIPSrc:
 			parse_fix_ip_src (configuration);
+			break;
+		case IPFilter:
+			parse_ip_filter (configuration);
+			break;
+		case Discard:
+			break;
+		case RadixIPLookup:
+		case LinearIPLookup:
+		case DirectIPLookup:
+			parse_lookup_filter (configuration);
 			break;
 		default:
 			std::cerr << "Unsupported Element"<<std::endl;
@@ -79,6 +92,10 @@ void ClickElement::add_port (OutputPort & port) {
 	this->m_nbPorts++;
 }
 
+ClickElement& ClickElement::get_discard_elem () {
+	return ClickElement::discard_elem;
+}
+
 void ClickElement::parse_dec_ttl_conf (std::string& configuration) {
 	if (configuration.size() != 0) {
 		std::cerr << "Unsupported option in DecIPTTL: "<<configuration <<std::endl;
@@ -88,9 +105,19 @@ void ClickElement::parse_dec_ttl_conf (std::string& configuration) {
 	FieldOperation ttl_op = {Translate, ip_TTL, 1};
 	
 	OutputPort port (0);
+	Filter valid_ttl = Filter::get_range_filter(1,UINT_MAX);
 	port.add_field_op(ttl_op);
+	port.add_filter(ip_TTL,valid_ttl);
 	
 	this->add_port(port);
+	
+	//Drops dead packets
+	OutputPort port1(1);
+	Filter zero_ttl = Filter::get_equals_filter(0);
+	port1.add_filter(ip_TTL, zero_ttl);
+	port1.set_child(&(ClickElement::get_discard_elem()));
+	
+	this->add_port(port1);
 }
 
 void ClickElement::parse_fix_ip_src (std::string& configuration) {
@@ -124,5 +151,21 @@ void ClickElement::parse_fix_ip_src (std::string& configuration) {
 fail:
 	std::cerr<<"Wrong configuration for FixIPSrc element"<<std::endl;
 	exit(1);
+}
+
+void ClickElement::parse_ip_filter (std::string& configuration) {
+	std::vector<std::string> rules = split(configuration,',');
+	for (uint32_t i=0; i<rules.size(); i++) {
+		OutputPort port = OutputPort::port_from_filter_rule(i,rules[i]);
+		this->add_port (port);
+	}
+}
+
+void ClickElement::parse_lookup_filter(std::string& configuration) {
+	std::vector<std::string> rules = split(configuration,',');
+	for (auto &it : rules) {
+		OutputPort port = OutputPort::port_from_lookup_rule(it);
+		this->add_port(port);
+	}
 }
 

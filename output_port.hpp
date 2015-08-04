@@ -15,6 +15,9 @@ public:
 	//Constructor
 	OutputPort(int port_nb);
 	
+	static OutputPort port_from_filter_rule(int port_nb, std::string& rule);
+	static OutputPort port_from_lookup_rule(std::string& rule);
+	
 	void add_filter (HeaderField field, Filter& filter);
 	void add_field_op (const FieldOperation & field_op);
 	
