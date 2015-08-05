@@ -5,7 +5,7 @@
  * Check function class that returns Object to see whether we can use references
  * Change enums to static class members
  * Replace all direct access to class members by getters & setters
-
+ * "double free" at execution -> change all ClickElement* to std::shared_ptr
 
  
 ###################
@@ -16,3 +16,7 @@
  * Routing: hierarchical routing such as:
  		10.0.0.8 -> eth1
  		10.0/16  -> eth2
+ 	--> More specifically, Filter should include type Union w/ std::vector<Filter>
+ 		operation-= and such, += should be replaced by &= etc
+ 		
+ 

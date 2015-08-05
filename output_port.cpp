@@ -33,7 +33,7 @@ OutputPort OutputPort::port_from_filter_rule (int port_nb, std::string& rule) {
 	std::string action = rule.substr(0,rule.find(' '));
 	
 	if (action.compare("deny") == 0 || action.compare("drop") == 0) {
-		port.set_child (&(ClickElement::get_discard_elem()));
+		port.set_child (ClickElement::get_discard_elem());
 	}
 	else if (action.compare("allow") !=0) {
 		std::cerr << "[" << __FILE__ << ":" << __LINE__ <<"] Unknown action in "
@@ -59,7 +59,7 @@ OutputPort OutputPort::port_from_lookup_rule(std::string& rule) {
 	
 	Filter f = Filter::get_filter_from_v4_prefix(aton(address_and_mask[0]), 
 									atoi(address_and_mask[0].c_str()));
-	//TODO: fix address if it is abbreviated
+	//TODO HIERARCHICAL
 	
 	OutputPort port(port_nb);
 	port.add_filter(ip_dst,f);

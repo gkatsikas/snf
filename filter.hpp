@@ -5,6 +5,7 @@
 
 #include <string>
 #include <unordered_map>
+#include <memory>
 #include "headerFields.hpp"
 #include "element_type.hpp"
 #include "operation.hpp"
@@ -72,13 +73,12 @@ public:
 	//Adds the element with output port port
 	//-1 indicates no output port (end of chain)
 	//Returns the number of updated filters that are equals to None
-	int addElement (const ClickElement &element, int port=-1);
-	TrafficClass & operator= (const TrafficClass &rhs);
+	int addElement (ClickElement *element, int port=-1);
 
 private:
 	PacketFilter m_filters;
 	//Path of the class in terms of elements
-	std::vector<ClickElement> m_elementPath;
+	std::vector<std::shared_ptr<ClickElement> > m_elementPath;
 	Operation m_operation;
 	
 	void addFilter(Filter filter,HeaderField field);

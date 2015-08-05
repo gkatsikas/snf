@@ -14,17 +14,14 @@ struct ClickNode {
 class ClickTree {
 
 public:
-	ClickTree (ClickElement &root) ;
+	ClickTree (ClickElement* root) ;
 	
 
-private:
+//private:
 	ClickNode m_root;
 	std::vector<TrafficClass> m_trafficClasses;
 	
 	void find_classes(); //Graph search from m_root
 	
 };
-
-
-int main() { return 0;}
 #endif

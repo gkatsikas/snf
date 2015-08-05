@@ -26,12 +26,13 @@ std::vector<std::string> split(const std::string &s, char delim) {
     return elems;
 }
 
-bool is_ip4_address (const std::string &address) {
+bool is_ip4_address (const std::string &address, bool full=true) {
 	std::vector<std::string> split_address = split(address,'.');
 	if (address.find_first_not_of(".0123456789") != std::string::npos 
-				|| split_address.size() != 4) {
+				|| split_address.size() > 4) {
 		return false;
 	}
+	if (full && split_address.size() != 4) { return false; }
 	for(int i=0; i<4; i++) {
 		int temp = atoi (split_address[i].c_str());
 		if ( temp > 255 ) {
@@ -41,25 +42,23 @@ bool is_ip4_address (const std::string &address) {
 	return true;
 }
 
-uint32_t aton (const std::string &address, int ip_version) {
-	if (ip_version != 4) {
-		std::cerr << "IPv6 not supported yet" <<std::endl;
-		exit(1);
-	}
+uint32_t aton (const std::string &address) {
 
 	uint32_t result = 0;
 	std::vector<std::string> split_address = split(address,'.');
 	
-	for (int i=0; i<4; i++) {
+	for (uint32_t i=0; i<split_address.size(); i++) {
 		result <<= 8;
 		result += atoi (split_address[i].c_str());
 	}
+	result <<= (8*(4-split_address.size())); //If it's a prefix like 10.0 we have to fill up the rest
 	return result;
 }
 
 
 //ClickElement class
-ClickElement ClickElement::discard_elem(Discard,(std::string&) "");
+std::string empty;
+ClickElement ClickElement::discard_elem(Discard,empty);
 
 ClickElement::ClickElement ( ElementType type, std::string& configuration ) :
 					m_type(type), m_configuration(configuration), m_nbPorts(0)
@@ -87,13 +86,22 @@ ClickElement::ClickElement ( ElementType type, std::string& configuration ) :
 	}
 }
 
+void ClickElement::set_child (ClickElement* child, int port) {
+	for (auto &it : m_outputPorts) {
+		if (it.m_portNumber == port) {
+			it.set_child(child);
+		}
+		
+	}
+}
+
 void ClickElement::add_port (OutputPort & port) {
 	this->m_outputPorts.push_back(port);
 	this->m_nbPorts++;
 }
 
-ClickElement& ClickElement::get_discard_elem () {
-	return ClickElement::discard_elem;
+ClickElement* ClickElement::get_discard_elem () {
+	return &(ClickElement::discard_elem);
 }
 
 void ClickElement::parse_dec_ttl_conf (std::string& configuration) {
@@ -115,7 +123,7 @@ void ClickElement::parse_dec_ttl_conf (std::string& configuration) {
 	OutputPort port1(1);
 	Filter zero_ttl = Filter::get_equals_filter(0);
 	port1.add_filter(ip_TTL, zero_ttl);
-	port1.set_child(&(ClickElement::get_discard_elem()));
+	port1.set_child(&discard_elem);
 	
 	this->add_port(port1);
 }
@@ -134,7 +142,7 @@ void ClickElement::parse_fix_ip_src (std::string& configuration) {
 			new_ip_value = aton(configuration);
 			break;
 		case 2:
-			if (split_conf[0].compare("IPADDR") !=0 || !is_ip4_address(split_conf[1]) ) {
+			if (split_conf[0].compare("IPADDR") !=0 || !is_ip4_address(split_conf[1], true) ) {
 				goto fail;
 			}
 			new_ip_value = aton(split_conf[1]);

@@ -1,6 +1,7 @@
 #include <algorithm>  //std::set_intersection std::sort
 #include <iostream> //std::cerr
 #include <climits> //UINT_MAX
+#include <cstdio>
 
 #include "filter.hpp"
 #include "output_port.hpp"
@@ -10,6 +11,7 @@
 								it != m_allowedValues.end(); ++it)
 #define MIN(a,b) (a>b) ? b : a
 #define MAX(a,b) (a>b) ? a : b
+#define DEBUG(a) printf("[%s:%d] %s\n",__FILE__,__LINE__,a)
 
 Filter Filter::get_range_filter(uint32_t lower,uint32_t upper) {
 	Filter f;
@@ -28,8 +30,8 @@ Filter Filter::get_equals_filter(uint32_t value) {
 Filter Filter::get_filter_from_v4_prefix(uint32_t value, uint32_t prefix) {
 	Filter f;
 	uint32_t translation = 32 - prefix;
-	f.m_lowerLimit = (value>>translation)<<translation;
-	f.m_upperLimit = f.m_upperLimit + ((1<<translation)-1);	
+	f.m_lowerLimit = value & (0xffffffff << translation);
+	f.m_upperLimit = value | (0xffffffff >> prefix);	
 	
 	if(f.m_lowerLimit == f.m_upperLimit) {
 		f.m_type = Equals;
@@ -227,26 +229,28 @@ void Filter::move_backward(uint32_t value) {
 //Getters & Setters
 FilterType Filter::get_type () { return this->m_type; }
 
+/*
 TrafficClass & TrafficClass::operator= (const TrafficClass &rhs) {
 	this-> m_filters = rhs.m_filters;
 	this-> m_elementPath = rhs.m_elementPath;
 	this-> m_operation = rhs.m_operation;
 	return *this;
 }
+*/
 
-int TrafficClass::addElement (const ClickElement &element, int port) {
+int TrafficClass::addElement (ClickElement *element, int port) {
 
 	int nb_none_filters=0;
-	this->m_elementPath.push_back(element);
+	(this->m_elementPath).push_back(std::shared_ptr<ClickElement> (element));
 
 	if (port==-1) { //Last element of the chain -> no children
 		return 0;
 	}
-	const PacketFilter* pf = &((element.m_outputPorts[port]).m_filter);
+	PacketFilter* pf = &((element->m_outputPorts[port]).m_filter);
 	
 	for_fields_in_pf(it,pf) {
 		HeaderField field = it->first;
-		const Filter* filter = &(it->second);
+		Filter* filter = &(it->second);
 		
 		FieldOperation *field_op = this->m_operation.get_field_op(field);
 		
@@ -281,6 +285,7 @@ int TrafficClass::addElement (const ClickElement &element, int port) {
 			}
 		}
 	}
-	this->m_operation.compose_op((element.m_outputPorts[port]).m_operation);
+	DEBUG("C");
+	this->m_operation.compose_op((element->m_outputPorts[port]).m_operation);
 	return nb_none_filters;
 }

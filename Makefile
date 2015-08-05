@@ -1,8 +1,8 @@
 CC = g++
-CFLAGS = -Wall -c -std=c++11 -Wextra
-LFLAGS = -Wall -std=c++11
+CFLAGS = -Wall -c -std=c++11 -Wextra -g
+LFLAGS = -Wall -std=c++11 -g
 
-#LIBS = 
+#LIBS = -lefence
 
 OBJS = click_tree.o filter.o operation.o click_element.o output_port.o
 
@@ -25,7 +25,7 @@ output_port.o: output_port.cpp output_port.hpp filter.hpp click_element.hpp
 	$(CC) $(CFLAGS) output_port.cpp
 		
 clean:
-	\rm -f *.o *.plist
+	\rm -f *.o *.plist *.gch
 	
 clean-dist: clean
 	\rm -f nf_synthetizer
