@@ -1,21 +1,22 @@
 #ifndef CLICK_TREE_HPP
 #define CLICK_TREE_HPP
 
+#include <memory>
+
 #include "filter.hpp"
 
 class ClickElement;
 
 //Overlay of Element to make it a node
 struct ClickNode {
-	ClickElement* element;
+	std::shared_ptr<ClickElement> element;
 	TrafficClass traffic_class;
 };
 
 class ClickTree {
 
 public:
-	ClickTree (ClickElement* root) ;
-	
+	ClickTree (std::shared_ptr<ClickElement> root) ;
 
 //private:
 	ClickNode m_root;

@@ -9,7 +9,8 @@ enum ElementType {
 	RadixIPLookup,
 	DirectIPLookup,
 	LinearIPLookup,
-	Discard //TODO: add to ClickElement constructor
+	Discard,
+	Discard_def
 };
 
 #endif

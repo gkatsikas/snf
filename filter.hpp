@@ -13,7 +13,6 @@
 class ClickElement;
 
 typedef unsigned int uint32_t;
-#define in_range(x,lower,upper) (x>lower && x<upper)
 
 enum FilterType { //By increasing generality
 	None,
@@ -73,7 +72,7 @@ public:
 	//Adds the element with output port port
 	//-1 indicates no output port (end of chain)
 	//Returns the number of updated filters that are equals to None
-	int addElement (ClickElement *element, int port=-1);
+	int addElement (std::shared_ptr<ClickElement> element, int port=-1);
 
 private:
 	PacketFilter m_filters;

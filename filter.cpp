@@ -11,6 +11,8 @@
 								it != m_allowedValues.end(); ++it)
 #define MIN(a,b) (a>b) ? b : a
 #define MAX(a,b) (a>b) ? a : b
+
+#define in_range(x,lower,upper) (x>=lower && x<=upper)
 #define DEBUG(a) printf("[%s:%d] %s\n",__FILE__,__LINE__,a)
 
 Filter Filter::get_range_filter(uint32_t lower,uint32_t upper) {
@@ -238,10 +240,11 @@ TrafficClass & TrafficClass::operator= (const TrafficClass &rhs) {
 }
 */
 
-int TrafficClass::addElement (ClickElement *element, int port) {
+int TrafficClass::addElement (std::shared_ptr<ClickElement> element, int port) {
 
 	int nb_none_filters=0;
-	(this->m_elementPath).push_back(std::shared_ptr<ClickElement> (element));
+	(this->m_elementPath).push_back(element);
+
 
 	if (port==-1) { //Last element of the chain -> no children
 		return 0;
@@ -278,14 +281,15 @@ int TrafficClass::addElement (ClickElement *element, int port) {
 				
 			}
 		}
-		else {		
+		else {
 			this->m_filters[field] += (*filter);
+			
 			if( (this->m_filters[field]).m_type == None) {
 				nb_none_filters++;
 			}
 		}
 	}
-	DEBUG("C");
+
 	this->m_operation.compose_op((element->m_outputPorts[port]).m_operation);
 	return nb_none_filters;
 }

@@ -58,7 +58,7 @@ uint32_t aton (const std::string &address) {
 
 //ClickElement class
 std::string empty;
-ClickElement ClickElement::discard_elem(Discard,empty);
+std::shared_ptr<ClickElement> ClickElement::discard_elem_ptr(new ClickElement(Discard_def,empty));
 
 ClickElement::ClickElement ( ElementType type, std::string& configuration ) :
 					m_type(type), m_configuration(configuration), m_nbPorts(0)
@@ -74,6 +74,7 @@ ClickElement::ClickElement ( ElementType type, std::string& configuration ) :
 			parse_ip_filter (configuration);
 			break;
 		case Discard:
+		case Discard_def:
 			break;
 		case RadixIPLookup:
 		case LinearIPLookup:
@@ -86,7 +87,7 @@ ClickElement::ClickElement ( ElementType type, std::string& configuration ) :
 	}
 }
 
-void ClickElement::set_child (ClickElement* child, int port) {
+void ClickElement::set_child (std::shared_ptr<ClickElement> child, int port) {
 	for (auto &it : m_outputPorts) {
 		if (it.m_portNumber == port) {
 			it.set_child(child);
@@ -100,8 +101,8 @@ void ClickElement::add_port (OutputPort & port) {
 	this->m_nbPorts++;
 }
 
-ClickElement* ClickElement::get_discard_elem () {
-	return &(ClickElement::discard_elem);
+std::shared_ptr<ClickElement> ClickElement::get_discard_elem () {
+	return (ClickElement::discard_elem_ptr);
 }
 
 void ClickElement::parse_dec_ttl_conf (std::string& configuration) {
@@ -123,7 +124,7 @@ void ClickElement::parse_dec_ttl_conf (std::string& configuration) {
 	OutputPort port1(1);
 	Filter zero_ttl = Filter::get_equals_filter(0);
 	port1.add_filter(ip_TTL, zero_ttl);
-	port1.set_child(&discard_elem);
+	port1.set_child(discard_elem_ptr);
 	
 	this->add_port(port1);
 }

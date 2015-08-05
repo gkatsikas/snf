@@ -3,8 +3,7 @@
 
 #include "output_port.hpp"
 
-OutputPort::OutputPort (int port_nb) : m_portNumber(port_nb) {
-	m_child=nullptr;
+OutputPort::OutputPort (int port_nb) : m_portNumber(port_nb), m_child(nullptr) {
 }
 
 void OutputPort::add_filter (HeaderField field, Filter& filter) {
@@ -24,7 +23,7 @@ void OutputPort::set_operation (const Operation & op) {
 	this->m_operation = op;
 }
 
-void OutputPort::set_child ( ClickElement * child) {
+void OutputPort::set_child (std::shared_ptr<ClickElement> child) {
 	this->m_child = child;
 }
 

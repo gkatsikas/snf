@@ -4,6 +4,7 @@
 #include <vector>
 #include <string>
 #include <unordered_map>
+#include <memory>
 #include "element_type.hpp"
 
 class OutputPort;
@@ -17,17 +18,17 @@ class ClickElement {
 public:
 	ClickElement (ElementType type, std::string& configuration);
 	
-	void set_child (ClickElement* child, int port);
+	void set_child (std::shared_ptr<ClickElement> child, int port);
 
 	ElementType m_type;
 	std::string m_configuration; //FIXME: is this really necessary?
 	int m_nbPorts; //Number of output ports
 	std::vector<OutputPort> m_outputPorts;
 	
-	static ClickElement* get_discard_elem ();
+	static std::shared_ptr<ClickElement> get_discard_elem ();
 	
 private:
-	static ClickElement discard_elem;
+	static std::shared_ptr<ClickElement> discard_elem_ptr;
 
 	//Configuration string parsing functions:
 	void parse_dec_ttl_conf (std::string& configuration);

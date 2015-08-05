@@ -8,7 +8,7 @@
 class OutputPort {
 public:
 	int m_portNumber;
-	ClickElement* m_child;
+	std::shared_ptr<ClickElement> m_child;
 	Operation m_operation;
 	PacketFilter m_filter;
 	
@@ -23,7 +23,7 @@ public:
 	
 	//Getters & setters
 	void set_operation (const Operation & op);
-	void set_child (ClickElement * child);
+	void set_child (std::shared_ptr<ClickElement> child);
 };
 
 #endif
