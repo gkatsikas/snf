@@ -1,13 +1,14 @@
+#include "output_class.hpp"
+
 #include <iostream> //cerr 
 #include <cstdlib> //atoi
 
-#include "output_port.hpp"
 #include "helpers.hpp"
 
-OutputPort::OutputPort (int port_nb) : m_portNumber(port_nb), m_child(nullptr) {
+OutputClass::OutputClass (int port_nb) : m_portNumber(port_nb), m_child(nullptr) {
 }
 
-void OutputPort::add_filter (HeaderField field, Filter& filter) {
+void OutputClass::add_filter (HeaderField field, Filter& filter) {
 	if ( m_filter.find(field) != m_filter.end() ) {
 		std::cerr << "[" << __FILE__ << ":" << __LINE__ <<"] Trying to add filter "
 				"on already filtered field in OutputPort"<<std::endl;
@@ -16,20 +17,20 @@ void OutputPort::add_filter (HeaderField field, Filter& filter) {
 	m_filter[field] = filter;
 }
 
-void OutputPort::add_field_op(const FieldOperation & field_op) {
+void OutputClass::add_field_op(const FieldOperation & field_op) {
 	(this->m_operation).add_field_op(field_op);
 }
 
-void OutputPort::set_operation (const Operation & op) {
+void OutputClass::set_operation (const Operation & op) {
 	this->m_operation = op;
 }
 
-void OutputPort::set_child (std::shared_ptr<ClickElement> child) {
+void OutputClass::set_child (std::shared_ptr<ClickElement> child) {
 	this->m_child = child;
 }
 
-OutputPort OutputPort::port_from_filter_rule (int port_nb, std::string& rule) {
-	OutputPort port(port_nb);
+OutputClass OutputClass::port_from_filter_rule (int port_nb, std::string& rule) {
+	OutputClass port(port_nb);
 	std::string action = rule.substr(0,rule.find(' '));
 	
 	if (action.compare("deny") == 0 || action.compare("drop") == 0) {
@@ -45,7 +46,7 @@ OutputPort OutputPort::port_from_filter_rule (int port_nb, std::string& rule) {
 	return port;
 }
 
-OutputPort OutputPort::port_from_lookup_rule(std::string& rule) {
+OutputClass OutputClass::port_from_lookup_rule(std::string& rule) {
 	std::vector<std::string> decomposed_rule = split(rule,' ');
 	int nb_arg = decomposed_rule.size();
 	if (nb_arg>3 || nb_arg<2) {
@@ -61,7 +62,31 @@ OutputPort OutputPort::port_from_lookup_rule(std::string& rule) {
 									atoi(address_and_mask[0].c_str()));
 	//TODO HIERARCHICAL
 	
-	OutputPort port(port_nb);
+	OutputClass port(port_nb);
 	port.add_filter(ip_dst,f);
 	return port;
+}
+
+std::shared_ptr<ClickElement> OutputClass::get_child() const {
+	return m_child;
+}
+
+PacketFilter OutputClass::get_filter() const {
+	return m_filter;
+}
+
+void OutputClass::set_filter(PacketFilter filter) {
+	m_filter = filter;
+}
+
+const Operation& OutputClass::get_operation() const {
+	return m_operation;
+}
+
+int OutputClass::get_portNumber() const {
+	return m_portNumber;
+}
+
+void OutputClass::set_portNumber(int portNumber) {
+	m_portNumber = portNumber;
 }

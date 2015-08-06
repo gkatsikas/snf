@@ -17,8 +17,9 @@ class ClickTree {
 
 public:
 	ClickTree (std::shared_ptr<ClickElement> root) ;
+	std::vector<TrafficClass> get_trafficClasses() const;
 
-//private:
+private:
 	ClickNode m_root;
 	std::vector<TrafficClass> m_trafficClasses;
 	

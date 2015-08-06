@@ -4,7 +4,8 @@
 #include <unordered_map>
 #include <vector>
 #include <string>
-#include "headerFields.hpp"
+
+#include "header_fields.hpp"
 
 enum OperationType {
 	Write,
@@ -16,17 +17,17 @@ enum OperationType {
 const std::string OperationName[4] = { "Write", "Translate", "Monitor", "Noop"};
 
 struct FieldOperation {
-	OperationType type;
-	HeaderField field;
+	OperationType m_type;
+	HeaderField m_field;
 	/*
 	 * Values equals, depending on the operation:
 	 *    - new value to write for Write: x->value
 	 *    - translation vector for Translation: x->x+value
 	 *    - Monitor ID for Monitor: Monitor[i](packet)
 	 */
-	uint32_t value;
+	uint32_t m_value;
 	void compose (const FieldOperation & rhs);
-	uint32_t get_value();
+	uint32_t get_value() const;
 	std::string to_str();
 };
 

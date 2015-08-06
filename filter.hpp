@@ -33,7 +33,12 @@ public:
 	Filter translate(int value) const;
 	
 	std::string to_str();
-	
+
+	//Getters & setters
+	FilterType get_type() const;
+	void set_type(FilterType type);
+
+private:
 	FilterType m_type;
 	uint32_t m_lowerLimit;
 	uint32_t m_upperLimit;
@@ -56,10 +61,6 @@ private:
 	//Translate helpers
 	void move_forward(uint32_t value);
 	void move_backward(uint32_t value);
-	
-	//getters & setters
-	FilterType get_type ();
-
 };
 
 

@@ -1,12 +1,10 @@
 
- * Change outputPort to createdClasses
+ * Change nbPorts to actual number of ports and not number of classes
  * Change exit(1) either to exit(EXIT_FAILURE) or to thrown exceptions to get
  	the stack trace
  * Check function class that returns Object to see whether we can use references
  * Change enums to static class members
- * Replace all direct access to class members by getters & setters
- * "double free" at execution -> change all ClickElement* to std::shared_ptr
-
+ * Replace direct access to FieldOperation members by getters & setters
  
 ###################
 # Element support #

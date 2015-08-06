@@ -2,18 +2,18 @@
 #include <iostream>
 
 void FieldOperation::compose (const FieldOperation & rhs) {
-	if (this->field != rhs.field) {
+	if (this->m_field != rhs.m_field) {
 		std::cerr<<"["<<__FILE__<<":"<<__LINE__<<"] Trying to compose FieldOperation "
 				"on different fields"<<std::endl;
 	}
 
-	switch (rhs.type) {
+	switch (rhs.m_type) {
 		case Write:
-			this->type = Write;
-			this->value = rhs.value;
+			this->m_type = Write;
+			this->m_value = rhs.m_value;
 			return;
 		case Translate:
-			this->value += rhs.value;
+			this->m_value += rhs.m_value;
 			return;
 		default:
 			std::cerr<<"["<<__FILE__<<":"<<__LINE__<<"] Can only compose Write "
@@ -22,7 +22,7 @@ void FieldOperation::compose (const FieldOperation & rhs) {
 	}
 }
 
-uint32_t FieldOperation::get_value () { return this->value; }
+uint32_t FieldOperation::get_value () const { return this->m_value; }
 
 FieldOperation* Operation::get_field_op(HeaderField field) {
 	if (m_fieldOps.find(field) == m_fieldOps.end() ) {
@@ -34,32 +34,32 @@ FieldOperation* Operation::get_field_op(HeaderField field) {
 }
 
 std::string FieldOperation::to_str () {
-	std::string output = headerFieldNames[field];
-	switch (type) {
+	std::string output = headerFieldNames[m_field];
+	switch (m_type) {
 		case Write:
 		case Translate:
-			output+= (": "+OperationName[type]+"("+std::to_string(value)+")");
+			output+= (": "+OperationName[m_type]+"("+std::to_string(m_value)+")");
 			break;
 		case Noop:
 		case Monitor:
-			output += (": "+OperationName[type]+"()");
+			output += (": "+OperationName[m_type]+"()");
 	}
 	return output;
 }
 
 void Operation::add_field_op(const FieldOperation &field_op) {
-	OperationType new_op_type = field_op.type;
+	OperationType new_op_type = field_op.m_type;
 	
 	switch (new_op_type) {
 		case Monitor: {
-			this->monitors.push_back(field_op.value);
+			this->monitors.push_back(field_op.m_value);
 			return;
 		}
 		case Noop:
 			return;
 		case Write: 
 		case Translate:
-			HeaderField field = field_op.field;
+			HeaderField field = field_op.m_field;
 		
 			//If we don't have any operation yet
 			if (m_fieldOps.find(field) == m_fieldOps.end() ) {

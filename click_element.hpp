@@ -7,7 +7,7 @@
 #include <memory>
 #include "element_type.hpp"
 
-class OutputPort;
+class OutputClass;
 
 //Abstract representation of a Click element
 class ClickElement {
@@ -17,14 +17,15 @@ public:
 	void set_child (std::shared_ptr<ClickElement> child, int port);
 
 	bool is_leaf();
-
-	ElementType m_type;
-	std::string m_configuration; //FIXME: is this really necessary?
-	int m_nbPorts; //Number of output ports
-	std::vector<OutputPort> m_outputPorts;
 	
+	//Getters & Setters
 	static std::shared_ptr<ClickElement> get_discard_elem ();
-	
+	std::string get_configuration() const;
+	int get_nbPorts() const;
+	void set_nbPorts(int nbPorts);
+	std::vector<OutputClass> get_outputPorts() const;
+	ElementType get_type() const;
+
 private:
 	static std::shared_ptr<ClickElement> discard_elem_ptr;
 
@@ -34,7 +35,12 @@ private:
 	void parse_ip_filter(std::string& configuration);
 	void parse_lookup_filter(std::string& configuration);
 	
-	void add_port (OutputPort & port);
+	void add_port (OutputClass & port);
+
+	ElementType m_type;
+	std::string m_configuration; //FIXME: is this really necessary?
+	int m_nbPorts; //Number of output ports
+	std::vector<OutputClass> m_outputPorts;
 };
 
 #endif

@@ -4,8 +4,8 @@
 #include <cstdio>
 
 #include "filter.hpp"
-#include "output_port.hpp"
 #include "click_element.hpp"
+#include "output_class.hpp"
 
 #define for_allowed_values(it) for (auto it=m_allowedValues.begin() ; \
 								it != m_allowedValues.end(); ++it)
@@ -220,6 +220,14 @@ void Filter::move_forward(uint32_t value) {
 	}
 }
 
+FilterType Filter::get_type() const {
+	return m_type;
+}
+
+void Filter::set_type(FilterType type) {
+	m_type = type;
+}
+
 void Filter::move_backward(uint32_t value) {
 	m_lowerLimit = substract_to_zero(m_lowerLimit, value);
 	m_upperLimit = substract_to_zero(m_upperLimit, value);
@@ -252,9 +260,6 @@ std::string Filter::to_str () {
 	return output;
 }
 
-//Getters & Setters
-FilterType Filter::get_type () { return this->m_type; }
-
 int TrafficClass::addElement (std::shared_ptr<ClickElement> element, int port) {
 
 	int nb_none_filters=0;
@@ -264,27 +269,27 @@ int TrafficClass::addElement (std::shared_ptr<ClickElement> element, int port) {
 	if (port==-1) { //Last element of the chain -> no children
 		return 0;
 	}
-	PacketFilter* pf = &((element->m_outputPorts[port]).m_filter);
+	PacketFilter pf = (element->get_outputPorts()[port]).get_filter();
 	
-	for_fields_in_pf(it,(*pf)) {
+	for_fields_in_pf(it,pf) {
 		HeaderField field = it->first;
 		Filter* filter = &(it->second);
 		
 		FieldOperation *field_op = this->m_operation.get_field_op(field);
 		
 		if (field_op) {
-			uint32_t field_value = field_op->value;
-			switch (field_op->type) {
+			uint32_t field_value = field_op->m_value;
+			switch (field_op->m_type) {
 				case Write:
 					if (!filter->match(field_value)) {
-						(this->m_filters[field]).m_type = None;
+						(this->m_filters[field]).set_type(None);
 						nb_none_filters++;
 					}
 					break;
 				case Translate: {
 					Filter translated_filter = filter->translate(-field_value);
 					this->m_filters[field] += translated_filter;
-					if( (this->m_filters[field]).m_type == None) {
+					if( (this->m_filters[field]).get_type() == None) {
 						nb_none_filters++;
 					}
 					break;
@@ -299,13 +304,13 @@ int TrafficClass::addElement (std::shared_ptr<ClickElement> element, int port) {
 		else {
 			this->m_filters[field] += (*filter);
 			
-			if( (this->m_filters[field]).m_type == None) {
+			if( (this->m_filters[field]).get_type() == None) {
 				nb_none_filters++;
 			}
 		}
 	}
 
-	this->m_operation.compose_op((element->m_outputPorts[port]).m_operation);
+	this->m_operation.compose_op((element->get_outputPorts()[port]).get_operation());
 	return nb_none_filters;
 }
 
@@ -318,7 +323,7 @@ std::string TrafficClass::to_str() {
 	
 	output += "Passed elements: \n\t";
 	for (auto it : m_elementPath) {
-		output += elementNames[it->m_type];
+		output += elementNames[it->get_type()];
 		if (it->is_leaf()) {
 			output+="\n";
 		}
