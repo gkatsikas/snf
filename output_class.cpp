@@ -5,7 +5,7 @@
 
 #include "helpers.hpp"
 
-OutputClass::OutputClass (int port_nb) : m_portNumber(port_nb), m_child(nullptr) {
+OutputClass::OutputClass (int port_nb) : m_portNumber(port_nb), m_child(ClickElement::get_discard_elem()) {
 }
 
 void OutputClass::add_filter (HeaderField field, Filter& filter) {
@@ -17,17 +17,7 @@ void OutputClass::add_filter (HeaderField field, Filter& filter) {
 	m_filter[field] = filter;
 }
 
-void OutputClass::add_field_op(const FieldOperation & field_op) {
-	(this->m_operation).add_field_op(field_op);
-}
 
-void OutputClass::set_operation (const Operation & op) {
-	this->m_operation = op;
-}
-
-void OutputClass::set_child (std::shared_ptr<ClickElement> child) {
-	this->m_child = child;
-}
 
 OutputClass OutputClass::port_from_filter_rule (int port_nb, std::string& rule) {
 	OutputClass port(port_nb);
@@ -67,6 +57,17 @@ OutputClass OutputClass::port_from_lookup_rule(std::string& rule) {
 	return port;
 }
 
+std::string OutputClass::to_str() const {
+	std::string output = "======== Begin Output Class ========\nFilters:\n";
+	for(auto &it : m_filter) {
+		output += ("\tField "+headerFieldNames[it.first]+": "+it.second.to_str()+"\n");
+	}
+	output += m_operation.to_str();
+	
+	output += "========= End Output Class =========\n";
+	return output;
+}
+
 std::shared_ptr<ClickElement> OutputClass::get_child() const {
 	return m_child;
 }
@@ -89,4 +90,16 @@ int OutputClass::get_portNumber() const {
 
 void OutputClass::set_portNumber(int portNumber) {
 	m_portNumber = portNumber;
+}
+
+void OutputClass::add_field_op(const FieldOperation & field_op) {
+	(this->m_operation).add_field_op(field_op);
+}
+
+void OutputClass::set_operation (const Operation & op) {
+	this->m_operation = op;
+}
+
+void OutputClass::set_child (std::shared_ptr<ClickElement> child) {
+	this->m_child = child;
 }

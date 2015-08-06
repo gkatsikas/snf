@@ -33,7 +33,7 @@ FieldOperation* Operation::get_field_op(HeaderField field) {
 	}
 }
 
-std::string FieldOperation::to_str () {
+std::string FieldOperation::to_str () const {
 	std::string output = headerFieldNames[m_field];
 	switch (m_type) {
 		case Write:
@@ -79,7 +79,7 @@ void Operation::compose_op (const Operation & operation) {
 	}
 }
 
-std::string Operation::to_str() {
+std::string Operation::to_str() const {
 	std::string output = "Operation:\n";
 	for (auto &it : m_fieldOps) {
 		output += ("\t"+it.second.to_str()+"\n");

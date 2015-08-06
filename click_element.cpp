@@ -43,7 +43,7 @@ ClickElement::ClickElement ( ElementType type, std::string& configuration ) :
 }
 
 void ClickElement::set_child (std::shared_ptr<ClickElement> child, int port) {
-	for (auto &it : m_outputPorts) {
+	for (auto &it : m_outputClasses) {
 		if (it.get_portNumber() == port) {
 			it.set_child(child);
 		}
@@ -68,17 +68,19 @@ void ClickElement::set_nbPorts(int nbPorts) {
 	m_nbPorts = nbPorts;
 }
 
-std::vector<OutputClass> ClickElement::get_outputPorts() const {
-	return m_outputPorts;
+std::vector<OutputClass> ClickElement::get_outputClasses() const {
+	return m_outputClasses;
 }
 
 ElementType ClickElement::get_type() const {
 	return m_type;
 }
 
-void ClickElement::add_port (OutputClass & port) {
-	this->m_outputPorts.push_back(port);
-	this->m_nbPorts++;
+void ClickElement::add_output_class (OutputClass & output_class) {
+	this->m_outputClasses.push_back(output_class);
+	if (output_class.get_portNumber() > (m_nbPorts-1)) {
+		m_nbPorts = output_class.get_portNumber()+1;
+	}
 }
 
 std::shared_ptr<ClickElement> ClickElement::get_discard_elem () {
@@ -98,7 +100,7 @@ void ClickElement::parse_dec_ttl_conf (std::string& configuration) {
 	port.add_field_op(ttl_op);
 	port.add_filter(ip_TTL,valid_ttl);
 	
-	this->add_port(port);
+	this->add_output_class(port);
 	
 	//Drops dead packets
 	OutputClass port1(1);
@@ -106,7 +108,7 @@ void ClickElement::parse_dec_ttl_conf (std::string& configuration) {
 	port1.add_filter(ip_TTL, zero_ttl);
 	port1.set_child(discard_elem_ptr);
 	
-	this->add_port(port1);
+	this->add_output_class(port1);
 }
 
 void ClickElement::parse_fix_ip_src (std::string& configuration) {
@@ -134,7 +136,7 @@ void ClickElement::parse_fix_ip_src (std::string& configuration) {
 	
 	fix_ip_src_op.m_value = new_ip_value;
 	port.add_field_op(fix_ip_src_op);
-	this->add_port(port);
+	this->add_output_class(port);
 	return;
 	
 fail:
@@ -146,7 +148,7 @@ void ClickElement::parse_ip_filter (std::string& configuration) {
 	std::vector<std::string> rules = split(configuration,',');
 	for (uint32_t i=0; i<rules.size(); i++) {
 		OutputClass port = OutputClass::port_from_filter_rule(i,rules[i]);
-		this->add_port (port);
+		this->add_output_class (port);
 	}
 }
 
@@ -154,7 +156,8 @@ void ClickElement::parse_lookup_filter(std::string& configuration) {
 	std::vector<std::string> rules = split(configuration,',');
 	for (auto &it : rules) {
 		OutputClass port = OutputClass::port_from_lookup_rule(it);
-		this->add_port(port);
+
+		this->add_output_class(port);
 	}
 }
 

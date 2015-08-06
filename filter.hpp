@@ -32,7 +32,7 @@ public:
 	bool match (uint32_t value) const;
 	Filter translate(int value) const;
 	
-	std::string to_str();
+	std::string to_str() const;
 
 	//Getters & setters
 	FilterType get_type() const;
@@ -75,7 +75,7 @@ public:
 	//-1 indicates no output port (end of chain)
 	//Returns the number of updated filters that are equals to None
 	int addElement (std::shared_ptr<ClickElement> element, int port=-1);
-	std::string to_str ();
+	std::string to_str () const;
 
 private:
 	PacketFilter m_filters;

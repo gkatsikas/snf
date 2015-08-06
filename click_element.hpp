@@ -23,7 +23,7 @@ public:
 	std::string get_configuration() const;
 	int get_nbPorts() const;
 	void set_nbPorts(int nbPorts);
-	std::vector<OutputClass> get_outputPorts() const;
+	std::vector<OutputClass> get_outputClasses() const;
 	ElementType get_type() const;
 
 private:
@@ -35,12 +35,12 @@ private:
 	void parse_ip_filter(std::string& configuration);
 	void parse_lookup_filter(std::string& configuration);
 	
-	void add_port (OutputClass & port);
+	void add_output_class (OutputClass & output_class);
 
 	ElementType m_type;
 	std::string m_configuration; //FIXME: is this really necessary?
 	int m_nbPorts; //Number of output ports
-	std::vector<OutputClass> m_outputPorts;
+	std::vector<OutputClass> m_outputClasses;
 };
 
 #endif

@@ -236,7 +236,7 @@ void Filter::move_backward(uint32_t value) {
 	}
 }
 
-std::string Filter::to_str () {
+std::string Filter::to_str () const{
 	std::string output;
 	switch (this->m_type) {
 		case None:
@@ -269,7 +269,7 @@ int TrafficClass::addElement (std::shared_ptr<ClickElement> element, int port) {
 	if (port==-1) { //Last element of the chain -> no children
 		return 0;
 	}
-	PacketFilter pf = (element->get_outputPorts()[port]).get_filter();
+	PacketFilter pf = (element->get_outputClasses()[port]).get_filter();
 	
 	for_fields_in_pf(it,pf) {
 		HeaderField field = it->first;
@@ -310,11 +310,11 @@ int TrafficClass::addElement (std::shared_ptr<ClickElement> element, int port) {
 		}
 	}
 
-	this->m_operation.compose_op((element->get_outputPorts()[port]).get_operation());
+	this->m_operation.compose_op((element->get_outputClasses()[port]).get_operation());
 	return nb_none_filters;
 }
 
-std::string TrafficClass::to_str() {
+std::string TrafficClass::to_str() const {
 	std::string output = "======== Begin Traffic Class ========\nFilters:\n";
 	for_fields_in_pf(it,m_filters) {
 		output += ("\tField "+headerFieldNames[it->first]+": "+it->second.to_str()+"\n");

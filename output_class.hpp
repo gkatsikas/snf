@@ -1,6 +1,8 @@
 #ifndef OUTPUT_PORT_HPP
 #define OUTPUT_PORT_HPP
 
+#include <string>
+
 #include "filter.hpp"
 #include "click_element.hpp"
 #include "header_fields.hpp"
@@ -15,6 +17,8 @@ public:
 	
 	void add_filter (HeaderField field, Filter& filter);
 	void add_field_op (const FieldOperation & field_op);
+	
+	std::string to_str() const;
 	
 	//Getters & setters
 	void set_operation (const Operation & op);

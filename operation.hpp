@@ -28,7 +28,7 @@ struct FieldOperation {
 	uint32_t m_value;
 	void compose (const FieldOperation & rhs);
 	uint32_t get_value() const;
-	std::string to_str();
+	std::string to_str() const;
 };
 
 class Operation {
@@ -39,7 +39,7 @@ public:
 	
 	FieldOperation* get_field_op(HeaderField field);
 	
-	std::string to_str();
+	std::string to_str() const;
 
 private:
 	std::unordered_map<HeaderField, FieldOperation, std::hash<int> > m_fieldOps;
