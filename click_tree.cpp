@@ -48,14 +48,15 @@ void ClickTree::find_classes () {
 							child,
 							next_tc						
 						 };
-						 std::cout<<"Found transition from "<<curr_element->m_type<<" to "<<child->m_type<<std::endl;
+						 std::cout<<"Found transition from "<<elementNames[curr_element->m_type]
+						 		<<" to "<<elementNames[child->m_type]<<std::endl;
 						 nodes_to_visit.push (next_node);
 					}else {
 						std::cerr<<"Failed to add element "<<curr_element->m_type<<std::endl;
 					}
 			}
 		} else { //It's a leaf
-			std::cout<<"Found leaf of type "<<curr_element->m_type<<std::endl;
+			std::cout<<"Found leaf of type "<<elementNames[curr_element->m_type]<<std::endl;
 			curr_tc.addElement(curr_element); //Pass as pointer instead?
 			this->m_trafficClasses.push_back(curr_tc);
 		}

@@ -2,6 +2,7 @@
 #include <cstdlib> //atoi
 
 #include "output_port.hpp"
+#include "helpers.hpp"
 
 OutputPort::OutputPort (int port_nb) : m_portNumber(port_nb), m_child(nullptr) {
 }

@@ -9,10 +9,6 @@
 
 class OutputPort;
 
-std::vector<std::string> split(const std::string &s, char delim);
-bool is_ip4_prefix (const std::string &address, bool full=true);
-uint32_t aton (const std::string &address);
-
 //Abstract representation of a Click element
 class ClickElement {
 public:
