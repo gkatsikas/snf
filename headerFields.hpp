@@ -15,7 +15,7 @@
 #define DO_DESCRIPTION(e) #e,
 #define DO_ENUM(e) e,
 
-const std::string headerFieldNames[8] = {
+const std::string headerFieldNames[6] = {
 HEADER(DO_DESCRIPTION)
 };
 

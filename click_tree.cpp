@@ -78,7 +78,9 @@ int main() {
 	ttl->set_child(discard,0);
 	ClickTree tree(fixip);
 
-	std::cout<<tree.m_trafficClasses.size()<<std::endl;
+	for (auto &it : tree.m_trafficClasses) {
+		std::cout<<it.to_str();
+	}
 	
 	return 0;
 }

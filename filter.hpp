@@ -32,6 +32,8 @@ public:
 	bool match (uint32_t value) const;
 	Filter translate(int value) const;
 	
+	std::string to_str();
+	
 	FilterType m_type;
 	uint32_t m_lowerLimit;
 	uint32_t m_upperLimit;
@@ -62,7 +64,7 @@ private:
 
 
 typedef std::unordered_map<HeaderField, Filter, std::hash<int> > PacketFilter;
-#define for_fields_in_pf(it,pf) for (auto it=pf->begin(); it != pf->end(); ++it)
+#define for_fields_in_pf(it,pf) for (auto it=pf.begin(); it != pf.end(); ++it)
 
 //Class overlay for a collection of filters
 class TrafficClass {
@@ -72,6 +74,7 @@ public:
 	//-1 indicates no output port (end of chain)
 	//Returns the number of updated filters that are equals to None
 	int addElement (std::shared_ptr<ClickElement> element, int port=-1);
+	std::string to_str ();
 
 private:
 	PacketFilter m_filters;

@@ -16,6 +16,8 @@ public:
 	
 	void set_child (std::shared_ptr<ClickElement> child, int port);
 
+	bool is_leaf();
+
 	ElementType m_type;
 	std::string m_configuration; //FIXME: is this really necessary?
 	int m_nbPorts; //Number of output ports

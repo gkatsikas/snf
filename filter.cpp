@@ -228,17 +228,32 @@ void Filter::move_backward(uint32_t value) {
 	}
 }
 
+std::string Filter::to_str () {
+	std::string output;
+	switch (this->m_type) {
+		case None:
+			output = "None()";
+			break;
+		case Equals:
+			output = "Equals("+std::to_string(m_lowerLimit)+")";
+			break;
+		case List:
+			output = "List(";
+			for_allowed_values(it) {
+				output += std::to_string(*it);
+				output += ",";
+			}
+			output += ")";
+			break;
+		case Range:
+			output = "Range("+std::to_string(m_lowerLimit)+","+std::to_string(m_upperLimit)+")";
+			break;
+	}
+	return output;
+}
+
 //Getters & Setters
 FilterType Filter::get_type () { return this->m_type; }
-
-/*
-TrafficClass & TrafficClass::operator= (const TrafficClass &rhs) {
-	this-> m_filters = rhs.m_filters;
-	this-> m_elementPath = rhs.m_elementPath;
-	this-> m_operation = rhs.m_operation;
-	return *this;
-}
-*/
 
 int TrafficClass::addElement (std::shared_ptr<ClickElement> element, int port) {
 
@@ -251,7 +266,7 @@ int TrafficClass::addElement (std::shared_ptr<ClickElement> element, int port) {
 	}
 	PacketFilter* pf = &((element->m_outputPorts[port]).m_filter);
 	
-	for_fields_in_pf(it,pf) {
+	for_fields_in_pf(it,(*pf)) {
 		HeaderField field = it->first;
 		Filter* filter = &(it->second);
 		
@@ -292,4 +307,25 @@ int TrafficClass::addElement (std::shared_ptr<ClickElement> element, int port) {
 
 	this->m_operation.compose_op((element->m_outputPorts[port]).m_operation);
 	return nb_none_filters;
+}
+
+std::string TrafficClass::to_str() {
+	std::string output = "======== Begin Traffic Class ========\nFilters:\n";
+	for_fields_in_pf(it,m_filters) {
+		output += ("\tField "+headerFieldNames[it->first]+": "+it->second.to_str()+"\n");
+	}
+	output += m_operation.to_str();
+	
+	output += "Passed elements: \n\t";
+	for (auto it : m_elementPath) {
+		output += elementNames[it->m_type];
+		if (it->is_leaf()) {
+			output+="\n";
+		}
+		else {
+			output+="->";
+		}
+	}
+	output += "========= End Traffic Class =========\n";
+	return output;
 }

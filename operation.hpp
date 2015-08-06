@@ -3,6 +3,7 @@
 
 #include <unordered_map>
 #include <vector>
+#include <string>
 #include "headerFields.hpp"
 
 enum OperationType {
@@ -11,6 +12,8 @@ enum OperationType {
 	Monitor,
 	Noop
 };
+
+const std::string OperationName[4] = { "Write", "Translate", "Monitor", "Noop"};
 
 struct FieldOperation {
 	OperationType type;
@@ -24,6 +27,7 @@ struct FieldOperation {
 	uint32_t value;
 	void compose (const FieldOperation & rhs);
 	uint32_t get_value();
+	std::string to_str();
 };
 
 class Operation {
@@ -33,6 +37,8 @@ public:
 	void compose_op(const Operation &operation);
 	
 	FieldOperation* get_field_op(HeaderField field);
+	
+	std::string to_str();
 
 private:
 	std::unordered_map<HeaderField, FieldOperation, std::hash<int> > m_fieldOps;

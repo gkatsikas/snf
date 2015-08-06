@@ -50,6 +50,11 @@ void ClickElement::set_child (std::shared_ptr<ClickElement> child, int port) {
 	}
 }
 
+
+bool ClickElement::is_leaf() {
+	return (m_nbPorts==0);
+}
+
 void ClickElement::add_port (OutputPort & port) {
 	this->m_outputPorts.push_back(port);
 	this->m_nbPorts++;
