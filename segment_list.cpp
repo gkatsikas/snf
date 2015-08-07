@@ -228,17 +228,3 @@ std::shared_ptr<SegmentNode> DisjointSegmentList::copy_list(std::shared_ptr<Segm
 	if (new_child) {update_relation (new_list,new_child);}
 	return new_list;
 }
-
-int main() {
-	DisjointSegmentList a;
-	a.add_segment (5,10);
-	std::cout<<a.to_str()<<std::endl;
-	DisjointSegmentList b=a;
-	b=a;
-	b.add_segment(64,67);
-	a.substract_segment(64,67);
-	std::cout<<"a: "<<a.to_str()<<std::endl;
-	std::cout<<"b: "<<b.to_str()<<std::endl;
-	//a.substract_segment(10,19);
-	//std::cout<<a.to_str()<<std::endl;
-}
