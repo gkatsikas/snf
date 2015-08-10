@@ -4,6 +4,7 @@
 #include <string>
 
 #define HEADER(FOO) \
+	FOO(unknown) \
 	FOO(ip_src) \
 	FOO(ip_dst) \
 	FOO(ip_chksum) \
@@ -15,7 +16,7 @@
 #define DO_DESCRIPTION(e) #e,
 #define DO_ENUM(e) e,
 
-const std::string headerFieldNames[6] = {
+const std::string headerFieldNames[7] = {
 HEADER(DO_DESCRIPTION)
 };
 

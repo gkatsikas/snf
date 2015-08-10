@@ -96,7 +96,7 @@ void ClickElement::parse_dec_ttl_conf (std::string& configuration) {
 	FieldOperation ttl_op = {Translate, ip_TTL, 1};
 	
 	OutputClass port (0);
-	Filter valid_ttl = Filter::get_range_filter(1,UINT_MAX);
+	Filter valid_ttl (ip_TTL,2,UINT_MAX);
 	port.add_field_op(ttl_op);
 	port.add_filter(ip_TTL,valid_ttl);
 	
@@ -104,7 +104,7 @@ void ClickElement::parse_dec_ttl_conf (std::string& configuration) {
 	
 	//Drops dead packets
 	OutputClass port1(1);
-	Filter zero_ttl = Filter::get_equals_filter(0);
+	Filter zero_ttl(ip_TTL,0,1);
 	port1.add_filter(ip_TTL, zero_ttl);
 	port1.set_child(discard_elem_ptr);
 	

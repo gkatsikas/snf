@@ -56,7 +56,7 @@ void ClickTree::find_classes () {
 						 //		<<" to "<<elementNames[child->get_type()]<<std::endl;
 						 nodes_to_visit.push (next_node);
 					}else {
-						std::cerr<<"Failed to add element "<<curr_element->get_type()<<std::endl;
+						std::cerr<<"Failed to add element "<<elementNames[curr_element->get_type()]<<std::endl;
 					}
 			}
 		} else { //It's a leaf
@@ -80,6 +80,10 @@ int main() {
 
 	std::string address = "192.10.0.1";
 	std::shared_ptr<ClickElement> fixip (new ClickElement(FixIPSrc, address ));
+	
+	for (auto &it : lookup->get_outputClasses()) {
+		std::cout<<it.to_str()<<std::endl;
+	}
 	
 	lookup->set_child(fixip,1);
 	fixip->set_child(ttl,0);

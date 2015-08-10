@@ -48,7 +48,7 @@ OutputClass OutputClass::port_from_lookup_rule(std::string& rule) {
 	uint32_t port_nb = atoi(decomposed_rule[nb_arg-1].c_str());
 	std::vector<std::string> address_and_mask = split(decomposed_rule[0],'/');
 	
-	Filter f = Filter::get_filter_from_v4_prefix(aton(address_and_mask[0]), 
+	Filter f = Filter::get_filter_from_v4_prefix(ip_dst, aton(address_and_mask[0]), 
 									atoi(address_and_mask[0].c_str()));
 	//TODO HIERARCHICAL
 	
@@ -60,7 +60,7 @@ OutputClass OutputClass::port_from_lookup_rule(std::string& rule) {
 std::string OutputClass::to_str() const {
 	std::string output = "======== Begin Output Class ========\nFilters:\n";
 	for(auto &it : m_filter) {
-		output += ("\tField "+headerFieldNames[it.first]+": "+it.second.to_str()+"\n");
+		output += ("\t"+it.second.to_str()+"\n");
 	}
 	output += m_operation.to_str();
 	

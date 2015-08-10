@@ -6,61 +6,45 @@
 #include <string>
 #include <unordered_map>
 #include <memory>
+#include <cstdint>
 #include "element_type.hpp"
 #include "operation.hpp"
+#include "segment_list.hpp"
 
 class ClickElement;
-
-typedef unsigned int uint32_t;
-
-enum FilterType { //By increasing generality
-	None,
-	Equals,
-	List,
-	Range
-};
 
 //Contains one field-specific filter
 class Filter {
 public:
-	Filter () : m_type(Range), m_lowerLimit(0), m_upperLimit(MAX_UINT32) {};
-	static Filter get_range_filter(uint32_t lower,uint32_t upper);
-	static Filter get_equals_filter(uint32_t value);
-	static Filter get_filter_from_v4_prefix(uint32_t value, uint32_t prefix);
+	Filter ();
+	Filter (HeaderField field);
+	Filter (HeaderField field, uint32_t lower_value, uint32_t upper_value);
+
+	static Filter get_filter_from_v4_prefix(HeaderField field, uint32_t value, uint32_t prefix);
 	
-	Filter& operator+=(const Filter &rhs); //Intersects this and rhs
+	void intersect (const Filter &filter); //Intersects this and rhs
+	void unite (const Filter &filter);
+	void differentiate (const Filter &filter);
+	void translate(uint32_t value, bool forward=true);
+	
+	void make_none (); //Make this filter refuse all packets
+	
+	bool is_none () const; //Returns true if the filter refuses all packets
 	bool match (uint32_t value) const;
-	Filter translate(int value) const;
+
+	HeaderField get_field() const;
 	
 	std::string to_str() const;
 
-	//Getters & setters
-	FilterType get_type() const;
-	void set_type(FilterType type);
-
 private:
-	FilterType m_type;
-	uint32_t m_lowerLimit;
-	uint32_t m_upperLimit;
-	std::vector<uint32_t> m_allowedValues; 
-	//This must be ordered during construction with std::sort
+	DisjointSegmentList m_filter;
+	HeaderField m_field;
 
 private:
 	void read_IPClassifier_conf(std::string configuration);
 	void read_RadixLookup_conf(std::string configuration);
 	void read_LinearLookup_conf(std::string configuration);
-	void read_IPMapper_conf(std::string configuration);
-	
-	//Intersect functions
-	void intersect_equals (uint32_t value);
-	void intersect_list(const std::vector<uint32_t>& list);
-	void intersect_range (uint32_t lower, uint32_t upper);
-	
-	void update_type_from_list(const std::vector<uint32_t>& list);
-	
-	//Translate helpers
-	void move_forward(uint32_t value);
-	void move_backward(uint32_t value);
+	void read_IPMapper_conf(std::string configuration);	
 };
 
 
@@ -84,6 +68,7 @@ private:
 	Operation m_operation;
 	
 	void addFilter(Filter filter,HeaderField field);
+	int intersect_filter(const Filter& filter);
 };
 
 #endif

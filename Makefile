@@ -4,7 +4,8 @@ LFLAGS = -Wall -std=c++11 -g
 
 #LIBS = -lefence
 
-OBJS = click_tree.o filter.o operation.o click_element.o output_class.o helpers.o
+OBJS = click_tree.o filter.o operation.o click_element.o output_class.o helpers.o\
+segment_list.o
 	
 NFSynthetizer: $(OBJS)
 	$(CC) $(LFLAGS) $(OBJS) -o nf_synthetizer $(LIBS)
@@ -27,6 +28,9 @@ filter.hpp element_type.hpp helpers.hpp
 	
 output_class.o: output_class.cpp output_class.hpp filter.hpp click_element.hpp helpers.hpp
 	$(CC) $(CFLAGS) output_class.cpp
+	
+segment_list.o: segment_list.cpp segment_list.hpp
+	$(CC) $(CFLAGS) segment_list.cpp
 		
 clean:
 	\rm -f *.o *.plist *.gch
