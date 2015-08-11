@@ -1,5 +1,6 @@
 #include "operation.hpp"
 #include <iostream>
+#include <cstring>
 
 void FieldOperation::compose (const FieldOperation & rhs) {
 	if (this->m_field != rhs.m_field) {
@@ -10,10 +11,10 @@ void FieldOperation::compose (const FieldOperation & rhs) {
 	switch (rhs.m_type) {
 		case Write:
 			this->m_type = Write;
-			this->m_value = rhs.m_value;
+			this->m_value[0] = rhs.m_value[0];
 			return;
 		case Translate:
-			this->m_value += rhs.m_value;
+			this->m_value[0] += rhs.m_value[0];
 			return;
 		default:
 			std::cerr<<"["<<__FILE__<<":"<<__LINE__<<"] Can only compose Write "
@@ -22,7 +23,7 @@ void FieldOperation::compose (const FieldOperation & rhs) {
 	}
 }
 
-uint32_t FieldOperation::get_value () const { return this->m_value; }
+uint32_t FieldOperation::get_value () const { return this->m_value[0]; }
 
 FieldOperation* Operation::get_field_op(HeaderField field) {
 	if (m_fieldOps.find(field) == m_fieldOps.end() ) {
@@ -38,7 +39,7 @@ std::string FieldOperation::to_str () const {
 	switch (m_type) {
 		case Write:
 		case Translate:
-			output+= (": "+OperationName[m_type]+"("+std::to_string(m_value)+")");
+			output+= (": "+OperationName[m_type]+"("+std::to_string(m_value[0])+")");
 			break;
 		case Noop:
 		case Monitor:
@@ -52,7 +53,7 @@ void Operation::add_field_op(const FieldOperation &field_op) {
 	
 	switch (new_op_type) {
 		case Monitor: {
-			this->monitors.push_back(field_op.m_value);
+			this->monitors.push_back(field_op.m_value[0]);
 			return;
 		}
 		case Noop:

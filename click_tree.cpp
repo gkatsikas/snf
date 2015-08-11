@@ -70,7 +70,7 @@ void ClickTree::find_classes () {
 int main() {
 	setvbuf(stdout, NULL, _IONBF, 0);
 
-	std::string routing_table = "10/8 0,192.168.5/24 1";
+	std::string routing_table = "10/8 0,192.168.5/24 1,0/0 2";
 	std::shared_ptr<ClickElement> lookup (new ClickElement(RadixIPLookup,routing_table));
 
 	std::string empty;
@@ -81,14 +81,15 @@ int main() {
 	std::string address = "192.10.0.1";
 	std::shared_ptr<ClickElement> fixip (new ClickElement(FixIPSrc, address ));
 	
-	for (auto &it : lookup->get_outputClasses()) {
+	/*for (auto &it : lookup->get_outputClasses()) {
 		std::cout<<it.to_str()<<std::endl;
 	}
+	*/
 	
-	lookup->set_child(fixip,1);
-	fixip->set_child(ttl,0);
+	lookup->set_child(ttl,2);
+	fixip->set_child(lookup,0);
 	ttl->set_child(discard,0);
-	ClickTree tree(lookup);
+	ClickTree tree(fixip);
 
 	for (auto &it : tree.get_trafficClasses()) {
 		std::cout<<it.to_str();

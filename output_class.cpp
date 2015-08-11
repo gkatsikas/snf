@@ -36,7 +36,7 @@ OutputClass OutputClass::port_from_filter_rule (int port_nb, std::string& rule) 
 	return port;
 }
 
-OutputClass OutputClass::port_from_lookup_rule(std::string& rule) {
+OutputClass OutputClass::port_from_lookup_rule(std::string& rule, Filter& parsed_rules) {
 	std::vector<std::string> decomposed_rule = split(rule,' ');
 	int nb_arg = decomposed_rule.size();
 	if (nb_arg>3 || nb_arg<2) {
@@ -49,8 +49,10 @@ OutputClass OutputClass::port_from_lookup_rule(std::string& rule) {
 	std::vector<std::string> address_and_mask = split(decomposed_rule[0],'/');
 	
 	Filter f = Filter::get_filter_from_v4_prefix(ip_dst, aton(address_and_mask[0]), 
-									atoi(address_and_mask[0].c_str()));
-	//TODO HIERARCHICAL
+									atoi(address_and_mask[1].c_str()));
+									
+	f.differentiate(parsed_rules);
+	parsed_rules.unite(f);
 	
 	OutputClass port(port_nb);
 	port.add_filter(ip_dst,f);

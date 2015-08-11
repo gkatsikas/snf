@@ -9,12 +9,15 @@
 
 enum OperationType {
 	Write,
+	WriteRR, //Round-robin value selection
+	WriteRa, //Random value selection
 	Translate,
 	Monitor,
 	Noop
 };
 
-const std::string OperationName[4] = { "Write", "Translate", "Monitor", "Noop"};
+const std::string OperationName[6] = { "Write", "WriteRR", "WriteRa",
+										 "Translate", "Monitor", "Noop"};
 
 struct FieldOperation {
 	OperationType m_type;
@@ -25,7 +28,7 @@ struct FieldOperation {
 	 *    - translation vector for Translation: x->x+value
 	 *    - Monitor ID for Monitor: Monitor[i](packet)
 	 */
-	uint32_t m_value;
+	uint32_t m_value[2];
 	void compose (const FieldOperation & rhs);
 	uint32_t get_value() const;
 	std::string to_str() const;

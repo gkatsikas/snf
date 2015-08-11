@@ -134,7 +134,7 @@ void ClickElement::parse_fix_ip_src (std::string& configuration) {
 			goto fail;
 	}
 	
-	fix_ip_src_op.m_value = new_ip_value;
+	fix_ip_src_op.m_value[0] = new_ip_value;
 	port.add_field_op(fix_ip_src_op);
 	this->add_output_class(port);
 	return;
@@ -154,9 +154,10 @@ void ClickElement::parse_ip_filter (std::string& configuration) {
 
 void ClickElement::parse_lookup_filter(std::string& configuration) {
 	std::vector<std::string> rules = split(configuration,',');
+	Filter parsed_prefixes(ip_src);
+	parsed_prefixes.make_none();
 	for (auto &it : rules) {
-		OutputClass port = OutputClass::port_from_lookup_rule(it);
-
+		OutputClass port = OutputClass::port_from_lookup_rule(it,parsed_prefixes);
 		this->add_output_class(port);
 	}
 }

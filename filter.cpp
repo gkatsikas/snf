@@ -25,8 +25,8 @@ Filter::Filter (HeaderField field, uint32_t lower_value, uint32_t upper_value) :
 Filter Filter::get_filter_from_v4_prefix(HeaderField field, uint32_t value, uint32_t prefix) {
 	uint32_t translation = 32 - prefix;
 	uint32_t lowerLimit = value & (0xffffffff << translation);
-	uint32_t upperLimit = value | (0xffffffff >> prefix);	
-		
+	uint32_t upperLimit = value | (0xffffffff >> prefix);
+	
 	return Filter(field, lowerLimit, upperLimit);
 }
 
@@ -42,11 +42,17 @@ void Filter::translate(uint32_t value, bool forward) {
 	m_filter.translate(value,forward);
 }
 
-//TODO: implement intersect/unite/differentiate
-//Also in segment_list.cpp to make it linear
+//TODO: implement unite/differentiate
+void Filter::unite (const Filter &filter) {
+	m_filter.add_seglist(filter.m_filter);
+}
 
 void Filter::intersect (const Filter &filter) {
 	m_filter.intersect_seglist(filter.m_filter);
+}
+
+void Filter::differentiate (const Filter& filter) {
+	m_filter.substract_seglist(filter.m_filter);
 }
 
 void Filter::make_none () {
@@ -70,8 +76,7 @@ int TrafficClass::intersect_filter(const Filter& filter) {
 	else {
 		this->m_filters[field].intersect(filter);
 	}
-	std::cout<<"Filter intersection result: "<<m_filters[field].to_str()<<std::endl;
-	if (this->m_filters[field].is_none()){std::cout<<"Ouille\n";}
+	
 	return (int) (this->m_filters[field].is_none());
 }
 
@@ -93,7 +98,7 @@ int TrafficClass::addElement (std::shared_ptr<ClickElement> element, int port) {
 		FieldOperation *field_op = this->m_operation.get_field_op(field);
 		
 		if (field_op) {
-			uint32_t field_value = field_op->m_value;
+			uint32_t field_value = field_op->m_value[0];
 			switch (field_op->m_type) {
 				case Write:
 					if (!filter.match(field_value)) {
@@ -129,7 +134,7 @@ int TrafficClass::addElement (std::shared_ptr<ClickElement> element, int port) {
 }
 
 std::string TrafficClass::to_str() const {
-	std::string output = "======== Begin Traffic Class ========\nFilters:\n";
+	std::string output = "========= Begin Traffic Class =========\nFilters:\n";
 	for_fields_in_pf(it,m_filters) {
 		output += ("\tField "+headerFieldNames[it->first]+": "+it->second.to_str()+"\n");
 	}
@@ -145,6 +150,6 @@ std::string TrafficClass::to_str() const {
 			output+="->";
 		}
 	}
-	output += "========= End Traffic Class =========\n";
+	output += "=========  End Traffic Class  =========\n";
 	return output;
 }

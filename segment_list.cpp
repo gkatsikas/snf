@@ -5,6 +5,14 @@
 #define MIN(a,b) (a>b) ? b : a
 #define MAX(a,b) (a>b) ? a : b
 
+uint32_t safe_substract (uint32_t a, uint32_t b) {
+	return ((b>a) ? 0 : a-b);
+}
+
+uint32_t safe_add (uint32_t a, uint32_t b) {
+	return ((UINT32_MAX-b<a) ? UINT32_MAX : b+a);
+}
+
 typedef std::pair<uint32_t,uint32_t> Segment;
 
 struct SegmentNode {
@@ -72,17 +80,18 @@ std::shared_ptr<SegmentNode> DisjointSegmentList::unify (
 	
 	uint32_t lower_limit = to_add->m_lowerLimit;
 	uint32_t upper_limit = to_add->m_upperLimit;
-										
+	
+						
 	if(!container) {
 		std::shared_ptr<SegmentNode> seg(new SegmentNode(lower_limit, upper_limit));
 		return unify(seg,to_add->m_child);
 	}
 	
-	std::shared_ptr<SegmentNode> current_parent(nullptr);
+	std::shared_ptr<SegmentNode> current_parent;
 	std::shared_ptr<SegmentNode> current_child = container;
 	
 	//This puts us in front of all the stricly smaller segments
-	while (current_child && lower_limit > current_child->m_upperLimit+1) {
+	while (current_child && lower_limit > safe_add(current_child->m_upperLimit,1)) {
 		current_parent = current_child;
 		current_child = current_child->m_child;
 	}
@@ -95,13 +104,14 @@ std::shared_ptr<SegmentNode> DisjointSegmentList::unify (
 		update_relation(current_parent,seg);
 		return container;
 	}
-	
+
 	uint32_t new_minimum = MIN(lower_limit, current_child->m_lowerLimit);
+	
 	std::vector<std::shared_ptr<SegmentNode> > to_clean;
 	uint32_t new_maximum = upper_limit;
 	
 	//We find all the segments that we touch
-	while (current_child && upper_limit >= current_child->m_lowerLimit-1) {
+	while (current_child && safe_add(upper_limit,1) >= current_child->m_lowerLimit) {
 		new_maximum = MAX(upper_limit, current_child->m_upperLimit) ;
 		to_clean.push_back(current_child);
 		current_child = current_child->m_child;
@@ -111,11 +121,14 @@ std::shared_ptr<SegmentNode> DisjointSegmentList::unify (
 	for (auto &it : to_clean) { reset_node(it); }
 	
 	std::shared_ptr<SegmentNode> seg(new SegmentNode(new_minimum, new_maximum));
+
 	if(current_child) {	update_relation(seg,current_child); }
+
 	seg = unify(seg, to_add->m_child);
 	
 	if(current_parent) {update_relation(current_parent,seg);}
 	else {return seg;} //If we have no parent we're the lowest one
+
 	return container;
 }
 
@@ -135,7 +148,7 @@ std::shared_ptr<SegmentNode> DisjointSegmentList::differentiate(
 		return container;			  //or to substract from
 	}
 	
-	std::shared_ptr<SegmentNode> current_parent(nullptr);
+	std::shared_ptr<SegmentNode> current_parent;
 	std::shared_ptr<SegmentNode> current_child = container;
 
 	uint32_t lower_limit = to_substract->m_lowerLimit;
@@ -154,7 +167,12 @@ std::shared_ptr<SegmentNode> DisjointSegmentList::differentiate(
 	if (current_child->m_lowerLimit < lower_limit) { //Goes past the first segment
 		std::shared_ptr<SegmentNode> new_parent (new SegmentNode(current_child->m_lowerLimit, lower_limit-1) );
 		if(current_parent) {update_relation(current_parent,new_parent);}
+		else{container = new_parent;}
 		current_parent = new_parent;
+		if(current_child->m_upperLimit > upper_limit) {
+			current_child->m_lowerLimit = upper_limit+1;
+		}
+		else { current_child = current_child->m_child; }
 	}
 	
 	std::vector<std::shared_ptr<SegmentNode> > to_clean;
@@ -227,10 +245,6 @@ std::shared_ptr<SegmentNode> DisjointSegmentList::intersect (
 		current_node = current_node->m_child;
 	}
 	
-	/*
-		TODO: After changing upperLimit add node that goes from upperLimit+2 to the previous upper limit
-		then run intersect on that node	
-	*/
 	uint32_t old_upper_lim = current_node->m_upperLimit;
 	current_node->m_upperLimit = MIN(upper_limit, current_node->m_upperLimit);
 	if (old_upper_lim > upper_limit+1) {
@@ -273,8 +287,7 @@ void DisjointSegmentList::move_forward (uint32_t value) {
 	
 	while (current_node && (UINT32_MAX-current_node->m_lowerLimit)>=value) {
 		current_node->m_lowerLimit += value;
-		uint32_t diff = UINT32_MAX - current_node->m_upperLimit;
-		current_node->m_upperLimit = (diff>value) ? current_node->m_upperLimit + value : UINT32_MAX;
+		current_node->m_upperLimit = safe_add(current_node->m_upperLimit,value);
 		current_node = current_node->m_child;
 	}
 	
@@ -299,8 +312,8 @@ void DisjointSegmentList::move_backwards (uint32_t value) {
 		this->m_head = current_node;
 	}
 
-	current_node->m_lowerLimit= (current_node->m_lowerLimit < value) ? 0 : 
-											current_node->m_lowerLimit - value;
+	current_node->m_lowerLimit= safe_substract(current_node->m_lowerLimit,value);
+	
 	current_node->m_upperLimit -= value;
 	current_node = current_node->m_child;
 

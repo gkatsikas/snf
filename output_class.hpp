@@ -13,7 +13,9 @@ public:
 	OutputClass(int port_nb);
 	
 	static OutputClass port_from_filter_rule(int port_nb, std::string& rule);
-	static OutputClass port_from_lookup_rule(std::string& rule);
+	//parsed_rules: prefixes already rooted by more prioritary rules
+	//To be updated during function call
+	static OutputClass port_from_lookup_rule(std::string& rule,Filter& parsed_rules);
 	
 	void add_filter (HeaderField field, Filter& filter);
 	void add_field_op (const FieldOperation & field_op);
