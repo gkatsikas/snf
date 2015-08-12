@@ -34,6 +34,10 @@ bool Filter::match(uint32_t value) const {
 	return m_filter.contains(value);
 }
 
+bool Filter::contains (const Filter& filter) const{
+	return m_filter.contains_seglist(filter.m_filter);
+}
+
 bool Filter::is_none() const {
 	return m_filter.empty();
 }
@@ -80,6 +84,19 @@ int TrafficClass::intersect_filter(const Filter& filter) {
 	return (int) (this->m_filters[field].is_none());
 }
 
+int TrafficClass::intersect_condition(const Filter& condition) {
+	HeaderField field = condition.get_field();
+	auto got=this->m_writeConditions.find(field);
+	if(got == this->m_writeConditions.end()) {
+		this->m_writeConditions[field]=condition;
+	}
+	else {
+		this->m_writeConditions[field].intersect(condition);
+	}
+	
+	return (int) (this->m_writeConditions[field].is_none());
+}
+
 int TrafficClass::addElement (std::shared_ptr<ClickElement> element, int port) {
 
 	int nb_none_filters=0;
@@ -117,6 +134,17 @@ int TrafficClass::addElement (std::shared_ptr<ClickElement> element, int port) {
 					nb_none_filters += intersect_filter(translated_filter);
 					break;
 				}
+				case WriteRR:
+				case WriteRa:
+				case WriteSF: {
+					Filter write_condition(field, field_op->m_value[0], field_op->m_value[1]);
+					if (! filter.contains(write_condition)) {
+						write_condition.intersect (filter);
+						nb_none_filters += intersect_condition (write_condition);
+						//FIXME: what if I have successive range writes?
+					}
+					break;
+				}
 				default:
 					std::cerr<<"["<<__FILE__<<":"<<__LINE__<<"] Found non "
 							"modifying operation"<<std::endl;
@@ -134,9 +162,13 @@ int TrafficClass::addElement (std::shared_ptr<ClickElement> element, int port) {
 }
 
 std::string TrafficClass::to_str() const {
-	std::string output = "========= Begin Traffic Class =========\nFilters:\n";
+	std::string output = "=========== Begin Traffic Class ===========\nFilters:\n";
 	for_fields_in_pf(it,m_filters) {
-		output += ("\tField "+headerFieldNames[it->first]+": "+it->second.to_str()+"\n");
+		output += ("\t"+it->second.to_str()+"\n");
+	}
+	output += "Conditions on Write operations:\n";
+	for_fields_in_pf(it,m_writeConditions) {
+		output += ("\t"+it->second.to_str()+"\n");
 	}
 	output += m_operation.to_str();
 	
@@ -150,6 +182,6 @@ std::string TrafficClass::to_str() const {
 			output+="->";
 		}
 	}
-	output += "=========  End Traffic Class  =========\n";
+	output += "===========  End Traffic Class  ===========\n";
 	return output;
 }

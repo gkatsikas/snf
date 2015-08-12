@@ -13,6 +13,13 @@ void FieldOperation::compose (const FieldOperation & rhs) {
 			this->m_type = Write;
 			this->m_value[0] = rhs.m_value[0];
 			return;
+		case WriteRR:
+		case WriteRa:
+		case WriteSF:
+			this->m_type = rhs.m_type;
+			this->m_value[0] = rhs.m_value[0];
+			this->m_value[1] = rhs.m_value[1];
+			return;
 		case Translate:
 			this->m_value[0] += rhs.m_value[0];
 			return;
@@ -41,7 +48,13 @@ std::string FieldOperation::to_str () const {
 		case Translate:
 			output+= (": "+OperationName[m_type]+"("+std::to_string(m_value[0])+")");
 			break;
-		case Noop:
+		case WriteRR:
+		case WriteRa:
+		case WriteSF:
+			output += (": "+OperationName[m_type]+"("+std::to_string(m_value[0])+
+						","+std::to_string(m_value[1])+")");
+			break;
+		case Noop:	
 		case Monitor:
 			output += (": "+OperationName[m_type]+"()");
 	}
@@ -60,6 +73,9 @@ void Operation::add_field_op(const FieldOperation &field_op) {
 			return;
 		case Write: 
 		case Translate:
+		case WriteRR:
+		case WriteRa:
+		case WriteSF:
 			HeaderField field = field_op.m_field;
 		
 			//If we don't have any operation yet

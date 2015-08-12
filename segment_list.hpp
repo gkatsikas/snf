@@ -23,6 +23,8 @@ public:
 	
 	//returns true if one of the segments contains value
 	bool contains (uint32_t value) const;
+	bool contains_segment (uint32_t lower_limit, uint32_t upper_limit) const;
+	bool contains_seglist (const DisjointSegmentList& rhs) const;
 	
 	//Add a segment to the union
 	void add_segment (uint32_t lower_limit, uint32_t upper_limit);
@@ -63,6 +65,8 @@ private:
 	static std::shared_ptr<SegmentNode> intersect (
 									std::shared_ptr<SegmentNode>& container,
 									const std::shared_ptr<SegmentNode>& to_intersect);
+	static bool include (const std::shared_ptr<SegmentNode>& container,
+						 const std::shared_ptr<SegmentNode>& containee );
 };
 
 #endif

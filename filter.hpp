@@ -31,6 +31,7 @@ public:
 	
 	bool is_none () const; //Returns true if the filter refuses all packets
 	bool match (uint32_t value) const;
+	bool contains (const Filter& filter) const;
 
 	HeaderField get_field() const;
 	
@@ -63,12 +64,15 @@ public:
 
 private:
 	PacketFilter m_filters;
+	PacketFilter m_writeConditions;
+	
 	//Path of the class in terms of elements
 	std::vector<std::shared_ptr<ClickElement> > m_elementPath;
 	Operation m_operation;
 	
 	void addFilter(Filter filter,HeaderField field);
 	int intersect_filter(const Filter& filter);
+	int intersect_condition (const Filter& condition);
 };
 
 #endif

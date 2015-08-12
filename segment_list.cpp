@@ -61,6 +61,34 @@ bool DisjointSegmentList::contains (uint32_t value) const {
 	return false;
 }
 
+bool DisjointSegmentList::contains_segment (uint32_t lower_limit, uint32_t upper_limit) const {
+	std::shared_ptr<SegmentNode> seg (new SegmentNode(lower_limit,upper_limit));
+	return include(m_head,seg);
+}
+
+bool DisjointSegmentList::contains_seglist (const DisjointSegmentList& rhs) const{
+	return include(m_head,rhs.m_head);
+}
+
+bool DisjointSegmentList::include (const std::shared_ptr<SegmentNode>& container,
+						 const std::shared_ptr<SegmentNode>& containee ) {
+	
+	if(!containee) { return true; }
+	else if (!container) { return false; }
+	
+	uint32_t lower_limit = containee->m_lowerLimit;
+	uint32_t upper_limit = containee->m_upperLimit;
+	
+	std::shared_ptr<SegmentNode> current_seg = container;
+	while (current_seg && lower_limit > current_seg->m_upperLimit) {
+		current_seg = current_seg->m_child;
+	}
+	
+	return (current_seg &&
+			lower_limit >= current_seg->m_lowerLimit && upper_limit <= current_seg->m_upperLimit 
+			&& include(current_seg,containee->m_child));
+}
+
 void DisjointSegmentList::add_segment (uint32_t lower_limit, uint32_t upper_limit) {
 	std::shared_ptr<SegmentNode> seg (new SegmentNode(lower_limit, upper_limit));
 	m_head=unify(m_head,seg);
@@ -389,16 +417,8 @@ int main() {
 	DisjointSegmentList a;
 	a.add_segment(10,20);
 	a.add_segment (35,42);
-	a.substract_segment(34,35);
-	DisjointSegmentList c=a;
-	DisjointSegmentList b;
-	b.add_segment(5,13);
-	b.add_segment(20,36);
-	b.add_segment(42,47);
-	std::cout<<a.to_str()<<std::endl;
-	a.intersect_seglist(b);
-	std::cout<<a.to_str()<<std::endl;
-	a.intersect_seglist(c);
-	std::cout<<a.to_str()<<std::endl;
+	std::cout<<a.contains_segment(35,37)<<std::endl;
+	std::cout<<a.contains_segment(42,43)<<std::endl;
+	std::cout<<a.contains_segment(15,20)<<std::endl;
 }
 #endif

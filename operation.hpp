@@ -11,13 +11,14 @@ enum OperationType {
 	Write,
 	WriteRR, //Round-robin value selection
 	WriteRa, //Random value selection
+	WriteSF, //Write from stateful map
 	Translate,
 	Monitor,
 	Noop
 };
 
-const std::string OperationName[6] = { "Write", "WriteRR", "WriteRa",
-										 "Translate", "Monitor", "Noop"};
+const std::string OperationName[7] = { "Write", "Write-Round Robin", "Write-Random",
+										 "Write-Stateful", "Translate", "Monitor", "Noop"};
 
 struct FieldOperation {
 	OperationType m_type;
