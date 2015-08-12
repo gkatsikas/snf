@@ -53,3 +53,8 @@ uint32_t aton (const std::string &address) {
 	return result;
 }
 
+std::string ntoa (uint32_t address) {
+	return std::to_string(address>>24)+"."+std::to_string((address>>16) % 256)+"."+
+			std::to_string((address>>8) % 256)+"."+std::to_string(address % 256);
+}
+

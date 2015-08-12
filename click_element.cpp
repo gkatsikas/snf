@@ -3,6 +3,7 @@
 #include <vector>
 #include <cstdlib> //atoi
 #include <climits>
+#include <utility> //std::pair
 
 #include "click_element.hpp"
 
@@ -36,8 +37,11 @@ ClickElement::ClickElement ( ElementType type, std::string& configuration ) :
 		case DirectIPLookup:
 			parse_lookup_filter (configuration);
 			break;
+		case IPRewriter:
+			parse_ip_rewriter (configuration);
+			break;
 		default:
-			std::cerr << "Unsupported Element"<<std::endl;
+			std::cerr << "["<<__FILE__<<":"<<__LINE__<<"] "<< "Unsupported Element"<<std::endl;
 			exit(1);
 	}
 }
@@ -89,8 +93,7 @@ std::shared_ptr<ClickElement> ClickElement::get_discard_elem () {
 
 void ClickElement::parse_dec_ttl_conf (std::string& configuration) {
 	if (configuration.size() != 0) {
-		std::cerr << "Unsupported option in DecIPTTL: "<<configuration <<std::endl;
-		exit(1);
+		configuration_fail();
 	}
 	
 	FieldOperation ttl_op = {Translate, ip_TTL, 1};
@@ -121,27 +124,23 @@ void ClickElement::parse_fix_ip_src (std::string& configuration) {
 		
 	switch (split_conf.size()) {
 		case 1:
-			if (!is_ip4_prefix(configuration)) { goto fail; }
+			if (!is_ip4_prefix(configuration)) {configuration_fail(); }
 			new_ip_value = aton(configuration);
 			break;
 		case 2:
 			if (split_conf[0].compare("IPADDR") !=0 || !is_ip4_prefix(split_conf[1], true) ) {
-				goto fail;
+				configuration_fail();
 			}
 			new_ip_value = aton(split_conf[1]);
 			break;
 		default:
-			goto fail;
+			configuration_fail();
 	}
 	
 	fix_ip_src_op.m_value[0] = new_ip_value;
 	port.add_field_op(fix_ip_src_op);
 	this->add_output_class(port);
 	return;
-	
-fail:
-	std::cerr<<"Wrong configuration for FixIPSrc element"<<std::endl;
-	exit(1);
 }
 
 void ClickElement::parse_ip_filter (std::string& configuration) {
@@ -162,3 +161,35 @@ void ClickElement::parse_lookup_filter(std::string& configuration) {
 	}
 }
 
+void ClickElement::parse_ip_rewriter (std::string& configuration) {
+	//We assume that the configuration holds for only one input port
+	std::vector<std::string> split_inputsec = split(configuration, ' ');
+
+	switch (split_inputsec.size()) {
+		case 1: {
+			if (configuration.compare("drop")==0 || configuration.compare("discard")==0) {
+				OutputClass discard(0);
+				discard.set_child(discard_elem_ptr);
+				this->add_output_class(discard);
+				break;
+			}
+			else{ configuration_fail(); }
+		}
+		case 6: {
+			std::pair<OutputClass,OutputClass> ports = 
+					OutputClass::output_class_from_pattern(split_inputsec);
+			this->add_output_class(ports.first);
+			this->add_output_class(ports.second);
+			break;
+		}
+		default:
+			configuration_fail();
+		
+	}
+}
+
+void ClickElement::configuration_fail() {
+	std::cerr<<"Could not parse configuration for "<<elementNames[m_type]<<":\n\t"
+		<<m_configuration<<"\n";
+	exit(1);
+}

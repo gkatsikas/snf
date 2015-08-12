@@ -2,6 +2,8 @@
 #define OUTPUT_PORT_HPP
 
 #include <string>
+#include <vector>
+#include <utility>
 
 #include "filter.hpp"
 #include "click_element.hpp"
@@ -16,6 +18,7 @@ public:
 	//parsed_rules: prefixes already rooted by more prioritary rules
 	//To be updated during function call
 	static OutputClass port_from_lookup_rule(std::string& rule,Filter& parsed_rules);
+	static std::pair<OutputClass,OutputClass> output_class_from_pattern(std::vector<std::string>& pattern);
 	
 	void add_filter (HeaderField field, Filter& filter);
 	void add_field_op (const FieldOperation & field_op);

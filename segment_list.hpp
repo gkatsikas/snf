@@ -41,6 +41,7 @@ public:
 	DisjointSegmentList& operator= (const DisjointSegmentList& rhs);
 	
 	std::string to_str () const;
+	std::string to_ip_str() const;
 	
 	std::vector<std::pair<uint32_t,uint32_t> > get_segments() const;
 

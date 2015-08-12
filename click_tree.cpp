@@ -81,13 +81,16 @@ int main() {
 	std::string address = "192.10.0.1";
 	std::shared_ptr<ClickElement> fixip (new ClickElement(FixIPSrc, address ));
 	
+	std::string rewrite = "- - 192.168.0.1 20000-30000# 0 1";
+	std::shared_ptr<ClickElement> iprewriter(new ClickElement(IPRewriter, rewrite));
 	/*for (auto &it : lookup->get_outputClasses()) {
 		std::cout<<it.to_str()<<std::endl;
 	}
 	*/
 	
+	fixip->set_child(iprewriter,0);
+	iprewriter->set_child(lookup,0);
 	lookup->set_child(ttl,2);
-	fixip->set_child(lookup,0);
 	ttl->set_child(discard,0);
 	ClickTree tree(fixip);
 

@@ -59,6 +59,98 @@ OutputClass OutputClass::port_from_lookup_rule(std::string& rule, Filter& parsed
 	return port;
 }
 
+std::pair<OutputClass,OutputClass> OutputClass::output_class_from_pattern(
+											std::vector<std::string>& pattern) {
+											
+	if(pattern.size() != 6) {
+		std::cerr<<"["<<__FILE__<<":"<<__LINE__<<"] Incorrect pattern size\n";
+		exit(1);
+	}
+	uint32_t unmodified_port_nb = atoi(pattern[5].c_str());
+	uint32_t modified_port_nb = atoi(pattern[4].c_str());
+	std::cerr<<"["<<__FILE__<<":"<<__LINE__<<"]\n";
+	OutputClass foutput (modified_port_nb);
+	if (pattern[0].compare("-")) {
+		std::cerr<<"["<<__FILE__<<":"<<__LINE__<<"]\n";
+		foutput.add_field_op({Write,ip_src,aton(pattern[0])});
+	}
+	if (pattern[1].compare("-")) {
+		std::cerr<<"["<<__FILE__<<":"<<__LINE__<<"]\n";
+		std::vector<std::string> split_pattern = split(pattern[1],'-');
+		if (split_pattern.size() == 1){
+			foutput.add_field_op({Write,tp_srcPort,(uint32_t) atoi(pattern[1].c_str())});
+		}
+		else if(split_pattern.size() == 2) {
+			OperationType op_type = WriteSF;
+			switch (split_pattern[1][split_pattern[1].size()-1]) {
+				case '#':
+					op_type = WriteRR;
+					split_pattern[1].pop_back();
+					break;
+				case '?':
+					op_type = WriteRa;
+					split_pattern[1].pop_back();
+					break;
+				default:
+					break;	
+			}
+			
+			FieldOperation field_op;
+			field_op.m_type = op_type;
+			field_op.m_field = tp_srcPort;
+			field_op.m_value[0] = (uint32_t) atoi(split_pattern[0].c_str());
+			field_op.m_value[1] = (uint32_t) atoi(split_pattern[1].c_str());
+			std::cout<<"Adding field operation: "<<field_op.to_str()<<"\n";
+			foutput.add_field_op(field_op);
+		}
+		else {
+			std::cerr<<"["<<__FILE__<<":"<<__LINE__<<"] Incorrect port pattern: "<<pattern[1]<<"\n";
+			exit(1);
+		}
+	}
+	if (pattern[2].compare("-")) {
+		std::cerr<<"["<<__FILE__<<":"<<__LINE__<<"]\n";
+		foutput.add_field_op({Write,ip_dst,aton(pattern[2])});
+	}
+	if (pattern[3].compare("-")) {
+		std::cerr<<"["<<__FILE__<<":"<<__LINE__<<"]\n";
+		std::vector<std::string> split_pattern = split(pattern[3],'-');
+		if (split_pattern.size() == 1){
+			foutput.add_field_op({Write,tp_srcPort,(uint32_t) atoi(pattern[3].c_str())});
+		}
+		else if(split_pattern.size() == 2) {
+			OperationType op_type = WriteSF;
+			switch (split_pattern[1][split_pattern[1].size()-1]) {
+				case '#':
+					op_type = WriteRR;
+					split_pattern[1].pop_back();
+					break;
+				case '?':
+					op_type = WriteRa;
+					split_pattern[1].pop_back();
+					break;
+				default:
+					break;	
+			}
+			
+			FieldOperation field_op;
+			field_op.m_type = op_type;
+			field_op.m_field = tp_srcPort;
+			field_op.m_value[0] = (uint32_t) atoi(split_pattern[0].c_str());
+			field_op.m_value[1] = (uint32_t) atoi(split_pattern[1].c_str());
+			std::cout<<"Adding field operation: "<<field_op.to_str()<<"\n";
+			foutput.add_field_op(field_op);
+		}
+		else {
+			std::cerr<<"["<<__FILE__<<":"<<__LINE__<<"] Incorrect port pattern: "<<pattern[3]<<"\n";
+			exit(1);
+		}
+	}
+	
+	
+	return std::pair<OutputClass,OutputClass>(foutput,OutputClass(unmodified_port_nb));
+}
+
 std::string OutputClass::to_str() const {
 	std::string output = "======== Begin Output Class ========\nFilters:\n";
 	for(auto &it : m_filter) {

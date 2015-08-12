@@ -2,6 +2,8 @@
 #include <iostream>
 #include <cstring>
 
+#include "helpers.hpp"
+
 void FieldOperation::compose (const FieldOperation & rhs) {
 	if (this->m_field != rhs.m_field) {
 		std::cerr<<"["<<__FILE__<<":"<<__LINE__<<"] Trying to compose FieldOperation "
@@ -46,13 +48,29 @@ std::string FieldOperation::to_str () const {
 	switch (m_type) {
 		case Write:
 		case Translate:
-			output+= (": "+OperationName[m_type]+"("+std::to_string(m_value[0])+")");
+			switch (m_field) {
+				case ip_src:
+				case ip_dst:
+					output+= (": "+OperationName[m_type]+"("+ntoa(m_value[0])+")");
+					break;
+				default:
+					output+= (": "+OperationName[m_type]+"("+std::to_string(m_value[0])+")");
+					break;
+			}
 			break;
 		case WriteRR:
 		case WriteRa:
 		case WriteSF:
-			output += (": "+OperationName[m_type]+"("+std::to_string(m_value[0])+
-						","+std::to_string(m_value[1])+")");
+			switch (m_field) {
+				case ip_src:
+				case ip_dst:
+					output += (": "+OperationName[m_type]+"("+ntoa(m_value[0])+
+								","+ntoa(m_value[1])+")");
+					break;
+				default:
+					output += (": "+OperationName[m_type]+"("+std::to_string(m_value[0])+
+								","+std::to_string(m_value[1])+")");
+			}
 			break;
 		case Noop:	
 		case Monitor:

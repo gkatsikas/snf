@@ -10,5 +10,6 @@ std::vector<std::string> split(const std::string &s, char delim);
 //IP helpers
 bool is_ip4_prefix (const std::string &address, bool full=true);
 uint32_t aton (const std::string &address);
+std::string ntoa (uint32_t address);
 
 #endif

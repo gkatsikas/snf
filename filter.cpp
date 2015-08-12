@@ -64,7 +64,13 @@ void Filter::make_none () {
 }
 
 std::string Filter::to_str () const{
-	return "Filter on "+headerFieldNames[m_field]+": "+m_filter.to_str();
+	switch (m_field) {
+		case ip_src:
+		case ip_dst:
+			return "Filter on "+headerFieldNames[m_field]+": "+m_filter.to_ip_str();
+		default:
+			return "Filter on "+headerFieldNames[m_field]+": "+m_filter.to_str();	
+	}
 }
 
 HeaderField Filter::get_field() const{
@@ -162,7 +168,7 @@ int TrafficClass::addElement (std::shared_ptr<ClickElement> element, int port) {
 }
 
 std::string TrafficClass::to_str() const {
-	std::string output = "=========== Begin Traffic Class ===========\nFilters:\n";
+	std::string output = "\n================= Begin Traffic Class =================\nFilters:\n";
 	for_fields_in_pf(it,m_filters) {
 		output += ("\t"+it->second.to_str()+"\n");
 	}
@@ -182,6 +188,6 @@ std::string TrafficClass::to_str() const {
 			output+="->";
 		}
 	}
-	output += "===========  End Traffic Class  ===========\n";
+	output += "=================  End Traffic Class  =================\n";
 	return output;
 }

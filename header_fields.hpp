@@ -9,8 +9,8 @@
 	FOO(ip_dst) \
 	FOO(ip_chksum) \
 	FOO(ip_TTL) \
-	FOO(tcp_srcPort) \
-	FOO(tcp_dstPort)
+	FOO(tp_srcPort) \
+	FOO(tp_dstPort)
 
 
 #define DO_DESCRIPTION(e) #e,

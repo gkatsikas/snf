@@ -2,6 +2,8 @@
 #include <vector>
 #include <iostream>
 
+#include "helpers.hpp"
+
 #define MIN(a,b) (a>b) ? b : a
 #define MAX(a,b) (a>b) ? a : b
 
@@ -23,6 +25,7 @@ struct SegmentNode {
 	
 	SegmentNode (uint32_t lower, uint32_t upper);
 	std::string to_str() ;
+	std::string to_ip_str();
 };
 
 SegmentNode::SegmentNode (uint32_t lower, uint32_t upper) :
@@ -32,6 +35,10 @@ SegmentNode::SegmentNode (uint32_t lower, uint32_t upper) :
 std::string SegmentNode::to_str () {
 	return "["+std::to_string(m_lowerLimit)+","+
 					std::to_string(m_upperLimit)+"]";
+}
+
+std::string SegmentNode::to_ip_str () {
+	return "["+ntoa(m_lowerLimit)+","+ntoa(m_upperLimit)+"]";
 }
 
 DisjointSegmentList::DisjointSegmentList () {}
@@ -372,6 +379,18 @@ std::string DisjointSegmentList::to_str() const {
 	std::shared_ptr<SegmentNode> current_node = m_head;
 	while (current_node) {
 		output += current_node->to_str() + " ";
+		current_node = current_node->m_child;
+	}
+	return output;
+}
+
+std::string DisjointSegmentList::to_ip_str() const {
+	if (!m_head) { return "Empty list"; }
+	
+	std::string output;
+	std::shared_ptr<SegmentNode> current_node = m_head;
+	while (current_node) {
+		output += current_node->to_ip_str() + " ";
 		current_node = current_node->m_child;
 	}
 	return output;

@@ -40,12 +40,6 @@ public:
 private:
 	DisjointSegmentList m_filter;
 	HeaderField m_field;
-
-private:
-	void read_IPClassifier_conf(std::string configuration);
-	void read_RadixLookup_conf(std::string configuration);
-	void read_LinearLookup_conf(std::string configuration);
-	void read_IPMapper_conf(std::string configuration);	
 };
 
 

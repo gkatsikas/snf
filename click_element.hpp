@@ -32,8 +32,11 @@ private:
 	//Configuration string parsing functions:
 	void parse_dec_ttl_conf (std::string& configuration);
 	void parse_fix_ip_src (std::string& configuration);
-	void parse_ip_filter(std::string& configuration);
-	void parse_lookup_filter(std::string& configuration);
+	void parse_ip_filter (std::string& configuration);
+	void parse_lookup_filter (std::string& configuration);
+	void parse_ip_rewriter (std::string& configuration);
+	
+	void configuration_fail ();
 	
 	void add_output_class (OutputClass & output_class);
 

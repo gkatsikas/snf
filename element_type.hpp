@@ -11,13 +11,14 @@
 	FOO(RadixIPLookup) \
 	FOO(DirectIPLookup) \
 	FOO(LinearIPLookup) \
+	FOO(IPRewriter) \
 	FOO(Discard) \
 	FOO(Discard_def) 
 
 #define DO_DESCRIPTION(e) #e,
 #define DO_ENUM(e) e,
 
-const std::string elementNames[8] = {
+const std::string elementNames[9] = {
 Element(DO_DESCRIPTION)
 };
 
