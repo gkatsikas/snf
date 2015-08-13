@@ -1,20 +1,23 @@
-
- * Change nbPorts to actual number of ports and not number of classes
  * Change exit(1) either to exit(EXIT_FAILURE) or to thrown exceptions to get
  	the stack trace
  * Check function class that returns Object to see whether we can use references
  * Change enums to static class members
  * Replace direct access to FieldOperation members by getters & setters
+!* What happens in case of consecutive ranged write + write conditions?
+		--> a write condition has to mention which element wrote it
+!* Write range -> replace by DisjointSegmentList?
+		--> RoundRobinIPMapper takes discrete inputs
+!* Add "Unsupported Elements" category ==> allow to use unsupported elements anyway
+		--> can still look at (if it applies) the modified/read fields
+
+TODO:
+	add ID to all elements
+	add pointer->element in Write operations
  
 ###################
 # Element support #
 ###################
 
  * DecIPTTL -> MULTICAST keyword
- * Routing: hierarchical routing such as:
- 		10.0.0.8 -> eth1
- 		10.0/16  -> eth2
- 	--> More specifically, Filter should include type Union w/ std::vector<Filter>
- 		operation-= and such, += should be replaced by &= etc
- 		
+ * IPRewriter options
  

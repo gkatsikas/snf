@@ -18,9 +18,11 @@ class Filter {
 public:
 	Filter ();
 	Filter (HeaderField field);
+	Filter (HeaderField field, uint32_t value);
 	Filter (HeaderField field, uint32_t lower_value, uint32_t upper_value);
 
 	static Filter get_filter_from_v4_prefix(HeaderField field, uint32_t value, uint32_t prefix);
+	static Filter get_filter_from_ipclass_pattern(HeaderField field, std::string& args);
 	
 	void intersect (const Filter &filter); //Intersects this and rhs
 	void unite (const Filter &filter);

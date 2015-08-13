@@ -68,14 +68,12 @@ std::pair<OutputClass,OutputClass> OutputClass::output_class_from_pattern(
 	}
 	uint32_t unmodified_port_nb = atoi(pattern[5].c_str());
 	uint32_t modified_port_nb = atoi(pattern[4].c_str());
-	std::cerr<<"["<<__FILE__<<":"<<__LINE__<<"]\n";
+	
 	OutputClass foutput (modified_port_nb);
 	if (pattern[0].compare("-")) {
-		std::cerr<<"["<<__FILE__<<":"<<__LINE__<<"]\n";
 		foutput.add_field_op({Write,ip_src,aton(pattern[0])});
 	}
 	if (pattern[1].compare("-")) {
-		std::cerr<<"["<<__FILE__<<":"<<__LINE__<<"]\n";
 		std::vector<std::string> split_pattern = split(pattern[1],'-');
 		if (split_pattern.size() == 1){
 			foutput.add_field_op({Write,tp_srcPort,(uint32_t) atoi(pattern[1].c_str())});
@@ -109,11 +107,9 @@ std::pair<OutputClass,OutputClass> OutputClass::output_class_from_pattern(
 		}
 	}
 	if (pattern[2].compare("-")) {
-		std::cerr<<"["<<__FILE__<<":"<<__LINE__<<"]\n";
 		foutput.add_field_op({Write,ip_dst,aton(pattern[2])});
 	}
 	if (pattern[3].compare("-")) {
-		std::cerr<<"["<<__FILE__<<":"<<__LINE__<<"]\n";
 		std::vector<std::string> split_pattern = split(pattern[3],'-');
 		if (split_pattern.size() == 1){
 			foutput.add_field_op({Write,tp_srcPort,(uint32_t) atoi(pattern[3].c_str())});
@@ -138,7 +134,6 @@ std::pair<OutputClass,OutputClass> OutputClass::output_class_from_pattern(
 			field_op.m_field = tp_srcPort;
 			field_op.m_value[0] = (uint32_t) atoi(split_pattern[0].c_str());
 			field_op.m_value[1] = (uint32_t) atoi(split_pattern[1].c_str());
-			std::cout<<"Adding field operation: "<<field_op.to_str()<<"\n";
 			foutput.add_field_op(field_op);
 		}
 		else {

@@ -2,10 +2,16 @@
 #include <iostream> //std::cerr
 #include <climits> //UINT_MAX
 #include <cstdio>
+#include <functional>
 
 #include "filter.hpp"
 #include "click_element.hpp"
 #include "output_class.hpp"
+#include "helpers.hpp"
+
+#define BUG(A) std::cerr<<"["<<__FILE__<<":"<<__LINE__<<"] "<<A \
+				<<std::endl; \
+				exit(1)
 
 #define MIN(a,b) (a>b) ? b : a
 #define MAX(a,b) (a>b) ? a : b
@@ -16,6 +22,8 @@
 Filter::Filter() : Filter(unknown, 0, UINT32_MAX) {}
 
 Filter::Filter(HeaderField field) : Filter(field, 0, UINT32_MAX) {}
+
+Filter::Filter(HeaderField field,uint32_t value) : Filter(field, value, value) {}
 
 Filter::Filter (HeaderField field, uint32_t lower_value, uint32_t upper_value) :
 					m_filter(), m_field(field) {
@@ -28,6 +36,78 @@ Filter Filter::get_filter_from_v4_prefix(HeaderField field, uint32_t value, uint
 	uint32_t upperLimit = value | (0xffffffff >> prefix);
 	
 	return Filter(field, lowerLimit, upperLimit);
+}
+
+Filter Filter::get_filter_from_ipclass_pattern(HeaderField field, std::string& args) {
+
+	//Cases:
+	//1234
+	//[=<>!]= 1234
+	//[<>] 1234
+	//1234 or 4567
+	//1234 || 1234
+	std::string numbers = "0123456789";
+	size_t pos = args.find_first_not_of(numbers);
+	std::function<uint32_t(std::string)> to_uint = [](std::string a){return atoi(a.c_str()); };
+	if(field==ip_src || field==ip_dst) {
+		to_uint = &aton;
+		numbers += ".";
+	}
+	
+	switch (pos) {
+		case std::string::npos: //1234
+			return Filter(field,to_uint(args));
+		case 0: //either [=<>!]= 1234 or [<>] 1234
+			switch (args[0]) {
+				case '=':
+					if (args[1]!='=') {
+						BUG("Wrong argument in IPFilter: "+args+"\n\tExpected '='");
+					}
+					else {
+						return Filter(field,to_uint(args.substr(2,args.size()-2)));
+					}
+					break;
+				case '<':
+					switch (args[1]) {
+						case '=':
+							return Filter(field,0,to_uint(args.substr(2,args.size()-2)));
+						case ' ':
+							return Filter(field,0,to_uint(args.substr(2,args.size()-2))-1);
+						default:
+							BUG("Wrong argument in IPFilter: "+args+"\n\tExpected one of ' ' or '='");
+					}
+				case '>':
+					switch (args[1]) {
+						case '=':
+							return Filter(field,to_uint(args.substr(2,args.size()-2)), UINT32_MAX);
+						case ' ':
+							return Filter(field,to_uint(args.substr(2,args.size()-2))+1, UINT32_MAX);
+						default:
+							BUG("Wrong argument in IPFilter: "+args+"\n\tExpected one of ' ' or '='");
+					}
+				case '!':
+					if (args[1]!='=') {
+						BUG("Wrong argument in IPFilter: "+args+"\n\tExpected '='");
+					}
+					else {
+						Filter f(field);
+						f.differentiate(Filter(field,to_uint(args.substr(2,args.size()-2))));
+						return f;
+					}
+					break;
+			}
+		default: {//1234 or 1234
+			Filter f(field,to_uint(args.substr(0,pos)));
+			size_t start = args.find_first_of(numbers,pos);
+			while (start != std::string::npos) {
+				//TODO_ check that it's or/|| in the middle
+				pos = args.find_first_not_of(numbers,start);
+				f.unite(Filter(field,to_uint(args.substr(start,pos-start))));
+				start = args.find_first_of(numbers,pos);
+			}
+			return f;
+		}			
+	}
 }
 
 bool Filter::match(uint32_t value) const {
