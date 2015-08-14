@@ -122,21 +122,24 @@ bool Filter::is_none() const {
 	return m_filter.empty();
 }
 
-void Filter::translate(uint32_t value, bool forward) {
+Filter& Filter::translate(uint32_t value, bool forward) {
 	m_filter.translate(value,forward);
+	return *this;
 }
 
-//TODO: implement unite/differentiate
-void Filter::unite (const Filter &filter) {
+Filter& Filter::unite (const Filter &filter) {
 	m_filter.add_seglist(filter.m_filter);
+	return *this;
 }
 
-void Filter::intersect (const Filter &filter) {
+Filter& Filter::intersect (const Filter &filter) {
 	m_filter.intersect_seglist(filter.m_filter);
+	return *this;
 }
 
-void Filter::differentiate (const Filter& filter) {
+Filter& Filter::differentiate (const Filter& filter) {
 	m_filter.substract_seglist(filter.m_filter);
+	return *this;
 }
 
 void Filter::make_none () {

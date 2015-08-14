@@ -2,14 +2,20 @@
 #include "filter.hpp"
 
 
-enum Primitive {
+enum class Primitive {
+	Undefined,
 	IP,
 	SRC,
 	DST,
-	TCP
+	TCP,
+	
+	OR,
+	AND
 };
 
-enum Option {
+enum class Option {
+	Undefined,
+
 	IP_PROTO,
 	IP_VERS,
 	IP_HL,
@@ -40,3 +46,11 @@ enum Option {
 
 Filter filter_from_option (Primitive primitive, Option option, std::string& arg);
 Filter filter_from_ip_option (Option option, std::string& arg);
+
+void negate_pf (PacketFilter& pf);
+
+Primitive find_primitive_from_string (std::string str);
+
+std::vector<PacketFilter> filters_from_ipfilter_line (std::string line);
+std::vector<PacketFilter> filters_from_substr (char** position, char* end,
+												PacketFilter& current_filter);

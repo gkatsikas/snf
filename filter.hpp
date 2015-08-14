@@ -24,10 +24,10 @@ public:
 	static Filter get_filter_from_v4_prefix(HeaderField field, uint32_t value, uint32_t prefix);
 	static Filter get_filter_from_ipclass_pattern(HeaderField field, std::string& args);
 	
-	void intersect (const Filter &filter); //Intersects this and rhs
-	void unite (const Filter &filter);
-	void differentiate (const Filter &filter);
-	void translate(uint32_t value, bool forward=true);
+	Filter& intersect (const Filter &filter); //Intersects this and rhs
+	Filter& unite (const Filter &filter);
+	Filter& differentiate (const Filter &filter);
+	Filter& translate(uint32_t value, bool forward=true);
 	
 	void make_none (); //Make this filter refuse all packets
 	
