@@ -1,6 +1,7 @@
 #include <string>
 #include <cstdint>
 #include <iostream>
+#include <cstdio>
 
 #include "filter.hpp"
 #include "ip_filter_parser.hpp"
@@ -12,8 +13,7 @@
 //#define DEBUGGING
 //#define test
 #ifdef DEBUGGING
-#define DEBUG(A) std::cerr<<"["<<__FILE__<<":"<<__LINE__<<"] DEBUG: "<<A \
-				<<std::endl
+#define DEBUG(A) printf("[%s:%d] DEBUG: %s\n",__FILE__,__LINE__,((std::string) A).c_str())
 #else
 #define DEBUG(A) do {} while(0)
 #endif
@@ -22,63 +22,6 @@
 #define insert_last(container,containee) container.insert(container.end(), \
 														containee.begin(), \
 														containee.end())
-
-Filter filter_from_option (Primitive primitive, Option option, std::string& arg) {
-	switch (primitive) {
-		case Primitive::IP:
-			return filter_from_ip_option (option, arg);
-		case Primitive::SRC:
-		case Primitive::DST:
-		case Primitive::TCP:
-			BUG("Not implemented yet");
-			break;
-		default:
-			BUG("Undefined primitive");
-	}
-	return Filter();
-}
-
-Filter filter_from_ip_option (Option option, std::string& arg) {
-	switch (option) {
-		case Option::IP_PROTO:
-			if (!arg.compare("tcp")) {
-				return Filter(ip_proto,	6);		
-			}
-			else if (!arg.compare("udp")) {
-				return Filter(ip_proto, 6);
-			}
-			else if(!arg.compare("icmp")) {
-				return Filter(ip_proto,1);
-			}
-			else if (arg.find_first_not_of("0123456789") == std::string::npos) {
-				return Filter::get_filter_from_ipclass_pattern(ip_proto,arg);
-			}
-			else {
-				BUG("Unknown protocol name: "<<arg);
-			}
-		case Option::IP_VERS:
-			return Filter::get_filter_from_ipclass_pattern(ip_ver,arg);
-		case Option::IP_HL:
-			return Filter::get_filter_from_ipclass_pattern(ip_ihl,arg);
-		case Option::IP_ID:
-			return Filter::get_filter_from_ipclass_pattern(ip_id,arg);
-		case Option::IP_TOS:
-			BUG("ip tos not supported, please use ip dscp and ip ect/ce");
-		case Option::IP_DSCP:
-			return Filter::get_filter_from_ipclass_pattern(ip_dscp,arg);
-		case Option::IP_ECT:
-			return Filter(ip_ect,1);
-		case Option::IP_CE:
-			return Filter(ip_ce,1);
-		case Option::IP_TTL:
-			return Filter::get_filter_from_ipclass_pattern(ip_TTL,arg);
-		case Option::IP_FRAG:
-		case Option::IP_UNFRAG:
-			BUG("IP fragmentation not supported yet");
-		default:
-			BUG("Unknown option for IP primitive");
-	}
-}
 
 std::vector<PacketFilter> negate_pf (const PacketFilter& pf) {
 	std::vector<PacketFilter> pf_vec;
@@ -137,6 +80,105 @@ void reset_pf_vec(std::vector<PacketFilter>& vec) {
 	vec.clear();
 	vec.push_back(PacketFilter());
 }
+
+PacketFilter filter_from_option (Primitive primitive, Option option, std::string& arg) {
+	switch (primitive) {
+		case Primitive::IP:
+			return filter_from_ip_option (option, arg);
+		case Primitive::SRC:
+			return filter_from_src_option (option, arg);
+		case Primitive::DST:
+		case Primitive::TCP:
+			BUG("Not implemented yet");
+			break;
+		default:
+			BUG("Undefined primitive");
+	}
+	return PacketFilter();
+}
+
+PacketFilter filter_from_src_option (Option option, std::string& arg) {
+	PacketFilter pf;
+	Filter f;
+	switch (option) {
+		case Option::SRC_HOST:
+			f = Filter::get_filter_from_ipclass_pattern(ip_src, arg);
+			break;
+		case Option::SRC_NET:
+			BUG("Not implemented yet");
+		case Option::SRC_UDP_PORT:
+			f = Filter(ip_proto,17);
+			add_filter_to_pf(pf,f);
+			goto add_port;
+		case Option::SRC_TCP_PORT:
+			f = Filter(ip_proto,6);
+			add_filter_to_pf(pf,f);
+		case Option::SRC_PORT:
+		add_port:
+			f = Filter::get_filter_from_ipclass_pattern(tp_srcPort, arg);
+			break;
+		default:
+			break;
+	}
+	add_filter_to_pf(pf,f);
+	return pf;
+}
+
+PacketFilter filter_from_ip_option (Option option, std::string& arg) {
+	PacketFilter pf;
+	Filter f;
+	switch (option) {
+		case Option::IP_PROTO:
+			if (!arg.compare("tcp")) {
+				f = Filter(ip_proto, 6);				
+			}
+			else if (!arg.compare("udp")) {
+				f = Filter(ip_proto, 6);
+			}
+			else if(!arg.compare("icmp")) {
+				f = Filter(ip_proto,1);
+			}
+			else if (arg.find_first_not_of("0123456789") == std::string::npos) {
+				f = Filter::get_filter_from_ipclass_pattern(ip_proto,arg);
+			}
+			else {
+				BUG("Unknown protocol name: "<<arg);
+			}
+			break;
+		case Option::IP_VERS:
+			f = Filter::get_filter_from_ipclass_pattern(ip_ver,arg);
+			break;
+		case Option::IP_HL:
+			f = Filter::get_filter_from_ipclass_pattern(ip_ihl,arg);
+			break;
+		case Option::IP_ID:
+			f = Filter::get_filter_from_ipclass_pattern(ip_id,arg);
+			break;
+		case Option::IP_TOS:
+			BUG("ip tos not supported, please use ip dscp and ip ect/ce");
+		case Option::IP_DSCP:
+			f = Filter::get_filter_from_ipclass_pattern(ip_dscp,arg);
+			break;
+		case Option::IP_ECT:
+			f = Filter(ip_ect,1);
+			break;
+		case Option::IP_CE:
+			f = Filter(ip_ce,1);
+			break;
+		case Option::IP_TTL:
+			f = Filter::get_filter_from_ipclass_pattern(ip_TTL,arg);
+			break;
+		case Option::IP_FRAG:
+		case Option::IP_UNFRAG:
+			BUG("IP fragmentation not supported yet");
+		default:
+			BUG("Unknown option for IP primitive");
+	}
+	add_filter_to_pf(pf,f);
+	return pf;
+}
+
+
 
 Primitive primitive_from_string (std::string str) {
 	if (str.size()) {
@@ -345,6 +387,10 @@ Option option_from_string(Primitive curr_prim, std::string str) {
 	}
 }
 
+bool is_opening_char (char c) {
+	return (c == '(' || c == '!');
+}
+
 std::string parse_value (char** position, char* end) {
 	std::string current_word;
 	std::string value;
@@ -374,18 +420,17 @@ std::string parse_value (char** position, char* end) {
 				temp.clear();
 			}
 		}
+		else if (is_opening_char(*current_position)) {
+			break;
+		}
 		else {
 			current_word.push_back(*current_position);
 		}
 		current_position++;
 	}
-	if(current_position == end) {
+	if(current_position == end || *current_position == ')') {
 		value += current_word;
-		*position = end;
-	}
-	else if (*current_position == ')') {
-		value += current_word;
-		(*position) = current_position;
+		*position = current_position+1;
 	}
 	else {
 		DEBUG("About to pop: \""+value+"\"");
@@ -422,7 +467,7 @@ std::vector<PacketFilter> filters_from_substr (char** position, char* end) {
 	Option curr_opt = Option::Undefined;
 	
 	while (*position < end && **position != ')') {
-		DEBUG("Considering character: " + **position);
+		DEBUG("Considering character: \"" + **position+"\"");
 		if (**position == '!') {
 			negate=true;
 			(*position)++;
@@ -475,20 +520,22 @@ std::vector<PacketFilter> filters_from_substr (char** position, char* end) {
 					default:
 						value = parse_value(position,end);						
 				}
-				Filter f = filter_from_option (curr_prim, curr_opt, value);
+				PacketFilter pf = filter_from_option (curr_prim, curr_opt, value);
+				std::vector<PacketFilter> temp;
 				if (negate) {
-					f = (Filter()).differentiate(f);
+					temp = negate_pf(pf);
 					negate = false;
+				}
+				else {
+					temp.push_back(pf);
 				}
 				switch (curr_operator) {
 					case Primitive::OR:
 						insert_last(finished_filters, open_filters);
 						reset_pf_vec(open_filters);
+						open_filters[0] = pf;
 					case Primitive::AND: {
 						DEBUG("AND Operator");
-						std::vector<PacketFilter> temp;
-						temp.push_back(PacketFilter());
-						temp[0].emplace(f.get_field(),f);
 						open_filters = and_pf_vec(open_filters, temp);
 						break;
 					}
@@ -534,7 +581,10 @@ std::string pf_vec_to_str (const std::vector<PacketFilter>& vec) {
 
 #ifdef test
 int main() {
-	std::string a = "(!(ip proto 16 and ip ttl 101) and (ip vers == 4 or ip ttl > 6))";
+	//std::string addr = "!(ip ttl 5 or ip vers < 6)";
+	//Filter f = Filter::get_filter_from_ipclass_pattern(ip_src,addr);
+	//std::cout<<f.to_str()<<"\n";
+	std::string a = "src host 192.168.1.1 and src port 600-700 and !(ip ttl 5 or ip vers == 6)";
 	std::cout<<pf_vec_to_str(filters_from_ipfilter_line(a));
 }
 #endif

@@ -49,12 +49,12 @@ Filter Filter::get_filter_from_ipclass_pattern(HeaderField field, std::string& a
 	//1234 or 4567
 	//1234 || 1234
 	std::string numbers = "0123456789";
-	size_t pos = args.find_first_not_of(numbers);
 	std::function<uint32_t(std::string)> to_uint = [](std::string a){return atoi(a.c_str()); };
 	if(field==ip_src || field==ip_dst) {
 		to_uint = &aton;
 		numbers += ".";
 	}
+	size_t pos = args.find_first_not_of(numbers);
 	
 	switch (pos) {
 		case std::string::npos: //1234
@@ -101,6 +101,7 @@ Filter Filter::get_filter_from_ipclass_pattern(HeaderField field, std::string& a
 		default: {//1234 or 1234
 			Filter f(field,to_uint(args.substr(0,pos)));
 			size_t start = args.find_first_of(numbers,pos);
+
 			while (start != std::string::npos) {
 				//TODO_ check that it's or/|| in the middle
 				pos = args.find_first_not_of(numbers,start);

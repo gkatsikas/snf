@@ -60,8 +60,9 @@ const std::string optionNames[opt_end - opt_start -2] = {
 	Opt(DO_DESCRIPTION)
 };
 
-Filter filter_from_option (Primitive primitive, Option option, std::string& arg);
-Filter filter_from_ip_option (Option option, std::string& arg);
+PacketFilter filter_from_option (Primitive primitive, Option option, std::string& arg);
+PacketFilter filter_from_ip_option (Option option, std::string& arg);
+PacketFilter filter_from_src_option (Option option, std::string& arg);
 
 Primitive find_primitive_from_string (std::string str);
 
