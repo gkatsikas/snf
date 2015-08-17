@@ -9,6 +9,16 @@
 				<<std::endl; \
 				exit(1)
 
+//#define DEBUGGING
+//#define test
+#ifdef DEBUGGING
+#define DEBUG(A) std::cerr<<"["<<__FILE__<<":"<<__LINE__<<"] DEBUG: "<<A \
+				<<std::endl
+#else
+#define DEBUG(A) do {} while(0)
+#endif
+
+
 #define insert_last(container,containee) container.insert(container.end(), \
 														containee.begin(), \
 														containee.end())
@@ -20,6 +30,7 @@ Filter filter_from_option (Primitive primitive, Option option, std::string& arg)
 		case Primitive::SRC:
 		case Primitive::DST:
 		case Primitive::TCP:
+			BUG("Not implemented yet");
 			break;
 		default:
 			BUG("Undefined primitive");
@@ -69,10 +80,62 @@ Filter filter_from_ip_option (Option option, std::string& arg) {
 	}
 }
 
-void negate_pf (PacketFilter& pf) {
+std::vector<PacketFilter> negate_pf (const PacketFilter& pf) {
+	std::vector<PacketFilter> pf_vec;
 	for (auto &it : pf) {
-		pf[it.first] = (Filter(it.first)).differentiate(it.second);
+		PacketFilter new_pf;
+		new_pf[it.first] = (Filter(it.first)).differentiate(it.second);
+		if (!new_pf[it.first].is_none()) {
+			pf_vec.push_back(new_pf);
+		}
 	}
+	return pf_vec;
+}
+
+bool add_filter_to_pf (PacketFilter& base_pf, const Filter& f) {
+	HeaderField field = f.get_field ();
+	auto got = base_pf.find(field);
+	if(got == base_pf.end()) {
+		base_pf[field] = f;
+	}
+	else {
+		base_pf[field].intersect(f);
+	}
+	return base_pf[field].is_none();
+}
+
+std::vector<PacketFilter> and_pf_vec (const std::vector<PacketFilter>& a, 
+									  const std::vector<PacketFilter>& b) {
+	std::vector<PacketFilter> result;
+	int is_none;
+	PacketFilter temp_pf;
+	for (auto &it1 : a) {
+		for (auto &it2 : b) {
+			temp_pf = it1;
+			is_none = 0;
+			for	(auto &filter : it2) {
+				is_none += add_filter_to_pf (temp_pf, filter.second);
+			}
+			if (!is_none) {
+				result.push_back(temp_pf);
+			}
+		}
+	}
+	return result;
+}
+
+std::vector<PacketFilter> negate_pf_vec (const std::vector<PacketFilter> &vec) {
+	std::vector<PacketFilter> result;
+	result.push_back(PacketFilter());
+	for (auto &it : vec) {
+		result = and_pf_vec(result,negate_pf(it));
+	}	
+	return result;
+}
+
+void reset_pf_vec(std::vector<PacketFilter>& vec) {
+	vec.clear();
+	vec.push_back(PacketFilter());
 }
 
 Primitive primitive_from_string (std::string str) {
@@ -119,9 +182,11 @@ Primitive primitive_from_string (std::string str) {
 				}
 				break;
 			default:
-				return Primitive::Undefined;
+				break;
 		}
 	}
+	
+	return Primitive::Undefined;
 }
 
 Option ip_option_from_string(std::string str) {
@@ -174,37 +239,107 @@ Option ip_option_from_string(std::string str) {
 				break;
 			case 'u':
 				if(!str.compare("unfrag")){
-					
+					return Option::IP_UNFRAG;
 				}
+				break;
 			case 'v':
 				if (!str.compare("vers")) {
 					return Option::IP_VERS;
 				}
 				break;
 			default:
-				return Option::Undefined;
+				break;
 		}
 	}
+	return Option::Undefined;
 }
 
 bool is_operator (Primitive prim) {
 	return (prim==Primitive::OR || prim==Primitive::AND);
 }
 
-//TODO: complete that
-Option srcdst_option_from_string(std::string str) {}
+Option srcdst_option_from_string(Primitive prim, std::string str) {
+	if(str.size() ) {
+		switch (str[0]) {
+			case 'h':
+				if(!str.compare("host")) {
+					if (prim == Primitive::SRC) {
+						return Option::SRC_HOST;
+					}
+					else if (prim == Primitive::DST) {
+						return Option::DST_HOST;
+					}
+				}
+			case 'n':
+				if(str.size() == 3 && str[1] == 'e' && str[2] == 't') {
+					if (prim == Primitive::SRC) {
+						return Option::SRC_NET;
+					}
+					else if (prim == Primitive::DST) {
+						return Option::DST_NET;
+					}
+				}
+			case 'p':
+				if(!str.compare("port")) {
+					if (prim == Primitive::SRC) {
+						return Option::SRC_PORT;
+					}
+					else if (prim == Primitive::DST) {
+						return Option::DST_PORT;
+					}
+				}
+			case 't':
+				if(str.size() == 3 && str[1] == 'c' && str[2] == 'p') {
+					if (prim == Primitive::SRC) {
+						return Option::SRC_TCP_PORT;
+					}
+					else if (prim == Primitive::DST) {
+						return Option::DST_TCP_PORT;
+					}
+				}
+			case 'u':
+				if(str.size() == 3 && str[1] == 'd' && str[2] == 'p') {
+					if (prim == Primitive::SRC) {
+						return Option::SRC_UDP_PORT;
+					}
+					else if (prim == Primitive::DST) {
+						return Option::DST_UDP_PORT;
+					}
+				}
+			default:
+				break;
+		}
+	}
+	return Option::Undefined;
+}
 
-Option tcp_option_from_string(std::string str) {}
+Option tcp_option_from_string(std::string str) { 
+	if(str.size()) {
+		switch (str[0])	{
+			case 'o':
+				if (str.size() == 3 && str[1] == 'p' && str[2] == 't') {
+					return Option::TCP_OPT;
+				}
+			case 'w':
+				if (str.size() == 3 && str[1] == 'i' && str[2] == 'n') {
+					return Option::TCP_WIN;
+				}
+			default:
+				break;
+		}
+	}	
+	return Option::Undefined; 
+}
 
 Option option_from_string(Primitive curr_prim, std::string str) {
 	switch (curr_prim) {
 		case Primitive::IP:
-			ip_option_from_string(str);
+			return ip_option_from_string(str);
 		case Primitive::SRC:
 		case Primitive::DST:
-			srcdst_option_from_string(str);
+			return srcdst_option_from_string(curr_prim, str);
 		case Primitive::TCP:
-			tcp_option_from_string(str);
+			return tcp_option_from_string(str);
 		default:
 			BUG("Undefined primitive, cannot parse option");
 	}
@@ -216,11 +351,17 @@ std::string parse_value (char** position, char* end) {
 	std::string temp;
 	char* current_position = *position;
 	
-	while (current_position != end) {
-		if (*current_position == ' ') {
+	while (current_position != end && *current_position != ')') {
+		DEBUG("Current pos in parse_value: "+ *current_position );
+		if (*current_position == ' ' ) {
 			Primitive p = primitive_from_string(current_word);
 			if( p != Primitive::Undefined && !is_operator(p) ){ //New primitive, end of the value
 				break;
+				/*
+				 *
+				 * FIX ME: ip proto tcp -> tcp is not the primitive but the value
+				 *				
+				 */
 			}
 			else if(is_operator(p)) { //We wait to see whether the next one is a primitive or not
 				temp = current_word+" ";
@@ -242,15 +383,20 @@ std::string parse_value (char** position, char* end) {
 		value += current_word;
 		*position = end;
 	}
+	else if (*current_position == ')') {
+		value += current_word;
+		(*position) = current_position;
+	}
 	else {
+		DEBUG("About to pop: \""+value+"\"");
 		value.pop_back();
 		(*position)++;
 	}
+	DEBUG("Returning: \""+value+"\"");
 	return value;
 }
 
-std::vector<PacketFilter> filters_from_substr (char** position, char* end,
-												PacketFilter& current_filter) {
+std::vector<PacketFilter> filters_from_substr (char** position, char* end) {
 
 /*
  * TODO: 
@@ -262,6 +408,7 @@ std::vector<PacketFilter> filters_from_substr (char** position, char* end,
 
 	std::vector<PacketFilter> finished_filters;
 	std::vector<PacketFilter> open_filters;
+	reset_pf_vec (open_filters);
 
 	if (*position==end) {
 		insert_last(finished_filters, open_filters);
@@ -271,24 +418,48 @@ std::vector<PacketFilter> filters_from_substr (char** position, char* end,
 	std::string current_word;
 	bool negate=false;
 	Primitive curr_prim = Primitive::Undefined;
+	Primitive curr_operator = Primitive::AND;
 	Option curr_opt = Option::Undefined;
-	Filter curr_filter;
-	while (*position != end && **position != ')') {
+	
+	while (*position < end && **position != ')') {
+		DEBUG("Considering character: " + **position);
 		if (**position == '!') {
 			negate=true;
 			(*position)++;
 		}
 		else if(**position == '(') {
 			(*position)++;
-			//FIXME : not necessarily, we might want to wait for the next one
-			PacketFilter pf = filters_from_substr(position, end, current_filter));
+			
+			std::vector<PacketFilter> pf_vec = filters_from_substr(position, end);
+			DEBUG("Ended recursion");
 			if (negate) {
-				negate_pf(pf);
+				pf_vec = negate_pf_vec(pf_vec);
+				negate = false;
 			}
+			switch (curr_operator) {
+				case Primitive::AND:
+					open_filters = and_pf_vec(open_filters, pf_vec);
+					break;
+				case Primitive::OR:
+					insert_last(finished_filters, open_filters);
+					open_filters = pf_vec;
+					break;
+				default:
+					BUG("curr_operator is not an operator");
+			}
+			curr_operator = curr_prim = Primitive::Undefined;
+			curr_opt = Option::Undefined;
+			(*position)++; //Go past blank space
 		}
 		else if(**position == ' ') {
 			(*position)++;
-			if (curr_prim == Primitive::Undefined) {//Current word is a primitive
+			if(curr_operator == Primitive::Undefined) {
+				curr_operator = primitive_from_string(current_word);
+				if (!is_operator(curr_operator)) {
+					BUG("Expected operator and got: \""+current_word+"\"");
+				}
+			}
+			else if (curr_prim == Primitive::Undefined) {//Current word is a primitive
 				curr_prim = primitive_from_string(current_word);
 			}
 			else if (curr_opt == Option::Undefined) {//current word is an option
@@ -309,12 +480,29 @@ std::vector<PacketFilter> filters_from_substr (char** position, char* end,
 					f = (Filter()).differentiate(f);
 					negate = false;
 				}
-				//go to next step
+				switch (curr_operator) {
+					case Primitive::OR:
+						insert_last(finished_filters, open_filters);
+						reset_pf_vec(open_filters);
+					case Primitive::AND: {
+						DEBUG("AND Operator");
+						std::vector<PacketFilter> temp;
+						temp.push_back(PacketFilter());
+						temp[0].emplace(f.get_field(),f);
+						open_filters = and_pf_vec(open_filters, temp);
+						break;
+					}
+					default:
+						BUG("Expected operator");
+				}
+				curr_operator = curr_prim = Primitive::Undefined;
+				curr_opt = Option::Undefined;				
 			}
 			current_word.clear();
 		}
 		else {
 			current_word.push_back(**position);
+			(*position)++;
 		}
 	}
 	(*position)++;
@@ -329,22 +517,24 @@ std::vector<PacketFilter> filters_from_ipfilter_line (std::string line) {
 		BUG("Empty IPFilter configuration");
 	}
 	char* start = &(line[0]);
-	return filters_from_substr (&start, start+line.size(), pf);
+	return filters_from_substr (&start, start+line.size());
 }
 
-//#define test
+std::string pf_vec_to_str (const std::vector<PacketFilter>& vec) {
+	std::string output;
+	for (size_t i=0; i<vec.size(); i++) {
+		output += "Packet Filter i: \n";
+		for(auto &it : vec[i]) {
+			output += "\t" + it.second.to_str() + "\n";
+		}
+	}
+	return output;
+}
+
+
 #ifdef test
 int main() {
-	std::string a = "1234 or 4567 or 789 and tcp port";
-	char* start = &(a[0]);
-	char* end = start+a.size();
-	char** r_start = &start;
-	std::cout<<parse_value(r_start, end)<<std::endl;
-	std::cout<<"Suffix: ";
-	while (*r_start != end) {
-		std::cout<<**r_start;
-		(*r_start)++;
-	}
-	std::cout<<std::endl;
+	std::string a = "(!(ip proto 16 and ip ttl 101) and (ip vers == 4 or ip ttl > 6))";
+	std::cout<<pf_vec_to_str(filters_from_ipfilter_line(a));
 }
 #endif

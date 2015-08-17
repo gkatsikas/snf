@@ -1,56 +1,69 @@
 #include <string>
 #include "filter.hpp"
 
+static const int prim_start = __LINE__;
+#define Prim(FOO) \
+	FOO(Undefined) \
+	FOO(IP) \
+	FOO(SRC) \
+	FOO(DST) \
+	FOO(TCP) \
+	FOO(OR) \
+	FOO(AND)
+static const int prim_end = __LINE__;
+
+static const int opt_start = __LINE__;
+#define Opt(FOO) \
+	FOO(Undefined) \
+	FOO(IP_PROTO) \
+	FOO(IP_VERS) \
+	FOO(IP_HL) \
+	FOO(IP_ID) \
+	FOO(IP_TOS) \
+	FOO(IP_DSCP) \
+	FOO(IP_ECT) \
+	FOO(IP_CE) \
+	FOO(IP_TTL) \
+	FOO(IP_FRAG) \
+	FOO(IP_UNFRAG) \
+	FOO(TCP_OPT) \
+	FOO(TCP_WIN) \
+	FOO(SRC_HOST) \
+	FOO(SRC_NET) \
+	FOO(SRC_PORT) \
+	FOO(SRC_UDP_PORT) \
+	FOO(SRC_TCP_PORT) \
+	FOO(DST_HOST) \
+	FOO(DST_NET) \
+	FOO(DST_PORT) \
+	FOO(DST_UDP_PORT) \
+	FOO(DST_TCP_PORT)
+static const int opt_end = __LINE__;
+
+#define DO_DESCRIPTION(e) #e,
+#define DO_ENUM(e) e,
 
 enum class Primitive {
-	Undefined,
-	IP,
-	SRC,
-	DST,
-	TCP,
-	
-	OR,
-	AND
+	Prim(DO_ENUM)
 };
 
-enum class Option {
-	Undefined,
+const std::string primitiveNames[prim_end - prim_start-2] = {
+	Prim(DO_DESCRIPTION)
+};
 
-	IP_PROTO,
-	IP_VERS,
-	IP_HL,
-	IP_ID,
-	IP_TOS,
-	IP_DSCP,
-	IP_ECT,
-	IP_CE,
-	IP_TTL,
-	IP_FRAG,
-	IP_UNFRAG,
-	
-	TCP_OPT,
-	TCP_WIN,
-	
-	SRC_HOST,
-	SRC_NET,
-	SRC_PORT,
-	SRC_UDP_PORT,
-	SRC_TCP_PORT,
-	
-	DST_HOST,
-	DST_NET,
-	DST_PORT,
-	DST_UPD_PORT,
-	DST_TCP_PORT
+
+enum class Option {
+	Opt(DO_ENUM)
+};
+
+const std::string optionNames[opt_end - opt_start -2] = {
+	Opt(DO_DESCRIPTION)
 };
 
 Filter filter_from_option (Primitive primitive, Option option, std::string& arg);
 Filter filter_from_ip_option (Option option, std::string& arg);
 
-void negate_pf (PacketFilter& pf);
-
 Primitive find_primitive_from_string (std::string str);
 
 std::vector<PacketFilter> filters_from_ipfilter_line (std::string line);
-std::vector<PacketFilter> filters_from_substr (char** position, char* end,
-												PacketFilter& current_filter);
+std::vector<PacketFilter> filters_from_substr (char** position, char* end);

@@ -40,6 +40,8 @@ Filter Filter::get_filter_from_v4_prefix(HeaderField field, uint32_t value, uint
 
 Filter Filter::get_filter_from_ipclass_pattern(HeaderField field, std::string& args) {
 
+	//TODO: handle host src 10.0.0.8/24 (prefixes)
+
 	//Cases:
 	//1234
 	//[=<>!]= 1234
