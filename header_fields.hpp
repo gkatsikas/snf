@@ -3,7 +3,7 @@
 
 #include <string>
 
-const int start = __LINE__;
+static const int start = __LINE__;
 #define HEADER(FOO) \
 	FOO(unknown) \
 	FOO(ip_src) \
@@ -18,8 +18,15 @@ const int start = __LINE__;
 	FOO(ip_chksum) \
 	FOO(ip_TTL) \
 	FOO(tp_srcPort) \
-	FOO(tp_dstPort)
-const int end = __LINE__;
+	FOO(tp_dstPort) \
+	FOO(tcp_syn) \
+	FOO(tcp_fin) \
+	FOO(tcp_ack) \
+	FOO(tcp_rst) \
+	FOO(tcp_psh) \
+	FOO(tcp_urg) \
+	FOO(tcp_win)
+static const int end = __LINE__;
 
 #define DO_DESCRIPTION(e) #e,
 #define DO_ENUM(e) e,
