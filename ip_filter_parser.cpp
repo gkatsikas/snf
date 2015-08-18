@@ -3,7 +3,6 @@
 #include <iostream>
 #include <cstdio>
 
-#include "filter.hpp"
 #include "ip_filter_parser.hpp"
 
 #define BUG(A) std::cerr<<"["<<__FILE__<<":"<<__LINE__<<"] ERROR: "<<A \

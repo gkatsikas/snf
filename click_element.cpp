@@ -11,6 +11,11 @@
 #include "operation.hpp"
 #include "helpers.hpp"
 #include "output_class.hpp"
+#include "ip_filter_parser.hpp"
+
+#define BUG(A) std::cerr<<"["<<__FILE__<<":"<<__LINE__<<"] ERROR: "<<A \
+				<<std::endl; \
+				exit(1)
 
 //ClickElement class
 std::string empty;
@@ -82,7 +87,7 @@ ElementType ClickElement::get_type() const {
 
 void ClickElement::add_output_class (OutputClass & output_class) {
 	this->m_outputClasses.push_back(output_class);
-	if (output_class.get_portNumber() > (m_nbPorts-1)) {
+	if (output_class.get_portNumber()+1 > m_nbPorts) {
 		m_nbPorts = output_class.get_portNumber()+1;
 	}
 }
@@ -145,9 +150,48 @@ void ClickElement::parse_fix_ip_src (std::string& configuration) {
 
 void ClickElement::parse_ip_filter (std::string& configuration) {
 	std::vector<std::string> rules = split(configuration,',');
-	for (uint32_t i=0; i<rules.size(); i++) {
-		OutputClass port = OutputClass::port_from_filter_rule(i,rules[i]);
-		this->add_output_class (port);
+	std::vector<PacketFilter> to_discard;
+	for (size_t i=0; i<rules.size(); i++) {
+		if(rules[i].empty()) {
+			BUG("Empty classifying rule");
+		}
+		std::string rule = (rules[i][0]==' ') ? rules[i].substr(1,rules[i].size()-1) : rules[i];
+	
+		size_t first_space = rule.find(' ');
+		std::string behaviour = rule.substr(0,first_space);
+		int16_t output = -1;
+		if (!behaviour.compare("allow")) {
+			output = 0;
+		}
+		else if (behaviour.find_first_not_of("0123456789") == std::string::npos) {
+			output = atoi(behaviour.c_str());
+		}
+		else if(behaviour.compare("deny")  && behaviour.compare("drop")) {
+			BUG("Unknown action for IP Filter: "+behaviour);
+		}
+		std::vector<PacketFilter> outputs = filters_from_ipfilter_line( rules[i].substr(
+									first_space+1,rule.size() - first_space - 1));
+									
+		if (output==-1) {
+			to_discard.insert(to_discard.end(), outputs.begin(), outputs.end());
+		}
+		else {
+			for (auto &pf : outputs) {
+				OutputClass port(output);
+				port.set_filter (pf);
+				this->add_output_class(port);
+				std::cout<<"Added output class \n"<<port.to_str()<<"with port number "<<output<<"\n";
+				std::cout<<"Current number of ports: "<<this->m_nbPorts<<"\n";
+			}
+		}
+	}
+	uint32_t discard_port = this->m_nbPorts;
+	for(auto &pf : to_discard) {
+		OutputClass port(discard_port);
+		port.set_child(discard_elem_ptr);
+		port.set_filter(pf);
+		this->add_output_class(port);
+		std::cout<<"Added output class "<<port.to_str()<<"with port number "<<discard_port<<"\n";
 	}
 }
 

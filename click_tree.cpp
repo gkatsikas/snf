@@ -83,16 +83,16 @@ int main() {
 	
 	std::string rewrite = "- - 192.168.0.1 20000-30000# 0 1";
 	std::shared_ptr<ClickElement> iprewriter(new ClickElement(IPRewriter, rewrite));
-	/*for (auto &it : lookup->get_outputClasses()) {
-		std::cout<<it.to_str()<<std::endl;
-	}
-	*/
 	
-	fixip->set_child(iprewriter,0);
+	std::string filter = "allow src net 192/8 && dst tcp port 80, deny !(src net 192/8 && dst tcp port 80)";
+	std::shared_ptr<ClickElement> ipfilter(new ClickElement(IPFilter, filter));
+	
+	fixip->set_child(ipfilter,0);
+	ipfilter->set_child(iprewriter,0);
 	iprewriter->set_child(lookup,0);
 	lookup->set_child(ttl,2);
 	ttl->set_child(discard,0);
-	ClickTree tree(fixip);
+	ClickTree tree(ipfilter);
 
 	for (auto &it : tree.get_trafficClasses()) {
 		std::cout<<it.to_str();
