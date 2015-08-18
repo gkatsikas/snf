@@ -63,6 +63,7 @@ class Logger {
 			 * Overload operator this operator to act as cout
 			 */
 			Logger& operator<<( std::ostream&(*f)(std::ostream&) ) {
+				(void)*f;
 				std::cout << "[" + get_current_date_time() + "]  [" + logger_source_file() + "] >> " << oss.str() << std::endl;
 				oss.str("");
 				return *this;

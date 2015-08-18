@@ -11,19 +11,19 @@
 #include "configuration/parser_configuration.hpp"
 
 void test_click_tree(void);
-short int parseArguments(int cmdArgsNo, char** cmdArgs, std::string* propertyFile);
+short int parseArguments(int cmd_args_no, char** cmd_args, std::string* property_file);
 
 int main(int argc, char** argv) {
-	std::string propertyFile;
-	short int exitStatus = 0;
+	std::string property_file;
+	short int exit_status = 0;
 
 	// Initialize logger
 	Logger log(__FILE__);
 	log << info << "NF Chain Synthesis" << def << std::endl;
 
 	// Check input arguments validity
-	if ( (exitStatus=parseArguments(argc, argv, &propertyFile)) != SUCCESS )
-		exit(exitStatus);
+	if ( (exit_status=parseArguments(argc, argv, &property_file)) != SUCCESS )
+		exit(exit_status);
 
 	//////////////////////////////////// Load property file ///////////////////////////////////
 	ParserConfiguration* pcf = NULL;
@@ -34,8 +34,8 @@ int main(int argc, char** argv) {
 	( [&]()
 	{
 		log << "Loading properties... " << std::endl;
-		pcf = new ParserConfiguration(propertyFile);
-		log << info << "Property: " << propertyFile << def << std::endl;
+		pcf = new ParserConfiguration(property_file);
+		log << info << "Property: " << property_file << def << std::endl;
 		properties = pcf->readPropertyFile();
 	}
 	) << "  microseconds" << std::endl;
@@ -86,30 +86,35 @@ void test_click_tree(void) {
 	}
 }
 
-short int parseArguments(int cmdArgsNo, char** cmdArgs, std::string* propertyFile) {
+short int parseArguments(int cmd_args_no, char** cmd_args, std::string* property_file) {
 	// Check number of arguments
-	if ( cmdArgsNo != 3 )
+	if ( cmd_args_no != 3 )
 	{
-		std::cerr << "Usage: " << cmdArgs[0] << " -p [propertyFile]" << std::endl;
+		std::cerr << "Usage: " << cmd_args[0] << " -p [propertyFile]" << std::endl;
 		return WRONG_INPUT_ARGS;
 	}
 
 	// Parse arguments
-	while ( *cmdArgs != NULL )
+	while ( *cmd_args != NULL )
 	{
-		if ( strcmp(*cmdArgs, "-p") == 0 )
+		if ( strcmp(*cmd_args, "-p") == 0 )
 		{
-			*cmdArgs++;
-			if ( *cmdArgs != NULL )
+			//*(cmd_args++);
+			cmd_args = cmd_args + 1;
+			if ( *cmd_args != NULL )
 			{
-				*propertyFile = (std::string) *cmdArgs;
+				*property_file = (std::string) *cmd_args;
 				continue;
 			}
 			else
 				break;
 		}
 		else
-			*cmdArgs++;
+			//*(cmd_args++);
+			cmd_args = cmd_args + 1;
 	}
+
+	*cmd_args = NULL;
+
 	return SUCCESS;
 }

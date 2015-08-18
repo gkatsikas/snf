@@ -303,8 +303,9 @@ int TrafficClass::addElement (std::shared_ptr<ClickElement> element, int port) {
 					Filter translated_filter = filter;
 					if(field_value > 0) {
 						translated_filter.translate(field_value,true);
-					}else if(field_value < 0) {
-						translated_filter.translate(-field_value,false);
+					/* INFEASIBLE because variable is unsigned */
+					//}else if(field_value < 0) {
+					//	translated_filter.translate(-field_value,false);
 					}
 
 					nb_none_filters += intersect_filter(translated_filter);

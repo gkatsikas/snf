@@ -21,25 +21,17 @@ class Filter {
 		Filter (HeaderField field, uint32_t value);
 		Filter (HeaderField field, uint32_t lower_value, uint32_t upper_value);
 
-		static Filter get_filter_from_v4_prefix(HeaderField field, uint32_t value, uint32_t prefix);
-		static Filter get_filter_from_ipclass_pattern(HeaderField field, std::string& args);
-
-		void intersect (const Filter &filter); //Intersects this and rhs
-		void unite (const Filter &filter);
-		void differentiate (const Filter &filter);
-		void translate(uint32_t value, bool forward=true);
-
-		static Filter get_filter_from_v4_prefix_str(HeaderField field, const std::string& prefix_as_str);
-		static Filter get_filter_from_ipclass_pattern(HeaderField field, const std::string& args);
-		static Filter get_filter_from_prefix_pattern(HeaderField field, const std::string& args);
-
 		Filter& intersect (const Filter &filter); //Intersects this and rhs
 		Filter& unite (const Filter &filter);
 		Filter& differentiate (const Filter &filter);
 		Filter& translate(uint32_t value, bool forward=true);
 
-		void make_none (); //Make this filter refuse all packets
+		static Filter get_filter_from_v4_prefix(HeaderField field, uint32_t value, uint32_t prefix);
+		static Filter get_filter_from_v4_prefix_str(HeaderField field, const std::string& prefix_as_str);
+		static Filter get_filter_from_ipclass_pattern(HeaderField field, const std::string& args);
+		static Filter get_filter_from_prefix_pattern(HeaderField field, const std::string& args);
 
+		void make_none (); //Make this filter refuse all packets
 		bool is_none () const; //Returns true if the filter refuses all packets
 		bool match (uint32_t value) const;
 		bool contains (const Filter& filter) const;
