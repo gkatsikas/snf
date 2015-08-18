@@ -23,20 +23,20 @@ public:
 
 	static Filter get_filter_from_v4_prefix(HeaderField field, uint32_t value, uint32_t prefix);
 	static Filter get_filter_from_ipclass_pattern(HeaderField field, std::string& args);
-	
+
 	void intersect (const Filter &filter); //Intersects this and rhs
 	void unite (const Filter &filter);
 	void differentiate (const Filter &filter);
 	void translate(uint32_t value, bool forward=true);
-	
+
 	void make_none (); //Make this filter refuse all packets
-	
+
 	bool is_none () const; //Returns true if the filter refuses all packets
 	bool match (uint32_t value) const;
 	bool contains (const Filter& filter) const;
 
 	HeaderField get_field() const;
-	
+
 	std::string to_str() const;
 
 private:
@@ -61,11 +61,11 @@ public:
 private:
 	PacketFilter m_filters;
 	PacketFilter m_writeConditions;
-	
+
 	//Path of the class in terms of elements
 	std::vector<std::shared_ptr<ClickElement> > m_elementPath;
 	Operation m_operation;
-	
+
 	void addFilter(Filter filter,HeaderField field);
 	int intersect_filter(const Filter& filter);
 	int intersect_condition (const Filter& condition);

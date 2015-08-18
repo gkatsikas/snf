@@ -1,3 +1,4 @@
+#include <cstring>
 #include <sstream>
 
 #include "helpers.hpp"
@@ -44,7 +45,7 @@ uint32_t aton (const std::string &address) {
 
 	uint32_t result = 0;
 	std::vector<std::string> split_address = split(address,'.');
-	
+
 	for (uint32_t i=0; i<split_address.size(); i++) {
 		result <<= 8;
 		result += atoi (split_address[i].c_str());
@@ -58,3 +59,36 @@ std::string ntoa (uint32_t address) {
 			std::to_string((address>>8) % 256)+"."+std::to_string(address % 256);
 }
 
+/*
+ * Allocate a buffer with size defined by the second argument.
+ * Initialize and return(by ref) the allocated buffer or return NULL.
+ */
+short int allocateMemory(void** memoryBuffer, size_t size)
+{
+	if ( *memoryBuffer != NULL )
+		free(*memoryBuffer);
+
+	*memoryBuffer = (void*) malloc(size);
+	if ( *memoryBuffer == NULL )
+		return NO_MEM_AVAILABLE;
+	else
+	{
+		memset(*memoryBuffer, 0, size);
+		return SUCCESS;
+	}
+}
+
+/*
+ * Free the space of a buffer if not already done
+ */
+short int releaseMemory(void** memoryBuffer)
+{
+	if ( *memoryBuffer != NULL )
+	{
+		free(*memoryBuffer);
+		*memoryBuffer = NULL;
+		return SUCCESS;
+	}
+	else
+		return MEMORY_ALREADY_RELEASED;
+}

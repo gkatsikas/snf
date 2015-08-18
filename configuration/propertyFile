@@ -1,0 +1,10 @@
+[NF_CHAIN]
+NF_1 = nf_repo/router.click
+NF_2 = nf_repo/router.click
+NF_3 = nf_repo/router.click
+#NF_4 = nf_repo/router.click
+#NF_5 = nf_repo/napt.click
+#NF_6 = nf_repo/firewall.click
+#NF_7 = nf_repo/load_balancer.click
+
+[OTHER]

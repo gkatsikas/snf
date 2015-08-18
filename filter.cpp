@@ -34,7 +34,7 @@ Filter Filter::get_filter_from_v4_prefix(HeaderField field, uint32_t value, uint
 	uint32_t translation = 32 - prefix;
 	uint32_t lowerLimit = value & (0xffffffff << translation);
 	uint32_t upperLimit = value | (0xffffffff >> prefix);
-	
+
 	return Filter(field, lowerLimit, upperLimit);
 }
 
@@ -53,7 +53,7 @@ Filter Filter::get_filter_from_ipclass_pattern(HeaderField field, std::string& a
 		to_uint = &aton;
 		numbers += ".";
 	}
-	
+
 	switch (pos) {
 		case std::string::npos: //1234
 			return Filter(field,to_uint(args));
@@ -106,7 +106,7 @@ Filter Filter::get_filter_from_ipclass_pattern(HeaderField field, std::string& a
 				start = args.find_first_of(numbers,pos);
 			}
 			return f;
-		}			
+		}
 	}
 }
 
@@ -149,7 +149,7 @@ std::string Filter::to_str () const{
 		case ip_dst:
 			return "Filter on "+headerFieldNames[m_field]+": "+m_filter.to_ip_str();
 		default:
-			return "Filter on "+headerFieldNames[m_field]+": "+m_filter.to_str();	
+			return "Filter on "+headerFieldNames[m_field]+": "+m_filter.to_str();
 	}
 }
 
@@ -166,7 +166,7 @@ int TrafficClass::intersect_filter(const Filter& filter) {
 	else {
 		this->m_filters[field].intersect(filter);
 	}
-	
+
 	return (int) (this->m_filters[field].is_none());
 }
 
@@ -179,7 +179,7 @@ int TrafficClass::intersect_condition(const Filter& condition) {
 	else {
 		this->m_writeConditions[field].intersect(condition);
 	}
-	
+
 	return (int) (this->m_writeConditions[field].is_none());
 }
 
@@ -193,13 +193,13 @@ int TrafficClass::addElement (std::shared_ptr<ClickElement> element, int port) {
 		return 0;
 	}
 	PacketFilter pf = (element->get_outputClasses()[port]).get_filter();
-	
+
 	for_fields_in_pf(it,pf) {
 		HeaderField field = it->first;
 		Filter filter = it->second;
-		
+
 		FieldOperation *field_op = this->m_operation.get_field_op(field);
-		
+
 		if (field_op) {
 			uint32_t field_value = field_op->m_value[0];
 			switch (field_op->m_type) {
@@ -216,7 +216,7 @@ int TrafficClass::addElement (std::shared_ptr<ClickElement> element, int port) {
 					}else if(field_value < 0) {
 						translated_filter.translate(-field_value,false);
 					}
-					
+
 					nb_none_filters += intersect_filter(translated_filter);
 					break;
 				}
@@ -235,7 +235,6 @@ int TrafficClass::addElement (std::shared_ptr<ClickElement> element, int port) {
 					std::cerr<<"["<<__FILE__<<":"<<__LINE__<<"] Found non "
 							"modifying operation"<<std::endl;
 					exit(1);
-				
 			}
 		}
 		else {
@@ -257,7 +256,7 @@ std::string TrafficClass::to_str() const {
 		output += ("\t"+it->second.to_str()+"\n");
 	}
 	output += m_operation.to_str();
-	
+
 	output += "Passed elements: \n\t";
 	for (auto it : m_elementPath) {
 		output += elementNames[it->get_type()];
