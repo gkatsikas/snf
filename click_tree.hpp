@@ -15,15 +15,14 @@ struct ClickNode {
 
 class ClickTree {
 
-public:
-	ClickTree (std::shared_ptr<ClickElement> root) ;
-	std::vector<TrafficClass> get_trafficClasses() const;
+	public:
+		ClickTree (std::shared_ptr<ClickElement> root) ;
+		std::vector<TrafficClass> get_trafficClasses() const;
 
-private:
-	ClickNode m_root;
-	std::vector<TrafficClass> m_trafficClasses;
-	
-	void find_classes(); //Graph search from m_root
-	
+	private:
+		ClickNode m_root;
+		std::vector<TrafficClass> m_trafficClasses;
+
+		void find_classes(void); //Graph search from m_root
 };
 #endif

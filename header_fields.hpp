@@ -1,5 +1,5 @@
-#ifndef HEADERS_FIELDS_HPP
-#define HEADERS_FIELDS_HPP
+#ifndef HEADER_FIELDS_HPP
+#define HEADER_FIELDS_HPP
 
 #include <string>
 
@@ -32,11 +32,11 @@ static const int end = __LINE__;
 #define DO_ENUM(e) e,
 
 const std::string headerFieldNames[end-start-2] = {
-HEADER(DO_DESCRIPTION)
+	HEADER(DO_DESCRIPTION)
 };
 
 enum HeaderField {
-HEADER(DO_ENUM)
+	HEADER(DO_ENUM)
 };
 
 #endif

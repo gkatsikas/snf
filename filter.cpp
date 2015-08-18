@@ -34,7 +34,7 @@ Filter Filter::get_filter_from_v4_prefix(HeaderField field, uint32_t value, uint
 	uint32_t translation = 32 - prefix;
 	uint32_t lowerLimit = value & (0xffffffff << translation);
 	uint32_t upperLimit = value | (0xffffffff >> prefix);
-	
+
 	return Filter(field, lowerLimit, upperLimit);
 }
 
@@ -64,8 +64,10 @@ Filter Filter::get_filter_from_ipclass_pattern(HeaderField field, const std::str
 		to_uint = &aton;
 		numbers += ".";
 	}
+
 	size_t pos = args.find_first_not_of(numbers);
 	Filter f;
+
 	switch (pos) {
 		case std::string::npos: //1234
 			return Filter(field,to_uint(args));
@@ -115,9 +117,9 @@ Filter Filter::get_filter_from_ipclass_pattern(HeaderField field, const std::str
 			}
 			break;
 		default: {//1234 or 1234 OR 1234-5678
-		
+
 			size_t start;
-			
+
 			if( (field==tp_srcPort || field == tp_dstPort) && args[pos] == '-') {
 			//1234-5678
 				uint32_t lower = to_uint(args.substr(0,pos));
@@ -130,7 +132,7 @@ Filter Filter::get_filter_from_ipclass_pattern(HeaderField field, const std::str
 			else {
 				f = Filter(field,to_uint(args.substr(0,pos)));
 			}
-			
+
 			start = args.find_first_of(numbers,pos);
 
 			while (start != std::string::npos) {
@@ -144,15 +146,15 @@ Filter Filter::get_filter_from_ipclass_pattern(HeaderField field, const std::str
 					pos = args.find_first_not_of(numbers,start);
 					uint32_t upper = to_uint(args.substr(start,pos));
 					f.unite(Filter(field,lower,upper));
-			
+
 				}
-				else {	
+				else {
 					f.unite(Filter(field,to_uint(args.substr(start,pos-start))));
 				}
 				start = args.find_first_of(numbers,pos);
 			}
-			
-		}			
+			return f;
+		}
 	}
 	return f;
 }
@@ -190,7 +192,7 @@ Filter Filter::get_filter_from_prefix_pattern(HeaderField field, const std::stri
 				f.unite(get_filter_from_v4_prefix_str(field,args.substr(start,pos-start)));
 				start = args.find_first_of(prefix_chars,pos);
 			}
-		}			
+		}
 	}
 	return f;
 }
@@ -237,7 +239,7 @@ std::string Filter::to_str () const{
 		case ip_dst:
 			return "Filter on "+headerFieldNames[m_field]+": "+m_filter.to_ip_str();
 		default:
-			return "Filter on "+headerFieldNames[m_field]+": "+m_filter.to_str();	
+			return "Filter on "+headerFieldNames[m_field]+": "+m_filter.to_str();
 	}
 }
 
@@ -254,7 +256,7 @@ int TrafficClass::intersect_filter(const Filter& filter) {
 	else {
 		this->m_filters[field].intersect(filter);
 	}
-	
+
 	return (int) (this->m_filters[field].is_none());
 }
 
@@ -267,7 +269,7 @@ int TrafficClass::intersect_condition(const Filter& condition) {
 	else {
 		this->m_writeConditions[field].intersect(condition);
 	}
-	
+
 	return (int) (this->m_writeConditions[field].is_none());
 }
 
@@ -281,13 +283,13 @@ int TrafficClass::addElement (std::shared_ptr<ClickElement> element, int port) {
 		return 0;
 	}
 	PacketFilter pf = (element->get_outputClasses()[port]).get_filter();
-	
+
 	for_fields_in_pf(it,pf) {
 		HeaderField field = it->first;
 		Filter filter = it->second;
-		
+
 		FieldOperation *field_op = this->m_operation.get_field_op(field);
-		
+
 		if (field_op) {
 			uint32_t field_value = field_op->m_value[0];
 			switch (field_op->m_type) {
@@ -301,10 +303,11 @@ int TrafficClass::addElement (std::shared_ptr<ClickElement> element, int port) {
 					Filter translated_filter = filter;
 					if(field_value > 0) {
 						translated_filter.translate(field_value,true);
-					}else if(field_value < 0) {
-						translated_filter.translate(-field_value,false);
+					/* INFEASIBLE because variable is unsigned */
+					//}else if(field_value < 0) {
+					//	translated_filter.translate(-field_value,false);
 					}
-					
+
 					nb_none_filters += intersect_filter(translated_filter);
 					break;
 				}
@@ -323,7 +326,6 @@ int TrafficClass::addElement (std::shared_ptr<ClickElement> element, int port) {
 					std::cerr<<"["<<__FILE__<<":"<<__LINE__<<"] Found non "
 							"modifying operation"<<std::endl;
 					exit(1);
-				
 			}
 		}
 		else {
@@ -345,7 +347,7 @@ std::string TrafficClass::to_str() const {
 		output += ("\t"+it->second.to_str()+"\n");
 	}
 	output += m_operation.to_str();
-	
+
 	output += "Passed elements: \n\t";
 	for (auto it : m_elementPath) {
 		output += elementNames[it->get_type()];
