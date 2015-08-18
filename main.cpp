@@ -47,7 +47,8 @@ int main(int argc, char** argv) {
 	log << measure<>::execution
 	( [&]()
 	{
-		//test_click_tree();
+		log << "Testing Click Tree... " << std::endl;
+		test_click_tree();
 	}
 	) << "  microseconds" << std::endl;
 	std::cout << std::endl;
