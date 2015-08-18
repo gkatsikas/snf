@@ -21,9 +21,6 @@ main.o: main.cpp click_tree.cpp click_tree.hpp output_class.hpp operation.hpp el
 click_tree.o: click_tree.cpp click_tree.hpp output_class.hpp operation.hpp element_type.hpp filter.hpp logger.hpp
 	$(CC) $(CFLAGS) click_tree.cpp
 
-parser.o: parser.cpp logger.hpp file_tmpl.hpp 
-	$(CC) $(CFLAGS) parser.cpp
-
 filter.o: filter.cpp filter.hpp header_fields.hpp element_type.hpp output_class.hpp operation.hpp
 	$(CC) $(CFLAGS) filter.cpp
 
