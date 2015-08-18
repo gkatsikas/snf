@@ -18,7 +18,14 @@ static const int start = __LINE__;
 	FOO(ip_chksum) \
 	FOO(ip_TTL) \
 	FOO(tp_srcPort) \
-	FOO(tp_dstPort)
+	FOO(tp_dstPort) \
+	FOO(tcp_syn) \
+	FOO(tcp_fin) \
+	FOO(tcp_ack) \
+	FOO(tcp_rst) \
+	FOO(tcp_psh) \
+	FOO(tcp_urg) \
+	FOO(tcp_win)
 static const int end = __LINE__;
 
 #define DO_DESCRIPTION(e) #e,

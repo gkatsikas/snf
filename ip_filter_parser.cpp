@@ -88,9 +88,9 @@ PacketFilter filter_from_option (Primitive primitive, Option option, std::string
 		case Primitive::SRC:
 			return filter_from_src_option (option, arg);
 		case Primitive::DST:
+			return filter_from_dst_option (option, arg);
 		case Primitive::TCP:
-			BUG("Not implemented yet");
-			break;
+			return filter_from_tcp_option(option, arg);
 		default:
 			BUG("Undefined primitive");
 	}
@@ -104,8 +104,9 @@ PacketFilter filter_from_src_option (Option option, std::string& arg) {
 		case Option::SRC_HOST:
 			f = Filter::get_filter_from_ipclass_pattern(ip_src, arg);
 			break;
-		case Option::SRC_NET:
-			BUG("Not implemented yet");
+		case Option::SRC_NET: 
+			f = Filter::get_filter_from_prefix_pattern (ip_src, arg);
+			break;
 		case Option::SRC_UDP_PORT:
 			f = Filter(ip_proto,17);
 			add_filter_to_pf(pf,f);
@@ -116,6 +117,34 @@ PacketFilter filter_from_src_option (Option option, std::string& arg) {
 		case Option::SRC_PORT:
 		add_port:
 			f = Filter::get_filter_from_ipclass_pattern(tp_srcPort, arg);
+			break;
+		default:
+			break;
+	}
+	add_filter_to_pf(pf,f);
+	return pf;
+}
+
+PacketFilter filter_from_dst_option (Option option, std::string& arg) {
+	PacketFilter pf;
+	Filter f;
+	switch (option) {
+		case Option::DST_HOST:
+			f = Filter::get_filter_from_ipclass_pattern(ip_dst, arg);
+			break;
+		case Option::DST_NET: 
+			f = Filter::get_filter_from_prefix_pattern (ip_dst, arg);
+			break;
+		case Option::DST_UDP_PORT:
+			f = Filter(ip_proto,17);
+			add_filter_to_pf(pf,f);
+			goto add_port;
+		case Option::DST_TCP_PORT:
+			f = Filter(ip_proto,6);
+			add_filter_to_pf(pf,f);
+		case Option::DST_PORT:
+		add_port:
+			f = Filter::get_filter_from_ipclass_pattern(tp_dstPort, arg);
 			break;
 		default:
 			break;
@@ -178,7 +207,60 @@ PacketFilter filter_from_ip_option (Option option, std::string& arg) {
 	return pf;
 }
 
-
+PacketFilter filter_from_tcp_option (Option option, std::string& arg) {
+	PacketFilter pf;
+	pf[ip_proto] = Filter(ip_proto, 6);
+	Filter f;
+	switch (option) {
+		case Option::TCP_OPT:
+			if(arg.empty()) {
+				BUG("Empty argument for tcp opt");
+			}
+			switch (arg[0]) {
+				case 'a':
+					if(!arg.compare("ack")) {
+						f = Filter(tcp_ack,1);
+						break;
+					}
+				case 'f':
+					if(!arg.compare("fin")) {
+						f = Filter(tcp_fin,1);
+						break;
+					}
+				case 'p':
+					if(!arg.compare("psh")) {
+						f = Filter(tcp_psh,1);
+						break;
+					}
+				case 'r':
+					if(!arg.compare("rst")) {
+						f = Filter(tcp_rst,1);
+						break;
+					}
+				case 's':
+					if(!arg.compare("syn")) {
+						f = Filter(tcp_syn,1);
+						break;
+					}
+				case 'u':
+					if(!arg.compare("urg")) {
+						f = Filter(tcp_urg,1);
+						break;
+					}
+					break;
+				default:
+					BUG("Unknown tcp option: "+arg);
+			}
+			break;
+		case Option::TCP_WIN:
+			f = Filter::get_filter_from_ipclass_pattern(tcp_win,arg);
+			break;
+		default:
+			BUG("Unknown option for TCP primitive");
+	}
+	add_filter_to_pf(pf,f);
+	return pf;
+}
 
 Primitive primitive_from_string (std::string str) {
 	if (str.size()) {
@@ -420,7 +502,7 @@ std::string parse_value (char** position, char* end) {
 				temp.clear();
 			}
 		}
-		else if (is_opening_char(*current_position)) {
+		else if (!value.empty() && is_opening_char(*current_position)) {
 			break;
 		}
 		else {
@@ -429,8 +511,8 @@ std::string parse_value (char** position, char* end) {
 		current_position++;
 	}
 	if(current_position == end || *current_position == ')') {
-		value += current_word;
-		*position = current_position+1;
+		value += temp+current_word;
+		*position = current_position;
 	}
 	else {
 		DEBUG("About to pop: \""+value+"\"");
@@ -517,6 +599,19 @@ std::vector<PacketFilter> filters_from_substr (char** position, char* end) {
 					case Option::IP_FRAG:
 					case Option::IP_UNFRAG:
 						break;
+					case Option::SRC_UDP_PORT:
+					case Option::SRC_TCP_PORT:
+					case Option::DST_UDP_PORT:
+					case Option::DST_TCP_PORT: 
+						current_word.clear();
+						while (*position < end && **position != ')' && **position != ' ') {
+							current_word.push_back(**position);
+							(*position)++;
+						}
+						if(current_word.compare("port")) {
+							BUG("Expected \"port\" after "+optionNames[(size_t) curr_opt]);
+						}
+						(*position)++;
 					default:
 						value = parse_value(position,end);						
 				}
@@ -584,7 +679,7 @@ int main() {
 	//std::string addr = "!(ip ttl 5 or ip vers < 6)";
 	//Filter f = Filter::get_filter_from_ipclass_pattern(ip_src,addr);
 	//std::cout<<f.to_str()<<"\n";
-	std::string a = "src host 192.168.1.1 and src port 600-700 and !(ip ttl 5 or ip vers == 6)";
+	std::string a = "tcp opt syn && tcp win < 20";
 	std::cout<<pf_vec_to_str(filters_from_ipfilter_line(a));
 }
 #endif

@@ -22,7 +22,9 @@ public:
 	Filter (HeaderField field, uint32_t lower_value, uint32_t upper_value);
 
 	static Filter get_filter_from_v4_prefix(HeaderField field, uint32_t value, uint32_t prefix);
-	static Filter get_filter_from_ipclass_pattern(HeaderField field, std::string& args);
+	static Filter get_filter_from_v4_prefix_str(HeaderField field, const std::string& prefix_as_str);
+	static Filter get_filter_from_ipclass_pattern(HeaderField field, const std::string& args);
+	static Filter get_filter_from_prefix_pattern(HeaderField field, const std::string& args);
 	
 	Filter& intersect (const Filter &filter); //Intersects this and rhs
 	Filter& unite (const Filter &filter);

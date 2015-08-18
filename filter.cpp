@@ -38,12 +38,22 @@ Filter Filter::get_filter_from_v4_prefix(HeaderField field, uint32_t value, uint
 	return Filter(field, lowerLimit, upperLimit);
 }
 
-Filter Filter::get_filter_from_ipclass_pattern(HeaderField field, std::string& args) {
+Filter Filter::get_filter_from_v4_prefix_str(HeaderField field, const std::string& prefix_as_str) {
 
-	//TODO: handle host src 10.0.0.8/24 (prefixes)
+	size_t prefix_pos = prefix_as_str.find("/");
+	if (prefix_pos == std::string::npos) {
+		BUG("Expected IP prefix and got: "+prefix_as_str);
+	}
+	uint32_t addr = aton(prefix_as_str.substr(0,prefix_pos));
+	uint32_t prefix = atoi(prefix_as_str.substr(prefix_pos+1,2).c_str());
+	return get_filter_from_v4_prefix(field, addr, prefix);
+}
+
+Filter Filter::get_filter_from_ipclass_pattern(HeaderField field, const std::string& args) {
 
 	//Cases:
 	//1234
+	//1234-5678
 	//[=<>!]= 1234
 	//[<>] 1234
 	//1234 or 4567
@@ -55,62 +65,134 @@ Filter Filter::get_filter_from_ipclass_pattern(HeaderField field, std::string& a
 		numbers += ".";
 	}
 	size_t pos = args.find_first_not_of(numbers);
-	
+	Filter f;
 	switch (pos) {
 		case std::string::npos: //1234
 			return Filter(field,to_uint(args));
 		case 0: //either [=<>!]= 1234 or [<>] 1234
 			switch (args[0]) {
 				case '=':
-					if (args[1]!='=') {
+					if (args.size() < 2 || args[1]!='=') {
 						BUG("Wrong argument in IPFilter: "+args+"\n\tExpected '='");
 					}
 					else {
-						return Filter(field,to_uint(args.substr(2,args.size()-2)));
+						f = Filter(field,to_uint(args.substr(2,args.size()-2)));
 					}
 					break;
 				case '<':
-					switch (args[1]) {
+					switch (args[1]) { //FIXME: potential null pointer
 						case '=':
-							return Filter(field,0,to_uint(args.substr(2,args.size()-2)));
+							f = Filter(field,0,to_uint(args.substr(2,args.size()-2)));
+							break;
 						case ' ':
-							return Filter(field,0,to_uint(args.substr(2,args.size()-2))-1);
+							f = Filter(field,0,to_uint(args.substr(2,args.size()-2))-1);
+							break;
 						default:
 							BUG("Wrong argument in IPFilter: "+args+"\n\tExpected one of ' ' or '='");
 					}
+					break;
 				case '>':
-					switch (args[1]) {
+					switch (args[1]) { //FIXME: potential null pointer
 						case '=':
-							return Filter(field,to_uint(args.substr(2,args.size()-2)), UINT32_MAX);
+							f = Filter(field,to_uint(args.substr(2,args.size()-2)), UINT32_MAX);
+							break;
 						case ' ':
-							return Filter(field,to_uint(args.substr(2,args.size()-2))+1, UINT32_MAX);
+							f = Filter(field,to_uint(args.substr(2,args.size()-2))+1, UINT32_MAX);
+							break;
 						default:
 							BUG("Wrong argument in IPFilter: "+args+"\n\tExpected one of ' ' or '='");
 					}
+					break;
 				case '!':
-					if (args[1]!='=') {
+					if (args[1]!='=') { //FIXME: potential null pointer
 						BUG("Wrong argument in IPFilter: "+args+"\n\tExpected '='");
 					}
 					else {
-						Filter f(field);
+						f = Filter(field);
 						f.differentiate(Filter(field,to_uint(args.substr(2,args.size()-2))));
-						return f;
 					}
 					break;
 			}
-		default: {//1234 or 1234
-			Filter f(field,to_uint(args.substr(0,pos)));
-			size_t start = args.find_first_of(numbers,pos);
+			break;
+		default: {//1234 or 1234 OR 1234-5678
+		
+			size_t start;
+			
+			if( (field==tp_srcPort || field == tp_dstPort) && args[pos] == '-') {
+			//1234-5678
+				uint32_t lower = to_uint(args.substr(0,pos));
+				start = pos+1;
+				pos = args.find_first_not_of(numbers,start);
+				uint32_t upper = to_uint(args.substr(start,pos));
+				f= Filter(field,lower,upper);
+				std::cout<<"Created filter :"<<f.to_str()<<"\n";
+			}
+			else {
+				f = Filter(field,to_uint(args.substr(0,pos)));
+			}
+			
+			start = args.find_first_of(numbers,pos);
 
 			while (start != std::string::npos) {
 				//TODO_ check that it's or/|| in the middle
 				pos = args.find_first_not_of(numbers,start);
-				f.unite(Filter(field,to_uint(args.substr(start,pos-start))));
+
+				if( (field==tp_srcPort || field == tp_dstPort) && args[pos] == '-') {
+				//1234-5678
+					uint32_t lower = to_uint(args.substr(start,pos));
+					start = pos+1;
+					pos = args.find_first_not_of(numbers,start);
+					uint32_t upper = to_uint(args.substr(start,pos));
+					f.unite(Filter(field,lower,upper));
+			
+				}
+				else {	
+					f.unite(Filter(field,to_uint(args.substr(start,pos-start))));
+				}
 				start = args.find_first_of(numbers,pos);
 			}
-			return f;
+			
 		}			
 	}
+	return f;
+}
+
+Filter Filter::get_filter_from_prefix_pattern(HeaderField field, const std::string& args) {
+	std::string prefix_chars = "0123456789./";
+	size_t pos = args.find_first_not_of(prefix_chars);
+	Filter f;
+	switch (pos) {
+		case std::string::npos:
+			f = get_filter_from_v4_prefix_str(field,args);
+			break;
+		case 0: //Either == or !=
+			switch (args[0]) {
+				case '=':
+					if (args.size() < 2 || args[1] != '=') {
+						BUG("Unknown comparator: "+args);
+					}
+					f = get_filter_from_v4_prefix_str(field,args.substr(2,args.size()-2));
+					break;
+				case '!':
+					if (args.size() < 2 || args[1] != '=') {
+						BUG("Unknown comparator: "+args);
+					}
+					f = get_filter_from_v4_prefix_str(field,args.substr(2,args.size()-2));
+					f = (Filter(field)).differentiate(f);
+					break;
+			}
+			break;
+		default: {
+			f.make_none();
+			size_t start=0;
+			while (start != std::string::npos) {
+				pos = args.find_first_not_of(prefix_chars,start);
+				f.unite(get_filter_from_v4_prefix_str(field,args.substr(start,pos-start)));
+				start = args.find_first_of(prefix_chars,pos);
+			}
+		}			
+	}
+	return f;
 }
 
 bool Filter::match(uint32_t value) const {
