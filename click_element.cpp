@@ -60,7 +60,15 @@ ClickElement::ClickElement ( ElementType type, std::string& configuration ) :
 			OutputClass port(0);
 			this->add_output_class (port);
 			break;	
-		}	
+		}
+		case VLANEncap:
+			parse_vlan_encap_configuration(configuration);
+			break;
+		case VLANDecap:
+			parse_vlan_decap_configuration(configuration);
+			break;
+		case SetVLANAnno:
+			parse_set_vlan_anno_configuration(configuration);
 		default:
 			std::cerr << "["<<__FILE__<<":"<<__LINE__<<"] "<< "Unsupported Element"<<std::endl;
 			exit(1);
