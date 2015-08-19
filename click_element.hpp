@@ -25,6 +25,8 @@ public:
 	void set_nbPorts(int nbPorts);
 	std::vector<OutputClass> get_outputClasses() const;
 	ElementType get_type() const;
+	
+	std::string to_str() const;
 
 private:
 	static std::shared_ptr<ClickElement> discard_elem_ptr;

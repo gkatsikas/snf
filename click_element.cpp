@@ -101,6 +101,10 @@ ElementType ClickElement::get_type() const {
 	return m_type;
 }
 
+std::string ClickElement::to_str() const {
+	return elementNames[m_type]+" with configuration \""+m_configuration+"\"";
+}
+
 void ClickElement::add_output_class (OutputClass & output_class) {
 	this->m_outputClasses.push_back(output_class);
 	if (output_class.get_portNumber()+1 > m_nbPorts) {

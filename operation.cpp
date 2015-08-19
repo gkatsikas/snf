@@ -34,6 +34,26 @@ void FieldOperation::compose (const FieldOperation & rhs) {
 
 uint32_t FieldOperation::get_value () const { return this->m_value[0]; }
 
+bool FieldOperation::is_same_value (const FieldOperation& rhs) const{
+	bool result = true;
+	switch (m_type) {
+		case WriteRR:
+		case WriteRa:
+		case WriteSF:
+			result = (result && m_value[1] == rhs.m_value[1]);
+		case Write:
+		case Translate:
+			result = (result && m_value[0] == rhs.m_value[0]);
+		default:
+			break;
+	}
+	return result;
+}
+
+bool FieldOperation::operator== (const FieldOperation& rhs) const{
+	return (rhs.m_field==m_field && rhs.m_type==m_type && is_same_value(rhs));
+}
+
 FieldOperation* Operation::get_field_op(HeaderField field) {
 	if (m_fieldOps.find(field) == m_fieldOps.end() ) {
 		return nullptr;

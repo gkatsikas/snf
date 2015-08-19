@@ -33,6 +33,8 @@ struct FieldOperation {
 	void compose (const FieldOperation & rhs);
 	uint32_t get_value() const;
 	std::string to_str() const;
+	bool operator== (const FieldOperation& rhs) const;
+	bool is_same_value (const FieldOperation& rhs) const;
 };
 
 class Operation {

@@ -250,6 +250,27 @@ HeaderField Filter::get_field() const{
 	return this->m_field;
 }
 
+Condition::Condition (HeaderField field, std::shared_ptr<ClickElement> elem, 
+		Filter filter, FieldOperation op) : m_field(field), m_element(elem), 
+		m_filter(filter), m_currentWrite(op) {}
+		 
+bool Condition::is_same_write (const FieldOperation& op) const {
+	return op==m_currentWrite;
+}
+
+bool Condition::intersect(const Filter& filter) {
+	m_filter.intersect(filter);
+	return m_filter.is_none();
+}
+
+bool Condition::is_none() const {
+	return this->m_filter.is_none();
+}
+
+std::string Condition::to_str() const {
+	return "Condition on "+m_element->to_str()+": "+m_filter.to_str();
+}
+
 int TrafficClass::intersect_filter(const Filter& filter) {
 	HeaderField field = filter.get_field();
 	auto got=this->m_filters.find(field);
@@ -263,17 +284,18 @@ int TrafficClass::intersect_filter(const Filter& filter) {
 	return (int) (this->m_filters[field].is_none());
 }
 
-int TrafficClass::intersect_condition(const Filter& condition) {
+int TrafficClass::intersect_condition(const Filter& condition, const FieldOperation& operation) {
 	HeaderField field = condition.get_field();
 	auto got=this->m_writeConditions.find(field);
-	if(got == this->m_writeConditions.end()) {
-		this->m_writeConditions[field]=condition;
+	if(got == this->m_writeConditions.end() ||  !this->m_writeConditions[field].back().is_same_write(operation)) {
+		this->m_writeConditions[field].push_back(
+				Condition(field,this->m_elementPath.back(),condition,operation));
 	}
 	else {
-		this->m_writeConditions[field].intersect(condition);
+		this->m_writeConditions[field].back().intersect(condition);
 	}
 
-	return (int) (this->m_writeConditions[field].is_none());
+	return (int) this->m_writeConditions[field].back().is_none();
 }
 
 int TrafficClass::addElement (std::shared_ptr<ClickElement> element, int port) {
@@ -320,7 +342,7 @@ int TrafficClass::addElement (std::shared_ptr<ClickElement> element, int port) {
 					Filter write_condition(field, field_op->m_value[0], field_op->m_value[1]);
 					if (! filter.contains(write_condition)) {
 						write_condition.intersect (filter);
-						nb_none_filters += intersect_condition (write_condition);
+						nb_none_filters += intersect_condition (write_condition, *field_op);
 						//FIXME: what if I have successive range writes?
 					}
 					break;
@@ -347,7 +369,9 @@ std::string TrafficClass::to_str() const {
 	}
 	output += "Conditions on Write operations:\n";
 	for_fields_in_pf(it,m_writeConditions) {
-		output += ("\t"+it->second.to_str()+"\n");
+		for(auto &condition : it->second) {
+			output += ("\t"+condition.to_str()+"\n");
+		}
 	}
 	output += m_operation.to_str();
 
