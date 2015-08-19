@@ -72,6 +72,9 @@ Filter Filter::get_filter_from_ipclass_pattern(HeaderField field, const std::str
 		case std::string::npos: //1234
 			return Filter(field,to_uint(args));
 		case 0: //either [=<>!]= 1234 or [<>] 1234
+			if(args.size() < 3) {
+				BUG("Wrong argument in IPFilter: "+args);
+			}
 			switch (args[0]) {
 				case '=':
 					if (args.size() < 2 || args[1]!='=') {
@@ -82,7 +85,7 @@ Filter Filter::get_filter_from_ipclass_pattern(HeaderField field, const std::str
 					}
 					break;
 				case '<':
-					switch (args[1]) { //FIXME: potential null pointer
+					switch (args[1]) {
 						case '=':
 							f = Filter(field,0,to_uint(args.substr(2,args.size()-2)));
 							break;
@@ -94,7 +97,7 @@ Filter Filter::get_filter_from_ipclass_pattern(HeaderField field, const std::str
 					}
 					break;
 				case '>':
-					switch (args[1]) { //FIXME: potential null pointer
+					switch (args[1]) {
 						case '=':
 							f = Filter(field,to_uint(args.substr(2,args.size()-2)), UINT32_MAX);
 							break;
@@ -106,7 +109,7 @@ Filter Filter::get_filter_from_ipclass_pattern(HeaderField field, const std::str
 					}
 					break;
 				case '!':
-					if (args[1]!='=') { //FIXME: potential null pointer
+					if (args[1]!='=') {
 						BUG("Wrong argument in IPFilter: "+args+"\n\tExpected '='");
 					}
 					else {
@@ -303,7 +306,7 @@ int TrafficClass::addElement (std::shared_ptr<ClickElement> element, int port) {
 					Filter translated_filter = filter;
 					if(field_value > 0) {
 						translated_filter.translate(field_value,true);
-					/* INFEASIBLE because variable is unsigned */
+					/* FIXME: INFEASIBLE because variable is unsigned */
 					//}else if(field_value < 0) {
 					//	translated_filter.translate(-field_value,false);
 					}

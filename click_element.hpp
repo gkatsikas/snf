@@ -33,8 +33,10 @@ private:
 	void parse_dec_ttl_conf (std::string& configuration);
 	void parse_fix_ip_src (std::string& configuration);
 	void parse_ip_filter (std::string& configuration);
+	void parse_ip_classifier (std::string& configuration);
 	void parse_lookup_filter (std::string& configuration);
 	void parse_ip_rewriter (std::string& configuration);
+	void parse_rr_ip_mapper (std::string& configuration);
 	
 	void configuration_fail ();
 	

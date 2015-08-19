@@ -653,7 +653,7 @@ std::vector<PacketFilter> filters_from_substr (char** position, char* end) {
 }
 
 std::vector<PacketFilter> filters_from_ipfilter_line (std::string line) {
-	PacketFilter pf;
+
 	if (!line.size()) {
 		BUG("Empty IPFilter configuration");
 	}

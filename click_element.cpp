@@ -34,6 +34,9 @@ ClickElement::ClickElement ( ElementType type, std::string& configuration ) :
 		case IPFilter:
 			parse_ip_filter (configuration);
 			break;
+		case IPClassifier:
+			parse_ip_classifier(configuration);
+			break;
 		case Discard:
 		case Discard_def:
 			break;
@@ -45,6 +48,19 @@ ClickElement::ClickElement ( ElementType type, std::string& configuration ) :
 		case IPRewriter:
 			parse_ip_rewriter (configuration);
 			break;
+		case RoundRobinIPMapper:
+			parse_rr_ip_mapper (configuration);
+			break;
+		case MarkIPHeader:
+		case CheckIPHeader:
+		case CheckICMPHeader:
+		case GetIPAddress:
+		case CheckUDPHeader:
+		case CheckTCPHeader: {
+			OutputClass port(0);
+			this->add_output_class (port);
+			break;	
+		}	
 		default:
 			std::cerr << "["<<__FILE__<<":"<<__LINE__<<"] "<< "Unsupported Element"<<std::endl;
 			exit(1);
@@ -153,7 +169,7 @@ void ClickElement::parse_ip_filter (std::string& configuration) {
 	std::vector<PacketFilter> to_discard;
 	for (size_t i=0; i<rules.size(); i++) {
 		if(rules[i].empty()) {
-			BUG("Empty classifying rule");
+			BUG("Empty classifying rule in IPFilter element");
 		}
 		std::string rule = (rules[i][0]==' ') ? rules[i].substr(1,rules[i].size()-1) : rules[i];
 	
@@ -180,8 +196,6 @@ void ClickElement::parse_ip_filter (std::string& configuration) {
 				OutputClass port(output);
 				port.set_filter (pf);
 				this->add_output_class(port);
-				std::cout<<"Added output class \n"<<port.to_str()<<"with port number "<<output<<"\n";
-				std::cout<<"Current number of ports: "<<this->m_nbPorts<<"\n";
 			}
 		}
 	}
@@ -191,7 +205,23 @@ void ClickElement::parse_ip_filter (std::string& configuration) {
 		port.set_child(discard_elem_ptr);
 		port.set_filter(pf);
 		this->add_output_class(port);
-		std::cout<<"Added output class "<<port.to_str()<<"with port number "<<discard_port<<"\n";
+	}
+}
+
+void ClickElement::parse_ip_classifier (std::string& configuration) {
+	std::vector<std::string> rules = split(configuration,',');
+
+	for (size_t i=0; i<rules.size(); i++) {
+		if(rules[i].empty()) {
+			BUG("Empty classifying rule in IPClassifier element");
+		}
+		std::string rule = (rules[i][0]==' ') ? rules[i].substr(1,rules[i].size()-1) : rules[i];
+		std::vector<PacketFilter> outputs = filters_from_ipfilter_line(rule);
+		for (auto &pf : outputs) {
+			OutputClass port(i);
+			port.set_filter(pf);
+			this->add_output_class(port);
+		}
 	}
 }
 
@@ -230,6 +260,10 @@ void ClickElement::parse_ip_rewriter (std::string& configuration) {
 			configuration_fail();
 		
 	}
+}
+
+void ClickElement::parse_rr_ip_mapper (std::string& configuration) {
+	//TODO complete
 }
 
 void ClickElement::configuration_fail() {
