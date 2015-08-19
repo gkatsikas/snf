@@ -22,6 +22,9 @@ static const uint32_t elem_start = __LINE__;
 	FOO(CheckUDPHeader) \
 	FOO(CheckTCPHeader) \
 	FOO(RoundRobinIPMapper) \
+	FOO(VLANEncap) \
+	FOO(VLANDecap) \
+	FOO(SetVLANAnno) \
 	FOO(Discard_def) 
 static const uint32_t elem_end = __LINE__;
 

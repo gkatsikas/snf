@@ -39,6 +39,9 @@ private:
 	void parse_lookup_filter (std::string& configuration);
 	void parse_ip_rewriter (std::string& configuration);
 	void parse_rr_ip_mapper (std::string& configuration);
+	void parse_vlan_encap_configuration(std::string& configuration);
+	void parse_vlan_decap_configuration(std::string& configuration);
+	void parse_set_vlan_anno_configuration(std::string& configuration);
 	
 	void configuration_fail ();
 	

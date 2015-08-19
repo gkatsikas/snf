@@ -266,6 +266,64 @@ void ClickElement::parse_ip_rewriter (std::string& configuration) {
 	}
 }
 
+void ClickElement::parse_vlan_encap_configuration(std::string& configuration) {
+	size_t pos = configuration.find(' ');
+	if (pos == std::string::npos) {
+		BUG("Expected keyword in VLANEncap configuration and got: \""+configuration+"\"");
+	}
+	std::string keyword = configuration.substr(0,pos);
+	uint32_t pcp = 0;
+	uint32_t dei = 2;
+	uint32_t vid = 0;
+	if (!keyword.compare("VLAN_TCI")) {
+		uint32_t value  = atoi (configuration.substr(pos+1,configuration.size()-pos-1).c_str());
+		pcp = value >> 13; //Removes 13 last bits
+		dei = (value>>12) & (0xffffffff << 1); //Gets 12th bit from smaller endian
+		vid = value & (0xffffffff << 12); //Gets 12 last bits
+	}
+	else {
+		while (pos != std::string::npos) {
+			if (!keyword.compare("VLAN_PCP")) {
+				pcp  = atoi (configuration.substr(pos+1,configuration.size()-pos-1).c_str());
+			}
+			else if(!keyword.compare("VLAN_ID")) {
+				vid = atoi (configuration.substr(pos+1,configuration.size()-pos-1).c_str());
+			}
+			else {
+				BUG("Unknown keyword in VLANEncap: "+keyword);
+			}
+			uint32_t start = configuration.find_first_not_of(" ,", configuration.find(',',pos));
+			pos = configuration.find(' ',start);
+		}
+	}
+	
+	OutputClass port(0);
+	port.add_field_op({Write, vlan_pcp, pcp});
+	port.add_field_op({Write, vlan_vid, vid});
+	if (dei < 2) {
+		port.add_field_op({Write,vlan_dei,dei});
+	}
+	this->add_output_class(port);
+}
+
+void ClickElement::parse_vlan_decap_configuration(std::string& configuration) {
+	if(configuration.empty()) {
+		//TODO do we handle ANNO and if yes how?
+		BUG("VLAN annotation not implemented yet");	
+	}
+	OutputClass port(0);
+	port.add_field_op({Write, vlan_pcp, UINT32_MAX});
+	port.add_field_op({Write, vlan_vid, UINT32_MAX});
+	port.add_field_op({Write, vlan_dei, UINT32_MAX});
+	this->add_output_class(port);
+}
+
+void ClickElement::parse_set_vlan_anno_configuration(std::string& configuration) {
+	//TODO complete
+	//Or not
+	BUG("VLAN annotation not implemented yet");
+}
+
 void ClickElement::parse_rr_ip_mapper (std::string& configuration) {
 	//TODO complete
 }
