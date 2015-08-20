@@ -1,15 +1,11 @@
 //============================================================================
-// Name        : file.cpp
+// Name        : file.h
 // Copyright   : KTH ICT CoS Network Systems Lab
 // Description : Template implementation to handle different file types
 //============================================================================
 
-#include <fcntl.h>
-#include <unistd.h>
 #include <sys/stat.h>
-#include <sys/types.h>
-
-#include "file.hpp"
+#include "../helpers.hpp"
 
 /*
  * Constructors
@@ -19,7 +15,7 @@ FileT<T>::FileT()
 {
 	this->log.set_logger_file(__FILE__);
 	this->handler = NULL;
-	log << "\t File constructed" << std::endl;
+	log << info << "\tFile constructed" << def << std::endl;
 }
 
 template <typename T>
@@ -27,7 +23,7 @@ FileT<T>::FileT (std::string& f) : filename(f)
 {
 	this->log.set_logger_file(__FILE__);
 	this->handler = NULL;
-	log << "\t File constructed" << std::endl;
+	log << info << "\tFile constructed" << def << std::endl;
 }
 
 /*
@@ -56,7 +52,7 @@ FileT<T>::~FileT()
 	this->filename.clear();
 	this->handler = NULL;
 
-	log << "\t File destructed" << std::endl;
+	log << info << "\tFile destructed" << def << std::endl;
 }
 
 template <typename T>
@@ -67,7 +63,7 @@ bool FileT<T>::exists(void)
 	// Check if files exist
 	if( stat (this->filename.c_str(), &buffer) != 0 )
 	{
-		log << "\t\t File: " + this->filename +  " does not exist" << std::endl;
+		log << error << "\t\tFile: " + this->filename +  " does not exist" << def << std::endl;
 		return false;
 	}
 
@@ -84,61 +80,42 @@ short int FileT<T>::create_file(void)
 	short int fdIn = 0;
 	if ( (fdIn=open(this->filename.c_str(), O_WRONLY|O_CREAT, 0755)) < 0 )
 	{
-		log << "\t\t Cannot create file: " + this->filename << std::endl;
-		return -1; //CANNOT_CREATE_FILE;
+		log << error << "\t\tCannot create file: " + this->filename << def << std::endl;
+		return CANNOT_CREATE_FILE;
 	}
 	close(fdIn);
 
-	return 0;//SUCCESS;
+	return SUCCESS;
 }
 ////////////////////////////////////////////////////////////////////////
 
 ///////////////////////////////// OPEN /////////////////////////////////
 /*
- * Open a .pcap file with read permissions
+ * Open a file to read (Classic C way using file descriptors)
  */
-//template <> template <> inline
 template <typename T>
 short int FileT<T>::open_file(void)
 {
 	short int fdIn = 0;
-	if ( (fdIn=open(this->filename.c_str(), O_WRONLY, 0755)) < 0 )
+	if ( (fdIn=open(this->filename.c_str(), O_RDONLY, 0755)) < 0 )
 	{
-		log << "\t\t Couldn't open file: " + this->filename << std::endl;
-		return -1;
+		log << error << "\t\t Couldn't open file: " + this->filename << def << std::endl;
+		return CANNOT_OPEN_FILE;
 	}
 
 	return fdIn;
 }
 
 /*
- * Open a .pcap file with read permissions
+ * Open a text file to read (C++ way using streams)
  */
-/*template <> template <> inline
-pcap_t* FileT<pcap_dumper_t>::open_file(void)
+template <> template <> inline
+std::ifstream* FileT<std::ifstream>::open_file(void)
 {
-	char errbuf[PCAP_ERRBUF_SIZE];
-	pcap_t* handle = pcap_open_offline(this->filename.c_str(), errbuf);
-
-	if ( handle == NULL)
-	{
-		log << "\t\t Couldn't open: " + this->filename << std::endl;
-		return NULL;
-	}
-
-	return handle;
-}*/
-
-/*
- * Open a text file to write
- */
-/*template <> template <> inline
-std::ofstream* FileT<std::ofstream>::open_file(void)
-{
-	this->handler = new std::ofstream();
+	this->handler = new std::ifstream();
 	this->handler->open(this->filename.c_str());
 	return this->handler;
-}*/
+}
 ////////////////////////////////////////////////////////////////////////
 
 ///////////////////////////////// CLOSE ////////////////////////////////
@@ -146,7 +123,7 @@ std::ofstream* FileT<std::ofstream>::open_file(void)
  * Close text file
  */
 template <> inline
-void FileT<std::ofstream>::close_file(void)
+void FileT<std::ifstream>::close_file(void)
 {
 	this->handler->close();
 }
@@ -157,7 +134,7 @@ void FileT<std::ofstream>::close_file(void)
  * Read a packet from .pcap file
  */
 /*template <> inline
-u_char* FileT<pcap_t>::read_file(struct pcap_pkthdr* header)
+u_char* FileT<std::ifstream>::read_file(struct pcap_pkthdr* header)
 {
 	u_char* packet = (u_char*) pcap_next(this->handler, header);
 	return packet;
@@ -218,7 +195,7 @@ short int FileT<T>::is_valid(const char* suffix)
 	return strncmp(this->filename.c_str() + lenstr - lensuffix, suffix, lensuffix) == 0;
 }
 
-template <typename T>
+/*template <typename T>
 short int FileT<T>::is_valid(const char* filename, const char* suffix)
 {
 	if ( !filename || !suffix )
@@ -229,3 +206,4 @@ short int FileT<T>::is_valid(const char* filename, const char* suffix)
 		return 0;
 	return strncmp(filename + lenstr - lensuffix, suffix, lensuffix) == 0;
 }
+*/

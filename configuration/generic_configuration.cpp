@@ -4,15 +4,10 @@
 // Description : Input Parameters' configuration implementation
 //============================================================================
 
-#include <fcntl.h>
-#include <unistd.h>
 #include <sys/stat.h>
-#include <sys/types.h>
 
 #include "../helpers.hpp"
 #include "generic_configuration.hpp"
-
-//const std::string loggerFile = __FILE__;
 
 std::string trim(std::string const& source, char const* delims = " \t\r\n") {
 	std::string result(source);

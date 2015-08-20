@@ -1,19 +1,13 @@
-
 //============================================================================
 //        Name: file.hpp
 //   Copyright: KTH ICT CoS Network Systems Lab
 // Description: A template File API for handling different file types
 //============================================================================
 
-#ifndef _FILE_T_H_
-#define _FILE_T_H_
+#ifndef _FILE_T_HPP_
+#define _FILE_T_HPP_
 
-#include <iomanip>
-#include <fstream>
-#include <iostream>
-#include <cstring>
-
-#include "logger.hpp"
+#include "../logger.hpp"
 
 template <class T>
 class FileT
@@ -55,7 +49,7 @@ class FileT
 
 			/* High level interface with specialized methods */
 			short int               create_file(void);
-			//template<typename F> F* open_file  (void);
+			template<typename F> F* open_file  (void);
 			short int               open_file  (void);
 			void                    close_file (void);
 
@@ -67,5 +61,7 @@ class FileT
 			bool      is_empty    (void);
 			void      delete_file (void);
 };
+
+#include "file.h"
 
 #endif

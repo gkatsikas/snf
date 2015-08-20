@@ -75,7 +75,7 @@ const short int          WRONG_INPUT_ARGS         = -3;
 
 // File Management
 const short int          FILE_EXISTS              = -5;
-const short int          FILE_ALREADY_OPEN        = -6;
+const short int          CANNOT_OPEN_FILE         = -6;
 const short int          FILE_DOES_NOT_EXIST      = -7;
 const short int          CANNOT_CREATE_FILE       = -8;
 const short int          INVALID_FILE_TYPE        = -9;
@@ -83,14 +83,7 @@ const short int          INVALID_FILE_TYPE        = -9;
 // Memory Management
 const short int          NO_MEM_AVAILABLE         = -10;
 const short int          MEMORY_ALREADY_RELEASED  = -11;
-const short int          RULE_CONFLICT_FOUND      = -12;
-
-// Input Correctness
-const short int          INVALID_NF_TYPE          = -14;
-const short int          INVALID_HDR_MODE         = -15;
-
-// Protocol Management
-const short int          INVALID_PROTOCOL         = -16;
+const short int          INVALID_GRAPH_OPERATION  = -12;
 
 // Packet Management
 const short int          VALID_PACKET             =   0;
@@ -100,6 +93,13 @@ const short int          MTU_EXCEEDED             = -22;
 const short int          INVALID_IPV4_HDR         = -23;
 const short int          INVALID_UDP_HDR          = -24;
 const short int          INVALID_TCP_HDR          = -25;
+
+// Input Correctness
+const short int          INVALID_NF_TYPE          = -30;
+const short int          INVALID_TOPOLOGY         = -31;
+
+// Protocol Management
+const short int          INVALID_PROTOCOL         = -40;
 
 /*
  * String helpers
@@ -140,5 +140,20 @@ struct measure
         return  (double) duration.count();
     }
 };
+
+/*
+ * Generic method to delete a pointer of any type (T) from a data structure.
+ * Usage: std::for_each (data_str.begin (), data_str.end (), deleter<T>());
+ */
+/*template<typename T>
+struct deleter : std::unary_function<const T*, void>
+{
+	void operator() (const T *ptr) const
+	{
+		delete ptr;
+		std::cout << "Pointer deleted" << std::endl;
+	}
+};
+*/
 
 #endif

@@ -7,61 +7,54 @@
 #ifndef _GENERIC_CONFIG_HPP_
 #define _GENERIC_CONFIG_HPP_
 
-
-#include <iostream>
-#include <cstdio>
-#include <string>
-#include <algorithm>
 #include <map>
 
 #include "chameleon.hpp"
-#include "input_properties.hpp"
 #include "../logger.hpp"
-//#include "../helpers.hpp"
 
 class GenericConfiguration
 {
 	protected:
-			std::string            filename;
-			std::map<std::string,Chameleon> content_;
+		std::string filename;
+		std::map<std::string,Chameleon> content_;
 
-			/*
-			 * Logger instance
-			 */
-			Logger log;
+		/*
+		 * Logger instance
+		 */
+		Logger log;
 
 	public:
-			/*
-			 * Constructor
-			 */
-			GenericConfiguration(const std::string& config_file);
+		/*
+		 * Constructor
+		 */
+		GenericConfiguration(const std::string& config_file);
 
-			/*
-			 * Destructor
-			 */
-			virtual ~GenericConfiguration();
+		/*
+		 * Destructor
+		 */
+		virtual ~GenericConfiguration();
 
-			/*
-			 * Load the property file (Abstract method)
-			 */
-			virtual InputProperties* readPropertyFile(void) = 0;
+		/*
+		 * Load the property file (Abstract method)
+		 */
+		virtual void load_property_file(void) = 0;
 
-			/*
-			 * Helper methods to read the property file
-			 */
-			Chameleon const& get_value(std::string const& section, std::string const& entry) const;
-			Chameleon const& get_value(std::string const& section, std::string const& entry, double value);
-			Chameleon const& get_value(std::string const& section, std::string const& entry, std::string const& value);
+		/*
+		 * Helper methods to read the property file
+		 */
+		Chameleon const& get_value(std::string const& section, std::string const& entry) const;
+		Chameleon const& get_value(std::string const& section, std::string const& entry, double value);
+		Chameleon const& get_value(std::string const& section, std::string const& entry, std::string const& value);
 
-			/*
-			 * Count the entries of a section
-			 */
-			unsigned short int count_section_elements(std::string const& section);
+		/*
+		 * Count the entries of a section
+		 */
+		unsigned short int count_section_elements(std::string const& section);
 
-			/*
-			 * Convert string to boolean
-			 */
-			bool to_bool(std::string const& s);
+		/*
+		 * Convert string to boolean
+		 */
+		bool to_bool(std::string const& s);
 };
 
 #endif

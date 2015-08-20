@@ -1,3 +1,3 @@
 #!/bin/bash
 
-./nf_synthetizer -p configuration/propertyFile
+./nf_synthetizer -p configuration/property_file

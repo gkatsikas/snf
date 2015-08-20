@@ -1,13 +1,13 @@
 #include <stack>
 #include <string>
-#include <iostream>
 #include <cstdlib>
+#include <iostream>
 
-#include "logger.hpp"
 #include "helpers.hpp"
 #include "click_tree.hpp"
 #include "click_element.hpp"
 #include "output_class.hpp"
+#include "parser/chain_parser.hpp"
 #include "configuration/parser_configuration.hpp"
 
 void test_click_tree(void);
@@ -27,16 +27,32 @@ int main(int argc, char** argv) {
 
 	//////////////////////////////////// Load property file ///////////////////////////////////
 	ParserConfiguration* pcf = NULL;
-	InputProperties*     properties = NULL;
+
+	std::cout << std::endl;
+	log << "+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+" << std::endl;
+	log << measure<>::execution
+	( [&]()
+	{
+		log << "Loading property file... " << std::endl;
+		pcf = new ParserConfiguration(property_file);
+		log << info << "Property file: " << property_file << def << std::endl;
+		pcf->load_property_file();
+	}
+	) << "  microseconds" << std::endl;
+	log << "+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+" << std::endl;
+	std::cout << std::endl;
+	///////////////////////////////////////////////////////////////////////////////////////////
+
+	////////////////////////////////////// Parse Input NFs ////////////////////////////////////
+	//ChainParser* parser = NULL;
 
 	std::cout << std::endl;
 	log << measure<>::execution
 	( [&]()
 	{
-		log << "Loading properties... " << std::endl;
-		pcf = new ParserConfiguration(property_file);
-		log << info << "Property: " << property_file << def << std::endl;
-		properties = pcf->readPropertyFile();
+		log << "Parsing NFs... " << std::endl;
+		//parser = new ChainParser(*properties);
+		//parser->check_and_load_nfs();
 	}
 	) << "  microseconds" << std::endl;
 	std::cout << std::endl;
@@ -48,10 +64,15 @@ int main(int argc, char** argv) {
 	( [&]()
 	{
 		log << "Testing Click Tree... " << std::endl;
-		test_click_tree();
+		//test_click_tree();
 	}
 	) << "  microseconds" << std::endl;
 	std::cout << std::endl;
+	///////////////////////////////////////////////////////////////////////////////////////////
+
+	///////////////////////////////////////// Clean-Up ////////////////////////////////////////
+	delete pcf;
+	//delete parser;
 	///////////////////////////////////////////////////////////////////////////////////////////
 }
 

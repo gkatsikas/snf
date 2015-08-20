@@ -4,17 +4,14 @@
 // Description: A custom, classful, lightweight logger
 //============================================================================
 
-#ifndef _CUSTOM_LOGGER_
-#define _CUSTOM_LOGGER_
+#ifndef _LOGGER_HPP_
+#define _LOGGER_HPP_
 
-#include <string>
 #include <iostream>
 #include <sstream>
 #include <iomanip>
 #include <boost/foreach.hpp>
 #include <boost/tokenizer.hpp>
-
-#include <ostream>
 
 // Colors for the logger classes
 namespace Color {
@@ -60,7 +57,7 @@ class Logger {
 			Logger& operator<< (T a);
 
 			/*
-			 * Overload operator this operator to act as cout
+			 * Overload this operator to act as cout
 			 */
 			Logger& operator<<( std::ostream&(*f)(std::ostream&) ) {
 				(void)*f;

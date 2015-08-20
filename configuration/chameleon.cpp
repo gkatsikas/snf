@@ -4,10 +4,7 @@
 // Description : Class that covers several types of property values
 //============================================================================
 
-#include <string>
 #include <sstream>
-#include <cstdlib>
-
 #include "chameleon.hpp"
 
 Chameleon::Chameleon(std::string const& value) {
