@@ -46,7 +46,25 @@ class Filter {
 };
 
 
+class Condition { //FIXME: just inherit Filter?
+
+public:
+	Condition(HeaderField, std::shared_ptr<ClickElement>, Filter, FieldOperation);
+	
+	bool is_same_write(const FieldOperation&) const;
+	bool intersect(const Filter&); //return true if condition is not empty
+	std::string to_str() const;
+	bool is_none() const;
+
+private:
+	HeaderField m_field;
+	std::shared_ptr<ClickElement> m_element;
+	Filter m_filter;
+	FieldOperation m_currentWrite;
+};
+
 typedef std::unordered_map<HeaderField, Filter, std::hash<int> > PacketFilter;
+typedef std::unordered_map<HeaderField, std::vector<Condition>, std::hash<int> > ConditionMap;
 #define for_fields_in_pf(it,pf) for (auto it=pf.begin(); it != pf.end(); ++it)
 
 //Class overlay for a collection of filters
@@ -61,7 +79,7 @@ class TrafficClass {
 
 	private:
 		PacketFilter m_filters;
-		PacketFilter m_writeConditions;
+		ConditionMap m_writeConditions;
 
 		//Path of the class in terms of elements
 		std::vector<std::shared_ptr<ClickElement> > m_elementPath;
@@ -69,7 +87,7 @@ class TrafficClass {
 
 		void addFilter(Filter filter,HeaderField field);
 		int intersect_filter(const Filter& filter);
-		int intersect_condition (const Filter& condition);
+		int intersect_condition (const Filter& condition, const FieldOperation& operation);
 };
 
 #endif

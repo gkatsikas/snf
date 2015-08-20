@@ -3,7 +3,6 @@
 #include <iostream>
 #include <cstdio>
 
-#include "filter.hpp"
 #include "ip_filter_parser.hpp"
 
 #define BUG(A) std::cerr<<"["<<__FILE__<<":"<<__LINE__<<"] ERROR: "<<A \
@@ -654,7 +653,7 @@ std::vector<PacketFilter> filters_from_substr (char** position, char* end) {
 }
 
 std::vector<PacketFilter> filters_from_ipfilter_line (std::string line) {
-	PacketFilter pf;
+
 	if (!line.size()) {
 		BUG("Empty IPFilter configuration");
 	}

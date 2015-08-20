@@ -90,15 +90,15 @@ void test_click_tree(void) {
 	std::string address = "192.10.0.1";
 	std::shared_ptr<ClickElement> fixip (new ClickElement(FixIPSrc, address ));
 
-	std::string rewrite = "- - 192.168.0.1 20000-30000# 0 1";
+	std::string rewrite = "- - 192.168.0.1 100-200# 0 1";
 	std::shared_ptr<ClickElement> iprewriter(new ClickElement(IPRewriter, rewrite));
-	/*for (auto &it : lookup->get_outputClasses()) {
-		std::cout<<it.to_str()<<std::endl;
-	}
-	*/
+
+	std::string filter = "allow src port 100-150";
+	std::shared_ptr<ClickElement> ipfilter(new ClickElement(IPFilter, filter));
 
 	fixip->set_child(iprewriter,0);
-	iprewriter->set_child(lookup,0);
+	iprewriter->set_child(ipfilter,0);
+	ipfilter->set_child(ttl,0);
 	lookup->set_child(ttl,2);
 	ttl->set_child(discard,0);
 	ClickTree tree(fixip);

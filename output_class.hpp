@@ -14,7 +14,7 @@ public:
 	//Constructor
 	OutputClass(int port_nb);
 	
-	static OutputClass port_from_filter_rule(int port_nb, std::string& rule);
+	//static OutputClass port_from_filter_rule(int port_nb, std::string& rule);
 	//parsed_rules: prefixes already rooted by more prioritary rules
 	//To be updated during function call
 	static OutputClass port_from_lookup_rule(std::string& rule,Filter& parsed_rules);

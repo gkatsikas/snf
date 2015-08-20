@@ -25,6 +25,8 @@ public:
 	void set_nbPorts(int nbPorts);
 	std::vector<OutputClass> get_outputClasses() const;
 	ElementType get_type() const;
+	
+	std::string to_str() const;
 
 private:
 	static std::shared_ptr<ClickElement> discard_elem_ptr;
@@ -33,8 +35,13 @@ private:
 	void parse_dec_ttl_conf (std::string& configuration);
 	void parse_fix_ip_src (std::string& configuration);
 	void parse_ip_filter (std::string& configuration);
+	void parse_ip_classifier (std::string& configuration);
 	void parse_lookup_filter (std::string& configuration);
 	void parse_ip_rewriter (std::string& configuration);
+	void parse_rr_ip_mapper (std::string& configuration);
+	void parse_vlan_encap_configuration(std::string& configuration);
+	void parse_vlan_decap_configuration(std::string& configuration);
+	void parse_set_vlan_anno_configuration(std::string& configuration);
 	
 	void configuration_fail ();
 	

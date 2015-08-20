@@ -17,25 +17,6 @@ void OutputClass::add_filter (HeaderField field, Filter& filter) {
 	m_filter[field] = filter;
 }
 
-
-
-OutputClass OutputClass::port_from_filter_rule (int port_nb, std::string& rule) {
-	OutputClass port(port_nb);
-	std::string action = rule.substr(0,rule.find(' '));
-	
-	if (action.compare("deny") == 0 || action.compare("drop") == 0) {
-		port.set_child (ClickElement::get_discard_elem());
-	}
-	else if (action.compare("allow") !=0) {
-		std::cerr << "[" << __FILE__ << ":" << __LINE__ <<"] Unknown action in "
-				"IPFilter: "<<rule<<std::endl;
-	}
-	
-	//TODO: keep going...
-	
-	return port;
-}
-
 OutputClass OutputClass::port_from_lookup_rule(std::string& rule, Filter& parsed_rules) {
 	std::vector<std::string> decomposed_rule = split(rule,' ');
 	int nb_arg = decomposed_rule.size();

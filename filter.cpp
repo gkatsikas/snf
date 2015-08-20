@@ -72,6 +72,9 @@ Filter Filter::get_filter_from_ipclass_pattern(HeaderField field, const std::str
 		case std::string::npos: //1234
 			return Filter(field,to_uint(args));
 		case 0: //either [=<>!]= 1234 or [<>] 1234
+			if(args.size() < 3) {
+				BUG("Wrong argument in IPFilter: "+args);
+			}
 			switch (args[0]) {
 				case '=':
 					if (args.size() < 2 || args[1]!='=') {
@@ -82,7 +85,7 @@ Filter Filter::get_filter_from_ipclass_pattern(HeaderField field, const std::str
 					}
 					break;
 				case '<':
-					switch (args[1]) { //FIXME: potential null pointer
+					switch (args[1]) {
 						case '=':
 							f = Filter(field,0,to_uint(args.substr(2,args.size()-2)));
 							break;
@@ -94,7 +97,7 @@ Filter Filter::get_filter_from_ipclass_pattern(HeaderField field, const std::str
 					}
 					break;
 				case '>':
-					switch (args[1]) { //FIXME: potential null pointer
+					switch (args[1]) {
 						case '=':
 							f = Filter(field,to_uint(args.substr(2,args.size()-2)), UINT32_MAX);
 							break;
@@ -106,7 +109,7 @@ Filter Filter::get_filter_from_ipclass_pattern(HeaderField field, const std::str
 					}
 					break;
 				case '!':
-					if (args[1]!='=') { //FIXME: potential null pointer
+					if (args[1]!='=') {
 						BUG("Wrong argument in IPFilter: "+args+"\n\tExpected '='");
 					}
 					else {
@@ -247,6 +250,27 @@ HeaderField Filter::get_field() const{
 	return this->m_field;
 }
 
+Condition::Condition (HeaderField field, std::shared_ptr<ClickElement> elem, 
+		Filter filter, FieldOperation op) : m_field(field), m_element(elem), 
+		m_filter(filter), m_currentWrite(op) {}
+		 
+bool Condition::is_same_write (const FieldOperation& op) const {
+	return op==m_currentWrite;
+}
+
+bool Condition::intersect(const Filter& filter) {
+	m_filter.intersect(filter);
+	return m_filter.is_none();
+}
+
+bool Condition::is_none() const {
+	return this->m_filter.is_none();
+}
+
+std::string Condition::to_str() const {
+	return "Condition on "+m_element->to_str()+": "+m_filter.to_str();
+}
+
 int TrafficClass::intersect_filter(const Filter& filter) {
 	HeaderField field = filter.get_field();
 	auto got=this->m_filters.find(field);
@@ -260,17 +284,18 @@ int TrafficClass::intersect_filter(const Filter& filter) {
 	return (int) (this->m_filters[field].is_none());
 }
 
-int TrafficClass::intersect_condition(const Filter& condition) {
+int TrafficClass::intersect_condition(const Filter& condition, const FieldOperation& operation) {
 	HeaderField field = condition.get_field();
 	auto got=this->m_writeConditions.find(field);
-	if(got == this->m_writeConditions.end()) {
-		this->m_writeConditions[field]=condition;
+	if(got == this->m_writeConditions.end() ||  !this->m_writeConditions[field].back().is_same_write(operation)) {
+		this->m_writeConditions[field].push_back(
+				Condition(field,this->m_elementPath.back(),condition,operation));
 	}
 	else {
-		this->m_writeConditions[field].intersect(condition);
+		this->m_writeConditions[field].back().intersect(condition);
 	}
 
-	return (int) (this->m_writeConditions[field].is_none());
+	return (int) this->m_writeConditions[field].back().is_none();
 }
 
 int TrafficClass::addElement (std::shared_ptr<ClickElement> element, int port) {
@@ -303,7 +328,7 @@ int TrafficClass::addElement (std::shared_ptr<ClickElement> element, int port) {
 					Filter translated_filter = filter;
 					if(field_value > 0) {
 						translated_filter.translate(field_value,true);
-					/* INFEASIBLE because variable is unsigned */
+					/* FIXME: INFEASIBLE because variable is unsigned */
 					//}else if(field_value < 0) {
 					//	translated_filter.translate(-field_value,false);
 					}
@@ -317,7 +342,7 @@ int TrafficClass::addElement (std::shared_ptr<ClickElement> element, int port) {
 					Filter write_condition(field, field_op->m_value[0], field_op->m_value[1]);
 					if (! filter.contains(write_condition)) {
 						write_condition.intersect (filter);
-						nb_none_filters += intersect_condition (write_condition);
+						nb_none_filters += intersect_condition (write_condition, *field_op);
 						//FIXME: what if I have successive range writes?
 					}
 					break;
@@ -344,7 +369,9 @@ std::string TrafficClass::to_str() const {
 	}
 	output += "Conditions on Write operations:\n";
 	for_fields_in_pf(it,m_writeConditions) {
-		output += ("\t"+it->second.to_str()+"\n");
+		for(auto &condition : it->second) {
+			output += ("\t"+condition.to_str()+"\n");
+		}
 	}
 	output += m_operation.to_str();
 
