@@ -6,3 +6,6 @@ Network Functions'(NFs) Chain Synthesis
 ## Requirements
   * C++11 (e.g. apt-get install build-essential)
   * apt-get install libboost-all-dev (or libboost-dev)
+
+## Profile
+  * apt-get install valgrind
