@@ -15,7 +15,7 @@ class ChainParser {
 		/*
 		 * The length of the chain
 		 */
-		short int chain_length;
+		unsigned short chain_length;
 
 		/*
 		 * The chain (represented as a DAG) to be synthesized
@@ -31,7 +31,7 @@ class ChainParser {
 		/*
 		 * Public API for the Parser
 		 */
-		ChainParser (ParserConfiguration& pc);
+		ChainParser (ParserConfiguration* pc);
 		~ChainParser();
 
 	private:

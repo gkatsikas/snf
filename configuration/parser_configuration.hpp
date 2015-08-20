@@ -29,6 +29,11 @@ class ParserConfiguration : public GenericConfiguration
 		~ParserConfiguration();
 
 		/*
+		 * Setters & Getters
+		 */
+		inline Graph* get_graph(void) { return this->nf_chain; };
+
+		/*
 		 * Implements load_property_file (abstract methid in the super class)
 		 */
 		virtual void load_property_file(void);

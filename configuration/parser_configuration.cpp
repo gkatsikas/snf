@@ -14,7 +14,7 @@
  * Construct an empty parser configuration
  */
 ParserConfiguration::ParserConfiguration(const std::string& config_file) : GenericConfiguration(config_file) {
-	this->nf_chain = NULL;
+	this->nf_chain = new Graph();
 }
 
 /*
@@ -64,11 +64,8 @@ void ParserConfiguration::load_property_file(void) {
 			exit(exit_status);
 	}
 
-	// Create an empty graph
-	this->nf_chain = new Graph();
-
 	// Create as many vertices as the number of NFs
-	std::vector<std::shared_ptr<Vertex>> nf_array;
+	std::vector<Vertex*> nf_array;
 	// Pre-allocate for better performance
 	nf_array.reserve(nfs_no);
 	for (i=0 ; i<nfs_no ; i++) {
@@ -77,9 +74,9 @@ void ParserConfiguration::load_property_file(void) {
 		std::string nf_pos_str  = sstr.str();
 		std::string nf_path = (std::string&) get_value("NF_CHAIN", "NF_"+nf_pos_str);
 
-		// Use smart pointers to avoid duplicate objects
-		std::shared_ptr<Vertex> sp(new Vertex("NF_"+nf_pos_str, nf_path, i));
-		nf_array.push_back(std::move(sp));
+		// Move the allocated pointers to avoid duplicate objects
+		Vertex* v = new Vertex("NF_"+nf_pos_str, nf_path, i);
+		nf_array.push_back(std::move(v));
 	}
 
 	// Check that the vector is populated
@@ -90,7 +87,7 @@ void ParserConfiguration::load_property_file(void) {
 	// Interconnect the created nodes to form a graph that represents the NF chain
 	unsigned short src_element = 0;
 	for (const auto& row : rows) {
-		Vertex& src_vertex = *nf_array[src_element];
+		Vertex* src_vertex = nf_array[src_element];
 
 		boost::char_separator<char> col_sep(" ");
 		boost::tokenizer<boost::char_separator<char>> cols(row, col_sep);
@@ -99,10 +96,10 @@ void ParserConfiguration::load_property_file(void) {
 		for (boost::tokenizer<boost::char_separator<char>>::iterator iter=cols.begin(); iter!=cols.end (); ++iter) {
 			// There is a connection --> Create a graph edge
 			if ( (*iter == "1") && (src_element != dst_element) ) {
-				Vertex& dst_vertex = *nf_array[dst_element];
+				Vertex* dst_vertex = nf_array[dst_element];
 
 				// Add connection
-				this->nf_chain->add_edge(&src_vertex, &dst_vertex);
+				this->nf_chain->add_edge(std::move(src_vertex), std::move(dst_vertex));
 			}
 			dst_element++;
 		}

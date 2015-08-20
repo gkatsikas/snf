@@ -8,6 +8,7 @@
 #include "click_element.hpp"
 #include "output_class.hpp"
 #include "parser/chain_parser.hpp"
+#include "configuration/graph.hpp"
 #include "configuration/parser_configuration.hpp"
 
 void test_click_tree(void);
@@ -44,7 +45,7 @@ int main(int argc, char** argv) {
 	///////////////////////////////////////////////////////////////////////////////////////////
 
 	////////////////////////////////////// Parse Input NFs ////////////////////////////////////
-	//ChainParser* parser = NULL;
+	ChainParser* parser = NULL;
 
 	std::cout << std::endl;
 	log << "+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+" << std::endl;
@@ -52,8 +53,7 @@ int main(int argc, char** argv) {
 	( [&]()
 	{
 		log << "Parsing NFs... " << std::endl;
-		//parser = new ChainParser(*properties);
-		//parser->check_and_load_nfs();
+		parser = new ChainParser(pcf);
 	}
 	) << "  microseconds" << std::endl;
 	log << "+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+" << std::endl;
@@ -74,9 +74,12 @@ int main(int argc, char** argv) {
 	std::cout << std::endl;
 	///////////////////////////////////////////////////////////////////////////////////////////
 
+	//Graph* g = pcf->get_graph();
+	//g->print_adjacency_list();
+
 	///////////////////////////////////////// Clean-Up ////////////////////////////////////////
 	delete pcf;
-	//delete parser;
+	delete parser;
 	///////////////////////////////////////////////////////////////////////////////////////////
 }
 

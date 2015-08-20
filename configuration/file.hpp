@@ -48,18 +48,17 @@ class FileT
 
 
 			/* High level interface with specialized methods */
-			short int               create_file(void);
+			short                   create_file(void);
 			template<typename F> F* open_file  (void);
-			short int               open_file  (void);
+			short                   open_file  (void);
 			void                    close_file (void);
 
-			bool      exists      (void);
-			//u_char*   read_file   (struct pcap_pkthdr* header);
-			void      dump_to_file(std::string& data);
-			short int is_valid    (const char* suffix);
-			short int is_valid    (const char* filename, const char* suffix);
-			bool      is_empty    (void);
-			void      delete_file (void);
+			bool         exists             (void);
+			std::string& read_file          (std::string* data);
+			void         dump_to_file       (std::string data);
+			bool         has_valid_extension(std::string suffix);
+			bool         is_empty           (void);
+			void         delete_file        (void);
 };
 
 #include "file.h"

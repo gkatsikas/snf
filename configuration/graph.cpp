@@ -12,20 +12,13 @@ Graph::Graph() {
 }
 
 Graph::~Graph() {
-	//for (auto& pair : this->get_in_degrees()) {
-	//	delete pair.first;
-	//}
+	for (auto& pair : this->get_in_degrees())
+		delete pair.first;
 	this->in_degrees.clear();
 
-	/*for (auto& pair : this->vertices) {
-		for (const Vertex* neighbour : pair.second) {
-			delete neighbour;
-		}
-		delete pair.first;
-	}*/
 	this->vertices.clear();
 
-	log << debug << "Graph deleted" << def << std::endl;
+	log << debug << "Graph destroyed" << def << std::endl;
 }
 
 /*
