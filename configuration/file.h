@@ -22,6 +22,10 @@ template <typename T>
 FileT<T>::FileT (std::string& f) : filename(f)
 {
 	this->log.set_logger_file(__FILE__);
+
+	if ( !this->exists() )
+		exit(FILE_DOES_NOT_EXIST);
+
 	this->handler = NULL;
 	log << info << "\tFile constructed" << def << std::endl;
 }
@@ -63,7 +67,7 @@ bool FileT<T>::exists(void)
 	// Check if files exist
 	if( stat (this->filename.c_str(), &buffer) != 0 )
 	{
-		log << error << "\t\tFile: " + this->filename +  " does not exist" << def << std::endl;
+		log << error << "\tFile: " + this->filename +  " does not exist" << def << std::endl;
 		return false;
 	}
 
