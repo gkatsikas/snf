@@ -1,13 +1,14 @@
 CC = g++
-CFLAGS = -O3 -Wall -c -std=c++11 -Wextra -g
+CFLAGS = -O3 -Wall -c -std=c++11 -Wextra -g #-I/usr/local/include/click /usr/local/include/clicknet /usr/local/include/clicktool
 LFLAGS = -Wall -std=c++11 -g
 
 #LIBS = -lefence
+LIBS = -L/usr/local/lib/ -lclick -lclicktool
 
 OBJS  = main.o click_tree.o filter.o operation.o click_element.o \
 	output_class.o helpers.o segment_list.o ip_filter_parser.o \
 	chameleon.o vertex.o graph.o generic_configuration.o \
-	parser_configuration.o chain_parser.o
+	parser_configuration.o chain_parser.o #click_parse_configuration.o \
 
 NFSynthetizer: $(OBJS)
 	$(CC) $(LFLAGS) $(OBJS) -o nf_synthetizer $(LIBS)
@@ -62,6 +63,9 @@ parser_configuration.o: ./configuration/parser_configuration.cpp ./configuration
 chain_parser.o: ./parser/chain_parser.cpp ./parser/chain_parser.hpp ./configuration/parser_configuration.hpp \
 		 click_element.hpp logger.hpp
 	$(CC) $(CFLAGS) ./parser/chain_parser.cpp
+
+click_parse_configuration.o: ./click/click_parse_configuration.cpp ./click/click_parse_configuration.hpp
+	$(CC) $(CFLAGS) ./click/click_parse_configuration.cpp
 
 clean:
 	\rm -f *.o *.plist *.gch
