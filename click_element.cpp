@@ -333,7 +333,17 @@ void ClickElement::parse_set_vlan_anno_configuration(std::string& configuration)
 }
 
 void ClickElement::parse_rr_ip_mapper (std::string& configuration) {
-	//TODO complete
+	size_t start = 0;
+	size_t end = configuration.find(",");
+	
+	while(start != std::string::npos) {
+		std::string pattern = configuration.substr(start,end-start);
+		std::pair<OutputClass,OutputClass> ports = 
+					OutputClass::output_class_from_pattern(split_inputsec);
+		//FIXME: How to allow only one parameter to be changed
+		//Change the way ip_mapper is configured?
+		//e.g. SRCIP IPA, IPB, IPC,...
+	}
 }
 
 void ClickElement::configuration_fail() {
