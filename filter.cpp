@@ -254,10 +254,10 @@ HeaderField Filter::get_field() const{
 	return this->m_field;
 }
 
-Condition::Condition (HeaderField field, std::shared_ptr<ClickElement> elem, 
-		Filter filter, FieldOperation op) : m_field(field), m_element(elem), 
+Condition::Condition (HeaderField field, std::shared_ptr<ClickElement> elem,
+		Filter filter, FieldOperation op) : m_field(field), m_element(elem),
 		m_filter(filter), m_currentWrite(op) {}
-		 
+
 bool Condition::is_same_write (const FieldOperation& op) const {
 	return op==m_currentWrite;
 }

@@ -52,7 +52,7 @@ class Condition { //FIXME: just inherit Filter?
 
 public:
 	Condition(HeaderField, std::shared_ptr<ClickElement>, Filter, FieldOperation);
-	
+
 	bool is_same_write(const FieldOperation&) const;
 	bool intersect(const Filter&); //return true if condition is not empty
 	std::string to_str() const;

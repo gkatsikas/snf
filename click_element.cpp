@@ -80,7 +80,6 @@ void ClickElement::set_child (std::shared_ptr<ClickElement> child, int port) {
 		if (it.get_portNumber() == port) {
 			it.set_child(child);
 		}
-		
 	}
 }
 
@@ -128,33 +127,33 @@ void ClickElement::parse_dec_ttl_conf (std::string& configuration) {
 	if (configuration.size() != 0) {
 		configuration_fail();
 	}
-	
+
 	FieldOperation ttl_op = {Translate, ip_TTL, 1};
-	
+
 	OutputClass port (0);
 	Filter valid_ttl (ip_TTL,2,UINT_MAX);
 	port.add_field_op(ttl_op);
 	port.add_filter(ip_TTL,valid_ttl);
-	
+
 	this->add_output_class(port);
-	
+
 	//Drops dead packets
 	OutputClass port1(1);
 	Filter zero_ttl(ip_TTL,0,1);
 	port1.add_filter(ip_TTL, zero_ttl);
 	port1.set_child(discard_elem_ptr);
-	
+
 	this->add_output_class(port1);
 }
 
 void ClickElement::parse_fix_ip_src (std::string& configuration) {
 	std::vector<std::string> split_conf = split(configuration, ' ');
-	
+
 	uint32_t new_ip_value=0;
-	
+
 	FieldOperation fix_ip_src_op = {Write, ip_src, new_ip_value};
 	OutputClass port(0);
-		
+
 	switch (split_conf.size()) {
 		case 1:
 			if (!is_ip4_prefix(configuration)) {configuration_fail(); }
@@ -169,7 +168,7 @@ void ClickElement::parse_fix_ip_src (std::string& configuration) {
 		default:
 			configuration_fail();
 	}
-	
+
 	fix_ip_src_op.m_value[0] = new_ip_value;
 	port.add_field_op(fix_ip_src_op);
 	this->add_output_class(port);
@@ -184,7 +183,7 @@ void ClickElement::parse_ip_filter (std::string& configuration) {
 			BUG("Empty classifying rule in IPFilter element");
 		}
 		std::string rule = (rules[i][0]==' ') ? rules[i].substr(1,rules[i].size()-1) : rules[i];
-	
+
 		size_t first_space = rule.find(' ');
 		std::string behaviour = rule.substr(0,first_space);
 		int16_t output = -1;
@@ -199,7 +198,7 @@ void ClickElement::parse_ip_filter (std::string& configuration) {
 		}
 		std::vector<PacketFilter> outputs = filters_from_ipfilter_line( rules[i].substr(
 									first_space+1,rule.size() - first_space - 1));
-									
+
 		if (output==-1) {
 			to_discard.insert(to_discard.end(), outputs.begin(), outputs.end());
 		}
@@ -270,7 +269,6 @@ void ClickElement::parse_ip_rewriter (std::string& configuration) {
 		}
 		default:
 			configuration_fail();
-		
 	}
 }
 
@@ -304,7 +302,7 @@ void ClickElement::parse_vlan_encap_configuration(std::string& configuration) {
 			pos = configuration.find(' ',start);
 		}
 	}
-	
+
 	OutputClass port(0);
 	port.add_field_op({Write, vlan_pcp, pcp});
 	port.add_field_op({Write, vlan_vid, vid});
@@ -317,7 +315,7 @@ void ClickElement::parse_vlan_encap_configuration(std::string& configuration) {
 void ClickElement::parse_vlan_decap_configuration(std::string& configuration) {
 	if(configuration.empty()) {
 		//TODO do we handle ANNO and if yes how?
-		BUG("VLAN annotation not implemented yet");	
+		BUG("VLAN annotation not implemented yet");
 	}
 	OutputClass port(0);
 	port.add_field_op({Write, vlan_pcp, UINT32_MAX});
@@ -337,10 +335,10 @@ void ClickElement::parse_rr_ip_mapper (std::string& configuration) {
 
 	size_t start = 0;
 	size_t end = configuration.find(",");
-	
+
 	while(start != std::string::npos) {
 		std::string pattern = configuration.substr(start,end-start);
-		std::pair<OutputClass,OutputClass> ports = 
+		std::pair<OutputClass,OutputClass> ports =
 					OutputClass::output_class_from_pattern(split_inputsec);
 		//FIXME: How to allow only one parameter to be changed
 		//Change the way ip_mapper is configured?
