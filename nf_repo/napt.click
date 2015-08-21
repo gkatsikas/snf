@@ -39,9 +39,9 @@ define(
 // Elements
 elementclass NAPT {
 	// Module's arguments
-	$dev0,   $iface0, $macAddr0,  $ipAddr0, $ipNetHost0, $ipBcast0, $ipNet0, $color0,
-	$dev1,   $iface1, $macAddr1,  $ipAddr1, $ipNetHost1, $ipBcast1, $ipNet1, $color1,
-	$gwIPAddr, $gwMACAddr, $queueSize, $mtuSize, $burst |
+	$dev0, $iface0, $macAddr0, $ipAddr0, $ipNetHost0, $ipBcast0, $ipNet0, $color0,
+	$dev1, $iface1, $macAddr1, $ipAddr1, $ipNetHost1, $ipBcast1, $ipNet1, $color1,
+	$gwIPAddr, $gwMACAddr, $gwPort, $queueSize, $mtuSize, $burst |
 
 	// Queues
 	queue0 :: Queue($queueSize);
@@ -57,22 +57,22 @@ elementclass NAPT {
 	// ARP Querier
 	// The querier for the 2nd iface is replaced with a static
 	// EtherEncap because we always send to one gw
-	arpQuerier0   :: ARPQuerier($ipAddr0, $macAddr0);
-	arpQuerier1   :: ARPQuerier($ipAddr1, $macAddr1);
+	arpQuerier0 :: ARPQuerier($ipAddr0, $macAddr0);
+	arpQuerier1 :: ARPQuerier($ipAddr1, $macAddr1);
 
 	// ARP Responder
 	arpResponder0 :: ARPResponder($ipAddr0 $macAddr0);
 	arpResponder1 :: ARPResponder($ipAddr1 $macAddr1);
 
 	// Classifier
-	classifier0   :: Classifier(
+	classifier0 :: Classifier(
 		12/0806 20/0001,    /* ARP Requests    */
 		12/0806 20/0002,    /* ARP Replies     */
 		12/0800,            /* IPv4 packets    */
 		-                   /* Everything else */
 	);
 
-	classifier1   :: Classifier(
+	classifier1 :: Classifier(
 		12/0806 20/0001,    /* ARP Requests    */
 		12/0806 20/0002,    /* ARP Replies     */
 		12/0800,            /* IPv4 packets    */
@@ -80,8 +80,8 @@ elementclass NAPT {
 	);
 
 	// Strip Ethernet header
-	strip0  :: Strip(14);
-	strip1  :: Strip(14);
+	strip0 :: Strip(14);
+	strip1 :: Strip(14);
 
 	// Check header's integrity
 	checkIPHeader0 :: MarkIPHeader;

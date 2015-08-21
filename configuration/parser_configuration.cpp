@@ -41,8 +41,8 @@ void ParserConfiguration::load_property_file(void) {
 	unsigned short nfs_no = count_section_elements("NF_CHAIN");
 	log << info << "\tNumber of chained NFs = " << nfs_no << def << std::endl;
 
+	// Read the topology
 	std::string nf_topo = (std::string&) get_value("NF_TOPO", "TOPOLOGY");
-	//log << info << "\tTopology of NFs = " << nf_topo << def << std::endl;
 
 	// The token used to separate rows in the input topology map
 	boost::char_separator<char> row_sep(";");
@@ -75,7 +75,7 @@ void ParserConfiguration::load_property_file(void) {
 		std::string nf_path = (std::string&) get_value("NF_CHAIN", "NF_"+nf_pos_str);
 
 		// Move the allocated pointers to avoid duplicate objects
-		Vertex* v = new Vertex("NF_"+nf_pos_str, nf_path, i);
+		Vertex* v = new Vertex("NF_"+nf_pos_str, nf_path, i+1);
 		nf_array.push_back(std::move(v));
 	}
 
@@ -113,7 +113,7 @@ void ParserConfiguration::load_property_file(void) {
 	return;
 }
 
-short int ParserConfiguration::check_topology_correctness(const boost::tokenizer<boost::char_separator<char>>& array,
+short ParserConfiguration::check_topology_correctness(const boost::tokenizer<boost::char_separator<char>>& array,
 								const unsigned short& correct_elements_no,
 								const std::string& type) {
 

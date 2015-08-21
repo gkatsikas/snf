@@ -7,7 +7,6 @@
 #ifndef _CHAIN_PARSER_HPP_
 #define _CHAIN_PARSER_HPP_
 
-#include "../element_type.hpp"
 #include "../configuration/parser_configuration.hpp"
 
 class ChainParser {
@@ -34,8 +33,10 @@ class ChainParser {
 		ChainParser (ParserConfiguration* pc);
 		~ChainParser();
 
+		short load_chained_configuratios(void);
+
 	private:
-		//short int load_nf_configuration(std::string& nf_source);
+		short load_nf_configuration(std::string& nf_source);
 };
 
 #endif

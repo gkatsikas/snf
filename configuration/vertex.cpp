@@ -7,15 +7,13 @@
 #include "vertex.hpp"
 
 Vertex::Vertex(std::string name, std::string path, unsigned short pos, unsigned short weight) :
-	name(name), source_code_path(path), position(pos), weight(weight), file_handler(NULL) {
-	this->file_handler = new FileT<std::ifstream>(path);
+	name(name), source_code_path(path), position(pos), weight(weight) {
 	this->log.set_logger_file(__FILE__);
-	log << info << "\tVertex constructed" << def << std::endl;
+	//log << info << "\tVertex constructed" << def << std::endl;
 }
 
 Vertex::~Vertex() {
-	delete this->file_handler;
-	log << info << "\tVertex destroyed" << def << std::endl;
+	//log << info << "\tVertex destroyed" << def << std::endl;
 }
 
 Vertex& Vertex::operator=(Vertex& v) {

@@ -9,6 +9,7 @@
 
 Graph::Graph() {
 	this->log.set_logger_file(__FILE__);
+	log << debug << "Graph constructed" << def << std::endl;
 }
 
 Graph::~Graph() {
@@ -163,6 +164,16 @@ void Graph::print_topological_sort(void) {
 	log << info << "===============================================" << def << std::endl;
 }
 
+void Graph::print_chain_order(void) {
+	log << info << "===============================================" << def << std::endl;
+	log << info << "================ NF Chain Order ===============" << def << std::endl;
+	for (Vertex* v : this->get_chain_order()) {
+		log << info << v->get_name() << "," << def;
+	}
+	log << std::endl;
+	log << info << "===============================================" << def << std::endl;
+}
+
 /*
  * Simple topological sorting
  */
@@ -224,4 +235,17 @@ void topological_sort_vertex(Vertex* vertex, Colour& colour, const Graph::Adjace
 	// Visited nodes are in black list :p
 	colour = Black;
 	sorted.push_back(vertex);
+}
+
+/*
+ * The natural flow of the NF chain is the reverse topological sort
+ */
+std::vector<Vertex*> Graph::get_chain_order(void) {
+	std::vector<Vertex*> chain_order;
+	std::vector<Vertex*> topo_sort = this->topological_sort();
+	std::reverse(topo_sort.begin(), topo_sort.end());
+	for ( Vertex* v : topo_sort ) {
+		chain_order.push_back(v);
+	}
+	return chain_order;
 }

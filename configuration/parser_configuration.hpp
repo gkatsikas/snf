@@ -42,8 +42,8 @@ class ParserConfiguration : public GenericConfiguration
 		/*
 		 * Check the loaded properties for errors
 		 */
-		short int check_topology_correctness(const boost::tokenizer<boost::char_separator<char>>& array,
-							const unsigned short& nfs_no, const std::string& type);
+		short check_topology_correctness(const boost::tokenizer<boost::char_separator<char>>& array,
+						 const unsigned short& nfs_no, const std::string& type);
 		void check_for_loops(void);
 };
 

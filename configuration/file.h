@@ -30,8 +30,6 @@ FileT<T>::FileT (std::string& f) : filename(f) {
 	}
 
 	this->handler = NULL;
-	this->handler = this->open_file<T>();
-	this->close_file();
 	log << info << "\tFile handler for " << this->filename << " constructed" << def << std::endl;
 }
 

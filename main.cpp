@@ -16,7 +16,7 @@ short int parseArguments(int cmd_args_no, char** cmd_args, std::string* property
 
 int main(int argc, char** argv) {
 	std::string property_file;
-	short int exit_status = 0;
+	short exit_status = 0;
 
 	// Initialize logger
 	Logger log(__FILE__);
@@ -38,6 +38,7 @@ int main(int argc, char** argv) {
 		pcf = new ParserConfiguration(property_file);
 		log << info << "Property file: " << property_file << def << std::endl;
 		pcf->load_property_file();
+		pcf->get_graph()->print_chain_order();
 	}
 	) << "  microseconds" << std::endl;
 	log << "+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+" << std::endl;
@@ -54,6 +55,9 @@ int main(int argc, char** argv) {
 	{
 		log << "Parsing NFs... " << std::endl;
 		parser = new ChainParser(pcf);
+		if ( (exit_status=parser->load_chained_configuratios()) != SUCCESS ) {
+			exit(exit_status);
+		}
 	}
 	) << "  microseconds" << std::endl;
 	log << "+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+" << std::endl;
@@ -67,15 +71,12 @@ int main(int argc, char** argv) {
 	( [&]()
 	{
 		log << "Testing Click Tree... " << std::endl;
-		test_click_tree();
+		//test_click_tree();
 	}
 	) << "  microseconds" << std::endl;
 	log << "+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+" << std::endl;
 	std::cout << std::endl;
 	///////////////////////////////////////////////////////////////////////////////////////////
-
-	//Graph* g = pcf->get_graph();
-	//g->print_adjacency_list();
 
 	///////////////////////////////////////// Clean-Up ////////////////////////////////////////
 	delete pcf;

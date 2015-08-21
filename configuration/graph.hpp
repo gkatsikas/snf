@@ -48,12 +48,14 @@ class Graph
 		void print_in_degrees      (void);
 		void print_adjacency_list  (void);
 		void print_topological_sort(void);
+		void print_chain_order     (void);
 
 		/*
 		 * Graph features
 		 */
 		bool is_empty(void);
 		std::vector<Vertex*> topological_sort(void);
+		std::vector<Vertex*> get_chain_order(void);
 
 	protected:
 		/*
