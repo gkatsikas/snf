@@ -15,7 +15,7 @@ OBJS =  main.o click_tree.o filter.o operation.o click_element.o \
 ELEMENT_OBJS = 
 #ELEMENT_OBJS = /opt/click/userlevel/[!click]*.o
 
-NFSynthetizer: $(OBJS)
+NFSynthesizer: $(OBJS)
 	$(CC) $(LFLAGS) $(CLICK_HDRS) $(OBJS) $(ELEMENT_OBJS) -o nf_synthesizer $(LIBS)
 
 helpers.o: helpers.cpp helpers.hpp
