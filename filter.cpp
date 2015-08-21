@@ -232,6 +232,10 @@ Filter& Filter::differentiate (const Filter& filter) {
 	return *this;
 }
 
+bool Filter::operator== (const Filter& rhs) const {
+	return (this->m_field == rhs.m_field && this->m_filter == rhs.m_filter);
+}
+
 void Filter::make_none () {
 	this->m_filter = DisjointSegmentList();
 }
