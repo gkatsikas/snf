@@ -1,7 +1,7 @@
 Network Functions'(NFs) Chain Synthesis
 ======
 
-### A framework to turn a chain of Click-based network functions (NFs) into a sythesized NF.
+A framework to turn a chain of Click-based network functions (NFs) into a sythesized NF.
 
 ## Requirements
   * C++11 (e.g. apt-get install build-essential)
@@ -10,8 +10,8 @@ Network Functions'(NFs) Chain Synthesis
 ## Profile
   * apt-get install valgrind
 
-### Steps
-## Click
+## Steps
+#### Click
   * cd /opt/
   * git clone https://github.com/kohler/click.git
   * cd ./click
@@ -21,7 +21,7 @@ Network Functions'(NFs) Chain Synthesis
   * make elemlist
   * make install (uses default prefix=/usr/local/)
 
-## NF Synthesis  
+#### NF Synthesis  
   * cd /opt/
   * git clone git@bitbucket.org:nslab/nf-synthesis.git
   * cd ./nf-synthesis
