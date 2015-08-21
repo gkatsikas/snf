@@ -59,7 +59,7 @@ ClickElement::ClickElement ( ElementType type, std::string& configuration ) :
 		case CheckTCPHeader: {
 			OutputClass port(0);
 			this->add_output_class (port);
-			break;	
+			break;
 		}
 		case VLANEncap:
 			parse_vlan_encap_configuration(configuration);
@@ -261,7 +261,7 @@ void ClickElement::parse_ip_rewriter (std::string& configuration) {
 			else{ configuration_fail(); }
 		}
 		case 6: {
-			std::pair<OutputClass,OutputClass> ports = 
+			std::pair<OutputClass,OutputClass> ports =
 					OutputClass::output_class_from_pattern(split_inputsec);
 			this->add_output_class(ports.first);
 			this->add_output_class(ports.second);
@@ -338,8 +338,9 @@ void ClickElement::parse_rr_ip_mapper (std::string& configuration) {
 
 	while(start != std::string::npos) {
 		std::string pattern = configuration.substr(start,end-start);
-		std::pair<OutputClass,OutputClass> ports =
-					OutputClass::output_class_from_pattern(split_inputsec);
+		// The following line is commentd by Georgios because it was not compiling
+		// std::pair<OutputClass,OutputClass> ports = OutputClass::output_class_from_pattern(split_inputsec);
+
 		//FIXME: How to allow only one parameter to be changed
 		//Change the way ip_mapper is configured?
 		//e.g. SRCIP IPA, IPB, IPC,...
