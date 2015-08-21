@@ -67,7 +67,7 @@ int main(int argc, char** argv) {
 	( [&]()
 	{
 		log << "Testing Click Tree... " << std::endl;
-		//test_click_tree();
+		test_click_tree();
 	}
 	) << "  microseconds" << std::endl;
 	log << "+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+" << std::endl;

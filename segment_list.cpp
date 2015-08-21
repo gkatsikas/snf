@@ -26,6 +26,7 @@ struct SegmentNode {
 	SegmentNode (uint32_t lower, uint32_t upper);
 	std::string to_str() ;
 	std::string to_ip_str();
+	bool operator==(const SegmentNode& node) const;
 };
 
 SegmentNode::SegmentNode (uint32_t lower, uint32_t upper) :
@@ -39,6 +40,14 @@ std::string SegmentNode::to_str () {
 
 std::string SegmentNode::to_ip_str () {
 	return "["+ntoa(m_lowerLimit)+","+ntoa(m_upperLimit)+"]";
+}
+
+bool SegmentNode::operator==(const SegmentNode& node) const {
+	return (this->m_upperLimit == node.m_upperLimit && this->m_lowerLimit == node.m_lowerLimit &&
+		( (!this->m_child && node.m_child) || 
+		  (this->m_child && node.m_child && *(this->m_child) == *(node.m_child) )
+		) );
+	
 }
 
 DisjointSegmentList::DisjointSegmentList () {}
@@ -304,6 +313,10 @@ DisjointSegmentList& DisjointSegmentList::operator= (const DisjointSegmentList& 
 	this->m_head = copy_list(rhs.m_head);
 
 	return *this;
+}
+
+bool DisjointSegmentList::operator== (const DisjointSegmentList& rhs) const {
+	return (*(this->m_head) == *(rhs.m_head));
 }
 
 void DisjointSegmentList::translate (uint32_t value, bool forward) {
