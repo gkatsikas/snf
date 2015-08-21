@@ -15,9 +15,9 @@ A framework to turn a chain of Click-based network functions (NFs) into a sythes
   * cd /opt/
   * git clone https://github.com/kohler/click.git
   * cd ./click
-  * ./configure --enable-user-multithread --enable-multithread --enable-ip6 --enable-nanotimestamp \
-		--enable-intel-cpu --enable-analysis --enable-ipsec --enable-local --enable-simple \
-		(This is an indicative list of parameters)
+  * ./configure --enable-user-multithread --enable-multithread --enable-ip6 --enable-nanotimestamp
+		--enable-intel-cpu --enable-analysis --enable-ipsec --enable-local --enable-simple
+		--enable-all-elements #(This is an indicative list of parameters)
   * make elemlist
   * make install (uses default prefix=/usr/local/)
 
