@@ -4,26 +4,15 @@
 // Description : Class that covers several types of property values
 //============================================================================
 
-#include <sstream>
 #include "chameleon.hpp"
 
-Chameleon::Chameleon(std::string const& value) {
-	value_ = value;
-}
+Chameleon::Chameleon(std::string const& value) : value_(value) {}
 
-Chameleon::Chameleon(const char* c) {
-	value_ = c;
-}
+Chameleon::Chameleon(const char* c) : value_(c){}
 
-Chameleon::Chameleon(double d) {
-	std::stringstream s;
-	s << d;
-	value_ = s.str();
-}
+Chameleon::Chameleon(double d) : value_(std::to_string(d)) {}
 
-Chameleon::Chameleon(Chameleon const& other) {
-	value_ = other.value_;
-}
+Chameleon::Chameleon(Chameleon const& other) : value_(other.value_) {}
 
 Chameleon& Chameleon::operator=(Chameleon const& other) {
 	value_ = other.value_;
@@ -31,9 +20,7 @@ Chameleon& Chameleon::operator=(Chameleon const& other) {
 }
 
 Chameleon& Chameleon::operator=(double i) {
-	std::stringstream s;
-	s << i;
-	value_ = s.str();
+	value_ = std::to_string(i);
 	return *this;
 }
 

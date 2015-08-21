@@ -39,6 +39,7 @@ public:
 	void translate (uint32_t value,bool forward=true);
 	
 	DisjointSegmentList& operator= (const DisjointSegmentList& rhs);
+	bool operator== (const DisjointSegmentList & rhs) const;
 	
 	std::string to_str () const;
 	std::string to_ip_str() const;
