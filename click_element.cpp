@@ -329,11 +329,13 @@ void ClickElement::parse_vlan_decap_configuration(std::string& configuration) {
 void ClickElement::parse_set_vlan_anno_configuration(std::string& configuration) {
 	//TODO complete
 	//Or not
+	std::cout << configuration << std::endl;
 	BUG("VLAN annotation not implemented yet");
 }
 
 void ClickElement::parse_rr_ip_mapper (std::string& configuration) {
 	//TODO complete
+	std::cout << configuration << std::endl;
 }
 
 void ClickElement::configuration_fail() {

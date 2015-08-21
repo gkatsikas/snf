@@ -1,14 +1,15 @@
 CC = g++
-CFLAGS = -O3 -Wall -c -std=c++11 -Wextra -g #-I/usr/local/include/click /usr/local/include/clicknet /usr/local/include/clicktool
+CFLAGS = -O3 -Wall -c -std=c++11 -Wextra -g
 LFLAGS = -Wall -std=c++11 -g
 
-#LIBS = -lefence
-LIBS = -L/usr/local/lib/ -lclick -lclicktool
+LIBS = -L/usr/local/lib/ -lclick -ldl #-lefence
+#CLICK_LIB = -I/usr/local/include/click
 
 OBJS  = main.o click_tree.o filter.o operation.o click_element.o \
 	output_class.o helpers.o segment_list.o ip_filter_parser.o \
 	chameleon.o vertex.o graph.o generic_configuration.o \
-	parser_configuration.o chain_parser.o #click_parse_configuration.o \
+	parser_configuration.o chain_parser.o click_parse_configuration.o \
+	/opt/click/userlevel/controlsocket.o
 
 NFSynthetizer: $(OBJS)
 	$(CC) $(LFLAGS) $(OBJS) -o nf_synthetizer $(LIBS)
