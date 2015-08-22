@@ -5,13 +5,11 @@
 #include <functional>
 
 #include "filter.hpp"
+#include "helpers.hpp"
 #include "click_element.hpp"
 #include "output_class.hpp"
-#include "helpers.hpp"
 
-#define BUG(A) std::cerr<<"["<<__FILE__<<":"<<__LINE__<<"] "<<A \
-				<<std::endl; \
-				exit(1)
+#define BUG(A) std::cerr<<"["<<__FILE__<<":"<<__LINE__<<"] "<<A <<std::endl; exit(1)
 
 #define MIN(a,b) (a>b) ? b : a
 #define MAX(a,b) (a>b) ? a : b

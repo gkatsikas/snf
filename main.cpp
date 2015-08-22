@@ -6,9 +6,9 @@
 #include "helpers.hpp"
 #include "click_tree.hpp"
 #include "click_element.hpp"
+#include "logger/logger.hpp"
 #include "output_class.hpp"
 #include "parser/chain_parser.hpp"
-#include "configuration/graph.hpp"
 #include "configuration/parser_configuration.hpp"
 
 void test_click_tree(void);

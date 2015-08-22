@@ -13,9 +13,7 @@
 #include "output_class.hpp"
 #include "ip_filter_parser.hpp"
 
-#define BUG(A) std::cerr<<"["<<__FILE__<<":"<<__LINE__<<"] ERROR: "<<A \
-				<<std::endl; \
-				exit(1)
+#define BUG(A) std::cerr<<"["<<__FILE__<<":"<<__LINE__<<"] ERROR: "<<A <<std::endl; exit(1)
 
 //ClickElement class
 std::string empty;

@@ -3,15 +3,15 @@
 #include <iostream>
 #include <cstdio>
 
-#include "logger.hpp"
 #include "click_tree.hpp"
 #include "click_element.hpp"
 #include "output_class.hpp"
+#include "logger/logger.hpp"
 
 #define DEBUG(a) printf("[%s:%d] %s\n",__FILE__,__LINE__,a)
 
 ClickTree::ClickTree (std::shared_ptr<ClickElement> root) : m_root( {root, TrafficClass()}),
-											m_trafficClasses() {
+								m_trafficClasses() {
 	this->find_classes();
 }
 

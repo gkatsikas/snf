@@ -10,7 +10,7 @@
 #include <map>
 
 #include "chameleon.hpp"
-#include "../logger.hpp"
+#include "../logger/logger.hpp"
 
 class GenericConfiguration
 {

@@ -1,9 +1,9 @@
 #!/bin/bash
 
-### Valgrind
+### 1. Valgrind
 # Start ./valgrind.sh in another shell
 
-### GDB
+### 2. Invoke program through GDB
 gdb --args nf_synthesizer target remote | vgdb
 
-### Press q (quit)
+### 3. Press q (quit)

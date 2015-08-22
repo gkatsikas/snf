@@ -6,6 +6,7 @@
 //============================================================================
 
 #include "graph.hpp"
+#include "../helpers.hpp"
 
 Graph::Graph() {
 	this->log.set_logger_file(__FILE__);
@@ -16,10 +17,15 @@ Graph::~Graph() {
 	for (auto& pair : this->get_in_degrees())
 		delete pair.first;
 	this->in_degrees.clear();
-
 	this->vertices.clear();
 
 	log << debug << "Graph destroyed" << def << std::endl;
+}
+
+void Graph::add_vertex(Vertex* u) {
+	this->vertices[u];
+
+	log << debug << "\tVertex added [" << u->get_name() << "]" << def << std::endl;
 }
 
 /*
@@ -136,7 +142,6 @@ bool Graph::is_empty(void) {
  * Print graph info
  */
 void Graph::print_in_degrees(void) {
-	log << info << "===============================================" << def << std::endl;
 	log << info << "================== In degrees =================" << def << std::endl;
 	for (auto& pair : this->get_in_degrees())
 		log << info << std::setw(2) << pair.first->get_name() << " has in-degree: " << pair.second << def << std::endl;
@@ -144,7 +149,6 @@ void Graph::print_in_degrees(void) {
 }
 
 void Graph::print_adjacency_list(void) {
-	log << info << "===============================================" << def << std::endl;
 	log << info << "================ Adjacency List ===============" << def << std::endl;
         for (auto& pair : this->get_adjacency_list()) {
 		log << info << std::setw(2) << pair.first->get_name() << "-> ";
@@ -156,16 +160,22 @@ void Graph::print_adjacency_list(void) {
 };
 
 void Graph::print_topological_sort(void) {
-	log << info << "===============================================" << def << std::endl;
 	log << info << "=============== Topological Sort ==============" << def << std::endl;
-	for (Vertex* v : this->topological_sort())
+	std::vector<Vertex*> ts;
+	try {
+		ts = this->topological_sort();
+	}
+	catch (const std::exception& e) {
+		log << error << "|--> " << e.what() << def << std::endl;
+		exit(NF_CHAIN_NOT_ACYCLIC);
+	}
+	for (Vertex* v : ts)
 		log << info << v->get_name() << "," << def;
 	log << std::endl;
 	log << info << "===============================================" << def << std::endl;
 }
 
 void Graph::print_chain_order(void) {
-	log << info << "===============================================" << def << std::endl;
 	log << info << "================ NF Chain Order ===============" << def << std::endl;
 	for (Vertex* v : this->get_chain_order()) {
 		log << info << v->get_name() << "," << def;
@@ -193,17 +203,21 @@ std::vector<Vertex*> Graph::topological_sort() {
 	visited.reserve(in_degs.size());
 
 	for (auto& pair : in_degs) {
-		// vertex has in degree of 0
+		// Vertex has in degree of 0
 		if (pair.second == 0) {
 			Vertex* vertex = pair.first;
 			Colour& colour = visited[vertex];
 
-			// Not visited, go
-			//if (colour == White)
+			// This should never happen here because vertex has in degree 0
 			assert (colour == White);
+
+			// Not visited, go
 			topological_sort_vertex(vertex, colour, this->vertices, visited, sorted);
 		}
 	}
+
+	if ( (sorted.size() == 0) && (this->get_vertices_no() > 1) )
+		throw std::logic_error("Cycle in graph");
 
 	return sorted;
 }
@@ -225,11 +239,8 @@ void topological_sort_vertex(Vertex* vertex, Colour& colour, const Graph::Adjace
 			topological_sort_vertex(neighbour, neighbour_colour, adjacency_list, visited, sorted);
 		}
 		// Ambiguous color denotes a cycle!
-		else if (neighbour_colour == Grey) {
-			//throw std::runtime_error("Cycle in graph");
-			log << error << "|--> Cycle in graph" << def << std::endl;
-			throw std::runtime_error("");
-		}
+		else if (neighbour_colour == Grey)
+			throw std::logic_error("Cycle in graph");
 	}
 
 	// Visited nodes are in black list :p
@@ -242,10 +253,19 @@ void topological_sort_vertex(Vertex* vertex, Colour& colour, const Graph::Adjace
  */
 std::vector<Vertex*> Graph::get_chain_order(void) {
 	std::vector<Vertex*> chain_order;
-	std::vector<Vertex*> topo_sort = this->topological_sort();
-	std::reverse(topo_sort.begin(), topo_sort.end());
-	for ( Vertex* v : topo_sort ) {
-		chain_order.push_back(v);
+	std::vector<Vertex*> topo_sort;
+
+	try {
+		topo_sort = this->topological_sort();
 	}
+	catch (const std::exception& e) {
+		log << error << "|--> " << e.what() << def << std::endl;
+		exit(NF_CHAIN_NOT_ACYCLIC);
+	}
+
+	std::reverse(topo_sort.begin(), topo_sort.end());
+	for ( Vertex* v : topo_sort )
+		chain_order.push_back(v);
+
 	return chain_order;
 }

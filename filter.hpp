@@ -1,19 +1,21 @@
-#ifndef FILTER_HPP
-#define FILTER_HPP
+#ifndef _FILTER_HPP_
+#define _FILTER_HPP_
 
 #define MAX_UINT32 0xFFFFFFFF
 
 #include <string>
-#include <unordered_map>
 #include <memory>
 #include <cstdint>
-#include "element_type.hpp"
+#include <unordered_map>
 #include "operation.hpp"
+#include "element_type.hpp"
 #include "segment_list.hpp"
 
 class ClickElement;
 
-//Contains one field-specific filter
+/*
+ * Contains one field-specific filter
+ */
 class Filter {
 	public:
 		Filter ();
@@ -47,35 +49,42 @@ class Filter {
 		HeaderField m_field;
 };
 
-
+/*
+ * Describe
+ */
 class Condition { //FIXME: just inherit Filter?
 
-public:
-	Condition(HeaderField, std::shared_ptr<ClickElement>, Filter, FieldOperation);
+	public:
+		Condition(HeaderField, std::shared_ptr<ClickElement>, Filter, FieldOperation);
 
-	bool is_same_write(const FieldOperation&) const;
-	bool intersect(const Filter&); //return true if condition is not empty
-	std::string to_str() const;
-	bool is_none() const;
+		bool is_same_write(const FieldOperation&) const;
+		bool intersect(const Filter&); //return true if condition is not empty
+		std::string to_str() const;
+		bool is_none() const;
 
-private:
-	HeaderField m_field;
-	std::shared_ptr<ClickElement> m_element;
-	Filter m_filter;
-	FieldOperation m_currentWrite;
+	private:
+		HeaderField m_field;
+		std::shared_ptr<ClickElement> m_element;
+		Filter m_filter;
+		FieldOperation m_currentWrite;
 };
 
 typedef std::unordered_map<HeaderField, Filter, std::hash<int> > PacketFilter;
 typedef std::unordered_map<HeaderField, std::vector<Condition>, std::hash<int> > ConditionMap;
 #define for_fields_in_pf(it,pf) for (auto it=pf.begin(); it != pf.end(); ++it)
 
-//Class overlay for a collection of filters
+
+/*
+ * Overlay class for a collection of filters
+ */
 class TrafficClass {
 
 	public:
-		//Adds the element with output port port
-		//-1 indicates no output port (end of chain)
-		//Returns the number of updated filters that are equals to None
+		/*
+		 * Adds the element with output port port
+		 * |-> -1 indicates no output port (end of chain)
+		 * Returns the number of updated filters that are equals to None
+		 */
 		int addElement (std::shared_ptr<ClickElement> element, int port=-1);
 		std::string to_str () const;
 
@@ -83,7 +92,9 @@ class TrafficClass {
 		PacketFilter m_filters;
 		ConditionMap m_writeConditions;
 
-		//Path of the class in terms of elements
+		/*
+		 * Path of the class in terms of elements
+		 */
 		std::vector<std::shared_ptr<ClickElement> > m_elementPath;
 		Operation m_operation;
 

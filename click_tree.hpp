@@ -1,5 +1,5 @@
-#ifndef CLICK_TREE_HPP
-#define CLICK_TREE_HPP
+#ifndef _CLICK_TREE_HPP_
+#define _CLICK_TREE_HPP_
 
 #include <memory>
 
@@ -14,7 +14,6 @@ struct ClickNode {
 };
 
 class ClickTree {
-
 	public:
 		ClickTree (std::shared_ptr<ClickElement> root) ;
 		std::vector<TrafficClass> get_trafficClasses() const;

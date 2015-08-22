@@ -52,7 +52,8 @@ elementclass Router {
 	out0    :: ToDevice  ($iface0, BURST $burst);
 	in1     :: FromDevice($iface1, BURST $burst);
 	out1    :: ToDevice  ($iface1, BURST $burst);
-	toLinux :: ToHost;
+	//toLinux :: ToHost;
+	toLinux :: Discard;
 	
 	// ARP Querier
 	arpQuerier0 :: ARPQuerier($ipAddr0, $macAddr0);

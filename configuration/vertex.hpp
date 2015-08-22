@@ -9,8 +9,7 @@
 
 #include <string>
 #include <iostream>
-//#include "file.hpp"
-#include "../logger.hpp"
+#include "../logger/logger.hpp"
 
 class Vertex {
 	private:

@@ -26,6 +26,7 @@ A framework to turn a chain of Click-based network functions (NFs) into a sythes
   * git clone git@bitbucket.org:nslab/nf-synthesis.git
   * cd ./nf-synthesis
   * make
-    * It uses the click libraries built under /usr/local/lib/click/ (-lclick) and the object file 
-      controlsocket.o generated under /opt/click/userlevel/
+    * It uses the click libraries built under /usr/local/lib/ (-lclick) and the object files
+      of the Click elements generated under /opt/click/<driver> (userlevel, linuxmodule, etc.)
+    * NF Synthesizer currently supports only the userlevel driver.
     * You have to modify the Makefile accordingly if you do not follow the steps above.

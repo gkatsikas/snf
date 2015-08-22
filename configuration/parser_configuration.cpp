@@ -43,6 +43,7 @@ void ParserConfiguration::load_property_file(void) {
 
 	// Read the topology
 	std::string nf_topo = (std::string&) get_value("NF_TOPO", "TOPOLOGY");
+	log << info << "\t          NF Topology = " << nf_topo << def << std::endl;
 
 	// The token used to separate rows in the input topology map
 	boost::char_separator<char> row_sep(";");
@@ -79,15 +80,18 @@ void ParserConfiguration::load_property_file(void) {
 		nf_array.push_back(std::move(v));
 	}
 
-	// Check that the vector is populated
-	//for (auto& v : nf_array) {
-	//	v->print_info();
-	//}
-
 	// Interconnect the created nodes to form a graph that represents the NF chain
 	unsigned short src_element = 0;
 	for (const auto& row : rows) {
 		Vertex* src_vertex = nf_array[src_element];
+
+		// A degenerate chain of a single element
+		if ( nfs_no == 1 ) {
+			this->nf_chain->add_vertex(std::move(src_vertex));
+			// We don't break here (as it should have bben done) in order to
+			// verify that there is no error in the input topology
+			//break;
+		}
 
 		boost::char_separator<char> col_sep(" ");
 		boost::tokenizer<boost::char_separator<char>> cols(row, col_sep);
@@ -103,7 +107,6 @@ void ParserConfiguration::load_property_file(void) {
 			}
 			dst_element++;
 		}
-
 		src_element++;
 	}
 
@@ -114,9 +117,8 @@ void ParserConfiguration::load_property_file(void) {
 }
 
 short ParserConfiguration::check_topology_correctness(const boost::tokenizer<boost::char_separator<char>>& array,
-								const unsigned short& correct_elements_no,
-								const std::string& type) {
-
+							const unsigned short& correct_elements_no,
+							const std::string& type) {
 	unsigned short elements = 0;
 
 	for (boost::tokenizer<boost::char_separator<char>>::iterator iter=array.begin(); iter!=array.end (); ++iter) {
@@ -156,7 +158,8 @@ void ParserConfiguration::check_for_loops(void) {
 		log << info << "|---> Graph is acyclic" << def << std::endl;
 	}
 	catch (const std::exception& e) {
-		log << error << e.what() << def << std::endl;
+		log << error << "|--> " << e.what() << def << std::endl;
+		exit(NF_CHAIN_NOT_ACYCLIC);
 	}
 
 	return;

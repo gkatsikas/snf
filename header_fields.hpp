@@ -1,5 +1,5 @@
-#ifndef HEADER_FIELDS_HPP
-#define HEADER_FIELDS_HPP
+#ifndef _HEADER_FIELDS_HPP_
+#define _HEADER_FIELDS_HPP_
 
 #include <string>
 
@@ -34,7 +34,7 @@ static const int end = __LINE__;
 #define DO_DESCRIPTION(e) #e,
 #define DO_ENUM(e) e,
 
-const std::string headerFieldNames[end-start-2] = {
+const std::string headerFieldNames[end - start - 2] = {
 	HEADER(DO_DESCRIPTION)
 };
 

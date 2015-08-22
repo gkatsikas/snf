@@ -1,30 +1,32 @@
+### System
 CC     = g++
 CFLAGS = -O3 -Wall -c -std=c++11 -Wextra -g
 LFLAGS = -Wall -std=c++11 -g
 
-CLICK_HDRS = -I/usr/local/include/click -I/opt/click/elements/ -I/opt/click/userlevel/
-
+### The Click library
 LIBS = -L/usr/local/lib/ -lclick -ldl -lpthread -lpcap #-lefence
 
+### Object files of NF Synthesizer
 OBJS =  main.o click_tree.o filter.o operation.o click_element.o \
 	output_class.o helpers.o segment_list.o ip_filter_parser.o \
 	chameleon.o vertex.o graph.o generic_configuration.o \
-	parser_configuration.o chain_parser.o click_parse_configuration.o \
-	/opt/click/userlevel/controlsocket.o
+	parser_configuration.o chain_parser.o click_parse_configuration.o
 
-ELEMENT_OBJS = 
-#ELEMENT_OBJS = /opt/click/userlevel/[!click]*.o
+### Object files of Click
+CLICK_ELEMENT_OBJS = $(shell find /opt/click/userlevel/ ! -name "click.o" ! -name "exportstub.o" -name "*.o")
 
+### Final compilation rule
 NFSynthesizer: $(OBJS)
-	$(CC) $(LFLAGS) $(CLICK_HDRS) $(OBJS) $(ELEMENT_OBJS) -o nf_synthesizer $(LIBS)
+	$(CC) $(LFLAGS) $(OBJS) $(CLICK_ELEMENT_OBJS) -o nf_synthesizer $(LIBS)
 
+### Individual modules' rules
 helpers.o: helpers.cpp helpers.hpp
 	$(CC) $(CFLAGS) helpers.cpp
 
-main.o: main.cpp click_tree.cpp click_tree.hpp output_class.hpp operation.hpp element_type.hpp filter.hpp logger.hpp
+main.o: main.cpp click_tree.cpp click_tree.hpp output_class.hpp operation.hpp element_type.hpp filter.hpp
 	$(CC) $(CFLAGS) main.cpp
 
-click_tree.o: click_tree.cpp click_tree.hpp output_class.hpp operation.hpp element_type.hpp filter.hpp logger.hpp
+click_tree.o: click_tree.cpp click_tree.hpp output_class.hpp operation.hpp element_type.hpp filter.hpp
 	$(CC) $(CFLAGS) click_tree.cpp
 
 filter.o: filter.cpp filter.hpp header_fields.hpp element_type.hpp output_class.hpp operation.hpp
@@ -33,8 +35,8 @@ filter.o: filter.cpp filter.hpp header_fields.hpp element_type.hpp output_class.
 operation.o: operation.cpp operation.hpp header_fields.hpp
 	$(CC) $(CFLAGS) operation.cpp
 
-click_element.o: click_element.cpp click_element.hpp header_fields.hpp operation.hpp filter.hpp element_type.hpp \
-		 helpers.hpp ip_filter_parser.hpp
+click_element.o: click_element.cpp click_element.hpp header_fields.hpp operation.hpp filter.hpp \
+	element_type.hpp helpers.hpp ip_filter_parser.hpp
 	$(CC) $(CFLAGS) click_element.cpp
 
 output_class.o: output_class.cpp output_class.hpp filter.hpp click_element.hpp helpers.hpp
@@ -67,8 +69,9 @@ chain_parser.o: ./parser/chain_parser.cpp ./parser/chain_parser.hpp ./configurat
 	$(CC) $(CFLAGS) ./parser/chain_parser.cpp
 
 click_parse_configuration.o: ./click/click_parse_configuration.cpp ./click/click_parse_configuration.hpp
-	$(CC) $(CLICK_HDRS) $(CFLAGS) ./click/click_parse_configuration.cpp $(LIBS)
+	$(CC) $(CFLAGS) ./click/click_parse_configuration.cpp
 
+### House keeping
 clean:
 	\rm -f *.o *.plist *.gch
 

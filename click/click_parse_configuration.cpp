@@ -30,7 +30,44 @@
 //               instantiate the router is intentionally removed.
 //============================================================================
 
+#include "../logger/logger.hpp"
 #include "click_parse_configuration.hpp"
+
+#include <iostream>
+#include <string.h>
+//#include <signal.h>
+#include <errno.h>
+#include <unistd.h>
+#include <sys/types.h>
+#include <sys/param.h>
+#include <sys/stat.h>
+#include <sys/resource.h>
+#include <fcntl.h>
+#if HAVE_EXECINFO_H
+# include <execinfo.h>
+#endif
+
+CLICK_USING_DECLS
+
+#define HELP_OPT                300
+#define VERSION_OPT             301
+#define CLICKPATH_OPT           302
+#define ROUTER_OPT              303
+#define EXPRESSION_OPT          304
+#define QUIT_OPT                305
+#define OUTPUT_OPT              306
+#define HANDLER_OPT             307
+#define TIME_OPT                308
+#define PORT_OPT                310
+#define UNIX_SOCKET_OPT         311
+#define NO_WARNINGS_OPT         312
+#define WARNINGS_OPT            313
+#define ALLOW_RECONFIG_OPT      314
+#define EXIT_HANDLER_OPT        315
+#define THREADS_OPT             316
+#define SIMTIME_OPT             317
+#define SOCKET_OPT              318
+#define THREADS_AFF_OPT         319
 
 static const Clp_Option options[] = {
 	{ "allow-reconfigure", 'R', ALLOW_RECONFIG_OPT, 0, Clp_Negate },
@@ -55,7 +92,16 @@ static const Clp_Option options[] = {
 	{ 0, 'w', NO_WARNINGS_OPT, 0, Clp_Negate },
 };
 
+static bool warnings  = true;
+int    click_nthreads = 1;
+static ErrorHandler* errh;
+static Master* click_master;
+static Router* click_router;
 static const char *program_name;
+
+static Vector<String> cs_unix_sockets;
+static Vector<String> cs_ports;
+static Vector<String> cs_sockets;
 
 void short_usage() {
 	fprintf(stderr, "Usage: %s [OPTION]... [ROUTERFILE]\n\
@@ -65,68 +111,58 @@ void short_usage() {
 
 void usage() {
 	printf("\
-		'Click' runs a Click router configuration at user level. It installs the\n\
-		configuration, reporting any errors to standard error, and then generally runs\n\
-		until interrupted.\n\
-		\n\
-		Usage: %s [OPTION]... [ROUTERFILE]\n\
-		\n\
-		Options:\n\
-		  -f, --file FILE               Read router configuration from FILE.\n\
-		  -e, --expression EXPR         Use EXPR as router configuration.\n\
-		  -j, --threads N               Start N threads (default 1).\n", program_name);
-		#if HAVE_DECL_PTHREAD_SETAFFINITY_NP
-			printf("\
-		  -a, --affinity                Pin threads to CPUs (default no).\n");
-		#endif
-			printf("\
-		  -p, --port PORT               Listen for control connections on TCP port.\n\
-		  -u, --unix-socket FILE        Listen for control connections on Unix socket.\n\
-			  --socket FD               Add a file descriptor control connection.\n\
-		  -R, --allow-reconfigure       Provide a writable 'hotconfig' handler.\n\
-		  -h, --handler ELEMENT.H       Call ELEMENT's read handler H after running\n\
-						driver and print result to standard output.\n\
-		  -x, --exit-handler ELEMENT.H  Use handler ELEMENT.H value for exit status.\n\
-		  -o, --output FILE             Write flat configuration to FILE.\n\
-		  -q, --quit                    Do not run driver.\n\
-		  -t, --time                    Print information on how long driver took.\n\
-		  -w, --no-warnings             Do not print warnings.\n\
-		  --simtime                     Run in simulation time.\n\
-		  -C, --clickpath PATH          Use PATH for CLICKPATH.\n\
-		  --help                        Print this message and exit.\n\
-		  -v, --version                 Print version number and exit.\n\
-		\n\
-		Report bugs to <click@librelist.com>.\n");
+	'Click' runs a Click router configuration at user level. It installs the\n\
+	configuration, reporting any errors to standard error, and then generally runs\n\
+	until interrupted.\n\
+	\n\
+	Usage: %s [OPTION]... [ROUTERFILE]\n\
+	\n\
+	Options:\n\
+	  -f, --file FILE               Read router configuration from FILE.\n\
+	  -e, --expression EXPR         Use EXPR as router configuration.\n\
+	  -j, --threads N               Start N threads (default 1).\n", program_name);
+	#if HAVE_DECL_PTHREAD_SETAFFINITY_NP
+		printf("\
+	  -a, --affinity                Pin threads to CPUs (default no).\n");
+	#endif
+		printf("\
+	  -p, --port PORT               Listen for control connections on TCP port.\n\
+	  -u, --unix-socket FILE        Listen for control connections on Unix socket.\n\
+		  --socket FD               Add a file descriptor control connection.\n\
+	  -R, --allow-reconfigure       Provide a writable 'hotconfig' handler.\n\
+	  -h, --handler ELEMENT.H       Call ELEMENT's read handler H after running\n\
+									driver and print result to standard output.\n\
+	  -x, --exit-handler ELEMENT.H  Use handler ELEMENT.H value for exit status.\n\
+	  -o, --output FILE             Write flat configuration to FILE.\n\
+	  -q, --quit                    Do not run driver.\n\
+	  -t, --time                    Print information on how long driver took.\n\
+	  -w, --no-warnings             Do not print warnings.\n\
+		  --simtime                 Run in simulation time.\n\
+	  -C, --clickpath PATH          Use PATH for CLICKPATH.\n\
+		  --help                    Print this message and exit.\n\
+	  -v, --version                 Print version number and exit.\n\
+	\n\
+	Report bugs to <click@librelist.com>.\n");
 }
-
-static Master* click_master;
-static Router* click_router;
-static ErrorHandler* errh;
-
-// Switching configurations
-static Vector<String> cs_unix_sockets;
-static Vector<String> cs_ports;
-static Vector<String> cs_sockets;
-static bool warnings = true;
-int click_nthreads = 1;
 
 Router* parse_configuration(const String &text, bool text_is_expr, ErrorHandler *errh) {
 	int before_errors = errh->nerrors();
-	errh->message("Entering Click Read Router");
 	Router *router = click_read_router(text, text_is_expr, errh, false, click_master);
-	errh->message("Exited Click Read Router");
 
+	// Check the object first
 	if ( !router ) {
-		errh->error("Router object is NULL");
+		errh->error("NF object is NULL");
 		return NULL;
 	}
 
-	if (errh->nerrors() == before_errors && router->initialize(errh) >= 0) {
-		errh->message("Router parsed successfully");
+	// Check for newly produced errors and whether the parsed configuration can be initialized
+	// (or in other words whether it is a valid Click configuration)
+	if ( (errh->nerrors() == before_errors) && (router->initialize(errh) >= 0) ) {
+		//errh->message("NF parsed successfully");
 		return router;
 	}
 	else {
-		errh->error("Router is problematic");
+		//errh->error("NF is problematic");
 		delete router;
 		return NULL;
 	}
@@ -139,19 +175,22 @@ int cleanup(Clp_Parser *clp, int exit_value) {
 }
 
 #if HAVE_DECL_PTHREAD_SETAFFINITY_NP
-	static bool set_affinity = false;
-	void do_set_affinity(pthread_t p, int cpu) {
-		cpu_set_t set;
-		CPU_ZERO(&set);
-		CPU_SET(cpu, &set);
-		pthread_setaffinity_np(p, sizeof(cpu_set_t), &set);
-	}
+static bool set_affinity = false;
+void do_set_affinity(pthread_t p, int cpu) {
+	cpu_set_t set;
+	CPU_ZERO(&set);
+	CPU_SET(cpu, &set);
+	pthread_setaffinity_np(p, sizeof(cpu_set_t), &set);
+}
 #else
-	# define do_set_affinity(p, cpu) // nothing
+# define do_set_affinity(p, cpu) // nothing
 #endif
 
 Router* input_a_click_configuration (const char* click_source_configuration) {
+	// Important function that exports the Click elements
 	click_static_initialize();
+
+	// Error handling within Click
 	errh = ErrorHandler::default_handler();
 
 	// We currently support only simple deployments without extra options
@@ -159,12 +198,12 @@ Router* input_a_click_configuration (const char* click_source_configuration) {
 	int argc = 2;
 	const char* argv[2] = { "/usr/local/bin/click", click_source_configuration };
 
-	// Read command line arguments
+	// Command line arguments' parser
 	Clp_Parser *clp = Clp_NewParser(argc, argv, sizeof(options) / sizeof(options[0]), options);
 
 	// Get the program name (click or click-install)
 	program_name = Clp_ProgramName(clp);
-	errh->message("Program name: %s", program_name);
+	errh->message("     Program name: %s", program_name);
 
 	const char *router_file = 0;
 	bool file_is_expr       = false;
@@ -175,6 +214,7 @@ Router* input_a_click_configuration (const char* click_source_configuration) {
 	Vector<String> handlers;
 	String exit_handler;
 
+	// Iterate the parser to obtain all the commands
 	while (1) {
 		int opt = Clp_Next(clp);
 		switch (opt) {
@@ -184,7 +224,7 @@ Router* input_a_click_configuration (const char* click_source_configuration) {
 			case EXPRESSION_OPT:
 				router_file:
 				if (router_file) {
-					errh->error("router configuration specified twice");
+					errh->error("NF configuration specified twice");
 					goto bad_option;
 				}
 				router_file = clp->vstr;
@@ -273,7 +313,7 @@ Router* input_a_click_configuration (const char* click_source_configuration) {
 					click_nthreads = 1;
 				#if !HAVE_MULTITHREAD
 				if (click_nthreads > 1) {
-					errh->warning("Click was built without multithread support, running single threaded");
+					errh->error("Click was built without multithread support, running single threaded");
 					click_nthreads = 1;
 				}
 				#endif
@@ -283,7 +323,7 @@ Router* input_a_click_configuration (const char* click_source_configuration) {
 				#if HAVE_DECL_PTHREAD_SETAFFINITY_NP
 					set_affinity = true;
 				#else
-					errh->warning("CPU affinity is not supported on this platform");
+					errh->error("CPU affinity is not supported on this platform");
 				#endif
 				break;
 
@@ -328,21 +368,31 @@ Router* input_a_click_configuration (const char* click_source_configuration) {
 		next_argument: ;
 	}
 
+	// Everything went smoothly within the while loop above
 	done:
 		// Print some of the important parameters
 		errh->message("      Router file: %s", router_file);
-		errh->message("    Is expression: %d", file_is_expr);
-		errh->message(" Quit immediately: %d", quit_immediately);
-		errh->message("Allow Reconfigure: %d", allow_reconfigure);
+		errh->message("    Is expression: %s", file_is_expr?"true":"false");
+		errh->message(" Quit immediately: %s", quit_immediately?"true":"false");
+		errh->message("Allow Reconfigure: %s", allow_reconfigure?"true":"false");
 		errh->message("      Report Time: %d", report_time);
 
 		// Parse configuration
 		click_master = new Master(click_nthreads);
 		click_router = parse_configuration(router_file, file_is_expr, errh);
-		if ( !click_router )
+
+		// Error while parsing the router
+		if ( !click_router ) {
+			errh->error("Error while parsing the NF in %s", router_file);
+
+			// Clean the mess and return a NULL object
 			cleanup(clp, 1);
 			return NULL;
+		}
 
-	cleanup(clp, 0);
-	return click_router;
+		// Done!
+		cleanup(clp, 0);
+		errh->message("NF parsed successfully");
+
+		return click_router;
 }

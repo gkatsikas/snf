@@ -1,11 +1,11 @@
-#ifndef ELEMENT_TYPE_HPP
-#define ELEMENT_TYPE_HPP
+#ifndef _ELEMENT_TYPE_HPP_
+#define _ELEMENT_TYPE_HPP_
 
 #include <string>
 
-//List of allowed click elements
+//List of allowed Click elements
 static const uint32_t elem_start = __LINE__;
-#define Element(FOO) \
+#define _Element(FOO) \
 	FOO(DecIPTTL) \
 	FOO(FixIPSrc) \
 	FOO(IPFilter) \
@@ -25,18 +25,18 @@ static const uint32_t elem_start = __LINE__;
 	FOO(VLANEncap) \
 	FOO(VLANDecap) \
 	FOO(SetVLANAnno) \
-	FOO(Discard_def) 
+	FOO(Discard_def)
 static const uint32_t elem_end = __LINE__;
 
 #define DO_DESCRIPTION(e) #e,
 #define DO_ENUM(e) e,
 
-const std::string elementNames[elem_end-elem_start-2] = {
-Element(DO_DESCRIPTION)
+const std::string elementNames[elem_end - elem_start - 2] = {
+	_Element(DO_DESCRIPTION)
 };
 
 enum ElementType {
-Element(DO_ENUM)
+	_Element(DO_ENUM)
 };
 
 #endif

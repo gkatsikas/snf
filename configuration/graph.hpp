@@ -10,7 +10,7 @@
 #include <unordered_map>
 
 #include "vertex.hpp"
-#include "../logger.hpp"
+#include "../logger/logger.hpp"
 
 class Graph
 {
@@ -33,7 +33,9 @@ class Graph
 		/*
 		 * Setters & Getters
 		 */
+		void                   add_vertex(Vertex* u);
 		void                   add_edge(Vertex* u, Vertex* v);
+
 		unsigned short         get_vertices_no(void);
 		void                   find_in_degrees(void);
 		int                    get_in_degree(Vertex*);

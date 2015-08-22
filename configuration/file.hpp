@@ -7,7 +7,7 @@
 #ifndef _FILE_T_HPP_
 #define _FILE_T_HPP_
 
-#include "../logger.hpp"
+#include "../logger/logger.hpp"
 
 template <class T>
 class FileT

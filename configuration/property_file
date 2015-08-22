@@ -1,15 +1,47 @@
+#######################################################################################################
+### ATTENTION: Each [NF_CHAIN] entry (list of NF_i key-value pairs) 
+### goes along with a [NF_TOPO] TOPOLOGY key-value pair.
+#######################################################################################################
+
 [NF_CHAIN]
+### TEST 1 - An invalid Click configuration
+#NF_1 = nf_repo/broken.click
+
+### TEST 2 - A small(2), toy(not real NFs), valid chain with invalid topology map (with cycles)
 #NF_1 = /opt/click/conf/test.click
 #NF_2 = /opt/click/conf/test.click
 
-NF_1 = nf_repo/router.click
-NF_2 = nf_repo/router.click
-NF_3 = nf_repo/router.click
-NF_4 = nf_repo/firewall.click
-NF_5 = nf_repo/napt.click
-NF_6 = nf_repo/firewall.click
+### TEST 3 - A small(2), toy(not real NFs) and valid chain
+NF_1 = /opt/click/conf/test.click
+NF_2 = /opt/click/conf/test.click
+
+### TEST 4 - A small(2) valid chain with real routers
+#NF_1 = nf_repo/router.click
+#NF_2 = nf_repo/router.click
+#NF_3 = nf_repo/router.click
+
+### TEST 5 - A normal, real chain with various NFs
+#NF_1 = nf_repo/router.click
+#NF_2 = nf_repo/router.click
+#NF_3 = nf_repo/router.click
+#NF_4 = nf_repo/firewall.click
+#NF_5 = nf_repo/napt.click
+#NF_6 = nf_repo/firewall.click
 #NF_7 = nf_repo/load_balancer.click
 
+
 [NF_TOPO]
-#TOPOLOGY = 0 1; 0 0;
-TOPOLOGY = 0 1 0 0 0 0; 0 0 1 0 0 0; 0 0 0 1 1 0; 0 0 0 0 0 1; 0 0 0 0 0 1; 0 0 0 0 0 0;
+### In TEST 1
+#TOPOLOGY = 0;
+
+### In TEST 2
+#TOPOLOGY = 0 1; 1 0;
+
+### In TEST 3
+TOPOLOGY = 0 1; 0 0;
+
+### In TEST 4
+#TOPOLOGY = 0 1 0; 0 0 1; 0 0 0;
+
+### In TEST 5
+#TOPOLOGY = 0 1 0 0 0 0; 0 0 1 0 0 0; 0 0 0 1 1 0; 0 0 0 0 0 1; 0 0 0 0 0 1; 0 0 0 0 0 0;

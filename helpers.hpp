@@ -2,24 +2,10 @@
 #define _HELPERS_HPP_
 
 #include <iostream>
-#include <iomanip>
 #include <fstream>
-#include <sstream>
-
-//#include <map>
-#include <list>
-#include <tuple>
 #include <vector>
 #include <string>
 #include <chrono>
-#include <cstdarg>
-#include <utility>
-#include <algorithm>
-
-#include <fcntl.h>
-#include <unistd.h>
-#include <sys/stat.h>
-#include <sys/types.h>
 
 /*
  * Shared variables
@@ -60,46 +46,50 @@
 #define ETHER_TYPE_LOOPBACK (0x9000)
 
 // Comparisons
-const short int          LESS                     = -1;
-const short int          EQUAL                    =  0;
-const short int          GREATER                  =  1;
-const short int          NOT_EQUAL                = -2;
-const short int          EXISTS                   =  1;
+const short LESS                     = -1;
+const short EQUAL                    =  0;
+const short GREATER                  =  1;
+const short NOT_EQUAL                = -2;
+const short EXISTS                   =  1;
 
 // Generic Success
-const short int          SUCCESS                  =  0;
+const short SUCCESS                  =  0;
 
 // Generic Error
-const short int          FAILURE                  = -1;
-const short int          WRONG_INPUT_ARGS         = -3;
+const short FAILURE                  = -1;
+const short WRONG_INPUT_ARGS         = -3;
 
 // File Management
-const short int          FILE_EXISTS              = -5;
-const short int          CANNOT_OPEN_FILE         = -6;
-const short int          FILE_DOES_NOT_EXIST      = -7;
-const short int          CANNOT_CREATE_FILE       = -8;
-const short int          INVALID_FILE_TYPE        = -9;
+const short FILE_EXISTS              = -5;
+const short CANNOT_OPEN_FILE         = -6;
+const short FILE_DOES_NOT_EXIST      = -7;
+const short CANNOT_CREATE_FILE       = -8;
+const short INVALID_FILE_TYPE        = -9;
 
 // Memory Management
-const short int          NO_MEM_AVAILABLE         = -10;
-const short int          MEMORY_ALREADY_RELEASED  = -11;
-const short int          INVALID_GRAPH_OPERATION  = -12;
+const short NO_MEM_AVAILABLE         = -10;
+const short MEMORY_ALREADY_RELEASED  = -11;
+const short INVALID_GRAPH_OPERATION  = -12;
 
 // Packet Management
-const short int          VALID_PACKET             =   0;
-const short int          INVALID_PACKET           = -20;
-const short int          NON_IPV4_PACKET          = -21;
-const short int          MTU_EXCEEDED             = -22;
-const short int          INVALID_IPV4_HDR         = -23;
-const short int          INVALID_UDP_HDR          = -24;
-const short int          INVALID_TCP_HDR          = -25;
+const short VALID_PACKET             =   0;
+const short INVALID_PACKET           = -20;
+const short NON_IPV4_PACKET          = -21;
+const short MTU_EXCEEDED             = -22;
+const short INVALID_IPV4_HDR         = -23;
+const short INVALID_UDP_HDR          = -24;
+const short INVALID_TCP_HDR          = -25;
 
 // Input Correctness
-const short int          INVALID_NF_TYPE          = -30;
-const short int          INVALID_TOPOLOGY         = -31;
+const short INVALID_NF_TYPE          = -30;
+const short INVALID_TOPOLOGY         = -31;
+
+// Parsing
+const short NF_CHAIN_NOT_ACYCLIC     = -35;
+const short CLICK_PARSING_PRBLEM     = -36;
 
 // Protocol Management
-const short int          INVALID_PROTOCOL         = -40;
+const short INVALID_PROTOCOL         = -40;
 
 /*
  * String helpers
@@ -116,8 +106,8 @@ std::string ntoa (uint32_t address);
 /*
  * Memory helpers
  */
-short int allocateMemory(void** memoryBuffer, size_t size);
-short int releaseMemory (void** memoryBuffer);
+short allocateMemory(void** memoryBuffer, size_t size);
+short releaseMemory (void** memoryBuffer);
 
 /*
  * A C++11 template that is able to receive any function with any arguments
