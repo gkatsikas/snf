@@ -1,7 +1,7 @@
 //============================================================================
-// Name        : file.h
-// Copyright   : KTH ICT CoS Network Systems Lab
-// Description : Template implementation to handle different file types
+//        Name: file.h
+//   Copyright: KTH ICT CoS Network Systems Lab
+// Description: Template implementation to handle different file types
 //============================================================================
 
 #include <sys/stat.h>

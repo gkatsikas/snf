@@ -1,7 +1,7 @@
 //============================================================================
-// Name        : parser_configuration.cpp
-// Copyright   : KTH ICT CoS Network Systems Lab
-// Description : Defines a NF chain as a graph of interconnected NFs
+//        Name: parser_configuration.cpp
+//   Copyright: KTH ICT CoS Network Systems Lab
+// Description: Defines a NF chain as a graph of interconnected NFs
 //============================================================================
 
 #include <memory>

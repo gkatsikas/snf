@@ -1,7 +1,7 @@
 //============================================================================
-// Name        : parser_configuration.hpp
-// Copyright   : KTH ICT CoS Network Systems Lab
-// Description : Defines a NF chain as a digraph of interconnected NFs
+//        Name: parser_configuration.hpp
+//   Copyright: KTH ICT CoS Network Systems Lab
+// Description: Defines a NF chain as a digraph of interconnected NFs
 //============================================================================
 
 #ifndef _PARSER_CONFIG_HPP_

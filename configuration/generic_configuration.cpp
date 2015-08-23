@@ -1,7 +1,7 @@
 //============================================================================
-// Name        : generic_configuration.cpp
-// Copyright   : KTH ICT CoS Network Systems Lab
-// Description : Input Parameters' configuration implementation
+//        Name: generic_configuration.cpp
+//   Copyright: KTH ICT CoS Network Systems Lab
+// Description: Input Parameters' configuration implementation
 //============================================================================
 
 #include <sys/stat.h>

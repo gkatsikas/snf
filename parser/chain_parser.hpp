@@ -1,7 +1,7 @@
 //============================================================================
-// Name        : chain_parser.hpp
-// Copyright   : KTH ICT CoS Network Systems Lab
-// Description : Class declaration for parsing Click configurations.
+//        Name: chain_parser.hpp
+//   Copyright: KTH ICT CoS Network Systems Lab
+// Description: Class declaration for parsing Click configurations.
 //============================================================================
 
 #ifndef _CHAIN_PARSER_HPP_
@@ -37,6 +37,19 @@ class ChainParser {
 		 */
 		Logger log;
 
+	private:
+		/*
+		 * Reads and loads one input Click configuration.
+		 * It uses built-in Click methods and data structures linked with this file.
+		 */
+		short load_nf_configuration(unsigned short position, std::string nf_source);
+
+		/*
+		 * After loading all the NFs into the parser's memory, run a DFS visit per DAG
+		 * to build the NF Synthesizer's tree.
+		 */
+		short build_nf_tree(unsigned short position);
+
 	public:
 		/*
 		 * Public API for the Parser
@@ -51,13 +64,6 @@ class ChainParser {
 		 * of input NFs that compose the chain.
 		 */
 		short load_chained_configuratios(void);
-
-	private:
-		/*
-		 * Reads and loads one input Click configuration.
-		 * It uses built-in Click methods and data structures linked with this file.
-		 */
-		short load_nf_configuration(unsigned short position, std::string nf_source);
 };
 
 #endif

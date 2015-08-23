@@ -1,8 +1,8 @@
 //============================================================================
-// Name        : graph.cpp
-// Copyright   : KTH ICT CoS Network Systems Lab
-// Description : Implements a simple directed graph with topological sort and
-//               check for cycles.
+//        Name: graph.cpp
+//   Copyright: KTH ICT CoS Network Systems Lab
+// Description: Implements a simple directed graph with topological sort and
+//              check for cycles.
 //============================================================================
 
 #include "graph.hpp"

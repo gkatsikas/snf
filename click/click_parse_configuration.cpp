@@ -22,30 +22,17 @@
  */
 
 //============================================================================
-//         Name: click_parse_configuration.hpp
-//    Copyright: KTH ICT CoS Network Systems Lab
-//   Co-authors: Georgios Katsikas(katsikas)-Marcel Enguehard(marcele) @kth.se
-//  Description: Modified implementation of click_path/userlevel/click.cc
-//               to load and parse a Click configurations. The code used to
-//               instantiate the router is intentionally removed.
+//        Name: click_parse_configuration.hpp
+//   Copyright: KTH ICT CoS Network Systems Lab
+//  Co-authors: Georgios Katsikas(katsikas)-Marcel Enguehard(marcele) @kth.se
+// Description: Modified implementation of click_path/userlevel/click.cc
+//              to load and parse a Click configurations. The code used to
+//              instantiate the router is intentionally removed.
 //============================================================================
 
+#include "../helpers.hpp"
 #include "../logger/logger.hpp"
 #include "click_parse_configuration.hpp"
-
-#include <iostream>
-#include <string.h>
-//#include <signal.h>
-#include <errno.h>
-#include <unistd.h>
-#include <sys/types.h>
-#include <sys/param.h>
-#include <sys/stat.h>
-#include <sys/resource.h>
-#include <fcntl.h>
-#if HAVE_EXECINFO_H
-# include <execinfo.h>
-#endif
 
 CLICK_USING_DECLS
 
@@ -103,13 +90,13 @@ static Vector<String> cs_unix_sockets;
 static Vector<String> cs_ports;
 static Vector<String> cs_sockets;
 
-void short_usage() {
+void short_usage(void) {
 	fprintf(stderr, "Usage: %s [OPTION]... [ROUTERFILE]\n\
 			Try '%s --help' for more information.\n",
 			program_name, program_name);
 }
 
-void usage() {
+void usage(void) {
 	printf("\
 	'Click' runs a Click router configuration at user level. It installs the\n\
 	configuration, reporting any errors to standard error, and then generally runs\n\
@@ -151,7 +138,7 @@ Router* parse_configuration(const String &text, bool text_is_expr, ErrorHandler 
 
 	// Check the object first
 	if ( !router ) {
-		errh->error("NF object is NULL");
+		errh->error("Network Function object is NULL");
 		return NULL;
 	}
 
@@ -168,7 +155,7 @@ Router* parse_configuration(const String &text, bool text_is_expr, ErrorHandler 
 	}
 }
 
-int cleanup(Clp_Parser *clp, int exit_value) {
+short cleanup(Clp_Parser *clp, short exit_value) {
 	Clp_DeleteParser(clp);
 	delete click_master;
 	return exit_value;
@@ -224,7 +211,7 @@ Router* input_a_click_configuration (const char* click_source_configuration) {
 			case EXPRESSION_OPT:
 				router_file:
 				if (router_file) {
-					errh->error("NF configuration specified twice");
+					errh->error("Network Function configuration specified twice");
 					goto bad_option;
 				}
 				router_file = clp->vstr;
@@ -340,7 +327,7 @@ Router* input_a_click_configuration (const char* click_source_configuration) {
 
 			case HELP_OPT:
 				usage();
-				cleanup(clp, 0);
+				cleanup(clp, SUCCESS);
 				return NULL;
 
 			case VERSION_OPT:
@@ -353,13 +340,13 @@ Router* input_a_click_configuration (const char* click_source_configuration) {
 				This is free software; see the source for copying conditions.\n\
 				There is NO warranty, not even for merchantability or fitness for a\n\
 				particular purpose.\n");
-				cleanup(clp, 0);
+				cleanup(clp, SUCCESS);
 				return NULL;
 
 		bad_option:
 			case Clp_BadOption:
 				short_usage();
-				cleanup(clp, 1);
+				cleanup(clp, FAILURE);
 				return NULL;
 
 			case Clp_Done:
@@ -368,7 +355,7 @@ Router* input_a_click_configuration (const char* click_source_configuration) {
 		next_argument: ;
 	}
 
-	// Everything went smoothly within the while loop above
+	// Everything went smoothly within the cmd parser's while loop above
 	done:
 		// Print some of the important parameters
 		errh->message("      Router file: %s", router_file);
@@ -383,16 +370,16 @@ Router* input_a_click_configuration (const char* click_source_configuration) {
 
 		// Error while parsing the router
 		if ( !click_router ) {
-			errh->error("Error while parsing the NF in %s", router_file);
+			errh->error("Error while parsing the Network Function in %s", router_file);
 
 			// Clean the mess and return a NULL object
-			cleanup(clp, 1);
+			cleanup(clp, FAILURE);
 			return NULL;
 		}
 
 		// Done!
-		cleanup(clp, 0);
-		errh->message("NF parsed successfully");
+		cleanup(clp, SUCCESS);
+		errh->message("Network Function parsed successfully");
 
 		return click_router;
 }

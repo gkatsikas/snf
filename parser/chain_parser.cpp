@@ -1,14 +1,13 @@
 //============================================================================
-// Name        : chain_parser.cpp
-// Copyright   : KTH ICT CoS Network Systems Lab
-// Description : Read a Click configuration and load it into a Graph.
-//               Then compose multiple graphs to form chains.
+//        Name: chain_parser.cpp
+//   Copyright: KTH ICT CoS Network Systems Lab
+// Description: Read a Click configuration and load it into a Graph.
+//              Then compose multiple graphs to form chains.
 //============================================================================
 
 #include "../helpers.hpp"
 #include "chain_parser.hpp"
 #include "../configuration/parser_configuration.hpp"
-//#include "../click/click_parse_configuration.hpp"
 
 ChainParser::ChainParser(ParserConfiguration* pc) {
 	this->log.set_logger_file(__FILE__);
@@ -37,10 +36,15 @@ short ChainParser::load_chained_configuratios(void) {
 
 	// For each NF
 	for (Vertex* v : this->chain_graph->get_graph()->get_chain_order() ) {
+		// 1. Load its elements into a Click Router object
 		exit_status = this->load_nf_configuration(v->get_position(), v->get_source_code_path());
 		if ( exit_status != SUCCESS )
 			exit(exit_status);
-		//Element *root = click_router->root_element();
+
+		// 2. Visit all the Click elements of the NF and build the synthesizer's tree
+		exit_status = this->build_nf_tree(v->get_position());
+		if ( exit_status != SUCCESS )
+			exit(exit_status);
 	}
 
 	return SUCCESS;
@@ -54,13 +58,19 @@ short ChainParser::load_nf_configuration(unsigned short position, std::string nf
 	log << warn << "\tLoading Click Configuration no" << position << ": " << nf_source << def << std::endl;
 
 	Router* router = input_a_click_configuration(nf_source.c_str());
-	if ( !router ) {
-		return CLICK_PARSING_PRBLEM;
-	}
-	this->nf_configuration[position] = std::move(router);
-	log << "Router inserted" << std::endl;
+	if ( !router )
+		exit(CLICK_PARSING_PROBLEM);
 
-	//Element *root = click_router->root_element();
+	// Insert this Router object into parser's memory
+	this->nf_configuration[position] = std::move(router);
+	log << "Network Function inserted into Parser's memory" << std::endl;
+
+	return SUCCESS;
+}
+
+short ChainParser::build_nf_tree(unsigned short position) {
+	Element *root = this->nf_configuration[position]->root_element();
+	log << info << root << def << std::endl;
 
 	return SUCCESS;
 }

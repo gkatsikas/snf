@@ -1,4 +1,9 @@
 #!/bin/bash
+##============================================================================
+##        Name: valgrind.sh
+##   Copyright: KTH ICT CoS Network Systems Lab
+## Description: Starts valgring to profile the NF Synthesizer
+##============================================================================
 
 ### Log in a file
 #valgrind --log-file=nf_valgrind.log ...

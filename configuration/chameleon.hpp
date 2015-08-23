@@ -1,7 +1,7 @@
 //============================================================================
-// Name        : chameleon.hpp
-// Copyright   : KTH ICT CoS Network Systems Lab
-// Description : Class that covers several types of property values
+//        Name: chameleon.hpp
+//   Copyright: KTH ICT CoS Network Systems Lab
+// Description: Class that covers several types of property values
 //============================================================================
 
 #ifndef _CHAMELEON_HPP_

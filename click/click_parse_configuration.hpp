@@ -21,11 +21,11 @@
  */
 
 //============================================================================
-// Name        : click_parse_configuration.hpp
-// Copyright   : KTH ICT CoS Network Systems Lab
-//   Co-authors: Georgios Katsikas(katsikas)-Marcel Enguehard(marcele) @kth.se
-// Description : Header file to declare parse_configuration function and its
-//               custom wrapper.
+//        Name: click_parse_configuration.hpp
+//   Copyright: KTH ICT CoS Network Systems Lab
+//  Co-authors: Georgios Katsikas(katsikas)-Marcel Enguehard(marcele) @kth.se
+// Description: Header file to declare parse_configuration function and its
+//              custom wrapper.
 //============================================================================
 
 #ifndef _CLICK_PARSE_CONFIGURATION_HPP_
@@ -47,15 +47,25 @@
 #include <click/userutils.hh>
 #include <click/args.hh>
 #include <click/handlercall.hh>
-//#include "elements/standard/quitwatcher.hh"
-//#include "elements/userlevel/controlsocket.hh"
+
+/*
+ * Click usage functions to guide the user
+ */
+void usage      (
+	void
+);
+
+void short_usage(
+	void
+);
+
 
 /*
  * A little bit of house keeping after loading and parsing a Click configuration
  */
-int cleanup(
+short cleanup(
 	Clp_Parser *clp,
-	int exit_value
+	short exit_value
 );
 
 /*

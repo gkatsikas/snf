@@ -1,7 +1,7 @@
 //============================================================================
-// Name        : vertex.hpp
-// Copyright   : KTH ICT CoS Network Systems Lab
-// Description : Defines a simple graph vertex
+//        Name: vertex.hpp
+//   Copyright: KTH ICT CoS Network Systems Lab
+// Description: Defines a simple graph vertex
 //============================================================================
 
 #ifndef _VERTEX_HPP_

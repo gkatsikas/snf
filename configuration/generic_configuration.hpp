@@ -1,7 +1,7 @@
 //============================================================================
-// Name        : generic_configuration.hpp
-// Copyright   : KTH ICT CoS Network Systems Lab
-// Description : Input Parameters' configuration library
+//        Name: generic_configuration.hpp
+//   Copyright: KTH ICT CoS Network Systems Lab
+// Description: Input Parameters' configuration library
 //============================================================================
 
 #ifndef _GENERIC_CONFIG_HPP_

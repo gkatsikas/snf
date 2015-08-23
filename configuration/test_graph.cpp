@@ -1,3 +1,9 @@
+//============================================================================
+//        Name: test.cpp
+//   Copyright: KTH ICT CoS Network Systems Lab
+// Description: Stresses the graph implementation
+//============================================================================
+
 #include <iostream>
 #include "graph.hpp"
 

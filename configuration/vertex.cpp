@@ -1,7 +1,7 @@
 //============================================================================
-// Name        : vertex.cpp
-// Copyright   : KTH ICT CoS Network Systems Lab
-// Description : Implements a digraph vertex.
+//        Name: vertex.cpp
+//   Copyright: KTH ICT CoS Network Systems Lab
+// Description: Implements a digraph's vertex.
 //============================================================================
 
 #include "vertex.hpp"

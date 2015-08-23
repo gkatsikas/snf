@@ -1,3 +1,9 @@
+//============================================================================
+//        Name: main.cpp
+//   Copyright: KTH ICT CoS Network Systems Lab
+// Description: Bootstraps the NF Synthesizer
+//============================================================================
+
 #include <stack>
 #include <string>
 #include <cstdlib>
@@ -11,8 +17,8 @@
 #include "parser/chain_parser.hpp"
 #include "configuration/parser_configuration.hpp"
 
-void test_click_tree(void);
-short int parseArguments(int cmd_args_no, char** cmd_args, std::string* property_file);
+void      test_click_tree(void);
+short int parseArguments (int cmd_args_no, char** cmd_args, std::string* property_file);
 
 int main(int argc, char** argv) {
 	std::string property_file;
@@ -20,7 +26,7 @@ int main(int argc, char** argv) {
 
 	// Initialize logger
 	Logger log(__FILE__);
-	log << info << "NF Chain Synthesis" << def << std::endl;
+	log << info << "Network Functions' Chain Synthesis" << def << std::endl;
 
 	// Check input arguments validity
 	if ( (exit_status=parseArguments(argc, argv, &property_file)) != SUCCESS )
@@ -53,7 +59,7 @@ int main(int argc, char** argv) {
 	log << measure<>::execution
 	( [&]()
 	{
-		log << "Parsing NFs... " << std::endl;
+		log << "Parsing the chain of Network Functions... " << std::endl;
 		parser = new ChainParser(pcf);
 		if ( (exit_status=parser->load_chained_configuratios()) != SUCCESS ) {
 			exit(exit_status);

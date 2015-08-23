@@ -7,9 +7,9 @@
 #ifndef _LOGGER_HPP_
 #define _LOGGER_HPP_
 
-#include <iostream>
 #include <sstream>
 #include <iomanip>
+#include <iostream>
 #include <boost/foreach.hpp>
 #include <boost/tokenizer.hpp>
 

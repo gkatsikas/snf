@@ -1,7 +1,7 @@
 //============================================================================
-// Name        : graph.hpp
-// Copyright   : KTH ICT CoS Network Systems Lab
-// Description : Defines a simple directed graph
+//        Name: graph.hpp
+//   Copyright: KTH ICT CoS Network Systems Lab
+// Description: Defines a simple directed graph
 //============================================================================
 
 #ifndef _GRAPH_HPP_
