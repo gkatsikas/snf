@@ -9,11 +9,13 @@
 #include "chain_parser.hpp"
 #include "../configuration/parser_configuration.hpp"
 
+#include "/opt/click/include/click/routervisitor.hh"
+
 ChainParser::ChainParser(ParserConfiguration* pc) {
 	this->log.set_logger_file(__FILE__);
 	this->chain_graph = pc;
 	this->chain_length = this->chain_graph->get_graph()->get_vertices_no();
-	log << info << "Chain Length: " << this->chain_length << def << std::endl;
+	// log << info << "Chain Length: " << this->chain_length << def << std::endl;
 }
 
 ChainParser::~ChainParser() {
@@ -45,6 +47,8 @@ short ChainParser::load_chained_configuratios(void) {
 		exit_status = this->build_nf_tree(v->get_position());
 		if ( exit_status != SUCCESS )
 			exit(exit_status);
+
+		std::cout << std::endl;
 	}
 
 	return SUCCESS;
@@ -58,19 +62,48 @@ short ChainParser::load_nf_configuration(unsigned short position, std::string nf
 	log << warn << "\tLoading Click Configuration no" << position << ": " << nf_source << def << std::endl;
 
 	Router* router = input_a_click_configuration(nf_source.c_str());
-	if ( !router )
+	if ( router == NULL )
 		exit(CLICK_PARSING_PROBLEM);
+	log << info << "\tNetwork Function parsed successfully" << def << std::endl;
 
 	// Insert this Router object into parser's memory
 	this->nf_configuration[position] = std::move(router);
-	log << "Network Function inserted into Parser's memory" << std::endl;
+	log << info << "\tNetwork Function inserted into Parser's memory" << def << std::endl;
 
 	return SUCCESS;
 }
 
 short ChainParser::build_nf_tree(unsigned short position) {
-	Element *root = this->nf_configuration[position]->root_element();
-	log << info << root << def << std::endl;
+	int port = -1;
+
+	Router* router = this->nf_configuration[position];
+
+	// 1. Get the root element of this NF
+	Element* root = router->root_element();
+	log << info << "\tRoot element is " << std::string(root->class_name()) << def << std::endl;
+	log << info << "\tNF has " << router->nelements() << " elements" << def << std::endl;
+
+	Element* first = Router::element(router, 0);
+	log << info << "\tFirst element is " << std::string(first->class_name()) << def << std::endl;
+
+	//Element* first = router->find("FromDevice", "router");
+	//log << info << "\tFirst element is " << std::string(first->class_name()) << def << std::endl;
+
+	//String s = Router::handler(root, "flatconfig")->call_read(root);
+	//log << info << s.data() << def << std::endl;
+
+	// 2. Create a router visitor object to be filled with the elements of the NF
+	ElementTracker tracker(router);
+
+	// Visit the elements downwards (Starting from the root)
+	// Port set to -1 in order to visit all ports
+	if ( router->visit(first, true, port, &tracker) != SUCCESS )
+	//Vector<Element*> result;
+	//if ( router->downstream_elements(first, port, NULL, result) != SUCCESS )
+		log << error << "\tError while traversing NF no " << position << " configuration" << def << std::endl;
+	log << info << "\tNetwork Function is successfully traversed" << def << std::endl;
+	Vector<Element*> elements = tracker.elements();
+	log << info << "\tFound " << tracker.size() << " elements" << def << std::endl;
 
 	return SUCCESS;
 }

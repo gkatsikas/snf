@@ -8,12 +8,12 @@
 #NF_1 = nf_repo/broken.click
 
 ### TEST 2 - A small(2), toy(not real NFs), valid chain with invalid topology map (with cycles)
-#NF_1 = /opt/click/conf/test.click
-#NF_2 = /opt/click/conf/test.click
+#NF_1 = nf_repo/test.click
+#NF_2 = nf_repo/test.click
 
 ### TEST 3 - A small(2), toy(not real NFs) and valid chain
-NF_1 = /opt/click/conf/test.click
-NF_2 = /opt/click/conf/test.click
+NF_1 = nf_repo/test.click
+NF_2 = nf_repo/test.click
 
 ### TEST 4 - A small(2) valid chain with real routers
 #NF_1 = nf_repo/router.click

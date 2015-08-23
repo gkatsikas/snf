@@ -56,6 +56,8 @@ CLICK_USING_DECLS
 #define SOCKET_OPT              318
 #define THREADS_AFF_OPT         319
 
+#define UNUSED(x) ((void)(x))
+
 static const Clp_Option options[] = {
 	{ "allow-reconfigure", 'R', ALLOW_RECONFIG_OPT, 0, Clp_Negate },
 	{ "clickpath", 'C', CLICKPATH_OPT, Clp_ValString, 0 },
@@ -83,7 +85,6 @@ static bool warnings  = true;
 int    click_nthreads = 1;
 static ErrorHandler* errh;
 static Master* click_master;
-static Router* click_router;
 static const char *program_name;
 
 static Vector<String> cs_unix_sockets;
@@ -144,7 +145,8 @@ Router* parse_configuration(const String &text, bool text_is_expr, ErrorHandler 
 
 	// Check for newly produced errors and whether the parsed configuration can be initialized
 	// (or in other words whether it is a valid Click configuration)
-	if ( (errh->nerrors() == before_errors) && (router->initialize(errh) >= 0) ) {
+	// --> CRITICAL if ( (errh->nerrors() == before_errors) && (router->initialize(errh) >= 0) ) {
+	if ( errh->nerrors() == before_errors ) {
 		//errh->message("NF parsed successfully");
 		return router;
 	}
@@ -157,7 +159,8 @@ Router* parse_configuration(const String &text, bool text_is_expr, ErrorHandler 
 
 short cleanup(Clp_Parser *clp, short exit_value) {
 	Clp_DeleteParser(clp);
-	delete click_master;
+	if ( exit_value == FAILURE )
+		delete click_master;
 	return exit_value;
 }
 
@@ -174,6 +177,9 @@ void do_set_affinity(pthread_t p, int cpu) {
 #endif
 
 Router* input_a_click_configuration (const char* click_source_configuration) {
+	// The target object!
+	Router* click_router;
+
 	// Important function that exports the Click elements
 	click_static_initialize();
 
@@ -190,7 +196,7 @@ Router* input_a_click_configuration (const char* click_source_configuration) {
 
 	// Get the program name (click or click-install)
 	program_name = Clp_ProgramName(clp);
-	errh->message("     Program name: %s", program_name);
+	// errh->message("                  Program name: %s", program_name);
 
 	const char *router_file = 0;
 	bool file_is_expr       = false;
@@ -357,16 +363,17 @@ Router* input_a_click_configuration (const char* click_source_configuration) {
 
 	// Everything went smoothly within the cmd parser's while loop above
 	done:
-		// Print some of the important parameters
-		errh->message("      Router file: %s", router_file);
-		errh->message("    Is expression: %s", file_is_expr?"true":"false");
-		errh->message(" Quit immediately: %s", quit_immediately?"true":"false");
-		errh->message("Allow Reconfigure: %s", allow_reconfigure?"true":"false");
-		errh->message("      Report Time: %d", report_time);
+		UNUSED(file_is_expr);
+		UNUSED(quit_immediately);
+		UNUSED(allow_reconfigure);
+		UNUSED(report_time);
+		// errh->message("Network Function's source code: %s", router_file);
 
 		// Parse configuration
 		click_master = new Master(click_nthreads);
 		click_router = parse_configuration(router_file, file_is_expr, errh);
+		click_router->use();
+		//errh->message("NF has %d elements", click_router->nelements());
 
 		// Error while parsing the router
 		if ( !click_router ) {
@@ -379,7 +386,7 @@ Router* input_a_click_configuration (const char* click_source_configuration) {
 
 		// Done!
 		cleanup(clp, SUCCESS);
-		errh->message("Network Function parsed successfully");
 
+		// errh->message("Network Function parsed successfully");
 		return click_router;
 }
