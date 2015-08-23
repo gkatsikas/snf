@@ -1,3 +1,9 @@
+//============================================================================
+//        Name: helpers.cpp
+//   Copyright: KTH ICT CoS Network Systems Lab
+// Description: Global helper functions' definition
+//============================================================================
+
 #include <cstring>
 #include <sstream>
 

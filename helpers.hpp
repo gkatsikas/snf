@@ -1,3 +1,9 @@
+//============================================================================
+//        Name: helpers.hpp
+//   Copyright: KTH ICT CoS Network Systems Lab
+// Description: Global helper functions' declaration and variables
+//============================================================================
+
 #ifndef _HELPERS_HPP_
 #define _HELPERS_HPP_
 
@@ -10,7 +16,6 @@
 /*
  * Shared variables
  */
-
 // Ethernet header is 14 bytes
 #define ETHERNET_SIZE        14
 
