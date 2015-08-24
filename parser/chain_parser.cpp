@@ -7,7 +7,7 @@
 
 #include "../helpers.hpp"
 #include "chain_parser.hpp"
-#include "../configuration/parser_configuration.hpp"
+//#include "../configuration/parser_configuration.hpp"
 
 #include <click/routervisitor.hh>
 
@@ -24,14 +24,18 @@ ChainParser::ChainParser(ParserConfiguration* pc) : chain_graph(pc) {
 ChainParser::~ChainParser() {
 	this->chain_graph = NULL;
 
-	for ( auto& nf : this->nf_configuration )
-		nf.second = NULL;
+	for ( auto& conf : this->nf_configuration )
+		conf.second = NULL;
 	this->nf_configuration.clear();
 
-	for ( auto& tc : this->nf_traffic_classes )
+	for ( auto& dag : this->nf_configuration )
+		delete dag.second;
+	this->nf_dag.clear();
+
+	/*for ( auto& tc : this->nf_traffic_classes )
 		if ( !tc.second.empty() )
 			tc.second.clear();
-	this->nf_traffic_classes.clear();
+	this->nf_traffic_classes.clear();*/
 }
 
 /*
@@ -44,7 +48,7 @@ short ChainParser::load_chained_configuratios(void) {
 	short exit_status = 0;
 
 	// For each NF
-	for (Vertex* v : this->chain_graph->get_graph()->get_chain_order() ) {
+	for (ParserVertex* v : this->chain_graph->get_graph()->get_vertex_order() ) {
 		// 1. Load its elements into a Click Router object
 		exit_status = this->load_nf_configuration(v->get_source_code_path(), v->get_position());
 		if ( exit_status != SUCCESS )
@@ -71,16 +75,102 @@ short ChainParser::load_nf_configuration(std::string nf_source, unsigned short p
 	Router* router = input_a_click_configuration(nf_source.c_str(), position);
 	if ( router == NULL )
 		exit(CLICK_PARSING_PROBLEM);
-	log << info << "\tNetwork Function parsed successfully" << def << std::endl;
+	log << info << "\tNetwork Function " << position << " parsed successfully" << def << std::endl;
 
 	// Insert this Router object into parser's memory
 	this->nf_configuration[position] = std::move(router);
-	log << info << "\tNetwork Function inserted into Parser's memory" << def << std::endl;
 
 	return SUCCESS;
 }
 
 short ChainParser::build_nf_tree(unsigned short position) {
+
+	Router* router = this->nf_configuration[position];
+	log << info << "\tNetwork Function " << position << " has " << router->nelements() << " elements" << def << std::endl;
+
+	// Create an empty Graph
+	if ( this->nf_dag[position] == NULL )
+		this->nf_dag[position] = new Graph<Vertex>();
+
+	Vector<Element*> input;
+	Vector<Element*> output;
+	Vector<Element*> processing;
+
+	for ( int i=0 ; i < router->nelements() ; i++ ) {
+		Element* e = Router::element(router, i);
+
+		// This element has no input ports
+		if ( e->ninputs() == 0 )
+			input.push_back(e);
+		// This element has no output ports
+		else if ( e->noutputs() == 0 )
+			output.push_back(e);
+		// This element has both port types
+		else
+			processing.push_back(e);
+	}
+	log << info << "\t     Input elements[" << input.size() << "]" << def << std::endl;
+	if ( this->update_dag(input, position) != SUCCESS )
+		return FAILURE;
+
+	log << info << "\t    Output elements[" << output.size() << "]" << def << std::endl;
+	if ( this->update_dag(output, position) != SUCCESS )
+		return FAILURE;
+
+	log << info << "\tProcessing elements[" << processing.size() << "]" << def << std::endl;
+	if ( this->update_dag(processing, position) != SUCCESS )
+		return FAILURE;
+
+	//this->nf_dag[position]->print_vertex_order();
+	//this->nf_dag[position]->print_topological_sort();
+	this->nf_dag[position]->print_adjacency_list();
+
+	return SUCCESS;
+}
+
+short ChainParser::update_dag(Vector<Element*> element_class, unsigned short position) {
+
+	if ( this->nf_dag[position] == NULL )
+		return FAILURE;
+
+	for ( Element* e : element_class ) {
+		Vertex* u = new Vertex(e->class_name(), e->eindex());
+		log << info << "\t\t" << e->class_name() << ": " << e->eindex() << ", " << def << std::endl;
+
+		Element* neighbour = NULL;
+
+		log << info << "\t\t\t has " << e->ninputs() << " input ports" << def << std::endl;
+		// For each active input port
+		for ( int i=0 ; i < e->ninputs() ; i++ ) {
+			if ( e->input(i).active() ) {
+				neighbour = e->input(i).element();
+				// This element is not in the graph. A pair is composed
+				if ( this->nf_dag[position]->get_vertex_by_position((unsigned short)neighbour->eindex()) == NULL ) {
+					unsigned short p = (unsigned short) neighbour->eindex();
+					Vertex* v = new Vertex(neighbour->class_name(), p);
+					this->nf_dag[position]->add_edge(std::move(v), std::move(u));
+				}
+			}
+		}
+
+		log << info << "\t\t\t has " << e->noutputs() << " output ports" << def << std::endl;
+		// For each active output port
+		for ( int i=0 ; i < e->noutputs() ; i++ ) {
+			if ( e->output(i).active() ) {
+				neighbour = e->output(i).element();
+				// This element is not in the graph. A pair is composed
+				if ( this->nf_dag[position]->get_vertex_by_position(neighbour->eindex()) == NULL ) {
+					unsigned short p = (unsigned short) neighbour->eindex();
+					Vertex* v = new Vertex(neighbour->class_name(), p);
+					this->nf_dag[position]->add_edge(std::move(u), std::move(v));
+				}
+			}
+		}
+	}
+	return SUCCESS;
+}
+
+/*short ChainParser::build_nf_tree(unsigned short position) {
 	int port = -1;
 
 	// Get the specific Click NF object
@@ -105,8 +195,7 @@ short ChainParser::build_nf_tree(unsigned short position) {
 
 	for ( Vector<Element*>::const_iterator i=path_elements.begin(); i!=path_elements.end(); ++i)
 		log << info << "\t\tElement Found: " << (*i)->class_name() << def << std::endl;
-	//for ( Element* e : tracker.elements() )
-	//	log << info << "\t\tElement Found: " << e->class_name() << def << std::endl;
 
 	return SUCCESS;
 }
+*/

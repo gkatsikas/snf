@@ -14,6 +14,7 @@
 #include "click_element.hpp"
 #include "logger/logger.hpp"
 #include "output_class.hpp"
+#include "graph/graph.hpp"
 #include "parser/chain_parser.hpp"
 #include "configuration/parser_configuration.hpp"
 
@@ -44,7 +45,7 @@ int main(int argc, char** argv) {
 		pcf = new ParserConfiguration(property_file);
 		log << info << "Property file: " << property_file << def << std::endl;
 		pcf->load_property_file();
-		pcf->get_graph()->print_chain_order();
+		//pcf->get_graph()->print_vertex_order();
 	}
 	) << "  microseconds" << std::endl;
 	log << "+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+" << std::endl;

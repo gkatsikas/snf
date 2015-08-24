@@ -12,15 +12,11 @@
 #include "../logger/logger.hpp"
 
 class Vertex {
-	private:
+	protected:
 		/*
 		 * A label for this vertex
 		 */
 		std::string name;
-		/*
-		 * The path of the NF implementation file of this node
-		 */
-		std::string source_code_path;
 
 		/*
 		 * The distance from the root (or the position in the chain)
@@ -38,7 +34,7 @@ class Vertex {
 		Logger log;
 
 	public:
-		Vertex(std::string name, std::string path, unsigned short pos, unsigned short weight = 1);
+		Vertex(std::string name, unsigned short pos, unsigned short weight = 1);
 		virtual ~Vertex();
 
 		/*
@@ -49,10 +45,9 @@ class Vertex {
 		/*
 		 * Getters
 		 */
-		inline std::string           get_name(void)             { return this->name;             };
-		inline std::string           get_source_code_path(void) { return this->source_code_path; };
-		inline unsigned short        get_position(void)         { return this->position;         };
-		inline unsigned short        get_weight(void)           { return this->weight;           };
+		inline std::string    get_name(void)     const { return this->name;     };
+		inline unsigned short get_position(void) const { return this->position; };
+		inline unsigned short get_weight(void)   const { return this->weight;   };
 
 		/*
 		 * Print status

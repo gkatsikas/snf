@@ -23,7 +23,7 @@ NFSynthesizer: $(OBJS)
 helpers.o: helpers.cpp helpers.hpp
 	$(CC) $(CFLAGS) helpers.cpp
 
-main.o: main.cpp click_tree.cpp click_tree.hpp output_class.hpp operation.hpp element_type.hpp filter.hpp
+main.o: main.cpp click_tree.cpp click_tree.hpp output_class.hpp operation.hpp element_type.hpp filter.hpp graph/graph.hpp
 	$(CC) $(CFLAGS) main.cpp
 
 click_tree.o: click_tree.cpp click_tree.hpp output_class.hpp operation.hpp element_type.hpp filter.hpp
@@ -51,24 +51,24 @@ ip_filter_parser.o: ip_filter_parser.cpp ip_filter_parser.hpp filter.hpp
 chameleon.o: ./configuration/chameleon.cpp ./configuration/chameleon.hpp
 	$(CC) $(CFLAGS) ./configuration/chameleon.cpp
 
-vertex.o: ./configuration/vertex.cpp ./configuration/vertex.hpp
-	$(CC) $(CFLAGS) ./configuration/vertex.cpp
+vertex.o: ./graph/vertex.cpp ./graph/vertex.hpp
+	$(CC) $(CFLAGS) ./graph/vertex.cpp
 
-graph.o: ./configuration/graph.cpp ./configuration/graph.hpp ./configuration/vertex.hpp
-	$(CC) $(CFLAGS) ./configuration/graph.cpp
+graph.o: ./graph/graph.cpp ./graph/graph.hpp ./graph/vertex.hpp
+	$(CC) $(CFLAGS) ./graph/graph.cpp
 
 generic_configuration.o: ./configuration/generic_configuration.cpp ./configuration/generic_configuration.hpp
 	$(CC) $(CFLAGS) ./configuration/generic_configuration.cpp
 
 parser_configuration.o: ./configuration/parser_configuration.cpp ./configuration/parser_configuration.hpp \
 			./configuration/generic_configuration.hpp ./configuration/chameleon.hpp \
-			./configuration/graph.hpp
+			./graph/graph.hpp
 	$(CC) $(CFLAGS) ./configuration/parser_configuration.cpp
 
-chain_parser.o: ./parser/chain_parser.cpp ./parser/chain_parser.hpp ./configuration/parser_configuration.hpp
+chain_parser.o: ./parser/chain_parser.cpp ./parser/chain_parser.hpp ./configuration/parser_configuration.hpp graph/graph.hpp
 	$(CC) $(CFLAGS) ./parser/chain_parser.cpp
 
-click_parse_configuration.o: ./click/click_parse_configuration.cpp ./click/click_parse_configuration.hpp
+click_parse_configuration.o: ./click/click_parse_configuration.cpp ./click/click_parse_configuration.hpp graph/graph.hpp
 	$(CC) $(CFLAGS) ./click/click_parse_configuration.cpp
 
 ### House keeping

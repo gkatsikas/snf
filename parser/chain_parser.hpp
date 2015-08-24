@@ -34,9 +34,14 @@ class ChainParser {
 		NF_Map<Router*> nf_configuration;
 
 		/*
+		 * One DAG of Click elements per NF in the chain
+		 */
+		NF_Map<Graph<Vertex>*> nf_dag;
+
+		/*
 		 * All the traffic classes (Click code paths) of each NF
 		 */
-		NF_Map<std::vector<Element*>> nf_traffic_classes;
+		//NF_Map<Vector<Element*>> nf_traffic_classes;
 
 		/*
 		 * Logger instance
@@ -55,6 +60,17 @@ class ChainParser {
 		 * to build the NF Synthesizer's tree.
 		 */
 		short build_nf_tree(unsigned short position);
+
+		/*
+		 * Mark the elements of a Click configuration as Input(I), Outport(O) or
+		 * Processing(P) elements
+		 */
+		//short mark_elements(unsigned short position);
+
+		/*
+		 *
+		 */
+		short update_dag(Vector<Element*> element_class, unsigned short position);
 
 	public:
 		/*

@@ -14,7 +14,7 @@
  * Construct an empty parser configuration
  */
 ParserConfiguration::ParserConfiguration(const std::string& config_file) : GenericConfiguration(config_file) {
-	this->nf_chain = new Graph();
+	this->nf_chain = new Graph<ParserVertex>();
 }
 
 /*
@@ -66,7 +66,7 @@ void ParserConfiguration::load_property_file(void) {
 	}
 
 	// Create as many vertices as the number of NFs
-	std::vector<Vertex*> nf_array;
+	std::vector<ParserVertex*> nf_array;
 	// Pre-allocate for better performance
 	nf_array.reserve(nfs_no);
 	for (i=0 ; i<nfs_no ; i++) {
@@ -76,14 +76,14 @@ void ParserConfiguration::load_property_file(void) {
 		std::string nf_path = (std::string&) get_value("NF_CHAIN", "NF_"+nf_pos_str);
 
 		// Move the allocated pointers to avoid duplicate objects
-		Vertex* v = new Vertex("NF_"+nf_pos_str, nf_path, i+1);
+		ParserVertex* v = new ParserVertex("NF_"+nf_pos_str, nf_path, i+1);
 		nf_array.push_back(std::move(v));
 	}
 
 	// Interconnect the created nodes to form a graph that represents the NF chain
 	unsigned short src_element = 0;
 	for (const auto& row : rows) {
-		Vertex* src_vertex = nf_array[src_element];
+		ParserVertex* src_vertex = nf_array[src_element];
 
 		// A degenerate chain of a single element
 		if ( nfs_no == 1 ) {
@@ -100,7 +100,7 @@ void ParserConfiguration::load_property_file(void) {
 		for (boost::tokenizer<boost::char_separator<char>>::iterator iter=cols.begin(); iter!=cols.end (); ++iter) {
 			// There is a connection --> Create a graph edge
 			if ( (*iter == "1") && (src_element != dst_element) ) {
-				Vertex* dst_vertex = nf_array[dst_element];
+				ParserVertex* dst_vertex = nf_array[dst_element];
 
 				// Add connection
 				this->nf_chain->add_edge(std::move(src_vertex), std::move(dst_vertex));
