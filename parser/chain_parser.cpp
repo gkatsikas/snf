@@ -50,6 +50,7 @@ short ChainParser::load_chained_configuratios(void) {
 	// For each NF
 	for (Vertex* v : this->chain_graph->get_graph()->get_vertex_order() ) {
 		ParserVertex* pv = (ParserVertex*) v;
+
 		// 1. Load its elements into a Click Router object
 		exit_status = this->load_nf_configuration(pv->get_source_code_path(), pv->get_position());
 		if ( exit_status != SUCCESS )
