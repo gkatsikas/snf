@@ -9,7 +9,7 @@ LIBS = -L/usr/local/lib/ -lclick -ldl -lpthread -lpcap #-lefence
 ### Object files of NF Synthesizer
 OBJS =  main.o click_tree.o filter.o operation.o click_element.o \
 	output_class.o helpers.o segment_list.o ip_filter_parser.o \
-	chameleon.o vertex.o graph.o generic_configuration.o \
+	chameleon.o vertex.o generic_configuration.o graph.o \
 	parser_configuration.o chain_parser.o click_parse_configuration.o
 
 ### Object files of Click

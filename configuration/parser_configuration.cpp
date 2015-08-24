@@ -14,7 +14,7 @@
  * Construct an empty parser configuration
  */
 ParserConfiguration::ParserConfiguration(const std::string& config_file) : GenericConfiguration(config_file) {
-	this->nf_chain = new Graph<ParserVertex>();
+	this->nf_chain = new Graph();
 }
 
 /*

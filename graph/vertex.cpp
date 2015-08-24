@@ -7,7 +7,7 @@
 #include "vertex.hpp"
 
 Vertex::Vertex(std::string name, unsigned short pos, unsigned short weight) :
-	name(name), position(pos), weight(weight) {
+	name(std::move(name)), position(pos), weight(weight) {
 	this->log.set_logger_file(__FILE__);
 	//log << info << "\tVertex constructed" << def << std::endl;
 }

@@ -54,7 +54,7 @@ class ParserConfiguration : public GenericConfiguration
 		/*
 		 * A Directed Acyclic Graph of chained NFs
 		 */
-		Graph<ParserVertex>* nf_chain;
+		Graph* nf_chain;
 
 	public:
 		/*
@@ -66,7 +66,7 @@ class ParserConfiguration : public GenericConfiguration
 		/*
 		 * Setters & Getters
 		 */
-		inline Graph<ParserVertex>* get_graph(void) { return this->nf_chain; };
+		inline Graph* get_graph(void) { return this->nf_chain; };
 
 		/*
 		 * Implements load_property_file (abstract methid in the super class)

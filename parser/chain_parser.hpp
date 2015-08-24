@@ -36,7 +36,7 @@ class ChainParser {
 		/*
 		 * One DAG of Click elements per NF in the chain
 		 */
-		NF_Map<Graph<Vertex>*> nf_dag;
+		NF_Map<Graph*> nf_dag;
 
 		/*
 		 * All the traffic classes (Click code paths) of each NF

@@ -48,14 +48,15 @@ short ChainParser::load_chained_configuratios(void) {
 	short exit_status = 0;
 
 	// For each NF
-	for (ParserVertex* v : this->chain_graph->get_graph()->get_vertex_order() ) {
+	for (Vertex* v : this->chain_graph->get_graph()->get_vertex_order() ) {
+		ParserVertex* pv = (ParserVertex*) v;
 		// 1. Load its elements into a Click Router object
-		exit_status = this->load_nf_configuration(v->get_source_code_path(), v->get_position());
+		exit_status = this->load_nf_configuration(pv->get_source_code_path(), pv->get_position());
 		if ( exit_status != SUCCESS )
 			exit(exit_status);
 
 		// 2. Visit all the Click elements of the NF and build the synthesizer's tree
-		exit_status = this->build_nf_tree(v->get_position());
+		exit_status = this->build_nf_tree(pv->get_position());
 		if ( exit_status != SUCCESS )
 			exit(exit_status);
 
@@ -90,7 +91,7 @@ short ChainParser::build_nf_tree(unsigned short position) {
 
 	// Create an empty Graph
 	if ( this->nf_dag[position] == NULL )
-		this->nf_dag[position] = new Graph<Vertex>();
+		this->nf_dag[position] = new Graph();
 
 	Vector<Element*> input;
 	Vector<Element*> output;

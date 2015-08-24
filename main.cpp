@@ -45,7 +45,7 @@ int main(int argc, char** argv) {
 		pcf = new ParserConfiguration(property_file);
 		log << info << "Property file: " << property_file << def << std::endl;
 		pcf->load_property_file();
-		//pcf->get_graph()->print_vertex_order();
+		pcf->get_graph()->print_vertex_order();
 	}
 	) << "  microseconds" << std::endl;
 	log << "+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+" << std::endl;
