@@ -15,6 +15,8 @@ TODO:
 	* add pointer->element in Write operations
 	* In click/click_parse_configuration.cpp, we should delete the click_master 
 	object at the end of the parsing.
+	* In method build_nf_tree of parser/chain_parser.cpp, the Click function downstream_elements
+	is deprecated but they only one I managed to make it work.
  
 ###################
 # Element support #
