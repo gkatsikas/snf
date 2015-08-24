@@ -60,7 +60,14 @@ int main(int argc, char** argv) {
 	( [&]()
 	{
 		log << "Parsing the chain of Network Functions... " << std::endl;
-		parser = new ChainParser(pcf);
+		try {
+			parser = new ChainParser(pcf);
+		}
+		catch (const std::exception& e) {
+			log << error << "|--> " << e.what() << def << std::endl;
+			exit(INVALID_NF_CHAIN_LENGTH);
+		}
+
 		if ( (exit_status=parser->load_chained_configuratios()) != SUCCESS ) {
 			exit(exit_status);
 		}

@@ -9,22 +9,29 @@
 #include "chain_parser.hpp"
 #include "../configuration/parser_configuration.hpp"
 
-#include "/opt/click/include/click/routervisitor.hh"
+#include <click/routervisitor.hh>
 
-ChainParser::ChainParser(ParserConfiguration* pc) {
+ChainParser::ChainParser(ParserConfiguration* pc) : chain_graph(pc) {
 	this->log.set_logger_file(__FILE__);
-	this->chain_graph = pc;
 	this->chain_length = this->chain_graph->get_graph()->get_vertices_no();
-	// log << info << "Chain Length: " << this->chain_length << def << std::endl;
+
+	if ( this->chain_length <= 0 ) {
+		this->chain_graph = NULL;
+		throw std::runtime_error("ChainParser: Invalid chain length");
+	}
 }
 
 ChainParser::~ChainParser() {
 	this->chain_graph = NULL;
 
-	//for (auto& nf : this->nf_configuration) {
-	//	delete nf.second;
-	//}
+	for ( auto& nf : this->nf_configuration )
+		nf.second = NULL;
 	this->nf_configuration.clear();
+
+	for ( auto& tc : this->nf_traffic_classes )
+		if ( !tc.second.empty() )
+			tc.second.clear();
+	this->nf_traffic_classes.clear();
 }
 
 /*
@@ -39,7 +46,7 @@ short ChainParser::load_chained_configuratios(void) {
 	// For each NF
 	for (Vertex* v : this->chain_graph->get_graph()->get_chain_order() ) {
 		// 1. Load its elements into a Click Router object
-		exit_status = this->load_nf_configuration(v->get_position(), v->get_source_code_path());
+		exit_status = this->load_nf_configuration(v->get_source_code_path(), v->get_position());
 		if ( exit_status != SUCCESS )
 			exit(exit_status);
 
@@ -58,10 +65,10 @@ short ChainParser::load_chained_configuratios(void) {
  * Reads and loads one input Click configuration.
  * It uses built-in Click methods and data structures linked with this file.
  */
-short ChainParser::load_nf_configuration(unsigned short position, std::string nf_source) {
+short ChainParser::load_nf_configuration(std::string nf_source, unsigned short position) {
 	log << warn << "\tLoading Click Configuration no" << position << ": " << nf_source << def << std::endl;
 
-	Router* router = input_a_click_configuration(nf_source.c_str());
+	Router* router = input_a_click_configuration(nf_source.c_str(), position);
 	if ( router == NULL )
 		exit(CLICK_PARSING_PROBLEM);
 	log << info << "\tNetwork Function parsed successfully" << def << std::endl;
@@ -76,34 +83,30 @@ short ChainParser::load_nf_configuration(unsigned short position, std::string nf
 short ChainParser::build_nf_tree(unsigned short position) {
 	int port = -1;
 
+	// Get the specific Click NF object
 	Router* router = this->nf_configuration[position];
+	log << info << "\tNetwork Function " << position << " has " << router->nelements() << " elements" << def << std::endl;
 
-	// 1. Get the root element of this NF
-	Element* root = router->root_element();
-	log << info << "\tRoot element is " << std::string(root->class_name()) << def << std::endl;
-	log << info << "\tNF has " << router->nelements() << " elements" << def << std::endl;
+	// A temporal memory to store the Click elements of a specific path
+	Vector<Element*> path_elements;
 
+	// Start from the first element of the graph
 	Element* first = Router::element(router, 0);
 	log << info << "\tFirst element is " << std::string(first->class_name()) << def << std::endl;
 
-	//Element* first = router->find("FromDevice", "router");
-	//log << info << "\tFirst element is " << std::string(first->class_name()) << def << std::endl;
-
-	//String s = Router::handler(root, "flatconfig")->call_read(root);
-	//log << info << s.data() << def << std::endl;
-
-	// 2. Create a router visitor object to be filled with the elements of the NF
-	ElementTracker tracker(router);
-
-	// Visit the elements downwards (Starting from the root)
-	// Port set to -1 in order to visit all ports
-	if ( router->visit(first, true, port, &tracker) != SUCCESS )
-	//Vector<Element*> result;
-	//if ( router->downstream_elements(first, port, NULL, result) != SUCCESS )
+	// DEPRECATED but the only operational one
+	if ( router->downstream_elements(first, port, NULL, path_elements) != SUCCESS ) {
+	//if ( router->visit_downstream(first, port, &tracker) != SUCCESS ) {
 		log << error << "\tError while traversing NF no " << position << " configuration" << def << std::endl;
+		exit(FAILURE);
+	}
 	log << info << "\tNetwork Function is successfully traversed" << def << std::endl;
-	Vector<Element*> elements = tracker.elements();
-	log << info << "\tFound " << tracker.size() << " elements" << def << std::endl;
+	log << info << "\tFound " << path_elements.size() << " elements" << def << std::endl;
+
+	for ( Vector<Element*>::const_iterator i=path_elements.begin(); i!=path_elements.end(); ++i)
+		log << info << "\t\tElement Found: " << (*i)->class_name() << def << std::endl;
+	//for ( Element* e : tracker.elements() )
+	//	log << info << "\t\tElement Found: " << e->class_name() << def << std::endl;
 
 	return SUCCESS;
 }

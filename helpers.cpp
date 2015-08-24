@@ -13,19 +13,18 @@
  * String helpers
  */
 std::vector<std::string> &split(const std::string &s, char delim, std::vector<std::string> &elems) {
-    std::stringstream ss(s);
-    std::string item;
-    while (std::getline(ss, item, delim)) {
-        elems.push_back(item);
-    }
-    return elems;
+	std::stringstream ss(s);
+	std::string item;
+	while (std::getline(ss, item, delim))
+		elems.push_back(item);
+	return elems;
 }
 
 
 std::vector<std::string> split(const std::string &s, char delim) {
-    std::vector<std::string> elems;
-    split(s, delim, elems);
-    return elems;
+	std::vector<std::string> elems;
+	split(s, delim, elems);
+	return elems;
 }
 
 /*
@@ -33,8 +32,8 @@ std::vector<std::string> split(const std::string &s, char delim) {
  */
 bool is_ip4_prefix (const std::string &address, bool full) {
 	std::vector<std::string> split_address = split(address,'.');
-	if (address.find_first_not_of(".0123456789") != std::string::npos 
-				|| split_address.size() > 4) {
+	if (address.find_first_not_of(".0123456789") != std::string::npos
+		|| split_address.size() > 4) {
 		return false;
 	}
 	if (full && split_address.size() != 4) { return false; }
@@ -62,15 +61,14 @@ uint32_t aton (const std::string &address) {
 
 std::string ntoa (uint32_t address) {
 	return std::to_string(address>>24)+"."+std::to_string((address>>16) % 256)+"."+
-			std::to_string((address>>8) % 256)+"."+std::to_string(address % 256);
+		std::to_string((address>>8) % 256)+"."+std::to_string(address % 256);
 }
 
 /*
  * Allocate a buffer with size defined by the second argument.
  * Initialize and return(by ref) the allocated buffer or return NULL.
  */
-short int allocateMemory(void** memoryBuffer, size_t size)
-{
+short int allocateMemory(void** memoryBuffer, size_t size) {
 	if ( *memoryBuffer != NULL )
 		free(*memoryBuffer);
 
@@ -87,8 +85,7 @@ short int allocateMemory(void** memoryBuffer, size_t size)
 /*
  * Free the space of a buffer if not already done
  */
-short int releaseMemory(void** memoryBuffer)
-{
+short int releaseMemory(void** memoryBuffer) {
 	if ( *memoryBuffer != NULL )
 	{
 		free(*memoryBuffer);

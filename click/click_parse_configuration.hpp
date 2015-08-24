@@ -49,23 +49,19 @@
 #include <click/handlercall.hh>
 
 /*
- * Click usage functions to guide the user
- */
-void usage      (
-	void
-);
-
-void short_usage(
-	void
-);
-
-
-/*
  * A little bit of house keeping after loading and parsing a Click configuration
  */
-short cleanup(
+void cleanup(
 	Clp_Parser *clp,
-	short exit_value
+	bool clean_master
+);
+
+/*
+ * Generate an equivalent Click configuration with flattened statements
+ */
+short generate_flat_configuration(
+	const char** output_file,
+	short position = -1
 );
 
 /*
@@ -84,7 +80,8 @@ Router* parse_configuration(
  * function. We wrote this funciton to integrate the parser into our framework.
  */
 Router* input_a_click_configuration(
-	const char* click_source_configuration
+	const char* click_source_configuration,
+	short position = -1
 );
 
 #endif

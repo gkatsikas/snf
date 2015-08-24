@@ -13,7 +13,8 @@
 #include "../click/click_parse_configuration.hpp"
 #include "../configuration/parser_configuration.hpp"
 
-using NF_Map = std::unordered_map<unsigned short, Router*>;
+template<typename T>
+using NF_Map = std::unordered_map<unsigned short, T>;
 
 class ChainParser {
 	private:
@@ -30,7 +31,12 @@ class ChainParser {
 		/*
 		 * Maps the position of a NF in the chain with a Click Router object
 		 */
-		NF_Map nf_configuration;
+		NF_Map<Router*> nf_configuration;
+
+		/*
+		 * All the traffic classes (Click code paths) of each NF
+		 */
+		NF_Map<std::vector<Element*>> nf_traffic_classes;
 
 		/*
 		 * Logger instance
@@ -42,7 +48,7 @@ class ChainParser {
 		 * Reads and loads one input Click configuration.
 		 * It uses built-in Click methods and data structures linked with this file.
 		 */
-		short load_nf_configuration(unsigned short position, std::string nf_source);
+		short load_nf_configuration(std::string nf_source, unsigned short position);
 
 		/*
 		 * After loading all the NFs into the parser's memory, run a DFS visit per DAG
