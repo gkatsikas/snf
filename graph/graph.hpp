@@ -23,9 +23,6 @@ enum Colour { White, Grey, Black };
 class Graph
 {
 	public:
-		Graph();
-		~Graph();
-
 		/*
 		 * Data structures
 		 */
@@ -33,10 +30,25 @@ class Graph
 		using VertexMap     = std::unordered_map<Vertex*, U>;
 		using AdjacencyList = VertexMap< std::vector< Vertex*> >;
 
+	protected:
+		/*
+		 * A vector of vertices
+		 */
+		AdjacencyList vertices;
+
 		/*
 		 * In degree per vertex
 		 */
 		VertexMap<int> in_degrees;
+
+		/*
+		 * Logger
+		 */
+		Logger log;
+
+	public:
+		Graph();
+		~Graph();
 
 		/*
 		 * Setters & Getters
@@ -48,7 +60,7 @@ class Graph
 		void                   find_in_degrees(void);
 		int                    get_in_degree(Vertex*);
 		VertexMap<int>         get_in_degrees(void);
-		const AdjacencyList&   get_adjacency_list(void) const;
+		const AdjacencyList    get_adjacency_list(void) const;
 		Vertex* get_vertex_by_name(std::string& name);
 		Vertex* get_vertex_by_position(unsigned short pos);
 
@@ -64,19 +76,10 @@ class Graph
 		 * Graph features
 		 */
 		bool is_empty(void);
+		bool contains(unsigned short pos);
+		bool vertex_exists(Vertex* u);
 		std::vector<Vertex*> topological_sort(void);
 		std::vector<Vertex*> get_vertex_order(void);
-
-	protected:
-		/*
-		 * A vector of vertices
-		 */
-		AdjacencyList vertices;
-
-		/*
-		 * Logger
-		 */
-		Logger log;
 };
 
 /*

@@ -80,8 +80,7 @@ Router* parse_configuration(
  * function. We wrote this funciton to integrate the parser into our framework.
  */
 Router* input_a_click_configuration(
-	const char* click_source_configuration,
-	short position = -1
+	const char* click_source_configuration
 );
 
 #endif

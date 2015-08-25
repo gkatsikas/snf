@@ -11,9 +11,9 @@
 #include "generic_configuration.hpp"
 
 /*
- * The Parser's graph contains an associated source code filename per vertex
+ * The Chain graph contains an associated source code filename per vertex
  */
-class ParserVertex : public Vertex
+class ChainVertex : public Vertex
 {
 	private:
 		/*
@@ -22,14 +22,14 @@ class ParserVertex : public Vertex
 		std::string source_code_path;
 
 	public:
-		ParserVertex(std::string name, std::string path, unsigned short pos, unsigned short weight = 1) :
-			Vertex(name, pos, weight), source_code_path(path) {};
-		~ParserVertex() {};
+		ChainVertex(std::string path, std::string name, unsigned short pos, unsigned short weight = 1) :
+			Vertex(std::move(name), pos, weight), source_code_path(std::move(path)) {};
+		~ChainVertex() {};
 
-		ParserVertex& operator=(ParserVertex& pv) {
-			if ( this != &pv ) {
-				Vertex::operator=(pv);
-				this->source_code_path = pv.get_source_code_path();
+		ChainVertex& operator=(ChainVertex& cv) {
+			if ( this != &cv ) {
+				Vertex::operator=(cv);
+				this->source_code_path = cv.get_source_code_path();
 			}
 			return *this;
 		}

@@ -1,0 +1,49 @@
+diff --git include/click/router.hh include/click/router.hh
+index dc83606..25e50d5 100644
+--- include/click/router.hh
++++ include/click/router.hh
+@@ -129,7 +129,14 @@ class Router { public:
+     inline Router* hotswap_router() const;
+     void set_hotswap_router(Router* router);
+ 
+-    int initialize(ErrorHandler* errh);
++    /*
++     * NF Synthesis Modification to prevent Click from initializing the elements in this call.
++     * We simply want to have the Click DAG populated with all the elements and connections.
++     * The 2nd argument is set to false by default. This is how normal Click calls the function
++     * so it does not affect normal Click executions.
++     */
++    int initialize(ErrorHandler* errh, bool initialize_only_dag=false);
++
+     void activate(bool foreground, ErrorHandler* errh);
+     inline void activate(ErrorHandler* errh);
+     inline void set_foreground(bool foreground);
+diff --git lib/router.cc lib/router.cc
+index d345236..9d1437f 100644
+--- lib/router.cc
++++ lib/router.cc
+@@ -1085,7 +1085,7 @@ Router::initialize_handlers(bool defaults, bool specifics)
+ }
+ 
+ int
+-Router::initialize(ErrorHandler *errh)
++Router::initialize(ErrorHandler *errh, bool initialize_only_dag)
+ {
+     if (_state != ROUTER_NEW)
+ 	return errh->error("second attempt to initialize router");
+@@ -1165,6 +1165,15 @@ Router::initialize(ErrorHandler *errh)
+ 	}
+     }
+ 
++    //////////////////////////////////////////////////////////////////////////////
++    /*
++     * NF Synthesis modificaiton to prevent the initialization of Click elements
++     * It happens only when the boolean argument is true. Default is false.
++     */
++    //////////////////////////////////////////////////////////////////////////////
++    if ( initialize_only_dag )
++	return 0;
++
+ #if CLICK_DMALLOC
+     CLICK_DMALLOC_REG("iHoo");
+ #endif

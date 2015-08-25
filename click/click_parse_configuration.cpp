@@ -113,7 +113,7 @@ void cleanup(Clp_Parser *clp, bool clean_master) {
 		delete click_master;
 }
 
-Router* input_a_click_configuration (const char* click_source_configuration, short position) {
+Router* input_a_click_configuration (const char* click_source_configuration) {
 	// Important function that exports the Click elements
 	click_static_initialize();
 
@@ -196,7 +196,7 @@ Router* input_a_click_configuration (const char* click_source_configuration, sho
 		return click_router;
 }
 
-void potentially_useful_code() {
+void potentially_useful_code_in_the_near_future() {
 	// Generate the flat configuration of this NF
 	/*char* flat_router = NULL;
 	if ( generate_flat_configuration(&flat_router, position) != SUCCESS ) {

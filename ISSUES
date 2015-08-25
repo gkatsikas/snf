@@ -13,6 +13,7 @@
 TODO:
 	* add ID to all elements
 	* add pointer->element in Write operations
+	* Create a patch for the Click modifications in router.cc and router.hh
 	* In click/click_parse_configuration.cpp, we should delete the click_master 
 	object at the end of the parsing.
 	* In method build_nf_tree of parser/chain_parser.cpp, the Click function downstream_elements

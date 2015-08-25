@@ -10,7 +10,7 @@
 
 Graph::Graph() {
 	this->log.set_logger_file(__FILE__);
-	log << debug << "Graph constructed" << def << std::endl;
+	//log << debug << "\tGraph constructed" << def << std::endl;
 }
 
 Graph::~Graph() {
@@ -19,33 +19,62 @@ Graph::~Graph() {
 	this->in_degrees.clear();
 	this->vertices.clear();
 
-	log << debug << "Graph destroyed" << def << std::endl;
+	//log << debug << "\tGraph destroyed" << def << std::endl;
+}
+
+/*
+ * Position field corresponds to a unique key for the graph
+ */
+bool Graph::contains(unsigned short pos) {
+	for ( auto& pair : this->vertices )
+		if ( pair.first->get_position() == pos )
+			return true;
+	return false;
+}
+
+/*
+ * Check whether this vertex is already in the graph
+ */
+bool Graph::vertex_exists(Vertex* u) {
+	return this->contains(u->get_position());
 }
 
 /*
  * Add a new vertex in the graph
  */
 void Graph::add_vertex(Vertex* u) {
+	// Check if it already exists
+	if ( this->vertex_exists(u) ) {
+		//log << debug << "\tVertex exists: [" << u->get_name() << ":" << u->get_position() <<"]" << def << std::endl;
+		return;
+	}
+
 	this->vertices[u];
-	log << debug << "\tVertex added [" << u->get_name() << ":" << u->get_position() <<"]" << def << std::endl;
+	//log << debug << "\tVertex added [" << u->get_name() << ":" << u->get_position() <<"]" << def << std::endl;
 }
 
 /*
  * Add a new connection in the graph
  */
 void Graph::add_edge(Vertex* u, Vertex* v) {
-	// initialise adjacency list for v
-	this->vertices[v];
 
-	// add v as being adjacent to u
-	if ( std::find(this->vertices[u].begin(), this->vertices[u].end(), v) != this->vertices[u].end() )
-		log 	<< warn  << "\t\t\tEdge exists: [" << u->get_name() << ":" << u->get_position() << "] -> ["
-			<< v->get_name() << ":" << v->get_position() << "]" << def << std::endl;
-	else {
-		this->vertices[u].push_back(v);
-		log 	<< debug << "\t\t\tEdge  added: [" << u->get_name() << ":" << u->get_position() << "] -> ["
-			<< v->get_name() << ":" << v->get_position() << "]" << def << std::endl;
+	// Add these two vertices if do not exist
+	this->add_vertex(std::move(u));
+	this->add_vertex(std::move(v));
+
+	// Check whether the edge does exist
+	for ( Vertex* neighbour : this->vertices[u] ) {
+		if ( neighbour->get_position() == v->get_position() ) {
+			//log 	<< warn  << "\tEdge exists: [" << u->get_name() << ":" << u->get_position() << "] -> ["
+			//<< v->get_name() << ":" << v->get_position() << "]" << def << std::endl;
+			return;
+		}
 	}
+
+	// Add v as being adjacent to u
+	this->vertices[u].push_back(std::move(v));
+	//log 	<< debug << "\tEdge  added: [" << u->get_name() << ":" << u->get_position() << "] -> ["
+	//		<< v->get_name() << ":" << v->get_position() << "]" << def << std::endl;
 }
 
 /*
@@ -58,7 +87,7 @@ unsigned short Graph::get_vertices_no(void) {
 /*
  * Calculate the in degrees of all vertices
  */
-void Graph::find_in_degrees() {
+void Graph::find_in_degrees(void) {
 	// Empty any previous entry
 	in_degrees.clear();
 
@@ -75,7 +104,7 @@ void Graph::find_in_degrees() {
 /*
  * Get the adjacency list of the graph
  */
-const Graph::AdjacencyList& Graph::get_adjacency_list(void) const {
+const Graph::AdjacencyList Graph::get_adjacency_list(void) const {
 	return this->vertices;
 }
 
@@ -100,16 +129,14 @@ Graph::VertexMap<int> Graph::get_in_degrees() {
 };
 
 /*
- * Get a graph vertex by name
+ * Get a graph vertex by name (The first one to be found)
  */
 Vertex* Graph::get_vertex_by_name(std::string& name) {
-	if ( name.empty() ) {
-		//log << warn << "\tBad vertex name" << def << std::endl;
+	if ( this->is_empty() )
 		return NULL;
-	}
 
-	if ( this->is_empty() ) {
-		log << warn << "\tGraph is empty" << def << std::endl;
+	if ( name.empty() ) {
+		log << warn << "\tBad vertex name" << def << std::endl;
 		return NULL;
 	}
 
@@ -118,7 +145,6 @@ Vertex* Graph::get_vertex_by_name(std::string& name) {
 			return pair.first;
 	}
 
-	log << warn << "\tVertex not found" << def << std::endl;
 	return NULL;
 }
 
@@ -126,22 +152,16 @@ Vertex* Graph::get_vertex_by_name(std::string& name) {
  * Get a graph vertex by its position
  */
 Vertex* Graph::get_vertex_by_position(unsigned short pos) {
-	if ( pos >= this->get_vertices_no() ) {
-		//log << warn << "\tBad vertex position" << def << std::endl;
+	if ( this->is_empty() )
 		return NULL;
-	}
 
-	if ( this->is_empty() ) {
-		log << warn << "\tGraph is empty" << def << std::endl;
+	if ( pos > this->get_vertices_no() )
 		return NULL;
-	}
 
-	for (auto& pair : this->vertices) {
+	for ( auto& pair : this->vertices )
 		if ( pair.first->get_position() == pos )
 			return pair.first;
-	}
 
-	// log << warn << "\tVertex not found" << def << std::endl;
 	return NULL;
 }
 
@@ -149,7 +169,7 @@ Vertex* Graph::get_vertex_by_position(unsigned short pos) {
  * Check if graph has any vertices
  */
 bool Graph::is_empty(void) {
-	if ( this->get_adjacency_list().empty() )
+	if ( this->get_adjacency_list().size() == 0 )
 		return true;
 	return false;
 }
@@ -166,12 +186,12 @@ void Graph::print_in_degrees(void) {
 
 void Graph::print_adjacency_list(void) {
 	log << info << "================ Adjacency List ===============" << def << std::endl;
-        for (auto& pair : this->get_adjacency_list()) {
+	for (auto& pair : this->get_adjacency_list()) {
 		log << info << std::setw(2) << pair.first->get_name() << "-> ";
 		for (Vertex* neighbour : pair.second)
 			log << info << neighbour->get_name() << ", " << def;
 		log << def << std::endl;
-        }
+	}
 	log << info << "===============================================" << def << std::endl;
 };
 
@@ -203,7 +223,7 @@ void Graph::print_vertex_order(void) {
 /*
  * Simple topological sorting
  */
-std::vector<Vertex*> Graph::topological_sort() {
+std::vector<Vertex*> Graph::topological_sort(void) {
 	if ( this->is_empty() ) {
 		log << warn << "\tGraph is empty" << def << std::endl;
 		std::vector<Vertex*> sorted;

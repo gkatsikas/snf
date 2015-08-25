@@ -9,8 +9,7 @@
 
 #include <unordered_map>
 
-#include "../logger/logger.hpp"
-#include "../click/click_parse_configuration.hpp"
+#include "nf_graph.hpp"
 #include "../configuration/parser_configuration.hpp"
 
 template<typename T>
@@ -36,7 +35,7 @@ class ChainParser {
 		/*
 		 * One DAG of Click elements per NF in the chain
 		 */
-		NF_Map<Graph*> nf_dag;
+		NF_Map<NFGraph*> nf_dag;
 
 		/*
 		 * All the traffic classes (Click code paths) of each NF
@@ -57,20 +56,14 @@ class ChainParser {
 
 		/*
 		 * After loading all the NFs into the parser's memory, run a DFS visit per DAG
-		 * to build the NF Synthesizer's tree.
+		 * to build the NF Synthesizer's graph.
 		 */
-		short build_nf_tree(unsigned short position);
+		short build_nf_dag(unsigned short position);
 
 		/*
-		 * Mark the elements of a Click configuration as Input(I), Outport(O) or
-		 * Processing(P) elements
+		 * Visits recursively the Click DAG and returns the vector of Elements it contains
 		 */
-		//short mark_elements(unsigned short position);
-
-		/*
-		 *
-		 */
-		short update_dag(Vector<Element*> element_class, unsigned short position);
+		Vector<Element*> visit_dag(unsigned short position);
 
 	public:
 		/*

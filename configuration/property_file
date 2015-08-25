@@ -6,7 +6,7 @@
 [NF_CHAIN]
 ### TEST 1 - An invalid Click configuration
 #NF_1 = nf_repo/broken.click
-NF_1 = nf_repo/flat_router.click
+#NF_1 = nf_repo/flat_router.click
 
 ### TEST 2 - A small(2), toy(not real NFs), valid chain with invalid topology map (with cycles)
 #NF_1 = nf_repo/test.click
@@ -17,9 +17,9 @@ NF_1 = nf_repo/flat_router.click
 #NF_2 = nf_repo/test.click
 
 ### TEST 4 - A small(2) valid chain with real routers
-#NF_1 = nf_repo/flat_router.click
-#NF_2 = nf_repo/flat_router.click
-#NF_3 = nf_repo/flat_router.click
+NF_1 = nf_repo/flat_router.click
+NF_2 = nf_repo/flat_router.click
+NF_3 = nf_repo/flat_router.click
 #NF_1 = nf_repo/router.click
 #NF_2 = nf_repo/router.click
 #NF_3 = nf_repo/router.click
@@ -36,7 +36,7 @@ NF_1 = nf_repo/flat_router.click
 
 [NF_TOPO]
 ### In TEST 1
-TOPOLOGY = 0;
+#TOPOLOGY = 0;
 
 ### In TEST 2
 #TOPOLOGY = 0 1; 1 0;
@@ -45,7 +45,7 @@ TOPOLOGY = 0;
 #TOPOLOGY = 0 1; 0 0;
 
 ### In TEST 4
-#TOPOLOGY = 0 1 0; 0 0 1; 0 0 0;
+TOPOLOGY = 0 1 0; 0 0 1; 0 0 0;
 
 ### In TEST 5
 #TOPOLOGY = 0 1 0 0 0 0; 0 0 1 0 0 0; 0 0 0 1 1 0; 0 0 0 0 0 1; 0 0 0 0 0 1; 0 0 0 0 0 0;
