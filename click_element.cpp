@@ -49,11 +49,18 @@ ClickElement::ClickElement ( ElementType type, std::string& configuration ) :
 		case RoundRobinIPMapper:
 			parse_rr_ip_mapper (configuration);
 			break;
+		case EtherEncap:
+		case FromDevice:
+		case ToDevice:
+		case Strip:
+		case IPGWOptions:
+		case DropBroadcasts:
 		case MarkIPHeader:
 		case CheckIPHeader:
 		case CheckICMPHeader:
 		case GetIPAddress:
 		case CheckUDPHeader:
+		case Classifier:
 		case CheckTCPHeader: {
 			OutputClass port(0);
 			this->add_output_class (port);
@@ -258,7 +265,7 @@ void ClickElement::parse_ip_rewriter (std::string& configuration) {
 			}
 			else{ configuration_fail(); }
 		}
-		case 6: {
+		case 7: {
 			std::pair<OutputClass,OutputClass> ports =
 					OutputClass::output_class_from_pattern(split_inputsec);
 			this->add_output_class(ports.first);
@@ -329,20 +336,45 @@ void ClickElement::parse_set_vlan_anno_configuration(std::string& configuration)
 	BUG("VLAN annotation not implemented yet");
 }
 
+//New syntax: [IPSRC|IPDST] xxx.xxx.xxx.xxx-yyy.yyy.yyy.yyy
 void ClickElement::parse_rr_ip_mapper (std::string& configuration) {
 
+	std::string separators = " \t\n";
+
 	size_t start = 0;
-	size_t end = configuration.find(",");
+	size_t end = configuration.find_first_of(separators);
 
-	while(start != std::string::npos) {
-		std::string pattern = configuration.substr(start,end-start);
-		// The following line is commentd by Georgios because it was not compiling
-		// std::pair<OutputClass,OutputClass> ports = OutputClass::output_class_from_pattern(split_inputsec);
+	HeaderField field = unknown;
 
-		//FIXME: How to allow only one parameter to be changed
-		//Change the way ip_mapper is configured?
-		//e.g. SRCIP IPA, IPB, IPC,...
+	if(end==5 && configuration[0]=='I' && configuration[1]=='P') {
+		if(configuration[2]=='S' && configuration[3]=='R' && configuration[4]=='C') {
+			field = ip_src;
+		}
+		else if(configuration[2]=='D' && configuration[3]=='S' && configuration[4]=='T') {
+			field = ip_dst;
+		}
+		else configuration_fail();
 	}
+	else configuration_fail();
+
+	start = configuration.find_first_not_of(separators, end);
+	end = configuration.find('-',start);
+	
+	uint32_t start_ip = aton(configuration.substr(start,end-start));
+	start = end+1;
+	end = configuration.find_first_of(separators,start);
+	uint32_t end_ip = aton(configuration.substr(start,end-start));
+	
+	OutputClass port(0);
+	FieldOperation field_op;
+	field_op.m_type = WriteRR;
+	field_op.m_field = field;
+	field_op.m_value[0] = start_ip;
+	field_op.m_value[1] = end_ip;
+	port.add_field_op(field_op);
+	
+	this->add_output_class(port);
+	
 }
 
 void ClickElement::configuration_fail() {
