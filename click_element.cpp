@@ -49,11 +49,18 @@ ClickElement::ClickElement ( ElementType type, std::string& configuration ) :
 		case RoundRobinIPMapper:
 			parse_rr_ip_mapper (configuration);
 			break;
+		case EtherEncap:
+		case FromDevice:
+		case ToDevice:
+		case Strip:
+		case IPGWOptions:
+		case DropBroadcasts:
 		case MarkIPHeader:
 		case CheckIPHeader:
 		case CheckICMPHeader:
 		case GetIPAddress:
 		case CheckUDPHeader:
+		case Classifier:
 		case CheckTCPHeader: {
 			OutputClass port(0);
 			this->add_output_class (port);
@@ -258,7 +265,7 @@ void ClickElement::parse_ip_rewriter (std::string& configuration) {
 			}
 			else{ configuration_fail(); }
 		}
-		case 6: {
+		case 7: {
 			std::pair<OutputClass,OutputClass> ports =
 					OutputClass::output_class_from_pattern(split_inputsec);
 			this->add_output_class(ports.first);
