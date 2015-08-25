@@ -78,7 +78,8 @@ click_parse_configuration.o: ./click/click_parse_configuration.cpp ./click/click
 
 ### House keeping
 clean:
-	\rm -f *.o *.plist *.gch
+	\rm -f *.o *.plist *.gch *.log
 
-clean-dist: clean
+clean-dist: 
+	clean
 	\rm -f nf_synthesizer

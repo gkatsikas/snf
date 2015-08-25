@@ -38,11 +38,6 @@ class ChainParser {
 		NF_Map<NFGraph*> nf_dag;
 
 		/*
-		 * All the traffic classes (Click code paths) of each NF
-		 */
-		//NF_Map<Vector<Element*>> nf_traffic_classes;
-
-		/*
 		 * Logger instance
 		 */
 		Logger log;

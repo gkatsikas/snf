@@ -27,12 +27,9 @@ ChainParser::~ChainParser() {
 		conf.second = NULL;
 	this->nf_configuration.clear();
 
+	for ( auto& dag : this->nf_dag )
+		delete dag.second;
 	this->nf_dag.clear();
-
-	/*for ( auto& tc : this->nf_traffic_classes )
-		if ( !tc.second.empty() )
-			tc.second.clear();
-	this->nf_traffic_classes.clear();*/
 }
 
 /*
