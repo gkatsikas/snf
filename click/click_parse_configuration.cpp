@@ -30,6 +30,7 @@
 //              instantiate the router is intentionally removed.
 //============================================================================
 
+#include <stdio.h>
 #include "../helpers.hpp"
 #include "../logger/logger.hpp"
 #include "click_parse_configuration.hpp"
@@ -46,10 +47,26 @@ static const Clp_Option options[] = {
 	{ "file", 'f', ROUTER_OPT, Clp_ValString, 0 },
 };
 
+// Global variables useful to Click
 int    click_nthreads = 1;
 static ErrorHandler* errh;
 static Router* click_router;
 static Master* click_master;
+
+void ClickCleaner::cleanup(Clp_Parser *clp, bool clean_master) {
+	if ( clp != NULL )
+		Clp_DeleteParser(clp);
+
+	if ( clean_master ) {
+		printf("Cleaning up Click...\n");
+		click_static_cleanup();
+		printf("|-> Static clean up\n");
+		delete click_master;
+		printf("|-> Click Master is deleted\n");
+		errh = NULL;
+		printf("|-> Click Error Handler is deleted\n");
+	}
+}
 
 Router* parse_configuration(const String &text, bool text_is_expr, ErrorHandler *errh) {
 	int before_errors = errh->nerrors();
@@ -107,12 +124,6 @@ short generate_flat_configuration(char** output_file, short position) {
 	return SUCCESS;
 }
 
-void cleanup(Clp_Parser *clp, bool clean_master) {
-	Clp_DeleteParser(clp);
-	if ( clean_master )
-		delete click_master;
-}
-
 Router* input_a_click_configuration (const char* click_source_configuration) {
 	// Important function that exports the Click elements
 	click_static_initialize();
@@ -165,7 +176,7 @@ Router* input_a_click_configuration (const char* click_source_configuration) {
 
 		bad_option:
 			case Clp_BadOption:
-				cleanup(clp, true);
+				ClickCleaner::cleanup(clp, true);
 				return NULL;
 
 			case Clp_Done:
@@ -186,12 +197,12 @@ Router* input_a_click_configuration (const char* click_source_configuration) {
 			errh->error("Error while parsing the Network Function in %s", router_file);
 
 			// Clean the mess and return a NULL object
-			cleanup(clp, true);
+			ClickCleaner::cleanup(clp, true);
 			return NULL;
 		}
 
 		// Done! Do not clean the Master (2nd arg = false)
-		cleanup(clp, false);
+		ClickCleaner::cleanup(clp, false);
 
 		return click_router;
 }

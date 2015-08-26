@@ -69,8 +69,7 @@ parser_configuration.o: ./configuration/parser_configuration.cpp ./configuration
 nf_graph.o: ./parser/nf_graph.cpp ./parser/nf_graph.hpp
 	$(CC) $(CFLAGS) ./parser/nf_graph.cpp
 
-chain_parser.o: ./parser/chain_parser.cpp ./parser/chain_parser.hpp ./configuration/parser_configuration.hpp \
-		./parser/nf_graph.hpp
+chain_parser.o: ./parser/chain_parser.cpp ./parser/chain_parser.hpp ./configuration/parser_configuration.hpp
 	$(CC) $(CFLAGS) ./parser/chain_parser.cpp
 
 click_parse_configuration.o: ./click/click_parse_configuration.cpp ./click/click_parse_configuration.hpp graph/graph.hpp
@@ -80,6 +79,5 @@ click_parse_configuration.o: ./click/click_parse_configuration.cpp ./click/click
 clean:
 	\rm -f *.o *.plist *.gch *.log
 
-clean-dist: 
-	clean
+clean-dist: clean
 	\rm -f nf_synthesizer

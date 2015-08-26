@@ -19,10 +19,31 @@ index dc83606..25e50d5 100644
      inline void activate(ErrorHandler* errh);
      inline void set_foreground(bool foreground);
 diff --git lib/router.cc lib/router.cc
-index d345236..9d1437f 100644
+index d345236..3173f94 100644
 --- lib/router.cc
 +++ lib/router.cc
-@@ -1085,7 +1085,7 @@ Router::initialize_handlers(bool defaults, bool specifics)
+@@ -117,7 +117,8 @@ Router::~Router()
+ 	for (int ord = _elements.size() - 1; ord >= 0; ord--)
+ 	    _elements[ _element_configure_order[ord] ]->cleanup(Element::CLEANUP_ROUTER_INITIALIZED);
+     } else if (_state != ROUTER_DEAD) {
+-	assert(_element_configure_order.size() == 0 && _state <= ROUTER_PRECONFIGURE);
++        // We do not follow all the Click states thus this assertion must be commented
++	//assert(_element_configure_order.size() == 0 && _state <= ROUTER_PRECONFIGURE);
+ 	for (int i = _elements.size() - 1; i >= 0; i--)
+ 	    _elements[i]->cleanup(Element::CLEANUP_NO_ROUTER);
+     }
+@@ -151,6 +152,10 @@ Router::~Router()
+ 	delete ns;
+     }
+     delete _name_info;
++
++    // Return here because we haven't registered our Router in the first place
++    return;
++
+     if (_master)
+ 	_master->unregister_router(this);
+ }
+@@ -1085,7 +1090,7 @@ Router::initialize_handlers(bool defaults, bool specifics)
  }
  
  int
@@ -31,7 +52,7 @@ index d345236..9d1437f 100644
  {
      if (_state != ROUTER_NEW)
  	return errh->error("second attempt to initialize router");
-@@ -1165,6 +1165,15 @@ Router::initialize(ErrorHandler *errh)
+@@ -1165,6 +1170,15 @@ Router::initialize(ErrorHandler *errh)
  	}
      }
  

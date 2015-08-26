@@ -23,13 +23,18 @@ ChainParser::ChainParser(ParserConfiguration* pc) : chain_graph(pc) {
 ChainParser::~ChainParser() {
 	this->chain_graph = NULL;
 
+	// From Click
+	ClickCleaner::cleanup(NULL, true);
+
 	for ( auto& conf : this->nf_configuration )
 		conf.second = NULL;
 	this->nf_configuration.clear();
 
-	for ( auto& dag : this->nf_dag )
-		delete dag.second;
+	//for ( auto& dag : this->nf_dag )
+	//	delete dag.second;
 	this->nf_dag.clear();
+
+	log << debug << "Chain Parser deleted" << def << std::endl;
 }
 
 /*

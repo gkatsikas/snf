@@ -51,10 +51,9 @@
 /*
  * A little bit of house keeping after loading and parsing a Click configuration
  */
-void cleanup(
-	Clp_Parser *clp,
-	bool clean_master
-);
+namespace ClickCleaner {
+	void cleanup(Clp_Parser *clp, bool clean_master);
+};
 
 /*
  * Generate an equivalent Click configuration with flattened statements
