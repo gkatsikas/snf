@@ -31,6 +31,7 @@ static const uint32_t elem_start = __LINE__;
 	FOO(Strip) \
 	FOO(IPGWOptions) \
 	FOO(DropBroadcasts) \
+	FOO(IPFragmenter) \
 	FOO(Classifier) \
 	FOO(Discard_def)
 static const uint32_t elem_end = __LINE__;

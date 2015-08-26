@@ -80,6 +80,8 @@ typedef std::unordered_map<HeaderField, std::vector<Condition>, std::hash<int> >
 class TrafficClass {
 
 	public:
+		TrafficClass ();
+	
 		/*
 		 * Adds the element with output port port
 		 * |-> -1 indicates no output port (end of chain)
@@ -87,11 +89,17 @@ class TrafficClass {
 		 */
 		int addElement (std::shared_ptr<ClickElement> element, int port=-1);
 		std::string to_str () const;
+		bool is_discarded () const;
+		std::vector<std::shared_ptr<ClickElement> > synthesize_chain() const;
 
 	private:
 		PacketFilter m_filters;
 		ConditionMap m_writeConditions;
 
+		bool m_dropBroadcasts;
+		bool m_ipgwoptions;
+		uint32_t m_fragment;
+		
 		/*
 		 * Path of the class in terms of elements
 		 */

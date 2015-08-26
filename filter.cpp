@@ -273,6 +273,25 @@ std::string Condition::to_str() const {
 	return "Condition on "+m_element->to_str()+": "+m_filter.to_str();
 }
 
+bool TrafficClass::is_discarded() const {
+	return (this->m_elementPath.back()->get_type() == Discard);
+}
+
+TrafficClass::TrafficClass () : m_filters(), m_writeConditions(), m_dropBroadcasts(false),
+								m_ipgwoptions(false), m_elementPath(), m_operation() {}
+
+std::vector<std::shared_ptr<ClickElement> > TrafficClass::synthesize_chain () const {
+	std::vector<std::shared_ptr<ClickElement> > synthesized_chain;
+	if(this->is_discarded()) {
+		synthesized_chain.push_back(std::shared_ptr<ClickElement>(new ClickElement(Discard,std::string())));
+	}
+	else {
+		//TODO: do smthng
+	}
+	
+	return synthesized_chain;
+}
+
 int TrafficClass::intersect_filter(const Filter& filter) {
 	HeaderField field = filter.get_field();
 	auto got=this->m_filters.find(field);
@@ -305,6 +324,12 @@ int TrafficClass::addElement (std::shared_ptr<ClickElement> element, int port) {
 	int nb_none_filters=0;
 	(this->m_elementPath).push_back(element);
 
+	if(element->get_type() == IPGWOptions) {
+		this->m_ipgwoptions = true;
+	}
+	else if(element->get_type() == DropBroadcasts) {
+		this->m_dropBroadcasts = true;
+	}
 
 	if (port==-1) { //Last element of the chain -> no children
 		return 0;

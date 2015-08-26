@@ -16,10 +16,13 @@ struct ClickNode {
 class ClickTree {
 	public:
 		ClickTree (std::shared_ptr<ClickElement> root) ;
+		ClickTree(int input_nf, std::string input_interface, std::shared_ptr<ClickElement> root);
 		std::vector<TrafficClass> get_trafficClasses() const;
 
 	private:
 		ClickNode m_root;
+		int m_inputNF;
+		std::string m_inputIface;
 		std::vector<TrafficClass> m_trafficClasses;
 
 		void find_classes(void); //Graph search from m_root

@@ -19,7 +19,7 @@
 std::string empty;
 std::shared_ptr<ClickElement> ClickElement::discard_elem_ptr(new ClickElement(Discard_def,empty));
 
-ClickElement::ClickElement ( ElementType type, std::string& configuration ) :
+ClickElement::ClickElement ( ElementType type, const std::string& configuration ) :
 					m_type(type), m_configuration(configuration), m_nbPorts(0)
 {
 	switch (type) {
@@ -49,12 +49,12 @@ ClickElement::ClickElement ( ElementType type, std::string& configuration ) :
 		case RoundRobinIPMapper:
 			parse_rr_ip_mapper (configuration);
 			break;
+		case IPGWOptions:
+		case DropBroadcasts:
 		case EtherEncap:
 		case FromDevice:
 		case ToDevice:
 		case Strip:
-		case IPGWOptions:
-		case DropBroadcasts:
 		case MarkIPHeader:
 		case CheckIPHeader:
 		case CheckICMPHeader:
@@ -66,6 +66,9 @@ ClickElement::ClickElement ( ElementType type, std::string& configuration ) :
 			this->add_output_class (port);
 			break;
 		}
+		case IPFragmenter:
+			parse_ip_fragmenter_configuration(configuration);
+			break;
 		case VLANEncap:
 			parse_vlan_encap_configuration(configuration);
 			break;
@@ -128,7 +131,7 @@ std::shared_ptr<ClickElement> ClickElement::get_discard_elem () {
 	return (ClickElement::discard_elem_ptr);
 }
 
-void ClickElement::parse_dec_ttl_conf (std::string& configuration) {
+void ClickElement::parse_dec_ttl_conf (const std::string& configuration) {
 	if (configuration.size() != 0) {
 		configuration_fail();
 	}
@@ -151,7 +154,7 @@ void ClickElement::parse_dec_ttl_conf (std::string& configuration) {
 	this->add_output_class(port1);
 }
 
-void ClickElement::parse_fix_ip_src (std::string& configuration) {
+void ClickElement::parse_fix_ip_src (const std::string& configuration) {
 	std::vector<std::string> split_conf = split(configuration, ' ');
 
 	uint32_t new_ip_value=0;
@@ -180,7 +183,7 @@ void ClickElement::parse_fix_ip_src (std::string& configuration) {
 	return;
 }
 
-void ClickElement::parse_ip_filter (std::string& configuration) {
+void ClickElement::parse_ip_filter (const std::string& configuration) {
 	std::vector<std::string> rules = split(configuration,',');
 	std::vector<PacketFilter> to_discard;
 	for (size_t i=0; i<rules.size(); i++) {
@@ -224,7 +227,7 @@ void ClickElement::parse_ip_filter (std::string& configuration) {
 	}
 }
 
-void ClickElement::parse_ip_classifier (std::string& configuration) {
+void ClickElement::parse_ip_classifier (const std::string& configuration) {
 	std::vector<std::string> rules = split(configuration,',');
 
 	for (size_t i=0; i<rules.size(); i++) {
@@ -241,7 +244,7 @@ void ClickElement::parse_ip_classifier (std::string& configuration) {
 	}
 }
 
-void ClickElement::parse_lookup_filter(std::string& configuration) {
+void ClickElement::parse_lookup_filter(const std::string& configuration) {
 	std::vector<std::string> rules = split(configuration,',');
 	Filter parsed_prefixes(ip_src);
 	parsed_prefixes.make_none();
@@ -251,7 +254,7 @@ void ClickElement::parse_lookup_filter(std::string& configuration) {
 	}
 }
 
-void ClickElement::parse_ip_rewriter (std::string& configuration) {
+void ClickElement::parse_ip_rewriter (const std::string& configuration) {
 	//We assume that the configuration holds for only one input port
 	std::vector<std::string> split_inputsec = split(configuration, ' ');
 
@@ -277,7 +280,7 @@ void ClickElement::parse_ip_rewriter (std::string& configuration) {
 	}
 }
 
-void ClickElement::parse_vlan_encap_configuration(std::string& configuration) {
+void ClickElement::parse_vlan_encap_configuration(const std::string& configuration) {
 	size_t pos = configuration.find(' ');
 	if (pos == std::string::npos) {
 		BUG("Expected keyword in VLANEncap configuration and got: \""+configuration+"\"");
@@ -317,7 +320,7 @@ void ClickElement::parse_vlan_encap_configuration(std::string& configuration) {
 	this->add_output_class(port);
 }
 
-void ClickElement::parse_vlan_decap_configuration(std::string& configuration) {
+void ClickElement::parse_vlan_decap_configuration(const std::string& configuration) {
 	if(configuration.empty()) {
 		//TODO do we handle ANNO and if yes how?
 		BUG("VLAN annotation not implemented yet");
@@ -329,7 +332,7 @@ void ClickElement::parse_vlan_decap_configuration(std::string& configuration) {
 	this->add_output_class(port);
 }
 
-void ClickElement::parse_set_vlan_anno_configuration(std::string& configuration) {
+void ClickElement::parse_set_vlan_anno_configuration(const std::string& configuration) {
 	//TODO complete
 	//Or not
 	std::cout << configuration << std::endl;
@@ -337,7 +340,7 @@ void ClickElement::parse_set_vlan_anno_configuration(std::string& configuration)
 }
 
 //New syntax: [IPSRC|IPDST] xxx.xxx.xxx.xxx-yyy.yyy.yyy.yyy
-void ClickElement::parse_rr_ip_mapper (std::string& configuration) {
+void ClickElement::parse_rr_ip_mapper (const std::string& configuration) {
 
 	std::string separators = " \t\n";
 
@@ -375,6 +378,17 @@ void ClickElement::parse_rr_ip_mapper (std::string& configuration) {
 	
 	this->add_output_class(port);
 	
+}
+
+void ClickElement::parse_ip_fragmenter_configuration(const std::string& configuration) {
+	if(configuration.find_first_not_of("0123456789") != std::string::npos) {
+		configuration_fail();
+	}
+	
+	OutputClass port(0);
+	FieldOperation field_op = {Write,mtu,(uint32_t) atoi(configuration.c_str())};
+	port.add_field_op(field_op);
+	this->add_output_class(port);
 }
 
 void ClickElement::configuration_fail() {
