@@ -90,7 +90,7 @@ class TrafficClass {
 		int addElement (std::shared_ptr<ClickElement> element, int port=-1);
 		std::string to_str () const;
 		bool is_discarded () const;
-		std::vector<std::shared_ptr<ClickElement> > synthesize_chain() const;
+		std::vector<std::shared_ptr<ClickElement> > synthesize_chain();
 
 	private:
 		PacketFilter m_filters;
@@ -98,8 +98,7 @@ class TrafficClass {
 
 		bool m_dropBroadcasts;
 		bool m_ipgwoptions;
-		uint32_t m_fragment;
-		
+		std::string m_etherEncapConf;
 		/*
 		 * Path of the class in terms of elements
 		 */

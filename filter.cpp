@@ -278,15 +278,37 @@ bool TrafficClass::is_discarded() const {
 }
 
 TrafficClass::TrafficClass () : m_filters(), m_writeConditions(), m_dropBroadcasts(false),
-								m_ipgwoptions(false), m_elementPath(), m_operation() {}
+								m_ipgwoptions(false), m_etherEncapConf(), m_elementPath(), 
+								m_operation() {}
 
-std::vector<std::shared_ptr<ClickElement> > TrafficClass::synthesize_chain () const {
+std::vector<std::shared_ptr<ClickElement> > TrafficClass::synthesize_chain () {
 	std::vector<std::shared_ptr<ClickElement> > synthesized_chain;
 	if(this->is_discarded()) {
 		synthesized_chain.push_back(std::shared_ptr<ClickElement>(new ClickElement(Discard,std::string())));
 	}
 	else {
-		//TODO: do smthng
+		if(m_dropBroadcasts) {
+			synthesized_chain.push_back(std::shared_ptr<ClickElement>(new ClickElement(DropBroadcasts,std::string())));
+		}
+		
+		if(m_ipgwoptions) {
+			synthesized_chain.push_back(std::shared_ptr<ClickElement>(new ClickElement(DropBroadcasts,std::string())));
+		}
+		FieldOperation* field_op;
+		
+		//TODO: do the voodoo that you want to do
+		
+		field_op = m_operation.get_field_op(mtu);
+		if(field_op) {
+			synthesized_chain.push_back(std::shared_ptr<ClickElement>(new ClickElement(DropBroadcasts,
+											std::to_string(field_op->m_value[0]) )));
+		}
+		
+		if(m_etherEncapConf.empty()) {
+			BUG("Empty EtherEncap configuration");
+		}
+		synthesized_chain.push_back(std::shared_ptr<ClickElement>(new ClickElement(EtherEncap,m_etherEncapConf)));
+		synthesized_chain.push_back(m_elementPath.back());
 	}
 	
 	return synthesized_chain;
@@ -329,6 +351,9 @@ int TrafficClass::addElement (std::shared_ptr<ClickElement> element, int port) {
 	}
 	else if(element->get_type() == DropBroadcasts) {
 		this->m_dropBroadcasts = true;
+	}
+	else if(element->get_type() == EtherEncap) {
+		this->m_etherEncapConf = element->get_configuration();
 	}
 
 	if (port==-1) { //Last element of the chain -> no children
