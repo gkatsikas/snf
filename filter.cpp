@@ -273,6 +273,43 @@ std::string Condition::to_str() const {
 	return "Condition on "+m_element->to_str()+": "+m_filter.to_str();
 }
 
+std::string Filter::to_ip_class_pattern() const {
+	std::vector<std::pair<uint32_t,uint32_t> > segments = m_filter.get_segments();
+	std::string keyword;
+	switch (m_field) {
+		case ip_src:
+			keyword = "src net ";
+			break;
+		case ip_dst:
+			keyword = "dst net ";
+			break;
+		case ip_proto:
+			keyword = "ip proto ";
+			break;
+		case ip_ihl:
+			keyword = "ip ihl ";
+			break;
+		case ip_id:
+			keyword = "ip id ";
+			break;
+		case ip_dscp:
+			keyword = "ip dscp ";
+			break;
+		case ip_ect:
+			return "ip ect";
+		case ip_ce:
+			return "ip ce";
+		case ip_TTL:
+			keyword = "ip ttl ";
+			break;
+		default:
+			BUG("Cannot convert filter to classifier "+to_str());
+		//TODO : Finish that			
+	}
+	
+	return keyword;
+}
+
 bool TrafficClass::is_discarded() const {
 	return (this->m_elementPath.back()->get_type() == Discard);
 }
@@ -312,6 +349,14 @@ std::vector<std::shared_ptr<ClickElement> > TrafficClass::synthesize_chain () {
 	}
 	
 	return synthesized_chain;
+}
+
+std::string TrafficClass::to_ip_classifier_pattern() const {
+	std::string output;
+	for (auto &it : m_filters) {
+		output += it.second.to_ip_class_pattern() + " && ";
+	}	
+	return output.substr(0, output.size()-4); //Removes trailing " && "
 }
 
 int TrafficClass::intersect_filter(const Filter& filter) {

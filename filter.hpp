@@ -43,6 +43,7 @@ class Filter {
 		HeaderField get_field() const;
 
 		std::string to_str() const;
+		std::string to_ip_class_pattern() const;
 
 	private:
 		DisjointSegmentList m_filter;
@@ -91,6 +92,8 @@ class TrafficClass {
 		std::string to_str () const;
 		bool is_discarded () const;
 		std::vector<std::shared_ptr<ClickElement> > synthesize_chain();
+		
+		std::string to_ip_classifier_pattern() const;
 
 	private:
 		PacketFilter m_filters;
