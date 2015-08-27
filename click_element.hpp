@@ -12,7 +12,7 @@ class OutputClass;
 //Abstract representation of a Click element
 class ClickElement {
 	public:
-		ClickElement (ElementType type, std::string& configuration);
+		ClickElement (ElementType type, const std::string& configuration);
 
 		void set_child (std::shared_ptr<ClickElement> child, int port);
 
@@ -32,16 +32,17 @@ class ClickElement {
 		static std::shared_ptr<ClickElement> discard_elem_ptr;
 
 		//Configuration string parsing functions:
-		void parse_dec_ttl_conf (std::string& configuration);
-		void parse_fix_ip_src (std::string& configuration);
-		void parse_ip_filter (std::string& configuration);
-		void parse_ip_classifier (std::string& configuration);
-		void parse_lookup_filter (std::string& configuration);
-		void parse_ip_rewriter (std::string& configuration);
-		void parse_rr_ip_mapper (std::string& configuration);
-		void parse_vlan_encap_configuration(std::string& configuration);
-		void parse_vlan_decap_configuration(std::string& configuration);
-		void parse_set_vlan_anno_configuration(std::string& configuration);
+		void parse_dec_ttl_conf (const std::string& configuration);
+		void parse_fix_ip_src (const std::string& configuration);
+		void parse_ip_filter (const std::string& configuration);
+		void parse_ip_classifier (const std::string& configuration);
+		void parse_lookup_filter (const std::string& configuration);
+		void parse_ip_rewriter (const std::string& configuration);
+		void parse_rr_ip_mapper (const std::string& configuration);
+		void parse_vlan_encap_configuration(const std::string& configuration);
+		void parse_vlan_decap_configuration(const std::string& configuration);
+		void parse_set_vlan_anno_configuration(const std::string& configuration);
+		void parse_ip_fragmenter_configuration(const std::string& configuration);
 
 		void configuration_fail ();
 

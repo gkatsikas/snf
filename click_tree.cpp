@@ -11,6 +11,13 @@
 #define DEBUG(a) printf("[%s:%d] %s\n",__FILE__,__LINE__,a)
 
 ClickTree::ClickTree (std::shared_ptr<ClickElement> root) : m_root( {root, TrafficClass()}),
+								m_inputNF(-1), m_inputIface(),	m_trafficClasses() {
+	this->find_classes();
+}
+
+ClickTree::ClickTree (int input_nf, std::string input_interface, 
+						std::shared_ptr<ClickElement> root) : m_root( {root, TrafficClass()}),
+								m_inputNF(input_nf), m_inputIface(input_interface),	
 								m_trafficClasses() {
 	this->find_classes();
 }

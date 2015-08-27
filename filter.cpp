@@ -248,6 +248,120 @@ std::string Filter::to_str () const{
 	}
 }
 
+std::string Filter::to_ip_class_pattern() const {
+	std::string keyword;
+	std::string output;
+	switch (m_field) {
+		case ip_ver:
+			keyword = "ip vers ";
+		case ip_src:
+			keyword = "src net ";
+			break;
+		case ip_dst:
+			keyword = "dst net ";
+			break;
+		case ip_proto:
+			keyword = "ip proto ";
+			break;
+		case ip_ihl:
+			keyword = "ip ihl ";
+			break;
+		case ip_id:
+			keyword = "ip id ";
+			break;
+		case ip_dscp:
+			keyword = "ip dscp ";
+			break;
+		case ip_ect:
+			if(match(1)) { return "ip ect"; }
+			else { return "!(ip ect)"; }
+		case ip_ce:
+			if(match(1)) { return "ip ce"; }
+			else { return "!(ip ce)"; }
+		case ip_TTL:
+			keyword = "ip ttl ";
+			break;
+		case tp_srcPort:
+			keyword = "src port ";
+			break;
+		case tp_dstPort:
+			keyword = "dst port ";
+			break;
+		case tcp_syn:
+			if(match(1)) { return "syn"; }
+			else {return "!(syn)"; }
+		case tcp_ack:
+			if(match(1)) { return "ack"; }
+			else {return "!(ack)"; }
+		case tcp_psh:
+			if(match(1)) { return "tcp opt psh"; }
+			else {return "!(tcp opt psh)"; }
+		case tcp_rst:
+			if(match(1)) { return "tcp opt rst"; }
+			else {return "!(tcp opt rst)"; }
+		case tcp_fin:
+			if(match(1)) { return "tcp opt fin"; }
+			else {return "!(tcp opt fin)"; }
+		case tcp_urg:
+			if(match(1)) { return "tcp opt urg"; }
+			else {return "!(tcp opt urg)"; }
+		case tcp_win:
+			keyword = "tcp win ";
+			break;
+		default:
+			BUG("Cannot convert filter to classifier "+to_str());		
+	}
+	
+	std::vector<std::pair<uint32_t,uint32_t> > segments = m_filter.get_segments();
+	
+	for  (auto &seg:segments) {
+		//FIXME: handle IP subnets differently
+		if(seg.first==seg.second) {
+			output+= "("+keyword+std::to_string(seg.first)+") || ";
+		}
+		else {
+			output += "("+keyword+">= "+std::to_string(seg.first)+" && "+keyword+
+					  "<= "+std::to_string(seg.second)+") || ";
+		}
+	}
+	
+	return output.substr(0,output.size()-4); //Removes trailing  " || "
+}
+
+//Algorithm to decompose interval in prefixes: we take the biggest possible prefix
+//containing lower and whose bounds are <= upper, then we keep going on the rest
+//This would go quicker if we could detect !() patterns
+std::string ip_segment_to_ip_class_pattern(std::string keyword, uint32_t lower, uint32_t upper) {
+
+	std::string output;
+	uint32_t current_low = lower;
+	while(current_low <= upper) {
+		int prefix_size = 32;
+		while(prefix_size > 0 && (current_low>>(32-prefix_size))%2 == 0 
+				&& current_low + (0xffffffff>>(prefix_size-1)) <= upper) {
+				prefix_size--;
+		}
+		output += "("+keyword+ntoa(current_low)+"/"+std::to_string(prefix_size)+") || ";
+		current_low += (0xffffffff >> prefix_size) + 1;
+		if(current_low==0){break;}
+	}
+	
+	return output.substr(0,output.size()-4);
+}
+
+std::string Filter::ip_filter_to_ip_class_pattern(std::string keyword) const {
+	std::string output;
+	std::vector<std::pair<uint32_t,uint32_t> > segments = m_filter.get_segments();
+	if(segments.empty()) {
+		return "none";
+	}
+	
+	for (auto &seg:segments) {
+		output += ip_segment_to_ip_class_pattern(keyword, seg.first, seg.second)+" || ";		
+	}
+	return output.substr(0,output.size()-4);
+}
+
 HeaderField Filter::get_field() const{
 	return this->m_field;
 }
@@ -271,6 +385,55 @@ bool Condition::is_none() const {
 
 std::string Condition::to_str() const {
 	return "Condition on "+m_element->to_str()+": "+m_filter.to_str();
+}
+
+bool TrafficClass::is_discarded() const {
+	return (this->m_elementPath.back()->get_type() == Discard);
+}
+
+TrafficClass::TrafficClass () : m_filters(), m_writeConditions(), m_dropBroadcasts(false),
+								m_ipgwoptions(false), m_etherEncapConf(), m_elementPath(), 
+								m_operation() {}
+
+std::vector<std::shared_ptr<ClickElement> > TrafficClass::synthesize_chain () {
+	std::vector<std::shared_ptr<ClickElement> > synthesized_chain;
+	if(this->is_discarded()) {
+		synthesized_chain.push_back(std::shared_ptr<ClickElement>(new ClickElement(Discard,std::string())));
+	}
+	else {
+		if(m_dropBroadcasts) {
+			synthesized_chain.push_back(std::shared_ptr<ClickElement>(new ClickElement(DropBroadcasts,std::string())));
+		}
+		
+		if(m_ipgwoptions) {
+			synthesized_chain.push_back(std::shared_ptr<ClickElement>(new ClickElement(DropBroadcasts,std::string())));
+		}
+		FieldOperation* field_op;
+		
+		//TODO: do the voodoo that you want to do
+		
+		field_op = m_operation.get_field_op(mtu);
+		if(field_op) {
+			synthesized_chain.push_back(std::shared_ptr<ClickElement>(new ClickElement(DropBroadcasts,
+											std::to_string(field_op->m_value[0]) )));
+		}
+		
+		if(m_etherEncapConf.empty()) {
+			BUG("Empty EtherEncap configuration");
+		}
+		synthesized_chain.push_back(std::shared_ptr<ClickElement>(new ClickElement(EtherEncap,m_etherEncapConf)));
+		synthesized_chain.push_back(m_elementPath.back());
+	}
+	
+	return synthesized_chain;
+}
+
+std::string TrafficClass::to_ip_classifier_pattern() const {
+	std::string output;
+	for (auto &it : m_filters) {
+		output += "("+it.second.to_ip_class_pattern() + ") && ";
+	}	
+	return output.substr(0, output.size()-4); //Removes trailing " && "
 }
 
 int TrafficClass::intersect_filter(const Filter& filter) {
@@ -305,6 +468,15 @@ int TrafficClass::addElement (std::shared_ptr<ClickElement> element, int port) {
 	int nb_none_filters=0;
 	(this->m_elementPath).push_back(element);
 
+	if(element->get_type() == IPGWOptions) {
+		this->m_ipgwoptions = true;
+	}
+	else if(element->get_type() == DropBroadcasts) {
+		this->m_dropBroadcasts = true;
+	}
+	else if(element->get_type() == EtherEncap) {
+		this->m_etherEncapConf = element->get_configuration();
+	}
 
 	if (port==-1) { //Last element of the chain -> no children
 		return 0;

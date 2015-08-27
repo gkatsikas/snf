@@ -6,6 +6,7 @@
 static const int start = __LINE__;
 #define HEADER(FOO) \
 	FOO(unknown) \
+	FOO(mtu) \
 	FOO(vlan_pcp) \
 	FOO(vlan_vid) \
 	FOO(vlan_dei) \
