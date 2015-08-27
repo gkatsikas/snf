@@ -343,6 +343,7 @@ std::string ip_segment_to_ip_class_pattern(std::string keyword, uint32_t lower, 
 		}
 		output += "("+keyword+ntoa(current_low)+"/"+std::to_string(prefix_size)+") || ";
 		current_low += (0xffffffff >> prefix_size) + 1;
+		if(current_low==0){break;}
 	}
 	
 	return output.substr(0,output.size()-4);
