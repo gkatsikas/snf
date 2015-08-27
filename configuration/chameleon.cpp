@@ -6,16 +6,23 @@
 
 #include "chameleon.hpp"
 
-Chameleon::Chameleon(std::string const& value) : value_(value) {}
-
-Chameleon::Chameleon(const char* c) : value_(c){}
+Chameleon::Chameleon(int i) : value_(std::to_string(i)) {}
 
 Chameleon::Chameleon(double d) : value_(std::to_string(d)) {}
 
+Chameleon::Chameleon(const char* c) : value_(c){}
+
 Chameleon::Chameleon(Chameleon const& other) : value_(other.value_) {}
+
+Chameleon::Chameleon(std::string const& value) : value_(value) {}
 
 Chameleon& Chameleon::operator=(Chameleon const& other) {
 	value_ = other.value_;
+	return *this;
+}
+
+Chameleon& Chameleon::operator=(int i) {
+	value_ = std::to_string(i);
 	return *this;
 }
 
@@ -35,4 +42,8 @@ Chameleon::operator std::string() const {
 
 Chameleon::operator double() const {
 	return atof(value_.c_str());
+}
+
+Chameleon::operator int() const {
+	return atoi(value_.c_str());
 }

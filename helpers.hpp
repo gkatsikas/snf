@@ -91,8 +91,9 @@ const short INVALID_TOPOLOGY         = -31;
 
 // Parsing
 const short INVALID_NF_CHAIN_LENGTH  = -35;
-const short NF_CHAIN_NOT_ACYCLIC     = -36;
-const short CLICK_PARSING_PROBLEM    = -37;
+const short CHAIN_PARSING_PROBLEM    = -36;
+const short NF_CHAIN_NOT_ACYCLIC     = -37;
+const short CLICK_PARSING_PROBLEM    = -38;
 
 // Protocol Management
 const short INVALID_PROTOCOL         = -40;

@@ -1,51 +1,36 @@
 #######################################################################################################
-### ATTENTION: Each [NF_CHAIN] entry (list of NF_i key-value pairs) 
+### ATTENTION: Each [NF_CHAIN] entry (list of NF_i key-value pairs)
 ### goes along with a [NF_TOPO] TOPOLOGY key-value pair.
 #######################################################################################################
 
-[NF_CHAIN]
-### TEST 1 - An invalid Click configuration
-#NF_1 = nf_repo/broken.click
-#NF_1 = nf_repo/flat_router.click
+[NF_MODULES]
+NF_1 = nf_repo/flat_router_2if.click
+NF_2 = nf_repo/flat_router_3if.click
+NF_3 = nf_repo/flat_router_2if.click
+NF_4 = nf_repo/flat_router_2if.click
 
-### TEST 2 - A small(2), toy(not real NFs), valid chain with invalid topology map (with cycles)
-#NF_1 = nf_repo/test.click
-#NF_2 = nf_repo/test.click
+#NF_1 = nf_repo/router_2if.click
+#NF_2 = nf_repo/router_2if.click
+#NF_3 = nf_repo/router_2if.click
+#NF_4 = nf_repo/router_2if.click
 
-### TEST 3 - A small(2), toy(not real NFs) and valid chain
-#NF_1 = nf_repo/test.click
-#NF_2 = nf_repo/test.click
+#NF_1 = nf_repo/router_2if.click
+#NF_2 = nf_repo/router_2if.click
+#NF_3 = nf_repo/firewall_2if.click
+#NF_4 = nf_repo/napt_2if.click
 
-### TEST 4 - A small(2) valid chain with real routers
-NF_1 = nf_repo/flat_router.click
-NF_2 = nf_repo/flat_router.click
-NF_3 = nf_repo/flat_router.click
-#NF_1 = nf_repo/router.click
-#NF_2 = nf_repo/router.click
-#NF_3 = nf_repo/router.click
+#NF_4 = nf_repo/napt_2if.click
+#NF_4 = nf_repo/firewall_2if.click
+#NF_5 = nf_repo/napt_2if.click
+#NF_6 = nf_repo/firewall_2if.click
+#NF_7 = nf_repo/load_balancer_2if.click
 
-### TEST 5 - A normal, real chain with various NFs
-#NF_1 = nf_repo/router.click
-#NF_2 = nf_repo/router.click
-#NF_3 = nf_repo/router.click
-#NF_4 = nf_repo/firewall.click
-#NF_5 = nf_repo/napt.click
-#NF_6 = nf_repo/firewall.click
-#NF_7 = nf_repo/load_balancer.click
+#NF_1 = nf_repo/loadbalancer_3if.click
+#NF_2 = nf_repo/loadbalancer_3if.click
 
 
 [NF_TOPO]
-### In TEST 1
-#TOPOLOGY = 0;
+TOPOLOGY = NF_1[eth1] -> [eth0]NF_2;NF_2[eth1] -> [eth0]NF_3;NF_2[eth2] -> [eth0]NF_4;
 
-### In TEST 2
-#TOPOLOGY = 0 1; 1 0;
-
-### In TEST 3
-#TOPOLOGY = 0 1; 0 0;
-
-### In TEST 4
-TOPOLOGY = 0 1 0; 0 0 1; 0 0 0;
-
-### In TEST 5
-#TOPOLOGY = 0 1 0 0 0 0; 0 0 1 0 0 0; 0 0 0 1 1 0; 0 0 0 0 0 1; 0 0 0 0 0 1; 0 0 0 0 0 0;
+[ENTRY_POINTS]
+DOMAINS  = [eth0]NF_1, [eth1]NF_3, [eth1]NF_4

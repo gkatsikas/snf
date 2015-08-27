@@ -37,18 +37,19 @@ int main(int argc, char** argv) {
 	ParserConfiguration* pcf = NULL;
 
 	std::cout << std::endl;
-	log << "+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+" << std::endl;
-	log << measure<>::execution
+	log << info << "+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+" << def << std::endl;
+	log << info << measure<>::execution
 	( [&]()
 	{
-		log << "Loading property file... " << std::endl;
+		log << info << "Loading property file... " << def << std::endl;
 		pcf = new ParserConfiguration(property_file);
-		log << info << "Property file: " << property_file << def << std::endl;
+		log << "\tProperty file: " << property_file << def << std::endl;
 		pcf->load_property_file();
-		pcf->get_graph()->print_vertex_order();
+		pcf->get_chain()->print_vertex_order();
+		pcf->get_chain_domains()->print_vertex_order();
 	}
-	) << "  microseconds" << std::endl;
-	log << "+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+" << std::endl;
+	) << "  microseconds" << def << std::endl;
+	log << info << "+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+" << def << std::endl;
 	std::cout << std::endl;
 	///////////////////////////////////////////////////////////////////////////////////////////
 
@@ -56,11 +57,11 @@ int main(int argc, char** argv) {
 	ChainParser* parser = NULL;
 
 	std::cout << std::endl;
-	log << "+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+" << std::endl;
-	log << measure<>::execution
+	log << info << "+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+" << def << std::endl;
+	log << info << measure<>::execution
 	( [&]()
 	{
-		log << "Parsing the chain of Network Functions... " << std::endl;
+		log << "Parsing the chain of Network Functions... " << def << std::endl;
 		try {
 			parser = new ChainParser(pcf);
 		}
@@ -69,26 +70,32 @@ int main(int argc, char** argv) {
 			exit(INVALID_NF_CHAIN_LENGTH);
 		}
 
-		if ( (exit_status=parser->load_chained_configuratios()) != SUCCESS ) {
+		// 1. Load and verify all the Click configuration of the chain
+		if ( (exit_status=parser->load_nf_configurations()) != SUCCESS ) {
+			exit(exit_status);
+		}
+
+		// 2. Compose a Big graph of Click elements ready to be synthesized
+		if ( (exit_status=parser->chain_nf_configurations()) != SUCCESS ) {
 			exit(exit_status);
 		}
 	}
-	) << "  microseconds" << std::endl;
-	log << "+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+" << std::endl;
+	) << "  microseconds" << def << std::endl;
+	log << info << "+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+" << def << std::endl;
 	std::cout << std::endl;
 	///////////////////////////////////////////////////////////////////////////////////////////
 
 	///////////////////////////////////// Test a Click Tree ///////////////////////////////////
 	std::cout << std::endl;
-	log << "+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+" << std::endl;
-	log << measure<>::execution
+	log << info << "+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+" << def << std::endl;
+	log << info << measure<>::execution
 	( [&]()
 	{
-		log << "Testing Click Tree... " << std::endl;
+		log << info << "Testing Click Tree... " << def << std::endl;
 		//test_click_tree();
 	}
-	) << "  microseconds" << std::endl;
-	log << "+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+" << std::endl;
+	) << "  microseconds" << def << std::endl;
+	log << info << "+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+" << def << std::endl;
 	std::cout << std::endl;
 	///////////////////////////////////////////////////////////////////////////////////////////
 

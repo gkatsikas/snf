@@ -9,7 +9,7 @@
 
 #include <unordered_map>
 
-#include "nf_graph.hpp"
+#include "../graph/nf_graph.hpp"
 #include "../configuration/parser_configuration.hpp"
 
 template<typename T>
@@ -28,14 +28,28 @@ class ChainParser {
 		ParserConfiguration* chain_graph;
 
 		/*
-		 * Maps the position of a NF in the chain with a Click Router object
+		 * Maps the position of a NF in the chain with a Click Router object.
+		 * 
+		 * The key is the position of the NF in the chain.
 		 */
 		NF_Map<Router*> nf_configuration;
 
 		/*
-		 * One DAG of Click elements per NF in the chain
+		 * One DAG of Click elements per NF in the chain.
+		 * 
+		 * The key is the position of the NF in the chain.
 		 */
 		NF_Map<NFGraph*> nf_dag;
+
+		/*
+		 * This is the outcome of the concatenated NFs.
+		 * Bigger graphs are composed the number of which depends on all 
+		 * the possible directions of the traffic.
+		 * 
+		 * The key is the domain suffix (incremental ID generated when the 
+		 * property file was read).
+		 */
+		NF_Map<NFGraph*> big_dag;
 
 		/*
 		 * Logger instance
@@ -47,13 +61,26 @@ class ChainParser {
 		 * Reads and loads one input Click configuration.
 		 * It uses built-in Click methods and data structures linked with this file.
 		 */
-		short load_nf_configuration(std::string nf_source, unsigned short position);
+		short load_nf(std::string nf_name, std::string nf_source, unsigned short position);
 
 		/*
 		 * After loading all the NFs into the parser's memory, run a DFS visit per DAG
 		 * to build the NF Synthesizer's graph.
 		 */
-		short build_nf_dag(unsigned short position);
+		short build_nf_dag(std::string nf_name, unsigned short position);
+
+		/*
+		 * After loading the Click elements into the DAG, we go back to the loaded topology and NFs (from property file)
+		 * and verify whether the interfaces are correct. The property file interfaces must be included int the actual 
+		 * Click configuration, otherwise the synthesizer cannot assess the connectivity between two NFs.
+		 */
+		 short verify_nf_configuration(std::string nf_name, unsigned short position);
+
+		/*
+		 * Given a position in the chain and an output interface, we want to find the Click element of the next NF in 
+		 * the chain. Essentially this function is a glue between two connected NFs.
+		 */
+		ElementVertex* find_input_element_of_next_nf(unsigned short position, std::string interface);
 
 		/*
 		 * Visits recursively the Click DAG and returns the vector of Elements it contains
@@ -68,12 +95,20 @@ class ChainParser {
 		~ChainParser();
 
 		/*
-		 * Reads and loads the input Click configurations one-by-one.
+		 * A.
+		 * Reads, verifies and loads the input Click configurations one-by-one.
 		 * It belongs to the public API.
 		 * It calls the private load_nf_configuration as many times an the number
 		 * of input NFs that compose the chain.
 		 */
-		short load_chained_configuratios(void);
+		short load_nf_configurations(void);
+		
+		/*
+		 * B.
+		 * After passing the loading step above, we are ready to chain these configurations
+		 * into one big Click graph so as to start the synthesis.
+		 */
+		short chain_nf_configurations(void);
 };
 
 #endif

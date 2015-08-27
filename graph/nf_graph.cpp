@@ -10,31 +10,63 @@
 ////////////////////////////////////////////////////////////////////////
 // ElementVertex
 ////////////////////////////////////////////////////////////////////////
+// While constructing an Element, check to which category it belongs to:
+//   1. Input
+//   2. Processing
+//   3. Output
 ElementVertex::ElementVertex(Element* element, std::string name,
-				unsigned short pos, unsigned short weight) :
-				Vertex(std::move(name), pos, weight),
+				unsigned short pos) : 
+				Vertex(std::move(name), pos, VertexType::None), 
 				click_element(std::move(element)) {
 	if ( element->ninputs() == 0 )
-		this->stage = Input;
+		this->type = Input;
 	else if ( element->noutputs() == 0 )
-		this->stage = Output;
-	else
-		this->stage = Processing;
+		this->type = Output;
+	else {
+		this->type = Processing;
+		this->_is_endpoint = false;
+	}
 }
 
 ElementVertex& ElementVertex::operator=(ElementVertex& ev) {
 	if ( this != &ev ) {
 		Vertex::operator=(ev);
-		this->stage         = ev.get_stage();
 		this->click_element = ev.get_click_element();
 	}
 	return *this;
 }
 
+bool ElementVertex::is_endpoint(void) {
+	if ( this->type == Processing )
+		return false;
+	else 
+		return this->_is_endpoint;
+}
+
+void ElementVertex::set_endpoint(bool ep) {
+	if ( this->type == Processing ) {
+		log << warn << "Processing elements cannot be endpoints" << def << std::endl;
+		return;
+	}
+	this->_is_endpoint = ep;
+}
+
+ElementVertex* ElementVertex::jump_to_next_nf(void) {
+	if ( (this->type == Output) && this->is_endpoint() )
+		return this->_jump_to_next_nf;
+	return NULL;
+}
+
+void ElementVertex::set_jump_element(ElementVertex* j) {
+	if ( (this->type == Output) && this->is_endpoint() )
+		this->_jump_to_next_nf = j;
+	this->_jump_to_next_nf = NULL;
+}
+
 void ElementVertex::print_info(void) {
 	log << info << "===============================================" << def << std::endl;
 	Vertex::print_info();
-	log << info << "===         Stage: " << this->stage                << def << std::endl;
+	log << info << "===         Stage: " << this->type               << def << std::endl;
 	log << info << "=== Click Element: " << this->click_element->class_name() << def << std::endl;
 	log << info << "===============================================" << def << std::endl;
 }
@@ -118,13 +150,13 @@ void NFGraph::add_vertex_and_neighbours(ElementVertex* u) {
 	}
 }
 
-Vector<ElementVertex*> NFGraph::get_vertices_by_stage(Stage st) {
+Vector<ElementVertex*> NFGraph::get_vertices_by_stage(VertexType st) {
 
 	Vector<ElementVertex*> vertices;
 
 	for (auto& pair : this->vertices) {
 		ElementVertex* ev = (ElementVertex*) pair.first;
-		if ( ev->get_stage() == st )
+		if ( ev->get_type() == st )
 			vertices.push_back(ev);
 	}
 	return vertices;
@@ -138,4 +170,15 @@ ElementVertex* NFGraph::get_vertex_by_click_element(Element* e) {
 			return ev;
 	}
 	return NULL;
+}
+
+Vector<ElementVertex*> NFGraph::get_endpoint_vertices(void) {
+	Vector<ElementVertex*> endpoints;
+
+	for (auto& pair : this->vertices) {
+		ElementVertex* ev = (ElementVertex*) pair.first;
+		if ( ev->is_endpoint() )
+			endpoints.push_back(ev);
+	}
+	return endpoints;
 }

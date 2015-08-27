@@ -1,7 +1,10 @@
 //============================================================================
 //        Name: parser_configuration.hpp
 //   Copyright: KTH ICT CoS Network Systems Lab
-// Description: Defines a NF chain as a digraph of interconnected NFs
+// Description: Defines the parsing mechanisms that feed the NF Synthesizer.
+//              Represents a NF chain as a digraph of interconnected NFs while
+//              another digraph shows the connectivity of this chain with
+//              external NFV domains.
 //============================================================================
 
 #ifndef _PARSER_CONFIG_HPP_
@@ -11,43 +14,8 @@
 #include "generic_configuration.hpp"
 
 /*
- * The Chain graph contains an associated source code filename per vertex
- */
-class ChainVertex : public Vertex
-{
-	private:
-		/*
-		 * The path of the NF implementation file of this node
-		 */
-		std::string source_code_path;
-
-	public:
-		ChainVertex(std::string path, std::string name, unsigned short pos, unsigned short weight = 1) :
-			Vertex(std::move(name), pos, weight), source_code_path(std::move(path)) {};
-		~ChainVertex() {};
-
-		ChainVertex& operator=(ChainVertex& cv) {
-			if ( this != &cv ) {
-				Vertex::operator=(cv);
-				this->source_code_path = cv.get_source_code_path();
-			}
-			return *this;
-		}
-
-		inline std::string get_source_code_path(void) const { return this->source_code_path; };
-
-		inline void print_info(void) {
-			log << info << "===============================================" << def << std::endl;
-			Vertex::print_info();
-			log << info << "=== Source Code: " << this->source_code_path     << def << std::endl;
-			log << info << "===============================================" << def << std::endl;
-		}
-};
-
-/*
  * Class loads the NF chain configuration from a property file and builds the graph of the chain
  */
-
 class ParserConfiguration : public GenericConfiguration
 {
 	private:
@@ -55,6 +23,11 @@ class ParserConfiguration : public GenericConfiguration
 		 * A Directed Acyclic Graph of chained NFs
 		 */
 		Graph* nf_chain;
+
+		/*
+		 * Another DAG that shows how the NF chain is connected to several domains
+		 */
+		Graph* nf_domains;
 
 	public:
 		/*
@@ -66,7 +39,8 @@ class ParserConfiguration : public GenericConfiguration
 		/*
 		 * Setters & Getters
 		 */
-		inline Graph* get_graph(void) { return this->nf_chain; };
+		inline Graph* get_chain        (void) { return this->nf_chain;   };
+		inline Graph* get_chain_domains(void) { return this->nf_domains; };
 
 		/*
 		 * Implements load_property_file (abstract methid in the super class)
@@ -75,11 +49,29 @@ class ParserConfiguration : public GenericConfiguration
 
 	private:
 		/*
-		 * Check the loaded properties for errors
+		 * Parse the internal NF chain connections
 		 */
-		short check_topology_correctness(const boost::tokenizer<boost::char_separator<char>>& array,
-						 const unsigned short& nfs_no, const std::string& type);
+		short parse_topology(const std::string& nf_topo);
+		
+		/*
+		 * Parse the external NF chain connections with various domains
+		 */
+		short parse_domains(const std::string& nf_domains);
+
+		/*
+		 * Check whether the formulated graph of the chain is acyclic
+		 */
 		void check_for_loops(void);
+		
+		/*
+		 * Extract numbers from strings
+		 */
+		std::string get_number_from_string(std::string const& str);
+		
+		/*
+		 * Print error messages regarding the property file
+		 */
+		void usage(const std::string& message, const std::string& usage);
 };
 
 #endif

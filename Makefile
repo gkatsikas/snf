@@ -4,7 +4,7 @@ CFLAGS = -O3 -Wall -c -std=c++11 -Wextra -g
 LFLAGS = -Wall -std=c++11 -g
 
 ### The Click library
-LIBS = -L/usr/local/lib/ -lclick -ldl -lpthread -lpcap #-lefence
+LIBS = -L/usr/local/lib/ -lclick -ldl -lpthread -lpcap
 
 ### Object files of NF Synthesizer
 OBJS =  main.o click_tree.o filter.o operation.o click_element.o \
@@ -66,10 +66,10 @@ parser_configuration.o: ./configuration/parser_configuration.cpp ./configuration
 			./graph/graph.hpp
 	$(CC) $(CFLAGS) ./configuration/parser_configuration.cpp
 
-nf_graph.o: ./parser/nf_graph.cpp ./parser/nf_graph.hpp
-	$(CC) $(CFLAGS) ./parser/nf_graph.cpp
+nf_graph.o: ./graph/nf_graph.cpp ./graph/nf_graph.hpp
+	$(CC) $(CFLAGS) ./graph/nf_graph.cpp
 
-chain_parser.o: ./parser/chain_parser.cpp ./parser/chain_parser.hpp ./configuration/parser_configuration.hpp
+chain_parser.o: ./parser/chain_parser.cpp ./parser/chain_parser.hpp ./configuration/parser_configuration.hpp ./graph/nf_graph.hpp
 	$(CC) $(CFLAGS) ./parser/chain_parser.cpp
 
 click_parse_configuration.o: ./click/click_parse_configuration.cpp ./click/click_parse_configuration.hpp graph/graph.hpp

@@ -58,7 +58,7 @@ index d345236..3173f94 100644
  
 +    //////////////////////////////////////////////////////////////////////////////
 +    /*
-+     * NF Synthesis modificaiton to prevent the initialization of Click elements
++     * NF Synthesis modification to prevent the initialization of Click elements
 +     * It happens only when the boolean argument is true. Default is false.
 +     */
 +    //////////////////////////////////////////////////////////////////////////////

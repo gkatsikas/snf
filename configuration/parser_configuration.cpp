@@ -1,10 +1,11 @@
 //============================================================================
 //        Name: parser_configuration.cpp
 //   Copyright: KTH ICT CoS Network Systems Lab
-// Description: Defines a NF chain as a graph of interconnected NFs
+// Description: Implements the parsing mechanisms that feed the NF Synthesizer.
+//              Implements a NF chain as a digraph of interconnected NFs while
+//              another digraph shows the connectivity of this chain with
+//              external NFV domains.
 //============================================================================
-
-#include <memory>
 
 #include "../helpers.hpp"
 #include <boost/tokenizer.hpp>
@@ -14,7 +15,8 @@
  * Construct an empty parser configuration
  */
 ParserConfiguration::ParserConfiguration(const std::string& config_file) : GenericConfiguration(config_file) {
-	this->nf_chain = new Graph();
+	this->nf_chain   = new Graph();
+	this->nf_domains = new Graph();
 }
 
 /*
@@ -23,139 +25,300 @@ ParserConfiguration::ParserConfiguration(const std::string& config_file) : Gener
 ParserConfiguration::~ParserConfiguration() {
 	if ( this->nf_chain != NULL )
 		delete this->nf_chain;
+	if ( this->nf_domains != NULL )
+		delete this->nf_domains;
 }
 
 /*
  * Read the topology of the NF chain and encode it into a graph structure.
- * The topology is represented as an NxN array, where N is the number of NFs.
- * Each row shows the connections of a NF with the rest NFs.
- * --> 0 corresponds to NO CONNECTION
- * --> 1 corresponds to CONNECTION
- * BE CAREFUL: The graph is directed thus each edge is an arrow (one-way)
+ * The topology is represented as a Click configuration, e.g. NF_1[eth0] -> NF2;
  */
 void ParserConfiguration::load_property_file(void) {
-	unsigned short i = 0;
 	unsigned short exit_status = 0;
-
-	// Count the number of NFs in the property file
-	unsigned short nfs_no = count_section_elements("NF_CHAIN");
-	log << info << "\tNumber of chained NFs = " << nfs_no << def << std::endl;
-
-	// Read the topology
-	std::string nf_topo = (std::string&) get_value("NF_TOPO", "TOPOLOGY");
-	log << info << "\t          NF Topology = " << nf_topo << def << std::endl;
-
-	// The token used to separate rows in the input topology map
-	boost::char_separator<char> row_sep(";");
-
-	// Split the map into rows
-	boost::tokenizer<boost::char_separator<char>> rows(nf_topo, row_sep);
-
-	// Check if the number of rows equals the number of NFs
-	if ( (exit_status=this->check_topology_correctness(rows, nfs_no, "row")) != SUCCESS )
+	std::string nf_topo, nf_domains;
+	
+	try {
+		// Read the topology
+		nf_topo    = (std::string&) get_value("NF_TOPO",      "TOPOLOGY");
+		
+		// Read the domains interconnected to that topology
+		nf_domains = (std::string&) get_value("ENTRY_POINTS", "DOMAINS");
+	}
+	catch (const std::exception& e) {
+		log << error << "|--> " << e.what() << def << std::endl;
+		exit(NF_CHAIN_NOT_ACYCLIC);
+	}
+	
+	log << "\tNF Topology = " << nf_topo << def << std::endl;
+	// Parse the chain of NFs form the property file
+	if ( (exit_status=this->parse_topology(nf_topo)) != SUCCESS )
 		exit(exit_status);
 
-	for (const auto& row : rows) {
-		// Each row is a space-separated string to discriminate the NFs
-		boost::char_separator<char> col_sep(" ");
-		boost::tokenizer<boost::char_separator<char>> cols(row, col_sep);
+	//log << "" << def << std::endl;
 
-		// Check if the number of columns equals the number of NFs
-		if ( (exit_status=this->check_topology_correctness(cols, nfs_no, "column")) != SUCCESS )
-			exit(exit_status);
-	}
+	log << "\tNFV Domains = " << nf_domains << def << std::endl;
+	// Parse the connection points of the chain with the outside world (e.g. operator's domains)
+	if ( (exit_status=this->parse_domains(nf_domains)) != SUCCESS )
+		exit(exit_status);
 
-	// Create as many vertices as the number of NFs
-	std::vector<ChainVertex*> nf_array;
-	// Pre-allocate for better performance
-	nf_array.reserve(nfs_no);
-	for (i=0 ; i<nfs_no ; i++) {
-		std::stringstream sstr;
-		sstr << i+1;
-		std::string nf_pos_str  = sstr.str();
-		std::string nf_path = (std::string&) get_value("NF_CHAIN", "NF_"+nf_pos_str);
-
-		// Move the allocated pointers to avoid duplicate objects
-		ChainVertex* v = new ChainVertex(nf_path, "NF_"+nf_pos_str, i+1);
-		nf_array.push_back(std::move(v));
-	}
-
-	// Interconnect the created nodes to form a graph that represents the NF chain
-	unsigned short src_element = 0;
-	for (const auto& row : rows) {
-		ChainVertex* src_vertex = nf_array[src_element];
-
-		// A degenerate chain of a single element
-		if ( nfs_no == 1 ) {
-			this->nf_chain->add_vertex(std::move(src_vertex));
-			// We don't break here (as it should have bben done) in order to
-			// verify that there is no error in the input topology
-			//break;
-		}
-
-		boost::char_separator<char> col_sep(" ");
-		boost::tokenizer<boost::char_separator<char>> cols(row, col_sep);
-
-		unsigned short dst_element = 0;
-		for (boost::tokenizer<boost::char_separator<char>>::iterator iter=cols.begin(); iter!=cols.end (); ++iter) {
-			// There is a connection --> Create a graph edge
-			if ( (*iter == "1") && (src_element != dst_element) ) {
-				ChainVertex* dst_vertex = nf_array[dst_element];
-
-				// Add connection
-				this->nf_chain->add_edge(std::move(src_vertex), std::move(dst_vertex));
-			}
-			dst_element++;
-		}
-		src_element++;
-	}
+	log << "" << def << std::endl;
 
 	// Check if the graph is acyclic
 	this->check_for_loops();
 
+	log << "" << def << std::endl;
+
 	return;
 }
 
-short ParserConfiguration::check_topology_correctness(const boost::tokenizer<boost::char_separator<char>>& array,
-							const unsigned short& correct_elements_no,
-							const std::string& type) {
-	unsigned short elements = 0;
+/*
+ * Parse the internal NF chain connections
+ */
+short ParserConfiguration::parse_topology(const std::string& nf_topo) {
 
-	for (boost::tokenizer<boost::char_separator<char>>::iterator iter=array.begin(); iter!=array.end (); ++iter) {
-		// Check if all the cells (columns) of a row have correct values
-		if ( type.compare("column") == 0 ) {
-			if ( (*iter != "0") && (*iter != "1") ) {
-				log << error << "Topology map cells should have binary (0/1) values" << def << std::endl;
-				return INVALID_TOPOLOGY;
-			}
+	if ( this->nf_chain == NULL ) {
+		this->usage("The graph of he chain does not exist.", "Badly instantiated ParserConfiguration.");
+		return NO_MEM_AVAILABLE;
+	}
+
+	// Count the number of NFs in the property file
+	unsigned short elements_in_property = count_section_elements("NF_MODULES");
+	//log << "\tNumber of chained NFs = " << elements_in_property << def << std::endl;
+
+	// The token used to separate rows in the input topology map
+	boost::char_separator<char> con_sep(";");
+
+	// Split the map into rows
+	boost::tokenizer<boost::char_separator<char>> connections(nf_topo, con_sep);
+
+	for (boost::tokenizer<boost::char_separator<char>>::iterator line=connections.begin(); line!=connections.end(); ++line) {
+		// Each statement is in the form NF_X[interface] -> [interface]NF_Y
+		boost::char_separator<char> element_sep(" -> ");
+		boost::tokenizer<boost::char_separator<char>> connections(*line, element_sep);
+		
+		// Operator -> must split the statement into exactly two parts.
+		if ( std::distance(connections.begin(), connections.end()) > 2 ) {
+			this->usage("Each connection statement must have two parts separated by ->.", "Syntax: NF_1[iface]->[iface]NF_2;");
+			return CHAIN_PARSING_PROBLEM;
 		}
-		elements++;
-	}
 
-	if ( elements != correct_elements_no) {
-		log << error << "Topology map " << type << " elements (" << elements << ") do not comply with the inputs NFs (" \
-			<< correct_elements_no << ")" << def << std::endl;
-		return INVALID_TOPOLOGY;
-	}
+		unsigned short tokens = 0;
+		std::vector<ChainVertex*> vertices;
+		for (boost::tokenizer<boost::char_separator<char>>::iterator elem=connections.begin(); elem!=connections.end (); ++elem) {
+			// One more check does not harm			
+			if ( tokens > 1 ) {
+				this->usage("Invalid interface specification.", "Syntax: NF_1[iface]->NF_2;");
+				return CHAIN_PARSING_PROBLEM;
+			}
+			
+			std::string nf;
+			std::string interface;
+			
+			// [
+			std::size_t left_bracket = elem->find("[");
+			if ( left_bracket == std::string::npos ) {
+				this->usage("An interface must be specified in []", "Syntax: NF_1[iface]->[iface]NF_2;");
+				return CHAIN_PARSING_PROBLEM;
+			}
+			
+			// ]
+			std::size_t right_bracket = elem->find("]");
+			if ( right_bracket == std::string::npos ) {
+				this->usage("An interface must be specified in []", "Syntax: NF_1[iface]->[iface]NF_2;");
+				return CHAIN_PARSING_PROBLEM;
+			}
+			
+			// Extract the interface from the brackets
+			interface = elem->substr (left_bracket+1, right_bracket-left_bracket-1);
+			
+			// LEFT-side element parsing
+			if ( tokens == 0 ) {
+				// Left-side element is before the output interface
+				nf = elem->substr(0, left_bracket);
+				//log << info << "\t" << nf << "[" << interface << "] -> " << def;
+			}
+			// RIGHT-side element parsing
+			else if ( tokens == 1 ) {
+				// Right-side element is after the input interface
+				nf = elem->substr(right_bracket+1);
+				//log << info << "[" << interface << "]" << nf << def << std::endl;
+			}
+			else {
+				this->usage("Invalid interface specification.", "Syntax: NF_1[iface]->[iface]NF_2;");
+				return CHAIN_PARSING_PROBLEM;
+			}
 
+			int position = atoi(this->get_number_from_string(nf).c_str());
+
+			// Check if this NF is already inserted
+			ChainVertex* v = (ChainVertex*) this->nf_chain->get_vertex_by_position(position);
+			
+			// Create one
+			if ( v == NULL ) {
+				// Read the path of the Click configuration for this element
+				std::string nf_path;
+				try {
+					nf_path = (std::string&) get_value("NF_MODULES", nf);
+				}
+				catch (const std::exception& e) {
+					log << error << "|-> " << e.what() << def << std::endl;
+					exit(NF_CHAIN_NOT_ACYCLIC);
+				}
+
+				// Check what's being read
+				if ( nf_path.empty() ) {
+					this->usage("Invalid interface specification.", "Syntax: NF_1[iface]->[iface]NF_2;");
+					return CHAIN_PARSING_PROBLEM;
+				}
+				//log << "Source Path: " << nf_path << std::endl;
+				
+				v = new ChainVertex(nf_path, nf, position, VertexType::NF);
+			}
+			// If it exists, check if the interface to be inserted already exists.
+			// One interface maps to only one NF
+			else {
+				if ( v->get_chain_interface(interface) != "NULL" ) {
+					this->usage("Invalid interface specification.", v->get_name() + " has already set interface " + interface);
+					return CHAIN_PARSING_PROBLEM;
+				}
+			}
+			
+			// Set also its interface
+			v->add_chain_interface_key(interface);
+			
+			// Add it to the vector
+			vertices.push_back(std::move(v));
+			
+			tokens++;
+		}
+		
+		// The vector must contain exactly two vertices (either new or existing) after this for loop.
+		if ( vertices.size() != 2 ) {
+			this->usage("Unbalanced connection.", "Syntax: NF_1[iface]->[iface]NF_2;");
+			return CHAIN_PARSING_PROBLEM;
+		}
+		this->nf_chain->add_edge(std::move(vertices.at(0)), std::move(vertices.at(1)));
+		
+		//log << "\t" << *line << std::endl;
+	}
+	
+	// Check if the elements given in the [NF] section of the property file, correspond to the 
+	// elements that form the chain in the [NF_TOPO] section.
+	// If no error has occured by now and there are unloaded NFs, they are simply ignored because the formulated chain
+	// is valid.
+	unsigned short graph_elements = this->nf_chain->get_vertices_no();
+	
+	if ( elements_in_property > graph_elements ) {
+		log << warn << "There are " << elements_in_property - graph_elements << " unloaded NFs" << def << std::endl;
+	}
+	else if ( elements_in_property < graph_elements ) {
+		log << error << "There are " << graph_elements - elements_in_property << " missing elements in [NF] section of the property file." << def << std::endl;
+		return CHAIN_PARSING_PROBLEM;
+	}
+	
 	return SUCCESS;
 }
 
-void ParserConfiguration::check_for_loops(void) {
+/*
+ * Parse the external NF chain connections with various domains
+ */
+short ParserConfiguration::parse_domains(const std::string& nf_domains) {
+	unsigned short domain = 0;
+	
 	if ( this->nf_chain == NULL ) {
-		log << warn << "\tGraph does not exist" << def << std::endl;
+		this->usage("The graph of he chain does not exist.", "Badly instantiated ParserConfiguration.");
+		return NO_MEM_AVAILABLE;
+	}
+	
+	// The token used to separate rows in the input topology map
+	boost::char_separator<char> con_sep(", ");
+
+	// Split the map into rows
+	boost::tokenizer<boost::char_separator<char>> connections(nf_domains, con_sep);
+
+	for (boost::tokenizer<boost::char_separator<char>>::iterator point=connections.begin(); point!=connections.end(); ++point) {
+		
+		std::string nf;
+		std::string interface;
+		
+		std::size_t left_bracket = point->find("[");
+		if ( left_bracket == std::string::npos ) {
+			this->usage("Entry NF must have interface.", "Syntax: [iface]NF_X,");
+			return CHAIN_PARSING_PROBLEM;
+		}
+		std::size_t right_bracket = point->find("]");
+		
+		// Extract what is in bracket
+		if ( right_bracket == std::string::npos ) {
+			this->usage("Entry NF must have interface.", "Syntax: [iface]NF_X,");
+			return CHAIN_PARSING_PROBLEM;
+		}
+
+		nf = point->substr(right_bracket+1);
+		interface = point->substr (left_bracket+1, right_bracket-left_bracket-1);
+		int position = atoi(this->get_number_from_string(nf).c_str());
+
+		// This NF must already exist
+		ChainVertex* v = (ChainVertex*) this->nf_chain->get_vertex_by_position(position);
+		
+		// If not, something is wrong..
+		if ( v == NULL ) {
+			this->usage(nf + " does not exist in the topology", "Please cross check NF_MODULES and NF_TOPO sections");
+			return CHAIN_PARSING_PROBLEM;
+		}
+		// If it exists, check if the interface to be inserted already exists in the list of chain interfaces.
+		// One interface maps to only one NF
+		else {
+			// Check if this interface exists in the set chain interfaces. It must not!
+			if ( v->get_chain_interface(interface) != "NULL") {
+				this->usage("Invalid interface specification.", v->get_name() + " has already set interface " + interface);
+				return CHAIN_PARSING_PROBLEM;
+			}
+			
+			// Now check if it exists in the list of entry interfaces (inserted previously)
+			if ( v->get_entry_interface(interface) != "NULL") {
+				this->usage("Invalid interface specification.", v->get_name() + " has already set interface " + interface);
+				return CHAIN_PARSING_PROBLEM;
+			}
+		}
+		
+		// Add the interface as entry one
+		v->add_entry_interface_key(interface);
+		
+		// Create also a node that represents the domain to which the NF is connected.
+		ChainVertex* d = new ChainVertex("", "Dom_"+std::to_string(domain), -1, VertexType::Domain);
+		// Create a copy of the chain's vertex to facilitate the memory clean-up at the end.
+		ChainVertex* f = new ChainVertex(*v);
+		
+		// Add a link
+		this->nf_domains->add_edge(std::move(d), std::move(f));
+		
+		domain++;
+	}
+	
+	return SUCCESS;
+}
+
+/*
+ * Check whether the formulated graph of the chain is acyclic
+ */
+void ParserConfiguration::check_for_loops(void) {
+	if ( (this->nf_chain == NULL) || (this->nf_domains == NULL) ) {
+		log << warn << "\tGraph(s) do(es) not exist" << def << std::endl;
 		return;
 	}
 
-	if ( this->nf_chain->is_empty() ) {
-		log << warn << "\tGraph is empty" << def << std::endl;
+	if ( this->nf_chain->is_empty() || this->nf_domains->is_empty() ) {
+		log << warn << "\tGraph(s) is(are) empty" << def << std::endl;
 		return;
 	}
 
 	try {
-		log << info << "Topological sort ... " << def << std::endl;
+		log << "\tTopological sort ... " << def << std::endl;
 		this->nf_chain->topological_sort();
-		log << info << "|---> Graph is acyclic" << def << std::endl;
+		log << "\t|---> NF Chain  graph is acyclic" << def << std::endl;
+		this->nf_domains->topological_sort();
+		log << "\t|---> NF Domain graph is acyclic" << def << std::endl;
 	}
 	catch (const std::exception& e) {
 		log << error << "|--> " << e.what() << def << std::endl;
@@ -163,4 +326,24 @@ void ParserConfiguration::check_for_loops(void) {
 	}
 
 	return;
+}
+
+/*
+ * Extract numbers from strings
+ */
+std::string ParserConfiguration::get_number_from_string(std::string const& str) {
+	std::size_t const n = str.find_first_of("0123456789");
+	if ( n != std::string::npos ) {
+		std::size_t const m = str.find_first_not_of("0123456789", n);
+		return str.substr(n, m != std::string::npos ? m-n : m);
+	}
+	return std::string();
+}
+
+/*
+ * Print error messages regarding the property file
+ */
+void ParserConfiguration::usage(const std::string& message, const std::string& usage) {
+	log << error << message << def << std::endl;
+	log << error << "|-> " << usage << def << std::endl;
 }

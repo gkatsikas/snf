@@ -1,12 +1,13 @@
 //============================================================================
 //        Name: graph.hpp
 //   Copyright: KTH ICT CoS Network Systems Lab
-// Description: Defines a simple directed graph
+// Description: Defines a directed graph
 //============================================================================
 
 #ifndef _GRAPH_HPP_
 #define _GRAPH_HPP_
 
+#include <stack>
 #include <unordered_map>
 
 #include "vertex.hpp"
@@ -55,12 +56,13 @@ class Graph
 		 */
 		void                   add_vertex(Vertex* u);
 		void                   add_edge  (Vertex* u, Vertex* v);
-
-		unsigned short         get_vertices_no(void);
+		
 		void                   find_in_degrees(void);
-		int                    get_in_degree(Vertex*);
+		unsigned short         get_vertices_no(void);
+		int                    get_in_degree(Vertex* u);
 		VertexMap<int>         get_in_degrees(void);
 		const AdjacencyList    get_adjacency_list(void) const;
+		std::vector<Vertex*>   get_vertex_children(Vertex* u);
 		Vertex* get_vertex_by_name(std::string& name);
 		Vertex* get_vertex_by_position(unsigned short pos);
 
@@ -78,19 +80,35 @@ class Graph
 		bool is_empty(void);
 		bool contains(unsigned short pos);
 		bool vertex_exists(Vertex* u);
-		std::vector<Vertex*> topological_sort(void);
 		std::vector<Vertex*> get_vertex_order(void);
+		std::vector<Vertex*> topological_sort(void);
+		
+		/*
+		 * ATTENTION: Under development (Use with own risk :p)
+		 */
+		std::vector<Vertex*> all_paths_from_vertex(Vertex* vertex);
+		std::vector<std::vector<Vertex*>> all_paths(void);
 };
 
 /*
- * Recursive function to visit all vertices and do the topological sort
+ * Recursive DFS function to visit all vertices.
  */
-void topological_sort_vertex(
+void dfs(
 	Vertex* vertex,
 	Colour& colour,
 	const Graph::AdjacencyList& adjacency_list,
 	Graph::VertexMap<Colour>& visited,
 	std::vector<Vertex*>& sorted
+);
+
+/*
+ * Iterative DFS function to visit all vertices.
+ */
+void dfs_iterative(
+	Vertex* vertex,
+	const Graph::AdjacencyList& adjacency_list,
+	Graph::VertexMap<Colour>& visited,
+	std::stack<Vertex*>& sorted
 );
 
 #endif

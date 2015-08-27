@@ -1,7 +1,7 @@
 //============================================================================
 //        Name: graph.cpp
 //   Copyright: KTH ICT CoS Network Systems Lab
-// Description: Implements a simple directed graph with topological sort and
+// Description: Implements a directed graph with topological sort and
 //              check for cycles.
 //============================================================================
 
@@ -15,7 +15,8 @@ Graph::Graph() {
 
 Graph::~Graph() {
 	for (auto& pair : this->get_in_degrees())
-		delete pair.first;
+		if ( pair.first != NULL )
+			delete pair.first;
 	this->in_degrees.clear();
 	this->vertices.clear();
 
@@ -111,11 +112,11 @@ const Graph::AdjacencyList Graph::get_adjacency_list(void) const {
 /*
  * Get the in degree of a specific vertex
  */
-int Graph::get_in_degree(Vertex* v) {
+int Graph::get_in_degree(Vertex* u) {
 	// If the data structure is empty, we need to invoke the find method first
 	if ( this->in_degrees.empty() )
 		this->find_in_degrees();
-	return this->in_degrees.at(v);
+	return this->in_degrees.at(u);
 }
 
 /*
@@ -178,84 +179,49 @@ bool Graph::is_empty(void) {
  * Print graph info
  */
 void Graph::print_in_degrees(void) {
-	log << info << "================== In degrees =================" << def << std::endl;
+	log << "\t================== In degrees =================" << def << std::endl;
+	log << "\t" << def;
 	for (auto& pair : this->get_in_degrees())
-		log << info << std::setw(2) << pair.first->get_name() << " has in-degree: " << pair.second << def << std::endl;
-	log << info << "===============================================" << def << std::endl;
+		log << std::setw(2) << pair.first->get_name() << " has in-degree: " << pair.second << def << std::endl;
+	log << "\t===============================================" << def << std::endl;
 }
 
 void Graph::print_adjacency_list(void) {
-	log << info << "================ Adjacency List ===============" << def << std::endl;
+	log << "\t================ Adjacency List ===============" << def << std::endl;
 	for (auto& pair : this->get_adjacency_list()) {
-		log << info << std::setw(2) << pair.first->get_name() << "-> ";
+		log << std::setw(2) << "\t" << pair.first->get_name() << "-> ";
 		for (Vertex* neighbour : pair.second)
-			log << info << neighbour->get_name() << ", " << def;
+			log << neighbour->get_name() << ", " << def;
 		log << def << std::endl;
 	}
-	log << info << "===============================================" << def << std::endl;
+	log << "\t===============================================" << def << std::endl;
 };
 
 void Graph::print_topological_sort(void) {
-	log << info << "=============== Topological Sort ==============" << def << std::endl;
+	log << "\t=============== Topological Sort ==============" << def << std::endl;
 	std::vector<Vertex*> ts;
 	try {
 		ts = this->topological_sort();
 	}
 	catch (const std::exception& e) {
-		log << error << "|--> " << e.what() << def << std::endl;
+		log << error << "\t|--> " << e.what() << def << std::endl;
 		exit(NF_CHAIN_NOT_ACYCLIC);
 	}
+	log << "\t" << def;
 	for (Vertex* v : ts)
-		log << info << v->get_name() << "," << def;
+		log << v->get_name() << "," << def;
 	log << std::endl;
-	log << info << "===============================================" << def << std::endl;
+	log << "\t===============================================" << def << std::endl;
 }
 
 void Graph::print_vertex_order(void) {
-	log << info << "================= Vertex Order ================" << def << std::endl;
+	log << "\t================= Vertex Order ================" << def << std::endl;
+	log << "\t" << def;
 	for (Vertex* v : this->get_vertex_order()) {
-		log << info << v->get_name() << "," << def;
+		log << v->get_name() << "," << def;
 	}
 	log << std::endl;
-	log << info << "===============================================" << def << std::endl;
-}
-
-/*
- * Simple topological sorting
- */
-std::vector<Vertex*> Graph::topological_sort(void) {
-	if ( this->is_empty() ) {
-		log << warn << "\tGraph is empty" << def << std::endl;
-		std::vector<Vertex*> sorted;
-		return sorted;
-	}
-
-	VertexMap<int> in_degs = get_in_degrees();
-
-	std::vector<Vertex*> sorted;
-	sorted.reserve(in_degs.size());
-
-	VertexMap<Colour> visited;
-	visited.reserve(in_degs.size());
-
-	for (auto& pair : in_degs) {
-		// Vertex has in degree of 0
-		if (pair.second == 0) {
-			Vertex* vertex = pair.first;
-			Colour& colour = visited[vertex];
-
-			// This should never happen here because vertex has in degree 0
-			assert (colour == White);
-
-			// Not visited, go
-			topological_sort_vertex(vertex, colour, this->vertices, visited, sorted);
-		}
-	}
-
-	if ( (sorted.size() == 0) && (this->get_vertices_no() > 1) )
-		throw std::logic_error("Cycle in graph");
-
-	return sorted;
+	log << "\t===============================================" << def << std::endl;
 }
 
 /*
@@ -281,11 +247,108 @@ std::vector<Vertex*> Graph::get_vertex_order(void) {
 }
 
 /*
- * Recursive function to visit all vertices and do the topological sort
+ * The natural flow of the NF chain is the reverse topological sort
  */
-void topological_sort_vertex(Vertex* vertex, Colour& colour, const Graph::AdjacencyList& adjacency_list,
-                        Graph::VertexMap<Colour>& visited, std::vector<Vertex*>& sorted) {
-	Logger log(__FILE__);
+std::vector<Vertex*> Graph::get_vertex_children(Vertex* u) {
+	return this->vertices.at(u);
+}
+
+/*
+ * Simple topological sorting
+ */
+std::vector<Vertex*> Graph::topological_sort(void) {
+	if ( this->is_empty() ) {
+		log << warn << "\tGraph is empty" << def << std::endl;
+		std::vector<Vertex*> sorted;
+		return sorted;
+	}
+
+	VertexMap<int> in_degs = this->get_in_degrees();
+
+	std::vector<Vertex*> sorted;
+	sorted.reserve(in_degs.size());
+
+	VertexMap<Colour> visited;
+	visited.reserve(in_degs.size());
+
+	for (auto& pair : in_degs) {
+		// Vertex has in degree of 0
+		if (pair.second == 0) {
+			Vertex* vertex = pair.first;
+			Colour& colour = visited[vertex];
+
+			// This should never happen here because vertex has in degree 0
+			assert (colour == White);
+
+			// Not visited, go DFS
+			dfs(vertex, colour, this->vertices, visited, sorted);
+		}
+	}
+
+	if ( (sorted.size() == 0) && (this->get_vertices_no() > 1) )
+		throw std::logic_error("Cycle in graph");
+
+	return sorted;
+}
+
+std::vector<Vertex*> Graph::all_paths_from_vertex(Vertex* vertex) {
+	if ( this->is_empty() ) {
+		log << warn << "\tGraph is empty" << def << std::endl;
+		std::vector<Vertex*> paths;
+		return paths;
+	}
+
+	VertexMap<Colour> visited;
+	Colour& colour = visited[vertex];
+
+	// Not visited, go DFS
+	std::vector<Vertex*> paths;
+	dfs(vertex, colour, this->vertices, visited, paths);
+
+	return paths;
+}
+
+std::vector<std::vector<Vertex*>> Graph::all_paths(void) {
+	if ( this->is_empty() ) {
+		log << warn << "\tGraph is empty" << def << std::endl;
+		std::vector<std::vector<Vertex*>> all_paths;
+		return all_paths;
+	}
+
+	VertexMap<int> in_degs = this->get_in_degrees();
+
+	std::vector<std::vector<Vertex*>> all_paths;
+
+	VertexMap<Colour> visited;
+	visited.reserve(in_degs.size());
+
+	for (auto& pair : in_degs) {
+		
+		std::vector<Vertex*> sorted;
+		
+		// Vertex has in degree of 0
+		if (pair.second == 0) {
+			Vertex* vertex = pair.first;
+			Colour& colour = visited[vertex];
+
+			// This should never happen here because vertex has in degree 0
+			assert (colour == White);
+
+			// Not visited, go DFS
+			dfs(vertex, colour, this->vertices, visited, sorted);
+			
+			all_paths.push_back(sorted);
+		}
+	}
+
+	return all_paths;
+}
+
+/*
+ * Recursive DFS function to visit all vertices from 'vertex'
+ */
+void dfs(Vertex* vertex, Colour& colour, const Graph::AdjacencyList& adjacency_list, 
+		Graph::VertexMap<Colour>& visited, std::vector<Vertex*>& sorted) {
 
 	colour = Grey;
 
@@ -294,7 +357,7 @@ void topological_sort_vertex(Vertex* vertex, Colour& colour, const Graph::Adjace
 
 		// Unvisited node --> recursion
 		if (neighbour_colour == White) {
-			topological_sort_vertex(neighbour, neighbour_colour, adjacency_list, visited, sorted);
+			dfs(neighbour, neighbour_colour, adjacency_list, visited, sorted);
 		}
 		// Ambiguous color denotes a cycle!
 		else if (neighbour_colour == Grey)
@@ -304,4 +367,32 @@ void topological_sort_vertex(Vertex* vertex, Colour& colour, const Graph::Adjace
 	// Visited nodes are in black list :p
 	colour = Black;
 	sorted.push_back(vertex);
+}
+
+/*
+ * ATTENTION: Unstable/Buggy method
+ * Iterative DFS function to visit all vertices from 'vertex'
+ */
+void dfs_iterative(Vertex* vertex, const Graph::AdjacencyList& adjacency_list, 
+		Graph::VertexMap<Colour>& visited, std::stack<Vertex*>& sorted) {
+	
+	sorted.push(vertex);
+	
+	while ( !sorted.empty() ) {
+		// Get and delete
+		Vertex* u = sorted.top();
+		sorted.pop();
+		
+		// Get the label
+		Colour& neighbour_colour = visited[u];
+		
+		// Not labeled as discovered
+		if ( neighbour_colour == White ) {
+			visited[u] = Black;
+			
+			for (Vertex* v : adjacency_list.at(vertex)) {
+				sorted.push(v);
+			}
+		}
+	}
 }

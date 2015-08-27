@@ -1,6 +1,7 @@
 /////////////////////////////////////////////////////////////////////////////
-//      Module: firewall.click
-// Description: Click implementation of an n-port (even number) L3 firewall.
+//      Module: napt.click
+// Description: Click implementation of an n-port (even number) 
+//              L4 NAPT (RFC 1631).
 //      Author: Georgios Katsikas (katsikas@kth.se)
 /////////////////////////////////////////////////////////////////////////////
 
@@ -36,10 +37,10 @@ define(
 
 /////////////////////////////////////////////////////////////////////////////
 // Elements
-elementclass L3Firewall {
+elementclass NAPT {
 	// Module's arguments
-	$dev0,   $iface0, $macAddr0,  $ipAddr0, $ipNetHost0, $ipBcast0, $ipNet0, $color0,
-	$dev1,   $iface1, $macAddr1,  $ipAddr1, $ipNetHost1, $ipBcast1, $ipNet1, $color1,
+	$iface0, $macAddr0, $ipAddr0, $ipNetHost0, $ipBcast0, $ipNet0, $color0,
+	$iface1, $macAddr1, $ipAddr1, $ipNetHost1, $ipBcast1, $ipNet1, $color1,
 	$gwIPAddr, $gwMACAddr, $gwPort, $queueSize, $mtuSize, $burst |
 
 	// Queues
@@ -51,7 +52,7 @@ elementclass L3Firewall {
 	out0    :: ToDevice  ($iface0, BURST $burst);
 	in1     :: FromDevice($iface1, BURST $burst);
 	out1    :: ToDevice  ($iface1, BURST $burst);
-	toLinux :: ToHost;
+	toLinux :: Discard;
 	
 	// ARP Querier
 	// The querier for the 2nd iface is replaced with a static
@@ -64,42 +65,27 @@ elementclass L3Firewall {
 	arpResponder1 :: ARPResponder($ipAddr1 $macAddr1);
 
 	// Classifier
-	classifier0   :: Classifier(
+	classifier0 :: Classifier(
 		12/0806 20/0001,    /* ARP Requests    */
 		12/0806 20/0002,    /* ARP Replies     */
 		12/0800,            /* IPv4 packets    */
 		-                   /* Everything else */
 	);
 
-	classifier1   :: Classifier(
+	classifier1 :: Classifier(
 		12/0806 20/0001,    /* ARP Requests    */
 		12/0806 20/0002,    /* ARP Replies     */
 		12/0800,            /* IPv4 packets    */
 		-                   /* Everything else */
-	);
-
-	// The module that turns this router into L3 firewall
-	filter :: IPFilter(
-		allow dst host $ipAddr0,
-		allow dst host $ipAddr1,
-		allow dst host 50.0.0.100,
-		allow src host 20.0.0.10  && udp,
-		allow src host 30.0.0.10  && tcp,
-		allow src host 40.0.0.10  && udp,
-		allow src host 60.0.0.10  && tcp,
-		allow src host 70.0.0.10  && udp,
-		allow src host 80.0.0.10  && tcp,
-		allow src host 90.0.0.10  && icmp,
-		allow src host 100.0.0.10 && icmp,
-		allow src host 10.0.0.100 || dst host $ipAddr0 || dst host $ipAddr1 || src host $ipAddr0 || src host $ipAddr1,
-		drop all
 	);
 
 	// Strip Ethernet header
-	strip  :: Strip(14);
+	strip0 :: Strip(14);
+	strip1 :: Strip(14);
 
 	// Check header's integrity
-	checkIPHeader :: MarkIPHeader;
+	checkIPHeader0 :: MarkIPHeader;
+	checkIPHeader1 :: MarkIPHeader;
 
 	// Routing table
 	lookUp :: RadixIPLookup(
@@ -111,7 +97,13 @@ elementclass L3Firewall {
 		$ipNetHost1  0,
 		$ipNet0      1,
 		$ipNet1      2,
-		0.0.0.0/0 $gwAddr $gwPort
+		0.0.0.0/0 $gwIPAddr $gwPort
+	);
+
+	// Implements PNAT
+	ipRewriter :: IPRewriter(
+		pattern $ipAddr1 1024-65535 - - 0 0,   /* Packets from Intranet change src IP and port */
+		pattern - - $ipAddr0 - 0 0,            /* Packets from Internet change dst IP and port */
 	);
 
 	// Process the IP options field (mandatory based on RFC 791)
@@ -147,17 +139,25 @@ elementclass L3Firewall {
 	classifier1[1] -> [1]arpQuerier1 -> queue1 -> out1;
 
 	// --> IP packets
-	classifier0[2] -> Paint($color0) -> strip;
-	classifier1[2] -> Paint($color1) -> strip;
+	classifier0[2] -> Paint($color0) -> strip0;
+	classifier1[2] -> Paint($color1) -> strip1;
 
 	// --> Drop the rest
-	classifier0[3] -> Print(Dropped_0) -> Discard;
-	classifier1[3] -> Print(Dropped_1) -> Discard;
+	classifier0[3] -> Print(Dropped-If0) -> Discard;
+	classifier1[3] -> Print(Dropped-If1) -> Discard;
 
-	// Get IP address for routing
-	strip
-		-> checkIPHeader
-		-> filter
+	// Packets coming from Intranet go to port 0 of Rewriter
+	strip0
+		-> checkIPHeader0
+		-> [0]ipRewriter;
+
+	// Packets coming from Internet go to port 1 of Rewriter
+	strip1
+		-> checkIPHeader1
+		-> [1]ipRewriter;
+
+	// Rewrite IP address for routing
+	ipRewriter
 		-> GetIPAddress(16)
 		-> [0]lookUp;
 
@@ -174,7 +174,7 @@ elementclass L3Firewall {
 		-> fixIP0
 		-> decTTL0[0]
 		-> fragIP0[0]
-		//-> Print(FW-Iface_0)
+		//-> Print(NAT-If0)
 		-> [0]arpQuerier0;
 
 	lookUp[2]
@@ -183,11 +183,8 @@ elementclass L3Firewall {
 		-> fixIP1
 		-> decTTL1[0]
 		-> fragIP1[0]
-		//-> Print(FW-Iface_1)
+		//-> Print(NAT-If1)
 		-> [0]arpQuerier1;
-
-	// Discarded by firewall
-	filter[1] -> Print(FW-Dropped) -> Discard;
 	/////////////////////////////////////////////////////////////////////
 
 	/////////////////////////////////////////////////////////////////////
@@ -213,12 +210,9 @@ elementclass L3Firewall {
 /////////////////////////////////////////////////////////////////////////////
 // Scenario
 /////////////////////////////////////////////////////////////////////////////
-AddressInfo(dev0 $ipAddr0 $macAddr0);
-AddressInfo(dev1 $ipAddr1 $macAddr1);
-
-firewall :: L3Firewall(
-	dev0, $iface0, $macAddr0, $ipAddr0, $ipNetHost0, $ipBcast0, $ipNet0, $color0,
-	dev1, $iface1, $macAddr1, $ipAddr1, $ipNetHost1, $ipBcast1, $ipNet1, $color1,
+napt :: NAPT(
+	$iface0, $macAddr0, $ipAddr0, $ipNetHost0, $ipBcast0, $ipNet0, $color0,
+	$iface1, $macAddr1, $ipAddr1, $ipNetHost1, $ipBcast1, $ipNet1, $color1,
 	$gwIPAddr, $gwMACAddr, $gwPort, $queueSize, $mtuSize, $burst
 );
 /////////////////////////////////////////////////////////////////////////////

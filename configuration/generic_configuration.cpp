@@ -75,9 +75,19 @@ GenericConfiguration::~GenericConfiguration() {
 Chameleon const& GenericConfiguration::get_value(std::string const& section, std::string const& entry) const {
 	std::map<std::string,Chameleon>::const_iterator ci = content_.find(section + '/' + entry);
 
-	if (ci == content_.end()) throw "does not exist";
+	if (ci == content_.end())
+		throw std::runtime_error(entry + " does not exist in section " + section);
 
 	return ci->second;
+}
+
+Chameleon const& GenericConfiguration::get_value(std::string const& section, std::string const& entry, int value) {
+	try {
+		return get_value(section, entry);
+	}
+	catch(const char *) {
+		return content_.insert(make_pair(section+'/'+entry, Chameleon(value))).first->second;
+	}
 }
 
 Chameleon const& GenericConfiguration::get_value(std::string const& section, std::string const& entry, double value) {

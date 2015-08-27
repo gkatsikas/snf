@@ -43,6 +43,7 @@ class GenericConfiguration
 		 * Helper methods to read the property file
 		 */
 		Chameleon const& get_value(std::string const& section, std::string const& entry) const;
+		Chameleon const& get_value(std::string const& section, std::string const& entry, int    value);
 		Chameleon const& get_value(std::string const& section, std::string const& entry, double value);
 		Chameleon const& get_value(std::string const& section, std::string const& entry, std::string const& value);
 
