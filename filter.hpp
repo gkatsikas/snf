@@ -48,6 +48,8 @@ class Filter {
 	private:
 		DisjointSegmentList m_filter;
 		HeaderField m_field;
+		
+		std::string ip_filter_to_ip_class_pattern(std::string keyword) const;
 };
 
 /*
