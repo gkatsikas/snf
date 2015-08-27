@@ -22,7 +22,7 @@ struct SegmentNode {
 	uint32_t m_upperLimit;
 	std::shared_ptr<SegmentNode> m_parent;
 	std::shared_ptr<SegmentNode> m_child;
-	
+
 	SegmentNode (uint32_t lower, uint32_t upper);
 	std::string to_str() ;
 	std::string to_ip_str();
@@ -30,9 +30,9 @@ struct SegmentNode {
 };
 
 SegmentNode::SegmentNode (uint32_t lower, uint32_t upper) :
-		m_lowerLimit(lower),m_upperLimit(upper), 
+		m_lowerLimit(lower),m_upperLimit(upper),
 		m_parent(), m_child() {}
-		
+
 std::string SegmentNode::to_str () {
 	return "["+std::to_string(m_lowerLimit)+","+
 					std::to_string(m_upperLimit)+"]";
@@ -44,10 +44,10 @@ std::string SegmentNode::to_ip_str () {
 
 bool SegmentNode::operator==(const SegmentNode& node) const {
 	return (this->m_upperLimit == node.m_upperLimit && this->m_lowerLimit == node.m_lowerLimit &&
-		( (!this->m_child && node.m_child) || 
+		( (!this->m_child && node.m_child) ||
 		  (this->m_child && node.m_child && *(this->m_child) == *(node.m_child) )
 		) );
-	
+
 }
 
 DisjointSegmentList::DisjointSegmentList () {}
@@ -58,7 +58,7 @@ DisjointSegmentList::~DisjointSegmentList () {
 	if(m_head) { destroy_list(m_head); }
 }
 
-bool DisjointSegmentList::empty () const { 
+bool DisjointSegmentList::empty () const {
 	return !((bool) m_head);
 }
 
@@ -71,7 +71,7 @@ bool DisjointSegmentList::contains (uint32_t value) const {
 		else if (value <= current_node->m_upperLimit) {
 			return true;
 		}
-		
+
 		current_node = current_node->m_child;
 	}
 	return false;
@@ -88,20 +88,20 @@ bool DisjointSegmentList::contains_seglist (const DisjointSegmentList& rhs) cons
 
 bool DisjointSegmentList::include (const std::shared_ptr<SegmentNode>& container,
 						 const std::shared_ptr<SegmentNode>& containee ) {
-	
+
 	if(!containee) { return true; }
 	else if (!container) { return false; }
-	
+
 	uint32_t lower_limit = containee->m_lowerLimit;
 	uint32_t upper_limit = containee->m_upperLimit;
-	
+
 	std::shared_ptr<SegmentNode> current_seg = container;
 	while (current_seg && lower_limit > current_seg->m_upperLimit) {
 		current_seg = current_seg->m_child;
 	}
-	
+
 	return (current_seg &&
-			lower_limit >= current_seg->m_lowerLimit && upper_limit <= current_seg->m_upperLimit 
+			lower_limit >= current_seg->m_lowerLimit && upper_limit <= current_seg->m_upperLimit
 			&& include(current_seg,containee->m_child));
 }
 
@@ -117,29 +117,28 @@ void DisjointSegmentList::add_seglist (const DisjointSegmentList& rhs) {
 std::shared_ptr<SegmentNode> DisjointSegmentList::unify (
 											std::shared_ptr<SegmentNode>& container,
 											const std::shared_ptr<SegmentNode>& to_add) {
-	
+
 	if(!to_add) {
 		return container;
 	}
-	
+
 	uint32_t lower_limit = to_add->m_lowerLimit;
 	uint32_t upper_limit = to_add->m_upperLimit;
-	
-						
+
 	if(!container) {
 		std::shared_ptr<SegmentNode> seg(new SegmentNode(lower_limit, upper_limit));
 		return unify(seg,to_add->m_child);
 	}
-	
+
 	std::shared_ptr<SegmentNode> current_parent;
 	std::shared_ptr<SegmentNode> current_child = container;
-	
+
 	//This puts us in front of all the stricly smaller segments
 	while (current_child && lower_limit > safe_add(current_child->m_upperLimit,1)) {
 		current_parent = current_child;
 		current_child = current_child->m_child;
 	}
-	
+
 	//We are past all the other segments
 	//We can just insert a new one here
 	if (!current_child) {
@@ -150,26 +149,26 @@ std::shared_ptr<SegmentNode> DisjointSegmentList::unify (
 	}
 
 	uint32_t new_minimum = MIN(lower_limit, current_child->m_lowerLimit);
-	
+
 	std::vector<std::shared_ptr<SegmentNode> > to_clean;
 	uint32_t new_maximum = upper_limit;
-	
+
 	//We find all the segments that we touch
 	while (current_child && safe_add(upper_limit,1) >= current_child->m_lowerLimit) {
 		new_maximum = MAX(upper_limit, current_child->m_upperLimit) ;
 		to_clean.push_back(current_child);
 		current_child = current_child->m_child;
 	}
-	
+
 	//Reset pointers to delete objects
 	for (auto &it : to_clean) { reset_node(it); }
-	
+
 	std::shared_ptr<SegmentNode> seg(new SegmentNode(new_minimum, new_maximum));
 
 	if(current_child) {	update_relation(seg,current_child); }
 
 	seg = unify(seg, to_add->m_child);
-	
+
 	if(current_parent) {update_relation(current_parent,seg);}
 	else {return seg;} //If we have no parent we're the lowest one
 
@@ -191,7 +190,7 @@ std::shared_ptr<SegmentNode> DisjointSegmentList::differentiate(
 	if(!container || !to_substract) { //There's nothing to substract 
 		return container;			  //or to substract from
 	}
-	
+
 	std::shared_ptr<SegmentNode> current_parent;
 	std::shared_ptr<SegmentNode> current_child = container;
 
@@ -207,7 +206,7 @@ std::shared_ptr<SegmentNode> DisjointSegmentList::differentiate(
 	if (!current_child) { //All the segments are stricly smaller
 		return container; //Nothing to do then
 	}
-	
+
 	if (current_child->m_lowerLimit < lower_limit) { //Goes past the first segment
 		std::shared_ptr<SegmentNode> new_parent (new SegmentNode(current_child->m_lowerLimit, lower_limit-1) );
 		if(current_parent) {update_relation(current_parent,new_parent);}
@@ -218,15 +217,15 @@ std::shared_ptr<SegmentNode> DisjointSegmentList::differentiate(
 		}
 		else { current_child = current_child->m_child; }
 	}
-	
+
 	std::vector<std::shared_ptr<SegmentNode> > to_clean;
 	while (current_child && upper_limit >= current_child->m_upperLimit) {
 		to_clean.push_back(current_child);
 		current_child = current_child->m_child;
 	}
-	
+
 	for (auto &it : to_clean) {reset_node(it);}
-	
+
 	current_child = differentiate(current_child,to_substract->m_child);
 	if (!current_child) {
 		if(current_parent) {current_parent->m_child.reset();}
@@ -239,7 +238,7 @@ std::shared_ptr<SegmentNode> DisjointSegmentList::differentiate(
 		if(current_parent) {update_relation(current_parent,current_child);}
 		else {container = current_child;}
 	}
-	
+
 	return container;
 }
 
@@ -253,14 +252,14 @@ void DisjointSegmentList::intersect_seglist (const DisjointSegmentList& rhs) {
 }
 
 std::shared_ptr<SegmentNode> DisjointSegmentList::intersect (
-									std::shared_ptr<SegmentNode>& container,
-									const std::shared_ptr<SegmentNode>& to_intersect) {
-									
+								std::shared_ptr<SegmentNode>& container,
+								const std::shared_ptr<SegmentNode>& to_intersect) {
+
 	if (!container || !to_intersect) {
 		destroy_list(container);
 		return container;
 	}
-	
+
 	uint32_t lower_limit = to_intersect->m_lowerLimit;
 	uint32_t upper_limit = to_intersect->m_upperLimit;
 	std::shared_ptr<SegmentNode> current_node = container;
@@ -274,7 +273,7 @@ std::shared_ptr<SegmentNode> DisjointSegmentList::intersect (
 		destroy_list(container);
 		return std::shared_ptr<SegmentNode>();
 	}
-	
+
 	if(current_node->m_parent) { //removes leading segments if necessary
 		(current_node->m_parent)->m_child.reset();
 		current_node->m_parent.reset();
@@ -283,12 +282,12 @@ std::shared_ptr<SegmentNode> DisjointSegmentList::intersect (
 	}
 
 	current_node->m_lowerLimit = MAX(lower_limit,current_node->m_lowerLimit);
-	
-	while(current_node->m_child && 
+
+	while(current_node->m_child &&
 			upper_limit >= (current_node->m_child)->m_lowerLimit) { //Goes through all nodes that intersect
 		current_node = current_node->m_child;
 	}
-	
+
 	uint32_t old_upper_lim = current_node->m_upperLimit;
 	current_node->m_upperLimit = MIN(upper_limit, current_node->m_upperLimit);
 	if (old_upper_lim > upper_limit+1) {
@@ -330,22 +329,22 @@ void DisjointSegmentList::translate (uint32_t value, bool forward) {
 
 void DisjointSegmentList::move_forward (uint32_t value) {
 	std::shared_ptr<SegmentNode> current_node = m_head;
-	
+
 	if(m_head && (UINT32_MAX-m_head->m_lowerLimit)<value) {destroy_list(m_head); m_head.reset(); return;}
-	
+
 	while (current_node && (UINT32_MAX-current_node->m_lowerLimit)>=value) {
 		current_node->m_lowerLimit += value;
 		current_node->m_upperLimit = safe_add(current_node->m_upperLimit,value);
 		current_node = current_node->m_child;
 	}
-	
+
 	if(!current_node) { return ; }
 	else { destroy_list(current_node->m_child); }
 }
 
 void DisjointSegmentList::move_backwards (uint32_t value) {
 	std::shared_ptr<SegmentNode> current_node = m_head;
-	
+
 	//Let's go past all the segments that are below value
 	while (current_node && current_node->m_upperLimit < value) {
 		current_node = current_node->m_child;
@@ -361,7 +360,7 @@ void DisjointSegmentList::move_backwards (uint32_t value) {
 	}
 
 	current_node->m_lowerLimit= safe_substract(current_node->m_lowerLimit,value);
-	
+
 	current_node->m_upperLimit -= value;
 	current_node = current_node->m_child;
 
@@ -387,7 +386,7 @@ void DisjointSegmentList::reset_node(std::shared_ptr<SegmentNode>& node) {
 
 std::string DisjointSegmentList::to_str() const {
 	if (!m_head) { return "Empty list"; }
-	
+
 	std::string output;
 	std::shared_ptr<SegmentNode> current_node = m_head;
 	while (current_node) {
@@ -399,7 +398,7 @@ std::string DisjointSegmentList::to_str() const {
 
 std::string DisjointSegmentList::to_ip_str() const {
 	if (!m_head) { return "Empty list"; }
-	
+
 	std::string output;
 	std::shared_ptr<SegmentNode> current_node = m_head;
 	while (current_node) {
@@ -417,7 +416,7 @@ std::vector<Segment > DisjointSegmentList::get_segments() const {
 		output.push_back(p);
 		current_node = current_node->m_child;
 	}
-	
+
 	return output;
 }
 
@@ -437,7 +436,7 @@ std::shared_ptr<SegmentNode> DisjointSegmentList::copy_list(std::shared_ptr<Segm
 	std::shared_ptr<SegmentNode> new_list = std::shared_ptr<SegmentNode>(
 												new SegmentNode(old_list->m_lowerLimit,
 														old_list->m_upperLimit));
-														
+
 	std::shared_ptr<SegmentNode> new_child = copy_list(old_list->m_child);
 	if (new_child) {update_relation (new_list,new_child);}
 	return new_list;

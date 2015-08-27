@@ -323,9 +323,9 @@ std::vector<std::vector<Vertex*>> Graph::all_paths(void) {
 	visited.reserve(in_degs.size());
 
 	for (auto& pair : in_degs) {
-		
+
 		std::vector<Vertex*> sorted;
-		
+
 		// Vertex has in degree of 0
 		if (pair.second == 0) {
 			Vertex* vertex = pair.first;
@@ -336,7 +336,7 @@ std::vector<std::vector<Vertex*>> Graph::all_paths(void) {
 
 			// Not visited, go DFS
 			dfs(vertex, colour, this->vertices, visited, sorted);
-			
+
 			all_paths.push_back(sorted);
 		}
 	}
@@ -347,7 +347,7 @@ std::vector<std::vector<Vertex*>> Graph::all_paths(void) {
 /*
  * Recursive DFS function to visit all vertices from 'vertex'
  */
-void dfs(Vertex* vertex, Colour& colour, const Graph::AdjacencyList& adjacency_list, 
+void dfs(Vertex* vertex, Colour& colour, const Graph::AdjacencyList& adjacency_list,
 		Graph::VertexMap<Colour>& visited, std::vector<Vertex*>& sorted) {
 
 	colour = Grey;
@@ -373,23 +373,23 @@ void dfs(Vertex* vertex, Colour& colour, const Graph::AdjacencyList& adjacency_l
  * ATTENTION: Unstable/Buggy method
  * Iterative DFS function to visit all vertices from 'vertex'
  */
-void dfs_iterative(Vertex* vertex, const Graph::AdjacencyList& adjacency_list, 
+void dfs_iterative(Vertex* vertex, const Graph::AdjacencyList& adjacency_list,
 		Graph::VertexMap<Colour>& visited, std::stack<Vertex*>& sorted) {
-	
+
 	sorted.push(vertex);
-	
+
 	while ( !sorted.empty() ) {
 		// Get and delete
 		Vertex* u = sorted.top();
 		sorted.pop();
-		
+
 		// Get the label
 		Colour& neighbour_colour = visited[u];
-		
+
 		// Not labeled as discovered
 		if ( neighbour_colour == White ) {
 			visited[u] = Black;
-			
+
 			for (Vertex* v : adjacency_list.at(vertex)) {
 				sorted.push(v);
 			}

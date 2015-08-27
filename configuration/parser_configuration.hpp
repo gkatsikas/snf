@@ -52,7 +52,7 @@ class ParserConfiguration : public GenericConfiguration
 		 * Parse the internal NF chain connections
 		 */
 		short parse_topology(const std::string& nf_topo);
-		
+
 		/*
 		 * Parse the external NF chain connections with various domains
 		 */
@@ -62,12 +62,12 @@ class ParserConfiguration : public GenericConfiguration
 		 * Check whether the formulated graph of the chain is acyclic
 		 */
 		void check_for_loops(void);
-		
+
 		/*
 		 * Extract numbers from strings
 		 */
 		std::string get_number_from_string(std::string const& str);
-		
+
 		/*
 		 * Print error messages regarding the property file
 		 */

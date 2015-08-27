@@ -21,11 +21,11 @@ enum VertexType {
 	* None is an initial default value before we classify this element.
 	*/
 	Input, Processing, Output, None,
-	
+
 	/*
 	 * CASE 1: The vertex composes a graph that represents a chain of NFs.
-	 * Some of these NFs can be also connected to the outside world 
-	 * (e.g. a network domain that sends traffic to the chain). We include 
+	 * Some of these NFs can be also connected to the outside world
+	 * (e.g. a network domain that sends traffic to the chain). We include
 	 * these domains in the DAG with NodeType=Domain. NFs have type NF.
 	 */
 	Domain, NF
@@ -62,7 +62,7 @@ class Vertex {
 	public:
 		Vertex(std::string name, unsigned short pos, VertexType type);
 		virtual ~Vertex();
-		
+
 		/*
 		 * Copy constructor
 		 */
@@ -107,7 +107,7 @@ class ChainVertex : public Vertex
 		 * Stores the interfaces of a NF that connect it to the outside world.
 		 */
 		InterfaceMap entry_interfaces;
-		
+
 		/*
 		 * Stores the interfaces of a NF that connect it to the rest of the chain.
 		 */
@@ -136,15 +136,15 @@ class ChainVertex : public Vertex
 		inline unsigned short get_interfaces_no() {
 			return ( this->entry_interfaces.size() + this->chain_interfaces.size() );
 		}
-		
+
 		inline unsigned short get_entry_interfaces_no() {
 			return this->entry_interfaces.size();
 		}
-		
+
 		inline unsigned short get_chain_interfaces_no() {
 			return this->chain_interfaces.size();
 		}
-		
+
 		inline void add_entry_interface_key(std::string iface) {
 			if ( this->entry_interfaces.find(iface) == this->entry_interfaces.end() )
 				this->entry_interfaces[iface] = "";
@@ -180,7 +180,7 @@ class ChainVertex : public Vertex
 			// Otherwise, return its value
 			return this->chain_interfaces[iface];
 		}
-		
+
 		inline std::string get_entry_interface(std::string iface) {
 			// If it does not exist
 			if ( this->entry_interfaces.find(iface) == this->entry_interfaces.end() )

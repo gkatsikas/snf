@@ -30,14 +30,14 @@ class ElementVertex : public Vertex
 		 * If true, we mark the elements that serve as interfaces between the NF Chain
 		 * and the NFV domains (outside world). It can only be assigned to elements that
 		 * belong to Input or Output VertexType.
-		 * If false and the element is an Input/Output, then this element serves as glue 
+		 * If false and the element is an Input/Output, then this element serves as glue
 		 * between two consecutive NFs.
 		 */
 		bool _is_endpoint;
 
 		/*
 		 * This pointer is only valid for Output Elements, with _is_endpoint=true.
-		 * It point to the first input element (e.g. FromDevice), of the next NF at the 
+		 * It point to the first input element (e.g. FromDevice), of the next NF at the
 		 * correct interface.
 		 */
 		ElementVertex* _jump_to_next_nf;
@@ -52,7 +52,7 @@ class ElementVertex : public Vertex
 		 */
 		bool   is_endpoint (void);
 		void   set_endpoint(bool ep);
-		
+
 		ElementVertex* jump_to_next_nf(void);
 		void set_jump_element(ElementVertex* j);
 
@@ -79,7 +79,7 @@ class NFGraph : public Graph
 		 * Add u into graph along with all its discovered neighbours
 		 */
 		void add_vertex_and_neighbours(ElementVertex* u);
-		
+
 		/*
 		 * Get subset of vertices based on several characteristics.
 		 */

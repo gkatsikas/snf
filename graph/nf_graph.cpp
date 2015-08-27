@@ -15,8 +15,8 @@
 //   2. Processing
 //   3. Output
 ElementVertex::ElementVertex(Element* element, std::string name,
-				unsigned short pos) : 
-				Vertex(std::move(name), pos, VertexType::None), 
+				unsigned short pos) :
+				Vertex(std::move(name), pos, VertexType::None),
 				click_element(std::move(element)) {
 	if ( element->ninputs() == 0 )
 		this->type = Input;
@@ -39,7 +39,7 @@ ElementVertex& ElementVertex::operator=(ElementVertex& ev) {
 bool ElementVertex::is_endpoint(void) {
 	if ( this->type == Processing )
 		return false;
-	else 
+	else
 		return this->_is_endpoint;
 }
 

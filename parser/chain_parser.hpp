@@ -29,24 +29,24 @@ class ChainParser {
 
 		/*
 		 * Maps the position of a NF in the chain with a Click Router object.
-		 * 
+		 *
 		 * The key is the position of the NF in the chain.
 		 */
 		NF_Map<Router*> nf_configuration;
 
 		/*
 		 * One DAG of Click elements per NF in the chain.
-		 * 
+		 *
 		 * The key is the position of the NF in the chain.
 		 */
 		NF_Map<NFGraph*> nf_dag;
 
 		/*
 		 * This is the outcome of the concatenated NFs.
-		 * Bigger graphs are composed the number of which depends on all 
+		 * Bigger graphs are composed the number of which depends on all
 		 * the possible directions of the traffic.
-		 * 
-		 * The key is the domain suffix (incremental ID generated when the 
+		 *
+		 * The key is the domain suffix (incremental ID generated when the
 		 * property file was read).
 		 */
 		NF_Map<NFGraph*> big_dag;
@@ -71,13 +71,13 @@ class ChainParser {
 
 		/*
 		 * After loading the Click elements into the DAG, we go back to the loaded topology and NFs (from property file)
-		 * and verify whether the interfaces are correct. The property file interfaces must be included int the actual 
+		 * and verify whether the interfaces are correct. The property file interfaces must be included int the actual
 		 * Click configuration, otherwise the synthesizer cannot assess the connectivity between two NFs.
 		 */
 		 short verify_nf_configuration(std::string nf_name, unsigned short position);
 
 		/*
-		 * Given a position in the chain and an output interface, we want to find the Click element of the next NF in 
+		 * Given a position in the chain and an output interface, we want to find the Click element of the next NF in
 		 * the chain. Essentially this function is a glue between two connected NFs.
 		 */
 		ElementVertex* find_input_element_of_next_nf(unsigned short position, std::string interface);
@@ -102,7 +102,7 @@ class ChainParser {
 		 * of input NFs that compose the chain.
 		 */
 		short load_nf_configurations(void);
-		
+
 		/*
 		 * B.
 		 * After passing the loading step above, we are ready to chain these configurations

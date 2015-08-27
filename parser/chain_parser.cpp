@@ -84,10 +84,10 @@ short ChainParser::load_nf_configurations(void) {
  * into one big Click graph so as to start the synthesis.
  */
 short ChainParser::chain_nf_configurations(void) {
-	
+
 	log << "" << std::endl;
 	log << info << "Chaining all Click Configurations..." << def << std::endl;
-	
+
 	return SUCCESS;
 }
 
@@ -96,7 +96,7 @@ short ChainParser::chain_nf_configurations(void) {
  * It uses built-in Click methods and data structures linked with this file.
  */
 short ChainParser::load_nf(std::string nf_name, std::string nf_source, unsigned short position) {
-	
+
 	log << info << "Loading Click Configuration for " << nf_name << ": " << nf_source << def << std::endl;
 
 	Router* router = input_a_click_configuration(nf_source.c_str());
@@ -164,8 +164,8 @@ short ChainParser::verify_nf_configuration(std::string nf_name, unsigned short p
 		return NO_MEM_AVAILABLE;
 	}
 
-	// Get the references of the two graphs: 
-	//  1. The Chain graph that comprises of connected NFs. 
+	// Get the references of the two graphs:
+	//  1. The Chain graph that comprises of connected NFs.
 	//     From this graph we need the vertex of this particular NF.
 	//  2. The NF graph that comprises of Click elements
 	Graph*   chain_graph = this->chain_graph->get_chain();
@@ -179,7 +179,7 @@ short ChainParser::verify_nf_configuration(std::string nf_name, unsigned short p
 	NFGraph* nf_graph    = this->nf_dag[position];
 	if ( nf_graph == NULL )
 		return NO_MEM_AVAILABLE;
-	
+
 	Vector<ElementVertex*> input_elements      = nf_graph->get_vertices_by_stage(VertexType::Input);
 	//Vector<ElementVertex*> processing_elements = nf_graph->get_vertices_by_stage(VertexType::Processing);
 	Vector<ElementVertex*> output_elements     = nf_graph->get_vertices_by_stage(VertexType::Output);
@@ -221,12 +221,12 @@ short ChainParser::verify_nf_configuration(std::string nf_name, unsigned short p
 				//log << "\t Element  Type: " << type_str      << def << std::endl;
 				//log << "\t Configuration: " << configuration << def << std::endl;
 				//log << "\t     Interface: " << interface     << def << std::endl;
-				
+
 				// This is an entry interface that connects the chain to a domain
 				if ( this_nf->get_entry_interface(interface) != "NULL" ) {
 					//log << "\tInterface Type: ENTRY" << def << std::endl;
 					el->set_endpoint(true);
-					
+
 					// Count only this side of the interface (not the ToDevice counterpart).
 					if ( type == VertexType::Input )
 						seen_entry_ifaces++;
@@ -234,11 +234,11 @@ short ChainParser::verify_nf_configuration(std::string nf_name, unsigned short p
 				// This is an internal interface that connects the NF with a subsequent NF
 				else if ( this_nf->get_chain_interface(interface) != "NULL" ) {
 					//log << "\tInterface Type: CHAIN" << def << std::endl;
-					
+
 					// Count only this side of the interface (not the ToDevice counterpart).
 					if ( type == VertexType::Input )
 						seen_chain_ifaces++;
-					
+
 					// ---> IMPORNTANT
 					// For Output chain inerfaces (e.g. ToDevice(eth1) in NF_1[eth1] -> NF_2)
 					// set a pointer to the first input element of the next NF.
@@ -255,23 +255,23 @@ short ChainParser::verify_nf_configuration(std::string nf_name, unsigned short p
 			}
 		}
 	}
-	
+
 	unsigned short all_ifaces_no = this_nf->get_interfaces_no();
-	
+
 	// This means that here is an error in the definition of the chain in the property file.
 	if ( seen_entry_ifaces+seen_chain_ifaces > all_ifaces_no ) {
 		log << error << "Click configuration for NF " << position << " is incompatible with the chain setup in the property file." << def << std::endl;
 		log << error << "Please check the interfaces." << def << std::endl;
 		return CLICK_PARSING_PROBLEM;
 	}
-	
+
 	// I must be able to see all the entry interfaces of the property file in my Click configuration.
 	if ( seen_entry_ifaces != this_nf->get_entry_interfaces_no() ) {
 		log << error << "Click configuration for NF " << position << " is incompatible with the chain setup in the property file." << def << std::endl;
 		log << error << "Please check the entry interfaces -> [ENTRY_POINTS] in the property file." << def << std::endl;
 		return CLICK_PARSING_PROBLEM;
 	}
-	
+
 	// If I see fewer chain interfaces than exist in the property file, there is a problem
 	if ( seen_chain_ifaces < this_nf->get_chain_interfaces_no() ) {
 		log << error << "Click configuration for NF " << position << " is incompatible with the chain setup in the property file." << def << std::endl;
@@ -285,7 +285,7 @@ short ChainParser::verify_nf_configuration(std::string nf_name, unsigned short p
 }
 
 /*
- * Given a position in the chain and an output interface, we want to find the Click element of the next NF in 
+ * Given a position in the chain and an output interface, we want to find the Click element of the next NF in
  * the chain. Essentially this function is a glue between two connected NFs.
  */
 ElementVertex* ChainParser::find_input_element_of_next_nf(unsigned short position, std::string interface) {
@@ -308,11 +308,11 @@ ElementVertex* ChainParser::find_input_element_of_next_nf(unsigned short positio
 
 	// Search for 
 	for ( auto& child : chain_graph->get_vertex_children(this_nf) ) {
-		
+
 		ChainVertex* cv_child = (ChainVertex*) child;
-		
+
 		if ( cv_child->get_chain_interface(interface) != "NULL" ) {
-			
+
 		}
 	}
 

@@ -56,7 +56,7 @@ class Graph
 		 */
 		void                   add_vertex(Vertex* u);
 		void                   add_edge  (Vertex* u, Vertex* v);
-		
+
 		void                   find_in_degrees(void);
 		unsigned short         get_vertices_no(void);
 		int                    get_in_degree(Vertex* u);
@@ -82,7 +82,7 @@ class Graph
 		bool vertex_exists(Vertex* u);
 		std::vector<Vertex*> get_vertex_order(void);
 		std::vector<Vertex*> topological_sort(void);
-		
+
 		/*
 		 * ATTENTION: Under development (Use with own risk :p)
 		 */
