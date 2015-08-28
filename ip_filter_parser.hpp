@@ -8,6 +8,7 @@ static const int prim_start = __LINE__;
 	FOO(SRC) \
 	FOO(DST) \
 	FOO(TCP) \
+	FOO(ICMP) \
 	FOO(OR) \
 	FOO(AND)
 static const int prim_end = __LINE__;
@@ -28,6 +29,7 @@ static const int opt_start = __LINE__;
 	FOO(IP_UNFRAG) \
 	FOO(TCP_OPT) \
 	FOO(TCP_WIN) \
+	FOO(ICMP_TYPE) \
 	FOO(SRC_HOST) \
 	FOO(SRC_NET) \
 	FOO(SRC_PORT) \
@@ -65,6 +67,7 @@ PacketFilter filter_from_ip_option (Option option, std::string& arg);
 PacketFilter filter_from_src_option (Option option, std::string& arg);
 PacketFilter filter_from_dst_option (Option option, std::string& arg);
 PacketFilter filter_from_tcp_option (Option option, std::string& arg);
+PacketFilter filter_from_icmp_option(Option option, std::string& arg);
 
 Primitive find_primitive_from_string (std::string str);
 
