@@ -127,7 +127,6 @@ short ChainParser::test_chain_nf(void) {
 
 		log << info << "Network Function: " << cv->get_name() << def << std::endl;
 
-		std::vector<Vertex*> sorted;
 		Graph::VertexMap<Colour> visited;
 
 		// Get all the input entry points of this NF (if any)
@@ -146,25 +145,11 @@ short ChainParser::test_chain_nf(void) {
 
 			// Not visited, go DFS
 			//dfs(endpoint, colour, nf_graph->get_adjacency_list(), visited, sorted);
-			dfs(endpoint, colour, nf_graph->get_adjacency_list(), visited, sorted);
+			dfs_and_build_tc(endpoint, colour, nf_graph->get_adjacency_list(), visited);
 
 			log << "" << def << std::endl;
 		}
 
-		// You have all the vertices starting from this entry point
-		// You have to reverse the order though
-		std::reverse(sorted.begin(), sorted.end());
-		for ( auto& node : sorted ) {
-			log << "\t\t Found Element: " << node->get_name() << def << std::endl;
-			
-			
-			/*
-			 * DO YOUR STUFF
-			 */
-			
-			
-		}
-		
 		log << "" << std::endl;
 	}
 	log << info << "==============================================================================" << def << std::endl;

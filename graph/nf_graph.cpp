@@ -214,6 +214,7 @@ std::vector<std::shared_ptr<ElementVertex>> NFGraph::get_vertex_children(Element
 	return children;
 }
 
+/*
 void enhanced_dfs(NFGraph* graph, ElementVertex* vertex, Colour& colour, const Graph::AdjacencyList& adjacency_list,
 		Graph::VertexMap<Colour>& visited, std::vector<ElementVertex*>& sorted) {
 
@@ -252,4 +253,34 @@ void enhanced_dfs(NFGraph* graph, ElementVertex* vertex, Colour& colour, const G
 	// Visited nodes are in black list :p
 	colour = Black;
 	sorted.push_back(vertex);
+}
+*/
+
+/*
+ * Recursive DFS functions to visit all vertices from 'vertex'
+ */
+void dfs_and_build_tc(ElementVertex* vertex, Colour& colour, const Graph::AdjacencyList& adjacency_list,
+						Graph::VertexMap<Colour>& visited) {
+
+	Logger log(__FILE__);
+
+	colour = Grey;
+
+	for ( auto& neighbour : adjacency_list.at(vertex) ) {
+		ElementVertex* ev = (ElementVertex*) neighbour;
+		Colour& neighbour_colour = visited[ev];
+
+		log << "\t\Child: " << ev->get_name() << def << std::endl;
+
+		// Unvisited node --> recursion
+		if (neighbour_colour == White) {
+			dfs_and_build_tc(ev, neighbour_colour, adjacency_list, visited);
+		}
+		// Ambiguous color denotes a cycle!
+		else if (neighbour_colour == Grey)
+			throw std::logic_error("Cycle in graph");
+	}
+
+	// Visited nodes are in black list :p
+	colour = Black;
 }

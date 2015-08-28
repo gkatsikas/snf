@@ -98,6 +98,13 @@ class NFGraph : public Graph
 		std::vector<std::shared_ptr<ElementVertex>> get_vertex_children(ElementVertex* u);
 };
 
+void dfs_and_build_tc(
+	ElementVertex* vertex,
+	Colour& colour,
+	const Graph::AdjacencyList& adjacency_list,
+	Graph::VertexMap<Colour>& visited
+);
+
 void enhanced_dfs(
 	NFGraph* graph, 
 	ElementVertex* vertex,
