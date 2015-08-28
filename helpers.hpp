@@ -138,6 +138,19 @@ struct measure
     }
 };
 
+
+/*
+ * Vector manipulation functions.
+ * Concatenate vectors v1 and v2.
+ */ 
+template<typename T>
+std::vector<T> concatenate_two_vectors(std::vector<T>& v1, const std::vector<T>& v2) {
+	std::vector<T> outcome(v1);
+
+	for (auto& e : v2)
+		outcome.push_back(e);
+};
+
 /*
  * Generic method to delete a pointer of any type (T) from a data structure.
  * Usage: std::for_each (data_str.begin (), data_str.end (), deleter<T>());

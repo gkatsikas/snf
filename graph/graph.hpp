@@ -101,14 +101,4 @@ void dfs(
 	std::vector<Vertex*>& sorted
 );
 
-/*
- * Iterative DFS function to visit all vertices.
- */
-void dfs_iterative(
-	Vertex* vertex,
-	const Graph::AdjacencyList& adjacency_list,
-	Graph::VertexMap<Colour>& visited,
-	std::stack<Vertex*>& sorted
-);
-
 #endif

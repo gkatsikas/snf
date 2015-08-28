@@ -42,16 +42,6 @@ class ChainParser {
 		NF_Map<NFGraph*> nf_dag;
 
 		/*
-		 * This is the outcome of the concatenated NFs.
-		 * Bigger graphs are composed the number of which depends on all
-		 * the possible directions of the traffic.
-		 *
-		 * The key is the domain suffix (incremental ID generated when the
-		 * property file was read).
-		 */
-		NF_Map<NFGraph*> big_dag;
-
-		/*
 		 * Logger instance
 		 */
 		Logger log;
@@ -74,13 +64,13 @@ class ChainParser {
 		 * and verify whether the interfaces are correct. The property file interfaces must be included int the actual
 		 * Click configuration, otherwise the synthesizer cannot assess the connectivity between two NFs.
 		 */
-		 short verify_nf_configuration(std::string nf_name, unsigned short position);
+		 short verify_and_connect_nfs(std::string nf_name, unsigned short position);
 
 		/*
 		 * Given a position in the chain and an output interface, we want to find the Click element of the next NF in
 		 * the chain. Essentially this function is a glue between two connected NFs.
 		 */
-		ElementVertex* find_input_element_of_next_nf(unsigned short position, std::string interface);
+		ElementVertex* find_input_element_of_nf(NFGraph* next_nf_graph, std::string target_interface);
 
 		/*
 		 * Visits recursively the Click DAG and returns the vector of Elements it contains
@@ -109,6 +99,12 @@ class ChainParser {
 		 * into one big Click graph so as to start the synthesis.
 		 */
 		short chain_nf_configurations(void);
+
+		/*
+		 * C.
+		 * Test whether the chaining is correct
+		 */
+		short test_chain_nf(void);
 };
 
 #endif

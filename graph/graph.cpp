@@ -142,7 +142,7 @@ Vertex* Graph::get_vertex_by_name(std::string& name) {
 	}
 
 	for (auto& pair : this->vertices) {
-		if ( pair.first->get_name().compare(name) )
+		if ( pair.first->get_name() == name )
 			return pair.first;
 	}
 
@@ -345,14 +345,16 @@ std::vector<std::vector<Vertex*>> Graph::all_paths(void) {
 }
 
 /*
- * Recursive DFS function to visit all vertices from 'vertex'
+ * Recursive DFS functions to visit all vertices from 'vertex'
  */
 void dfs(Vertex* vertex, Colour& colour, const Graph::AdjacencyList& adjacency_list,
 		Graph::VertexMap<Colour>& visited, std::vector<Vertex*>& sorted) {
 
+	Logger log(__FILE__);
+
 	colour = Grey;
 
-	for (Vertex* neighbour : adjacency_list.at(vertex)) {
+	for ( Vertex* neighbour : adjacency_list.at(vertex) ) {
 		Colour& neighbour_colour = visited[neighbour];
 
 		// Unvisited node --> recursion
@@ -367,32 +369,4 @@ void dfs(Vertex* vertex, Colour& colour, const Graph::AdjacencyList& adjacency_l
 	// Visited nodes are in black list :p
 	colour = Black;
 	sorted.push_back(vertex);
-}
-
-/*
- * ATTENTION: Unstable/Buggy method
- * Iterative DFS function to visit all vertices from 'vertex'
- */
-void dfs_iterative(Vertex* vertex, const Graph::AdjacencyList& adjacency_list,
-		Graph::VertexMap<Colour>& visited, std::stack<Vertex*>& sorted) {
-
-	sorted.push(vertex);
-
-	while ( !sorted.empty() ) {
-		// Get and delete
-		Vertex* u = sorted.top();
-		sorted.pop();
-
-		// Get the label
-		Colour& neighbour_colour = visited[u];
-
-		// Not labeled as discovered
-		if ( neighbour_colour == White ) {
-			visited[u] = Black;
-
-			for (Vertex* v : adjacency_list.at(vertex)) {
-				sorted.push(v);
-			}
-		}
-	}
 }

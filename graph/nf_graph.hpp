@@ -36,11 +36,11 @@ class ElementVertex : public Vertex
 		bool _is_endpoint;
 
 		/*
-		 * This pointer is only valid for Output Elements, with _is_endpoint=true.
-		 * It point to the first input element (e.g. FromDevice), of the next NF at the
-		 * correct interface.
+		 * This set of pointers is only valid for certain Output Elements, with _is_endpoint=false.
+		 * It contains references to the first input element(s) (e.g. FromDevice), of the
+		 * next NF(s).
 		 */
-		ElementVertex* _jump_to_next_nf;
+		std::vector<std::shared_ptr<ElementVertex>> _jump_to_next_nf;
 
 	public:
 		ElementVertex(Element* element, std::string name, unsigned short pos);
@@ -53,8 +53,8 @@ class ElementVertex : public Vertex
 		bool   is_endpoint (void);
 		void   set_endpoint(bool ep);
 
-		ElementVertex* jump_to_next_nf(void);
-		void set_jump_element(ElementVertex* j);
+		std::vector<std::shared_ptr<ElementVertex>> get_jump_to_next_nfs(void);
+		void add_jump_element(ElementVertex* j);
 
 		inline std::string get_class(void)         const { return this->click_element->class_name(); };
 		inline std::string get_configuration(void) const { return this->click_element->router()->econfiguration(this->get_position()).c_str(); };
@@ -83,9 +83,28 @@ class NFGraph : public Graph
 		/*
 		 * Get subset of vertices based on several characteristics.
 		 */
-		Vector<ElementVertex*> get_vertices_by_stage(VertexType st);
+		Vector<ElementVertex*> get_vertices_by_stage(VertexType t);
 		ElementVertex*         get_vertex_by_click_element(Element* e);
-		Vector<ElementVertex*> get_endpoint_vertices(void);
+		Vector<ElementVertex*> get_all_endpoint_vertices(void);
+		Vector<ElementVertex*> get_endpoint_vertices(VertexType t);
+
+		/*
+		 * NF graph is not ordinary DAG. Not all the leaf nodes (the ones without children) are heirless.
+		 * It all depends on the placement of an NF in the chain. If there is another NF in the chain
+		 * after this one, the output node contains pointers to the appropriate input elements of the
+		 * successive NF. Thus, only endpoint (interfaces that connect the chain with external domains)
+		 * output nodes do not have children.
+		 */
+		std::vector<std::shared_ptr<ElementVertex>> get_vertex_children(ElementVertex* u);
 };
+
+void enhanced_dfs(
+	NFGraph* graph, 
+	ElementVertex* vertex,
+	Colour& colour,
+	const Graph::AdjacencyList& adjacency_list,
+	Graph::VertexMap<Colour>& visited,
+	std::vector<ElementVertex*>& sorted
+);
 
 #endif

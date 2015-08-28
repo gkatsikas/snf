@@ -72,6 +72,11 @@ class ParserConfiguration : public GenericConfiguration
 		 * Print error messages regarding the property file
 		 */
 		void usage(const std::string& message, const std::string& usage);
+
+		/*
+		 * Print the loaded configuration
+		 */
+		void print_loaded_property_status(void);
 };
 
 #endif

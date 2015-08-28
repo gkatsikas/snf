@@ -79,6 +79,11 @@ int main(int argc, char** argv) {
 		if ( (exit_status=parser->chain_nf_configurations()) != SUCCESS ) {
 			exit(exit_status);
 		}
+
+		// 3. Test the chain
+		if ( (exit_status=parser->test_chain_nf()) != SUCCESS ) {
+			exit(exit_status);
+		}
 	}
 	) << "  microseconds" << def << std::endl;
 	log << info << "+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+" << def << std::endl;

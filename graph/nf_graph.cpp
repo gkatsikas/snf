@@ -17,21 +17,22 @@
 ElementVertex::ElementVertex(Element* element, std::string name,
 				unsigned short pos) :
 				Vertex(std::move(name), pos, VertexType::None),
-				click_element(std::move(element)) {
+				click_element(element) {
 	if ( element->ninputs() == 0 )
 		this->type = Input;
 	else if ( element->noutputs() == 0 )
 		this->type = Output;
-	else {
+	else
 		this->type = Processing;
-		this->_is_endpoint = false;
-	}
+	this->_is_endpoint = false;
 }
 
 ElementVertex& ElementVertex::operator=(ElementVertex& ev) {
 	if ( this != &ev ) {
 		Vertex::operator=(ev);
+		this->_is_endpoint  = ev.is_endpoint();
 		this->click_element = ev.get_click_element();
+		this->_jump_to_next_nf = ev._jump_to_next_nf;
 	}
 	return *this;
 }
@@ -51,16 +52,13 @@ void ElementVertex::set_endpoint(bool ep) {
 	this->_is_endpoint = ep;
 }
 
-ElementVertex* ElementVertex::jump_to_next_nf(void) {
-	if ( (this->type == Output) && this->is_endpoint() )
-		return this->_jump_to_next_nf;
-	return NULL;
+std::vector<std::shared_ptr<ElementVertex>> ElementVertex::get_jump_to_next_nfs(void) {
+	return this->_jump_to_next_nf;
 }
 
-void ElementVertex::set_jump_element(ElementVertex* j) {
-	if ( (this->type == Output) && this->is_endpoint() )
-		this->_jump_to_next_nf = j;
-	this->_jump_to_next_nf = NULL;
+void ElementVertex::add_jump_element(ElementVertex* j) {
+	if ( (this->type == Output) && !this->is_endpoint() )
+		this->_jump_to_next_nf.push_back((std::shared_ptr<ElementVertex>)j);
 }
 
 void ElementVertex::print_info(void) {
@@ -172,7 +170,7 @@ ElementVertex* NFGraph::get_vertex_by_click_element(Element* e) {
 	return NULL;
 }
 
-Vector<ElementVertex*> NFGraph::get_endpoint_vertices(void) {
+Vector<ElementVertex*> NFGraph::get_all_endpoint_vertices(void) {
 	Vector<ElementVertex*> endpoints;
 
 	for (auto& pair : this->vertices) {
@@ -181,4 +179,77 @@ Vector<ElementVertex*> NFGraph::get_endpoint_vertices(void) {
 			endpoints.push_back(ev);
 	}
 	return endpoints;
+}
+
+Vector<ElementVertex*> NFGraph::get_endpoint_vertices(VertexType t) {
+	Vector<ElementVertex*> endpoints;
+
+	for (auto& pair : this->vertices) {
+		ElementVertex* ev = (ElementVertex*) pair.first;
+		if ( (ev->is_endpoint()) && (ev->get_type() == t) )
+			endpoints.push_back(ev);
+	}
+	return endpoints;
+}
+
+std::vector<std::shared_ptr<ElementVertex>> NFGraph::get_vertex_children(ElementVertex* u) {
+	std::vector<std::shared_ptr<ElementVertex>> children;
+
+	// Output nodes can be:
+	//  1. Endpoints (They are connected to external domains so they do not have children --> End of graph)
+	//  2. Normal output nodes ( They are connected to input elements of following NFs in the chain )
+	//  The data member _jump_to_next_nf will tell you the truth.
+	if ( u->get_type() == VertexType::Output ) {
+		log << "\tMpike: " << def << std::endl;
+		return u->get_jump_to_next_nfs();
+	}
+	// Input and Processing elements have a normal adjacency list
+	else {
+		for ( auto& v : this->get_adjacency_list().at(u) ) {
+			ElementVertex* ev = (ElementVertex*) v;
+			children.push_back( (std::shared_ptr<ElementVertex>)ev );
+		}
+	}
+
+	return children;
+}
+
+void enhanced_dfs(NFGraph* graph, ElementVertex* vertex, Colour& colour, const Graph::AdjacencyList& adjacency_list,
+		Graph::VertexMap<Colour>& visited, std::vector<ElementVertex*>& sorted) {
+
+	Logger log(__FILE__);
+
+	colour = Grey;
+	log << "\tMpike: " << def << std::endl;
+
+	std::vector<std::shared_ptr<ElementVertex>> list;
+	if ( (adjacency_list.at(vertex).size() == 0) && (!vertex->is_endpoint()) ) {
+		log << "\tOOOOOOOOOOOOOOOO: " << def << std::endl;
+		list = graph->get_vertex_children(vertex);
+	}
+	else {
+		for ( Vertex* neighbour : adjacency_list.at(vertex) ) {
+			ElementVertex* ev = (ElementVertex*) neighbour;
+			log << "\t\tNeighbour: " << ev->get_name() << def << std::endl;
+			list.push_back( (std::shared_ptr<ElementVertex>)ev );
+		}
+	}
+	
+	log << "\t\tKsekina For: " << def << std::endl;
+
+	for ( auto& neighbour : list ) {
+		Colour& neighbour_colour = visited[neighbour.get()];
+
+		// Unvisited node --> recursion
+		if (neighbour_colour == White) {
+			enhanced_dfs(graph, neighbour.get(), neighbour_colour, adjacency_list, visited, sorted);
+		}
+		// Ambiguous color denotes a cycle!
+		else if (neighbour_colour == Grey)
+			throw std::logic_error("Cycle in graph");
+	}
+
+	// Visited nodes are in black list :p
+	colour = Black;
+	sorted.push_back(vertex);
 }
