@@ -1,5 +1,5 @@
 /////////////////////////////////////////////////////////////////////////////
-//      Module: load_balancer-pc.click
+//      Module: router_3if.click
 // Description: Click implementation of an n-port (even number) 
 //              L4 PNAT (RFC 1631) + Load Balancer (across 2 servers) 
 //              with performance counters.
@@ -25,15 +25,15 @@ define(
 	$ipNet1      13.0.0.0/24,
 	$color1      2,
 
-	$iface1      eth2,
-	$macAddr1    60:00:00:00:00:01,
-	$ipAddr1     14.0.0.1,
-	$ipNetHost1  14.0.0.0/32,
-	$ipBcast1    14.0.0.255/32,
-	$ipNet1      14.0.0.0/24,
-	$color1      2,
+	$iface2      eth2,
+	$macAddr2    60:00:00:00:00:01,
+	$ipAddr2     14.0.0.1,
+	$ipNetHost2  14.0.0.0/32,
+	$ipBcast2    14.0.0.255/32,
+	$ipNet2      14.0.0.0/24,
+	$color2      2,
 
-	$gwAddr      13.0.0.2,
+	$gwIPAddr    13.0.0.2,
 	$gwPort      2,
 
 	$lbIPAddr0   13.0.0.2,
@@ -47,11 +47,11 @@ define(
 
 /////////////////////////////////////////////////////////////////////////////
 // Elements
-elementclass LoadBalancer {
+elementclass Router_3IF {
 	// Module's arguments
-	$dev0,   $iface0, $macAddr0,  $ipAddr0,   $ipNetHost0, $ipBcast0, $ipNet0, $color0,
-	$dev1,   $iface1, $macAddr1,  $ipAddr1,   $ipNetHost1, $ipBcast1, $ipNet1, $color1,
-	$dev2,   $iface3, $macAddr2,  $ipAddr2,   $ipNetHost2, $ipBcast2, $ipNet2, $color2,
+	$iface0, $macAddr0,  $ipAddr0,   $ipNetHost0, $ipBcast0, $ipNet0, $color0,
+	$iface1, $macAddr1,  $ipAddr1,   $ipNetHost1, $ipBcast1, $ipNet1, $color1,
+	$iface3, $macAddr2,  $ipAddr2,   $ipNetHost2, $ipBcast2, $ipNet2, $color2,
 	$gwIPAddr, $gwPort, $queueSize, $mtuSize, $lbIPAddr0, $lbIPAddr1 |
 
 	// Queues
@@ -66,7 +66,7 @@ elementclass LoadBalancer {
 	out1    :: ToDevice  ($iface1);
 	in2     :: FromDevice($iface2);
 	out2    :: ToDevice  ($iface2);
-	toLinux :: ToHost;
+	toLinux :: Discard;
 	
 	// ARP Querier
 	arpQuerier0   :: ARPQuerier($ipAddr0, $macAddr0);
@@ -101,14 +101,10 @@ elementclass LoadBalancer {
 	);
 
 	// Strip Ethernet header
-	strip0  :: Strip(14);
-	strip1  :: Strip(14);
-	strip2  :: Strip(14);
+	strip :: Strip(14);
 
 	// Check header's integrity
-	checkIPHeader0 :: CheckIPHeader;
-	checkIPHeader1 :: CheckIPHeader;
-	checkIPHeader2 :: CheckIPHeader;
+	checkIPHeader :: CheckIPHeader;
 
 	// Routing table
 	lookUp :: RadixIPLookup(
@@ -125,26 +121,6 @@ elementclass LoadBalancer {
 		$ipNet1      2,
 		$ipNet2      3,
 		0.0.0.0/0 $gwIPAddr $gwPort
-	);
-
-	// Classifies packets. Port 80 goes to LB
-	ipClassifier :: IPClassifier(
-		udp port 1234,            /* UDP packets */
-		-                         /* Unclassified packets are for me */
-	);
-
-	// Implements Round Robin Load Balancing across 3 servers
-	lb :: RoundRobinIPMapper(
-		pattern - - $lbIPAddr0 - 0 0,
-		pattern - - $lbIPAddr1 - 0 0
-	);
-
-	// Implements NAPT
-	ipRewriter :: IPRewriter(
-		lb,                                    /* UDP Packets from Internet go to Load Balancer */
-		drop,                                  /* Drop all other Packets from Internet          */
-		pattern $ipAddr0 1024-65535 - - 0 0,   /* Packets from Intranet change src IP and port  */
-		pattern $ipAddr0 1024-65535 - - 0 0,   /* Packets from Intranet change src IP and port  */
 	);
 
 	// Process the IP options field (mandatory based on RFC 791)
@@ -187,9 +163,9 @@ elementclass LoadBalancer {
 	classifier2[1] -> [1]arpQuerier2 -> queue2 -> out2;
 
 	// --> IP packets
-	classifier0[2] -> Paint($color0) -> strip0;
-	classifier1[2] -> Paint($color1) -> strip1;
-	classifier2[2] -> Paint($color2) -> strip2;
+	classifier0[2] -> Paint($color0) -> strip;
+	classifier1[2] -> Paint($color1) -> strip;
+	classifier2[2] -> Paint($color2) -> strip;
 
 	// --> Drop the rest
 	classifier0[3] -> Print(Dropped-If0) -> Discard;
@@ -197,30 +173,8 @@ elementclass LoadBalancer {
 	classifier2[3] -> Print(Dropped-If2) -> Discard;
 
 	// Packets coming from Intranet go to port 0 of Rewriter
-	strip0
-		-> checkIPHeader0
-		-> ipClassifier;
-
-	// Packets coming from Internet are first classified.
-	strip1
-		-> checkIPHeader1
-		-> [2]ipRewriter;
-
-	// Packets coming from Internet are first classified.
-	strip2
-		-> checkIPHeader2
-		-> [3]ipRewriter;
-
-	// UDP packets go to port 0 of Rewriter
-	ipClassifier[0]
-		-> [0]ipRewriter;
-
-	// The rest packets are dropped
-	ipClassifier[1]
-		-> [1]ipRewriter;
-
-	// Rewrite IP address for routing
-	ipRewriter
+	strip
+		-> checkIPHeader
 		-> GetIPAddress(16)
 		-> [0]lookUp;
 
@@ -265,14 +219,14 @@ elementclass LoadBalancer {
 /////////////////////////////////////////////////////////////////////////////
 // Scenario
 /////////////////////////////////////////////////////////////////////////////
-AddressInfo(dev0 $ipAddr0 $macAddr0);
-AddressInfo(dev1 $ipAddr1 $macAddr1);
-AddressInfo(dev2 $ipAddr2 $macAddr2);
+//AddressInfo(dev0 $ipAddr0 $macAddr0);
+//AddressInfo(dev1 $ipAddr1 $macAddr1);
+//AddressInfo(dev2 $ipAddr2 $macAddr2);
 
-load_balancer :: LoadBalancer(
-	dev0, $iface0, $macAddr0, $ipAddr0, $ipNetHost0, $ipBcast0, $ipNet0, $color0,
-	dev1, $iface1, $macAddr1, $ipAddr1, $ipNetHost1, $ipBcast1, $ipNet1, $color1,
-	dev2, $iface2, $macAddr2, $ipAddr2, $ipNetHost2, $ipBcast2, $ipNet2, $color2,
+router :: Router_3IF(
+	$iface0, $macAddr0, $ipAddr0, $ipNetHost0, $ipBcast0, $ipNet0, $color0,
+	$iface1, $macAddr1, $ipAddr1, $ipNetHost1, $ipBcast1, $ipNet1, $color1,
+	$iface2, $macAddr2, $ipAddr2, $ipNetHost2, $ipBcast2, $ipNet2, $color2,
 	$gwIPAddr, $gwPort, $queueSize, $mtuSize, $lbIPAddr0, $lbIPAddr1
 );
 /////////////////////////////////////////////////////////////////////////////

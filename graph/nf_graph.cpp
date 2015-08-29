@@ -10,21 +10,15 @@
 ////////////////////////////////////////////////////////////////////////
 // ElementVertex
 ////////////////////////////////////////////////////////////////////////
-// While constructing an Element, check to which category it belongs to:
-//   1. Input
-//   2. Processing
-//   3. Output
-ElementVertex::ElementVertex(Element* element, std::string name,
-				unsigned short pos) :
-				Vertex(std::move(name), pos, VertexType::None),
-				click_element(element) {
+ElementVertex::ElementVertex(Element* element, std::string name, unsigned short pos) :
+				Vertex(std::move(name), pos, VertexType::None), 
+				click_element(element), _is_endpoint(false) {
 	if ( element->ninputs() == 0 )
 		this->type = Input;
 	else if ( element->noutputs() == 0 )
 		this->type = Output;
 	else
 		this->type = Processing;
-	this->_is_endpoint = false;
 }
 
 ElementVertex& ElementVertex::operator=(ElementVertex& ev) {
@@ -32,7 +26,7 @@ ElementVertex& ElementVertex::operator=(ElementVertex& ev) {
 		Vertex::operator=(ev);
 		this->_is_endpoint  = ev.is_endpoint();
 		this->click_element = ev.get_click_element();
-		this->_jump_to_next_nf = ev._jump_to_next_nf;
+		this->glue = ev.glue;
 	}
 	return *this;
 }
@@ -52,20 +46,15 @@ void ElementVertex::set_endpoint(bool ep) {
 	this->_is_endpoint = ep;
 }
 
-std::vector<std::shared_ptr<ElementVertex>> ElementVertex::get_jump_to_next_nfs(void) {
-	return this->_jump_to_next_nf;
-}
-
-void ElementVertex::add_jump_element(ElementVertex* j) {
-	if ( (this->type == Output) && !this->is_endpoint() )
-		this->_jump_to_next_nf.push_back((std::shared_ptr<ElementVertex>)j);
-}
-
 void ElementVertex::print_info(void) {
 	log << info << "===============================================" << def << std::endl;
 	Vertex::print_info();
 	log << info << "===         Stage: " << this->type               << def << std::endl;
 	log << info << "=== Click Element: " << this->click_element->class_name() << def << std::endl;
+	log << info << "===       Enpoint: " << std::string(this->is_endpoint() ? "True" : "False") << def << std::endl;
+	if ( this->is_endpoint() )
+		log << info << "===         Stage: " << this->type               << def << std::endl;
+		log << info << "===  Next NF Info: [Pos " << this->glue.first << ", Iface  " << this->glue.second << "]" << def << std::endl;
 	log << info << "===============================================" << def << std::endl;
 }
 
@@ -192,7 +181,7 @@ Vector<ElementVertex*> NFGraph::get_endpoint_vertices(VertexType t) {
 	return endpoints;
 }
 
-std::vector<std::shared_ptr<ElementVertex>> NFGraph::get_vertex_children(ElementVertex* u) {
+/*std::vector<std::shared_ptr<ElementVertex>> NFGraph::get_vertex_children(ElementVertex* u) {
 	std::vector<std::shared_ptr<ElementVertex>> children;
 
 	// Output nodes can be:
@@ -212,75 +201,4 @@ std::vector<std::shared_ptr<ElementVertex>> NFGraph::get_vertex_children(Element
 	}
 
 	return children;
-}
-
-/*
-void enhanced_dfs(NFGraph* graph, ElementVertex* vertex, Colour& colour, const Graph::AdjacencyList& adjacency_list,
-		Graph::VertexMap<Colour>& visited, std::vector<ElementVertex*>& sorted) {
-
-	Logger log(__FILE__);
-
-	colour = Grey;
-	log << "\tMpike: " << def << std::endl;
-
-	std::vector<std::shared_ptr<ElementVertex>> list;
-	if ( (adjacency_list.at(vertex).size() == 0) && (!vertex->is_endpoint()) ) {
-		log << "\tOOOOOOOOOOOOOOOO: " << def << std::endl;
-		list = graph->get_vertex_children(vertex);
-	}
-	else {
-		for ( Vertex* neighbour : adjacency_list.at(vertex) ) {
-			ElementVertex* ev = (ElementVertex*) neighbour;
-			log << "\t\tNeighbour: " << ev->get_name() << def << std::endl;
-			list.push_back( (std::shared_ptr<ElementVertex>)ev );
-		}
-	}
-	
-	log << "\t\tKsekina For: " << def << std::endl;
-
-	for ( auto& neighbour : list ) {
-		Colour& neighbour_colour = visited[neighbour.get()];
-
-		// Unvisited node --> recursion
-		if (neighbour_colour == White) {
-			enhanced_dfs(graph, neighbour.get(), neighbour_colour, adjacency_list, visited, sorted);
-		}
-		// Ambiguous color denotes a cycle!
-		else if (neighbour_colour == Grey)
-			throw std::logic_error("Cycle in graph");
-	}
-
-	// Visited nodes are in black list :p
-	colour = Black;
-	sorted.push_back(vertex);
-}
-*/
-
-/*
- * Recursive DFS functions to visit all vertices from 'vertex'
- */
-void dfs_and_build_tc(ElementVertex* vertex, Colour& colour, const Graph::AdjacencyList& adjacency_list,
-						Graph::VertexMap<Colour>& visited) {
-
-	Logger log(__FILE__);
-
-	colour = Grey;
-
-	for ( auto& neighbour : adjacency_list.at(vertex) ) {
-		ElementVertex* ev = (ElementVertex*) neighbour;
-		Colour& neighbour_colour = visited[ev];
-
-		log << "\t\Child: " << ev->get_name() << def << std::endl;
-
-		// Unvisited node --> recursion
-		if (neighbour_colour == White) {
-			dfs_and_build_tc(ev, neighbour_colour, adjacency_list, visited);
-		}
-		// Ambiguous color denotes a cycle!
-		else if (neighbour_colour == Grey)
-			throw std::logic_error("Cycle in graph");
-	}
-
-	// Visited nodes are in black list :p
-	colour = Black;
-}
+}*/

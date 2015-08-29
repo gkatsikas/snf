@@ -10,7 +10,7 @@ NF_3 = nf_repo/flat_router_2if.click
 NF_4 = nf_repo/flat_router_2if.click
 
 #NF_1 = nf_repo/router_2if.click
-#NF_2 = nf_repo/router_2if.click
+#NF_2 = nf_repo/router_3if.click
 #NF_3 = nf_repo/router_2if.click
 #NF_4 = nf_repo/router_2if.click
 

@@ -94,6 +94,7 @@ const short INVALID_NF_CHAIN_LENGTH  = -35;
 const short CHAIN_PARSING_PROBLEM    = -36;
 const short NF_CHAIN_NOT_ACYCLIC     = -37;
 const short CLICK_PARSING_PROBLEM    = -38;
+const short CHAIN_SYNTHESIS_PROBLEM  = -39;
 
 // Protocol Management
 const short INVALID_PROTOCOL         = -40;

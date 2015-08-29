@@ -37,7 +37,7 @@ class GenericConfiguration
 		/*
 		 * Load the property file (Abstract method)
 		 */
-		virtual void load_property_file(void) = 0;
+		virtual short load_property_file(void) = 0;
 
 		/*
 		 * Helper methods to read the property file

@@ -4,21 +4,11 @@
 // Description: Bootstraps the NF Synthesizer
 //============================================================================
 
-#include <stack>
-#include <string>
-#include <cstdlib>
-#include <iostream>
-
-#include "helpers.hpp"
-#include "click_tree.hpp"
-#include "click_element.hpp"
 #include "logger/logger.hpp"
-#include "output_class.hpp"
-#include "graph/graph.hpp"
-#include "parser/chain_parser.hpp"
-#include "configuration/parser_configuration.hpp"
+#include "synthesis/synthesizer.hpp"
+//#include "parser/chain_parser.hpp"
+//#include "configuration/parser_configuration.hpp"
 
-void      test_click_tree(void);
 short int parseArguments (int cmd_args_no, char** cmd_args, std::string* property_file);
 
 int main(int argc, char** argv) {
@@ -44,7 +34,10 @@ int main(int argc, char** argv) {
 		log << info << "Loading property file... " << def << std::endl;
 		pcf = new ParserConfiguration(property_file);
 		log << "\tProperty file: " << property_file << def << std::endl;
-		pcf->load_property_file();
+		if ( (exit_status=pcf->load_property_file()) != SUCCESS ) {
+			delete pcf;
+			exit(exit_status);
+		}
 		pcf->get_chain()->print_vertex_order();
 		pcf->get_chain_domains()->print_vertex_order();
 	}
@@ -63,25 +56,51 @@ int main(int argc, char** argv) {
 	{
 		log << "Parsing the chain of Network Functions... " << def << std::endl;
 		try {
-			parser = new ChainParser(pcf);
+			parser = new ChainParser(std::move(pcf));
 		}
 		catch (const std::exception& e) {
 			log << error << "|--> " << e.what() << def << std::endl;
-			exit(INVALID_NF_CHAIN_LENGTH);
+			delete pcf;
+			exit(CHAIN_PARSING_PROBLEM);
 		}
 
 		// 1. Load and verify all the Click configuration of the chain
 		if ( (exit_status=parser->load_nf_configurations()) != SUCCESS ) {
+			delete parser;
 			exit(exit_status);
 		}
 
-		// 2. Compose a Big graph of Click elements ready to be synthesized
+		// 2. Link the edges of all NF DAGs so as to prepare the Traffic Class Builder
 		if ( (exit_status=parser->chain_nf_configurations()) != SUCCESS ) {
+			delete parser;
 			exit(exit_status);
 		}
+	}
+	) << "  microseconds" << def << std::endl;
+	log << info << "+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+" << def << std::endl;
+	std::cout << std::endl;
+	///////////////////////////////////////////////////////////////////////////////////////////
 
-		// 3. Test the chain
-		if ( (exit_status=parser->test_chain_nf()) != SUCCESS ) {
+	/////////////////////////// Build Traffic Classes and Synthesize //////////////////////////
+	Synthesizer* synthesizer = NULL;
+
+	std::cout << std::endl;
+	log << info << "+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+" << def << std::endl;
+	log << info << measure<>::execution
+	( [&]()
+	{
+		log << info << "NF Synthesizer... " << def << std::endl;
+		try {
+			synthesizer = new Synthesizer(std::move(parser));
+		}
+		catch (const std::exception& e) {
+			log << error << "|--> " << e.what() << def << std::endl;
+			delete parser;
+			exit(CHAIN_SYNTHESIS_PROBLEM);
+		}
+
+		if ( (exit_status=synthesizer->build_traffic_classes()) != SUCCESS ) {
+			delete synthesizer;
 			exit(exit_status);
 		}
 	}
@@ -91,55 +110,28 @@ int main(int argc, char** argv) {
 	///////////////////////////////////////////////////////////////////////////////////////////
 
 	///////////////////////////////////// Test a Click Tree ///////////////////////////////////
-	std::cout << std::endl;
+	/*std::cout << std::endl;
 	log << info << "+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+" << def << std::endl;
 	log << info << measure<>::execution
 	( [&]()
 	{
 		log << info << "Testing Click Tree... " << def << std::endl;
-		//test_click_tree();
+		test_click_tree();
 	}
 	) << "  microseconds" << def << std::endl;
 	log << info << "+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+" << def << std::endl;
-	std::cout << std::endl;
+	std::cout << std::endl;*/
 	///////////////////////////////////////////////////////////////////////////////////////////
 
 	///////////////////////////////////////// Clean-Up ////////////////////////////////////////
-	delete pcf;
-	delete parser;
+	// Domino destruction starts from Synthesizer's destructor destroying the nested objects
+	// first.
+	// Synthesizer:
+	// |---> ChainParser
+	// |-----|-----> ParserConfiguration   <-- Destoy first and climb
+	// 
+	delete synthesizer;
 	///////////////////////////////////////////////////////////////////////////////////////////
-}
-
-void test_click_tree(void) {
-	setvbuf(stdout, NULL, _IONBF, 0);
-
-	std::string routing_table = "10/8 0,192.168.5/24 1,0/0 2";
-	std::shared_ptr<ClickElement> lookup (new ClickElement(RadixIPLookup,routing_table));
-
-	std::string empty;
-	std::shared_ptr<ClickElement> discard (new ClickElement(Discard, empty));
-
-	std::shared_ptr<ClickElement> ttl (new ClickElement(DecIPTTL, empty));
-
-	std::string address = "192.10.0.1";
-	std::shared_ptr<ClickElement> fixip (new ClickElement(FixIPSrc, address ));
-
-	std::string rewrite = "- - 192.168.0.1 100-200# 0 1";
-	std::shared_ptr<ClickElement> iprewriter(new ClickElement(IPRewriter, rewrite));
-
-	std::string filter = "allow src port 100-150";
-	std::shared_ptr<ClickElement> ipfilter(new ClickElement(IPFilter, filter));
-
-	fixip->set_child(iprewriter,0);
-	iprewriter->set_child(ipfilter,0);
-	ipfilter->set_child(ttl,0);
-	lookup->set_child(ttl,2);
-	ttl->set_child(discard,0);
-	ClickTree tree(fixip);
-
-	for (auto &it : tree.get_trafficClasses()) {
-		std::cout<<it.to_str();
-	}
 }
 
 short int parseArguments(int cmd_args_no, char** cmd_args, std::string* property_file) {

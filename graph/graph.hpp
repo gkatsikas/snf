@@ -7,7 +7,6 @@
 #ifndef _GRAPH_HPP_
 #define _GRAPH_HPP_
 
-#include <stack>
 #include <unordered_map>
 
 #include "vertex.hpp"
@@ -54,13 +53,19 @@ class Graph
 		/*
 		 * Setters & Getters
 		 */
+		bool                   is_leaf(Vertex* u);
+		bool                   is_empty(void);
+		bool                   contains(unsigned short pos);
+		bool                   vertex_exists(Vertex* u);
+
 		void                   add_vertex(Vertex* u);
 		void                   add_edge  (Vertex* u, Vertex* v);
 
 		void                   find_in_degrees(void);
-		unsigned short         get_vertices_no(void);
 		int                    get_in_degree(Vertex* u);
 		VertexMap<int>         get_in_degrees(void);
+
+		unsigned short         get_vertices_no(void);
 		const AdjacencyList    get_adjacency_list(void) const;
 		std::vector<Vertex*>   get_vertex_children(Vertex* u);
 		Vertex* get_vertex_by_name(std::string& name);
@@ -71,23 +76,20 @@ class Graph
 		 */
 		void print_in_degrees      (void);
 		void print_adjacency_list  (void);
-		void print_topological_sort(void);
 		void print_vertex_order    (void);
+		void print_topological_sort(void);
 
 		/*
 		 * Graph features
 		 */
-		bool is_empty(void);
-		bool contains(unsigned short pos);
-		bool vertex_exists(Vertex* u);
 		std::vector<Vertex*> get_vertex_order(void);
 		std::vector<Vertex*> topological_sort(void);
 
 		/*
 		 * ATTENTION: Under development (Use with own risk :p)
 		 */
-		std::vector<Vertex*> all_paths_from_vertex(Vertex* vertex);
-		std::vector<std::vector<Vertex*>> all_paths(void);
+		//std::vector<Vertex*> all_paths_from_vertex(Vertex* vertex);
+		//std::vector<std::vector<Vertex*>> all_paths(void);
 };
 
 /*

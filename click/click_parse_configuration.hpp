@@ -52,7 +52,7 @@
  * A little bit of house keeping after loading and parsing a Click configuration
  */
 namespace ClickCleaner {
-	void cleanup(Clp_Parser *clp, bool clean_master);
+	void cleanup(Clp_Parser *clp, bool clean_all);
 };
 
 /*

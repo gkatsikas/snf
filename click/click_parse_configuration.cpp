@@ -50,18 +50,19 @@ static const Clp_Option options[] = {
 // Global variables useful to Click
 int    click_nthreads = 1;
 static ErrorHandler* errh;
-static Router* click_router;
-static Master* click_master;
+static Router* click_router = NULL;
+static Master* click_master = NULL;
 
-void ClickCleaner::cleanup(Clp_Parser *clp, bool clean_master) {
+void ClickCleaner::cleanup(Clp_Parser *clp, bool clean_all) {
 	if ( clp != NULL )
 		Clp_DeleteParser(clp);
 
-	if ( clean_master ) {
+	if ( clean_all ) {
 		printf("Cleaning up Click...\n");
 		click_static_cleanup();
 		printf("|-> Static clean up\n");
-		delete click_master;
+		if ( (click_router != NULL) && (click_master != NULL) )
+			delete click_master;
 		printf("|-> Click Master is deleted\n");
 		errh = NULL;
 		printf("|-> Click Error Handler is deleted\n");
@@ -140,7 +141,7 @@ Router* input_a_click_configuration (const char* click_source_configuration) {
 	Clp_Parser *clp = Clp_NewParser(argc, argv, sizeof(options) / sizeof(options[0]), options);
 
 	const char *router_file = NULL;
-	bool file_is_expr       = false;
+	bool file_is_expr = false;
 
 	// Iterate the parser to obtain all the commands
 	while (1) {
@@ -188,6 +189,9 @@ Router* input_a_click_configuration (const char* click_source_configuration) {
 
 	// Everything went smoothly within the cmd parser's while loop above
 	done:
+		// Get current error status
+		int before_errors = errh->nerrors();
+	
 		// Parse configuration
 		click_master = new Master(click_nthreads);
 		click_router = parse_configuration(router_file, file_is_expr, errh);
@@ -195,14 +199,17 @@ Router* input_a_click_configuration (const char* click_source_configuration) {
 		// Error while parsing the router
 		if ( !click_router ) {
 			errh->error("Error while parsing the Network Function in %s", router_file);
-
-			// Clean the mess and return a NULL object
-			ClickCleaner::cleanup(clp, true);
+			// Do not clean now, the caller will do so
 			return NULL;
 		}
 
 		// Done! Do not clean the Master (2nd arg = false)
 		ClickCleaner::cleanup(clp, false);
+
+		// If the new error status is the same as before parsing the router,
+		// then everything OK
+		if ( errh->nerrors() != before_errors )
+			return NULL;
 
 		return click_router;
 }

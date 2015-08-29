@@ -24,6 +24,27 @@ Graph::~Graph() {
 }
 
 /*
+ * Check if vertex is a leaf (out degree is 0)
+ */
+bool Graph::is_leaf(Vertex* u) {
+	if ( !this->vertex_exists(u) )
+		return false;
+
+	if ( this->get_adjacency_list().at(u).size() == 0 )
+		return true;
+	return false;
+}
+
+/*
+ * Check if graph has any vertices
+ */
+bool Graph::is_empty(void) {
+	if ( this->get_adjacency_list().size() == 0 )
+		return true;
+	return false;
+}
+
+/*
  * Position field corresponds to a unique key for the graph
  */
 bool Graph::contains(unsigned short pos) {
@@ -46,12 +67,12 @@ bool Graph::vertex_exists(Vertex* u) {
 void Graph::add_vertex(Vertex* u) {
 	// Check if it already exists
 	if ( this->vertex_exists(u) ) {
-		//log << debug << "\tVertex exists: [" << u->get_name() << ":" << u->get_position() <<"]" << def << std::endl;
+		//log << debug << "\t\tVertex exists: [" << u->get_name() << ":" << u->get_position() <<"]" << def << std::endl;
 		return;
 	}
 
 	this->vertices[u];
-	//log << debug << "\tVertex added [" << u->get_name() << ":" << u->get_position() <<"]" << def << std::endl;
+	//log << debug << "\t\tVertex added [" << u->get_name() << ":" << u->get_position() <<"]" << def << std::endl;
 }
 
 /*
@@ -66,7 +87,7 @@ void Graph::add_edge(Vertex* u, Vertex* v) {
 	// Check whether the edge does exist
 	for ( Vertex* neighbour : this->vertices[u] ) {
 		if ( neighbour->get_position() == v->get_position() ) {
-			//log 	<< warn  << "\tEdge exists: [" << u->get_name() << ":" << u->get_position() << "] -> ["
+			//log 	<< warn  << "\t\tEdge exists: [" << u->get_name() << ":" << u->get_position() << "] -> ["
 			//<< v->get_name() << ":" << v->get_position() << "]" << def << std::endl;
 			return;
 		}
@@ -74,15 +95,8 @@ void Graph::add_edge(Vertex* u, Vertex* v) {
 
 	// Add v as being adjacent to u
 	this->vertices[u].push_back(std::move(v));
-	//log 	<< debug << "\tEdge  added: [" << u->get_name() << ":" << u->get_position() << "] -> ["
+	//log 	<< debug << "\t\tEdge  added: [" << u->get_name() << ":" << u->get_position() << "] -> ["
 	//		<< v->get_name() << ":" << v->get_position() << "]" << def << std::endl;
-}
-
-/*
- * Get the number of vertices in the graph
- */
-unsigned short Graph::get_vertices_no(void) {
-	return this->vertices.size();
 }
 
 /*
@@ -100,13 +114,6 @@ void Graph::find_in_degrees(void) {
 		for (Vertex* neighbour : pair.second)
 			++this->in_degrees[neighbour];
 	}
-}
-
-/*
- * Get the adjacency list of the graph
- */
-const Graph::AdjacencyList Graph::get_adjacency_list(void) const {
-	return this->vertices;
 }
 
 /*
@@ -128,6 +135,20 @@ Graph::VertexMap<int> Graph::get_in_degrees() {
 		this->find_in_degrees();
 	return this->in_degrees;
 };
+
+/*
+ * Get the number of vertices in the graph
+ */
+unsigned short Graph::get_vertices_no(void) {
+	return this->vertices.size();
+}
+
+/*
+ * Get the adjacency list of the graph
+ */
+const Graph::AdjacencyList Graph::get_adjacency_list(void) const {
+	return this->vertices;
+}
 
 /*
  * Get a graph vertex by name (The first one to be found)
@@ -164,15 +185,6 @@ Vertex* Graph::get_vertex_by_position(unsigned short pos) {
 			return pair.first;
 
 	return NULL;
-}
-
-/*
- * Check if graph has any vertices
- */
-bool Graph::is_empty(void) {
-	if ( this->get_adjacency_list().size() == 0 )
-		return true;
-	return false;
 }
 
 /*
@@ -291,7 +303,39 @@ std::vector<Vertex*> Graph::topological_sort(void) {
 	return sorted;
 }
 
-std::vector<Vertex*> Graph::all_paths_from_vertex(Vertex* vertex) {
+/*
+ * Recursive DFS functions to visit all vertices from 'vertex'
+ */
+void dfs(Vertex* vertex, Colour& colour, const Graph::AdjacencyList& adjacency_list,
+		Graph::VertexMap<Colour>& visited, std::vector<Vertex*>& sorted) {
+
+	Logger log(__FILE__);
+
+	colour = Grey;
+
+	try {
+		for ( Vertex* neighbour : adjacency_list.at(vertex) ) {
+			Colour& neighbour_colour = visited[neighbour];
+
+			// Unvisited node --> recursion
+			if (neighbour_colour == White) {
+				dfs(neighbour, neighbour_colour, adjacency_list, visited, sorted);
+			}
+			// Ambiguous color denotes a cycle!
+			else if (neighbour_colour == Grey)
+				throw std::logic_error("Cycle in graph");
+		}
+	}
+	catch (const std::exception& e) {
+		throw std::logic_error("Graph is not built properly. Invalid access to memory \nCheck Click Configuration file");
+	}
+
+	// Visited nodes are in black list :p
+	colour = Black;
+	sorted.push_back(vertex);
+}
+
+/*std::vector<Vertex*> Graph::all_paths_from_vertex(Vertex* vertex) {
 	if ( this->is_empty() ) {
 		log << warn << "\tGraph is empty" << def << std::endl;
 		std::vector<Vertex*> paths;
@@ -342,31 +386,4 @@ std::vector<std::vector<Vertex*>> Graph::all_paths(void) {
 	}
 
 	return all_paths;
-}
-
-/*
- * Recursive DFS functions to visit all vertices from 'vertex'
- */
-void dfs(Vertex* vertex, Colour& colour, const Graph::AdjacencyList& adjacency_list,
-		Graph::VertexMap<Colour>& visited, std::vector<Vertex*>& sorted) {
-
-	Logger log(__FILE__);
-
-	colour = Grey;
-
-	for ( Vertex* neighbour : adjacency_list.at(vertex) ) {
-		Colour& neighbour_colour = visited[neighbour];
-
-		// Unvisited node --> recursion
-		if (neighbour_colour == White) {
-			dfs(neighbour, neighbour_colour, adjacency_list, visited, sorted);
-		}
-		// Ambiguous color denotes a cycle!
-		else if (neighbour_colour == Grey)
-			throw std::logic_error("Cycle in graph");
-	}
-
-	// Visited nodes are in black list :p
-	colour = Black;
-	sorted.push_back(vertex);
-}
+}*/

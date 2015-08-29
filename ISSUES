@@ -13,6 +13,7 @@
 TODO:
 	* add ID to all elements
 	* add pointer->element in Write operations
+	* Debug compound element implementations
  
 ###################
 # Element support #
