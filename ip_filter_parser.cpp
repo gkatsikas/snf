@@ -90,10 +90,26 @@ PacketFilter filter_from_option (Primitive primitive, Option option, std::string
 			return filter_from_dst_option (option, arg);
 		case Primitive::TCP:
 			return filter_from_tcp_option(option, arg);
+		case Primitive::ICMP:
+			return filter_from_icmp_option(option, arg);
 		default:
 			BUG("Undefined primitive");
 	}
 	return PacketFilter();
+}
+
+PacketFilter filter_from_icmp_option(Option option, std::string& arg) {
+	PacketFilter pf;
+	Filter f;
+	switch (option) {
+		case Option::ICMP_TYPE:
+			f = Filter::get_filter_from_ipclass_pattern(ip_src,arg);
+			break;
+		default:
+			break;
+	}
+	add_filter_to_pf(pf,f);
+	return pf;
 }
 
 PacketFilter filter_from_src_option (Option option, std::string& arg) {
@@ -288,6 +304,9 @@ Primitive primitive_from_string (std::string str) {
 				if (str.size() == 2 && str[1] == 'p') {
 					return Primitive::IP;
 				}
+				else if(!str.compare("icmp")) {
+					return Primitive::ICMP;
+				}
 				break;
 			case 'o':
 				if (str.size()==2 && str[1] =='r') {
@@ -463,6 +482,10 @@ Option option_from_string(Primitive curr_prim, std::string str) {
 			return srcdst_option_from_string(curr_prim, str);
 		case Primitive::TCP:
 			return tcp_option_from_string(str);
+		case Primitive::ICMP:
+			if(!str.compare("type")) {
+				return Option::ICMP_TYPE;
+			}
 		default:
 			BUG("Undefined primitive, cannot parse option");
 	}

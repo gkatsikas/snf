@@ -42,16 +42,6 @@ class ChainParser {
 		NF_Map<NFGraph*> nf_dag;
 
 		/*
-		 * This is the outcome of the concatenated NFs.
-		 * Bigger graphs are composed the number of which depends on all
-		 * the possible directions of the traffic.
-		 *
-		 * The key is the domain suffix (incremental ID generated when the
-		 * property file was read).
-		 */
-		NF_Map<NFGraph*> big_dag;
-
-		/*
 		 * Logger instance
 		 */
 		Logger log;
@@ -74,18 +64,23 @@ class ChainParser {
 		 * and verify whether the interfaces are correct. The property file interfaces must be included int the actual
 		 * Click configuration, otherwise the synthesizer cannot assess the connectivity between two NFs.
 		 */
-		 short verify_nf_configuration(std::string nf_name, unsigned short position);
+		 short verify_and_connect_nfs(std::string nf_name, unsigned short position);
 
 		/*
 		 * Given a position in the chain and an output interface, we want to find the Click element of the next NF in
 		 * the chain. Essentially this function is a glue between two connected NFs.
 		 */
-		ElementVertex* find_input_element_of_next_nf(unsigned short position, std::string interface);
+		ElementVertex* find_input_element_of_nf(NFGraph* next_nf_graph, std::string target_interface);
+
+		/*
+		 * Build the traffic classes as a test
+		 */
+		short test_chain_nf(void);
 
 		/*
 		 * Visits recursively the Click DAG and returns the vector of Elements it contains
 		 */
-		Vector<Element*> visit_dag(unsigned short position);
+		//Vector<Element*> visit_dag(unsigned short position);
 
 	public:
 		/*
@@ -93,6 +88,13 @@ class ChainParser {
 		 */
 		ChainParser (ParserConfiguration* pc);
 		~ChainParser();
+
+		/*
+		 * Setters & Getters
+		 */
+		inline ParserConfiguration* get_chain_graph(void) { return this->chain_graph; };
+		inline NF_Map<NFGraph*>     get_nf_graphs  (void) { return this->nf_dag;      };
+		inline NFGraph*             get_nf_graph_at(unsigned short position) { return this->nf_dag[position]; };
 
 		/*
 		 * A.
@@ -106,9 +108,25 @@ class ChainParser {
 		/*
 		 * B.
 		 * After passing the loading step above, we are ready to chain these configurations
-		 * into one big Click graph so as to start the synthesis.
+		 * by linking leaf nodes with roots.
 		 */
 		short chain_nf_configurations(void);
+};
+
+/*
+ * Recursive DFS function to visit all vertices from 'vertex'.
+ * The vertices can also belong to different graph, so in reality,
+ * this is a recursive graph composition function.
+ */
+namespace TrafficBuilder {
+	void traffic_class_builder_dfs(
+		NF_Map<NFGraph*> nf_chain,
+		unsigned short nf_position,
+		ElementVertex* nf_vertex,
+		std::string nf_conf, 
+		Colour& nf_colour,
+		Graph::VertexMap<Colour>& nf_visited
+	);
 };
 
 #endif

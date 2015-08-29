@@ -15,12 +15,11 @@
 #include "../click/click_parse_configuration.hpp"
 
 /*
- * The Parser's graph contains Click Elements as vertices together with some extra information
+ * The Parser's graph contains Click Elements as vertices
  */
 class ElementVertex : public Vertex
 {
-	private:
-
+	protected:
 		/*
 		 * A shared pointer that maps this vertex with the corresponding Click element
 		 */
@@ -36,11 +35,12 @@ class ElementVertex : public Vertex
 		bool _is_endpoint;
 
 		/*
-		 * This pointer is only valid for Output Elements, with _is_endpoint=true.
-		 * It point to the first input element (e.g. FromDevice), of the next NF at the
-		 * correct interface.
+		 * In case that this is an Output vertex and it is not an endpoint (which means that 
+		 * there is a successive NF connected to this one), then keep the NF's position in the
+		 * chain and the interface that is bound to this one. With this information we can fetch
+		 * the next element in the graph when doing DFS.
 		 */
-		ElementVertex* _jump_to_next_nf;
+		std::pair<unsigned short, std::string> glue;
 
 	public:
 		ElementVertex(Element* element, std::string name, unsigned short pos);
@@ -50,11 +50,14 @@ class ElementVertex : public Vertex
 		/*
 		 * Setters & Getters
 		 */
-		bool   is_endpoint (void);
-		void   set_endpoint(bool ep);
+		bool is_endpoint (void);
+		void set_endpoint(bool ep);
 
-		ElementVertex* jump_to_next_nf(void);
-		void set_jump_element(ElementVertex* j);
+		inline void           set_glue_info       (unsigned short next_nf_pos, std::string next_nf_iface) {
+			this->glue = std::make_pair(next_nf_pos, next_nf_iface); 
+		};
+		inline std::string    get_glue_iface      (void) { return this->glue.second; };
+		inline unsigned short get_glue_nf_position(void) { return this->glue.first;  };
 
 		inline std::string get_class(void)         const { return this->click_element->class_name(); };
 		inline std::string get_configuration(void) const { return this->click_element->router()->econfiguration(this->get_position()).c_str(); };
@@ -68,7 +71,7 @@ class ElementVertex : public Vertex
 
 class NFGraph : public Graph
 {
-	private:
+	protected:
 		// Nothing really different from a normal graph
 
 	public:
@@ -83,9 +86,10 @@ class NFGraph : public Graph
 		/*
 		 * Get subset of vertices based on several characteristics.
 		 */
-		Vector<ElementVertex*> get_vertices_by_stage(VertexType st);
+		Vector<ElementVertex*> get_vertices_by_stage(VertexType t);
 		ElementVertex*         get_vertex_by_click_element(Element* e);
-		Vector<ElementVertex*> get_endpoint_vertices(void);
+		Vector<ElementVertex*> get_all_endpoint_vertices(void);
+		Vector<ElementVertex*> get_endpoint_vertices(VertexType t);
 };
 
 #endif

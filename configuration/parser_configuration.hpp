@@ -43,9 +43,9 @@ class ParserConfiguration : public GenericConfiguration
 		inline Graph* get_chain_domains(void) { return this->nf_domains; };
 
 		/*
-		 * Implements load_property_file (abstract methid in the super class)
+		 * Implements load_property_file (abstract method in the super class)
 		 */
-		virtual void load_property_file(void);
+		short load_property_file(void);
 
 	private:
 		/*
@@ -61,7 +61,7 @@ class ParserConfiguration : public GenericConfiguration
 		/*
 		 * Check whether the formulated graph of the chain is acyclic
 		 */
-		void check_for_loops(void);
+		short check_for_loops(void);
 
 		/*
 		 * Extract numbers from strings
@@ -72,6 +72,11 @@ class ParserConfiguration : public GenericConfiguration
 		 * Print error messages regarding the property file
 		 */
 		void usage(const std::string& message, const std::string& usage);
+
+		/*
+		 * Print the loaded configuration
+		 */
+		void print_loaded_property_status(void);
 };
 
 #endif

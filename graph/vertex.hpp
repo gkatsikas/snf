@@ -11,6 +11,7 @@
 #include <iostream>
 
 #include <memory>
+#include <utility>
 #include <unordered_map>
 #include "../logger/logger.hpp"
 
@@ -90,7 +91,7 @@ class Vertex {
 /*
  * A map between Interface names and MAC addresses
  */
-using InterfaceMap = std::unordered_map<std::string, std::string>;
+using InterfaceMap = std::unordered_map<std::string, std::pair<std::string, std::string>>;
 
 /*
  * The Chain graph contains an associated source code filename per vertex
@@ -117,89 +118,40 @@ class ChainVertex : public Vertex
 		ChainVertex(std::string path, std::string name, unsigned short pos, VertexType type) :
 					Vertex(std::move(name), pos, type), source_code_path(std::move(path)) {};
 		~ChainVertex() {};
-
-		ChainVertex(const ChainVertex& cv) : Vertex(cv) {
-			this->source_code_path = cv.source_code_path;
-		};
-
-		ChainVertex& operator=(ChainVertex& cv) {
-			if ( this != &cv ) {
-				Vertex::operator=(cv);
-				this->source_code_path = cv.source_code_path;
-			}
-			return *this;
-		}
+		ChainVertex(const ChainVertex& cv);
+		ChainVertex& operator=(ChainVertex& cv);
 
 		/*
 		 * Setters & Getters
 		 */
-		inline unsigned short get_interfaces_no() {
-			return ( this->entry_interfaces.size() + this->chain_interfaces.size() );
-		}
+		unsigned short get_interfaces_no(void);
+		unsigned short get_entry_interfaces_no(void);
+		unsigned short get_chain_interfaces_no(void);
 
-		inline unsigned short get_entry_interfaces_no() {
-			return this->entry_interfaces.size();
-		}
+		bool has_entry_interface(std::string iface);
+		bool has_chain_interface(std::string iface);
 
-		inline unsigned short get_chain_interfaces_no() {
-			return this->chain_interfaces.size();
-		}
+		void add_entry_interface_key(std::string iface);
+		void add_entry_interface_pair(std::string iface, std::string mac, std::string domain);
+		void add_chain_interface_key(std::string iface);
+		void add_chain_interface_pair(std::string iface, std::string mac, std::string nf);
 
-		inline void add_entry_interface_key(std::string iface) {
-			if ( this->entry_interfaces.find(iface) == this->entry_interfaces.end() )
-				this->entry_interfaces[iface] = "";
-			return;
-		};
+		std::string get_mac_from_entry_interface(std::string iface);
+		std::string get_domain_from_entry_interface(std::string iface);
+		std::string get_iface_from_entry_domain(std::string domain);
 
-		inline void add_entry_interface_pair(std::string iface, std::string mac) {
-			if ( iface.empty() || mac.empty() ) {
-				log << error << "Interface or MAC address are empty" << def << std::endl;
-				return;
-			}
-			this->entry_interfaces[iface] = mac;
-		};
+		std::string get_mac_from_chain_interface(std::string iface);
+		std::string get_nf_from_chain_interface(std::string iface);
+		std::string get_iface_from_chain_nf(std::string nf);
 
-		inline void add_chain_interface_key(std::string iface) {
-			if ( this->chain_interfaces.find(iface) == this->chain_interfaces.end() )
-				this->chain_interfaces[iface] = "";
-			return;
-		};
-
-		inline void add_chain_interface_pair(std::string iface, std::string mac) {
-			if ( iface.empty() || mac.empty() ) {
-				log << error << "Interface or MAC address are empty" << def << std::endl;
-				return;
-			}
-			this->chain_interfaces[iface] = mac;
-		};
-
-		inline std::string get_chain_interface(std::string iface) {
-			// If it does not exist
-			if ( this->chain_interfaces.find(iface) == this->chain_interfaces.end() )
-				return std::string("NULL");
-			// Otherwise, return its value
-			return this->chain_interfaces[iface];
-		}
-
-		inline std::string get_entry_interface(std::string iface) {
-			// If it does not exist
-			if ( this->entry_interfaces.find(iface) == this->entry_interfaces.end() )
-				return std::string("NULL");
-			// Otherwise, return its value
-			return this->entry_interfaces[iface];
-		}
-
-		inline std::string get_source_code_path(void) const { return this->source_code_path; };
+		std::string get_source_code_path(void) const;
 
 		/*
 		 * Debugging
 		 */
-		inline void print_info(void) {
-			log << info << "===============================================" << def << std::endl;
-			Vertex::print_info();
-			log << info << "=== Source Code: " << this->source_code_path     << def << std::endl;
-			log << info << "===============================================" << def << std::endl;
-		}
+		void print_info(void);
+		void print_chain_interface_map(void);
+		void print_entry_interface_map(void);
 };
 
 #endif

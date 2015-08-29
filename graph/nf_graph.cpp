@@ -10,28 +10,23 @@
 ////////////////////////////////////////////////////////////////////////
 // ElementVertex
 ////////////////////////////////////////////////////////////////////////
-// While constructing an Element, check to which category it belongs to:
-//   1. Input
-//   2. Processing
-//   3. Output
-ElementVertex::ElementVertex(Element* element, std::string name,
-				unsigned short pos) :
-				Vertex(std::move(name), pos, VertexType::None),
-				click_element(std::move(element)) {
+ElementVertex::ElementVertex(Element* element, std::string name, unsigned short pos) :
+				Vertex(std::move(name), pos, VertexType::None), 
+				click_element(element), _is_endpoint(false) {
 	if ( element->ninputs() == 0 )
 		this->type = Input;
 	else if ( element->noutputs() == 0 )
 		this->type = Output;
-	else {
+	else
 		this->type = Processing;
-		this->_is_endpoint = false;
-	}
 }
 
 ElementVertex& ElementVertex::operator=(ElementVertex& ev) {
 	if ( this != &ev ) {
 		Vertex::operator=(ev);
+		this->_is_endpoint  = ev.is_endpoint();
 		this->click_element = ev.get_click_element();
+		this->glue = ev.glue;
 	}
 	return *this;
 }
@@ -51,23 +46,15 @@ void ElementVertex::set_endpoint(bool ep) {
 	this->_is_endpoint = ep;
 }
 
-ElementVertex* ElementVertex::jump_to_next_nf(void) {
-	if ( (this->type == Output) && this->is_endpoint() )
-		return this->_jump_to_next_nf;
-	return NULL;
-}
-
-void ElementVertex::set_jump_element(ElementVertex* j) {
-	if ( (this->type == Output) && this->is_endpoint() )
-		this->_jump_to_next_nf = j;
-	this->_jump_to_next_nf = NULL;
-}
-
 void ElementVertex::print_info(void) {
 	log << info << "===============================================" << def << std::endl;
 	Vertex::print_info();
 	log << info << "===         Stage: " << this->type               << def << std::endl;
 	log << info << "=== Click Element: " << this->click_element->class_name() << def << std::endl;
+	log << info << "===       Enpoint: " << std::string(this->is_endpoint() ? "True" : "False") << def << std::endl;
+	if ( this->is_endpoint() )
+		log << info << "===         Stage: " << this->type               << def << std::endl;
+		log << info << "===  Next NF Info: [Pos " << this->glue.first << ", Iface  " << this->glue.second << "]" << def << std::endl;
 	log << info << "===============================================" << def << std::endl;
 }
 
@@ -172,7 +159,7 @@ ElementVertex* NFGraph::get_vertex_by_click_element(Element* e) {
 	return NULL;
 }
 
-Vector<ElementVertex*> NFGraph::get_endpoint_vertices(void) {
+Vector<ElementVertex*> NFGraph::get_all_endpoint_vertices(void) {
 	Vector<ElementVertex*> endpoints;
 
 	for (auto& pair : this->vertices) {
@@ -182,3 +169,36 @@ Vector<ElementVertex*> NFGraph::get_endpoint_vertices(void) {
 	}
 	return endpoints;
 }
+
+Vector<ElementVertex*> NFGraph::get_endpoint_vertices(VertexType t) {
+	Vector<ElementVertex*> endpoints;
+
+	for (auto& pair : this->vertices) {
+		ElementVertex* ev = (ElementVertex*) pair.first;
+		if ( (ev->is_endpoint()) && (ev->get_type() == t) )
+			endpoints.push_back(ev);
+	}
+	return endpoints;
+}
+
+/*std::vector<std::shared_ptr<ElementVertex>> NFGraph::get_vertex_children(ElementVertex* u) {
+	std::vector<std::shared_ptr<ElementVertex>> children;
+
+	// Output nodes can be:
+	//  1. Endpoints (They are connected to external domains so they do not have children --> End of graph)
+	//  2. Normal output nodes ( They are connected to input elements of following NFs in the chain )
+	//  The data member _jump_to_next_nf will tell you the truth.
+	if ( u->get_type() == VertexType::Output ) {
+		log << "\tMpike: " << def << std::endl;
+		return u->get_jump_to_next_nfs();
+	}
+	// Input and Processing elements have a normal adjacency list
+	else {
+		for ( auto& v : this->get_adjacency_list().at(u) ) {
+			ElementVertex* ev = (ElementVertex*) v;
+			children.push_back( (std::shared_ptr<ElementVertex>)ev );
+		}
+	}
+
+	return children;
+}*/

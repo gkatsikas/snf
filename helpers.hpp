@@ -94,6 +94,7 @@ const short INVALID_NF_CHAIN_LENGTH  = -35;
 const short CHAIN_PARSING_PROBLEM    = -36;
 const short NF_CHAIN_NOT_ACYCLIC     = -37;
 const short CLICK_PARSING_PROBLEM    = -38;
+const short CHAIN_SYNTHESIS_PROBLEM  = -39;
 
 // Protocol Management
 const short INVALID_PROTOCOL         = -40;
@@ -136,6 +137,19 @@ struct measure
 
         return  (double) duration.count();
     }
+};
+
+
+/*
+ * Vector manipulation functions.
+ * Concatenate vectors v1 and v2.
+ */ 
+template<typename T>
+std::vector<T> concatenate_two_vectors(std::vector<T>& v1, const std::vector<T>& v2) {
+	std::vector<T> outcome(v1);
+
+	for (auto& e : v2)
+		outcome.push_back(e);
 };
 
 /*

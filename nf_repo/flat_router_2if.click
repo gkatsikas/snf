@@ -1,29 +1,3 @@
-// fake-iprouter.click
-
-// This file is a network-independent version of the IP router
-// configuration used in our SOSP paper.
-
-// The network sources (FromDevice or PollDevice elements) have been
-// replaced with an InfiniteSource, which sends exactly the packets we sent
-// in our tests. The ARPQueriers have been replaced with EtherEncaps, and
-// the network sinks (ToDevice elements) have been replaced with Discards.
-// Thus, you can play around with IP routing -- benchmark our code, for
-// example -- even if you don't have the Linux module or the pcap library.
-
-
-// Kernel configuration for cone as a router between
-// 18.26.4 (eth0) and 18.26.7 (eth1).
-// Proxy ARPs for 18.26.7 on eth0.
-
-// eth0, 00:00:C0:AE:67:EF, 18.26.4.24
-// eth1, 00:00:C0:4F:71:EF, 18.26.7.1
-
-// 0. ARP queries
-// 1. ARP replies
-// 2. IP
-// 3. Other
-// We need separate classifiers for each interface because
-// we only want proxy ARP on eth0.
 c0 :: Classifier(
 	12/0806 20/0001,
 	12/0806 20/0002,
