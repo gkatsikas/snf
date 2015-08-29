@@ -5,7 +5,6 @@
 //              Then compose multiple graphs to form chains.
 //============================================================================
 
-
 #include "../helpers.hpp"
 #include "chain_parser.hpp"
 
@@ -427,7 +426,7 @@ void TrafficBuilder::traffic_class_builder_dfs(	NF_Map<NFGraph*> nf_chain, unsig
 		// We are looking for an endpoint Outpout element with different configuration (aka interface)
 		// Otherwise a loop will be created
 		if ( (nf_vertex->is_endpoint()) && (nf_vertex->get_configuration() != nf_conf) ) {
-			log << "\t\t -----> ENDPOINT " << nf_vertex->get_name() << "(" << nf_vertex->get_configuration() << ")" << def << std::endl;
+			log << "\t\t ----->  ENDPOINT " << nf_vertex->get_name() << "(" << nf_vertex->get_configuration() << ")" << def << std::endl;
 			return;
 		}
 		// A way to continue in the chain
@@ -447,7 +446,7 @@ void TrafficBuilder::traffic_class_builder_dfs(	NF_Map<NFGraph*> nf_chain, unsig
 				for ( ElementVertex* input_elem : nf_chain[next_nf_position]->get_vertices_by_stage(VertexType::Input) ) {
 					if ( input_elem->get_configuration() == next_nf_iface ) {
 						nf_vertex = input_elem;
-						log << "\t\t ----->      TO " << nf_vertex->get_class() <<  "(" << nf_vertex->get_configuration() << ")" << def << std::endl;
+						log << "\t\t ----->        TO " << nf_vertex->get_class() <<  "(" << nf_vertex->get_configuration() << ")" << def << std::endl;
 						break;
 					}
 				}
@@ -461,7 +460,7 @@ void TrafficBuilder::traffic_class_builder_dfs(	NF_Map<NFGraph*> nf_chain, unsig
 		}
 		// Do not chain because a loop will be created
 		else if ( nf_vertex->get_configuration() == nf_conf ) {
-			log << "\t\t ----->     LOOP " << nf_vertex->get_name() << "(" << nf_vertex->get_configuration() << ")" << def << std::endl;
+			log << "\t\t ----->      LOOP " << nf_vertex->get_name() << "(" << nf_vertex->get_configuration() << ")" << def << std::endl;
 			return;
 		}
 	}

@@ -8,10 +8,7 @@
 //============================================================================
 
 #include "../helpers.hpp"
-#include <string>
 #include <boost/tokenizer.hpp>
-//#include <boost/algorithm/string.hpp>
-//#include <boost/algorithm/string/find_iterator.hpp>
 #include "parser_configuration.hpp"
 
 /*

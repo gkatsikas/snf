@@ -6,8 +6,6 @@
 
 #include "logger/logger.hpp"
 #include "synthesis/synthesizer.hpp"
-//#include "parser/chain_parser.hpp"
-//#include "configuration/parser_configuration.hpp"
 
 short int parseArguments (int cmd_args_no, char** cmd_args, std::string* property_file);
 
