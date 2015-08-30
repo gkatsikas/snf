@@ -22,7 +22,7 @@ NFSynthesizer: $(OBJS)
 	$(CC) $(LFLAGS) $(OBJS) $(CLICK_ELEMENT_OBJS) -o nf_synthesizer $(LIBS)
 
 ### Individual modules' rules
-main.o: main.cpp ./synthesis/synthesizer.hpp ./logger/logger.hpp
+main.o: main.cpp ./synthesizer/synthesizer.hpp ./logger/logger.hpp
 	$(CC) $(CFLAGS) main.cpp
 
 helpers.o: helpers.cpp helpers.hpp
@@ -77,9 +77,9 @@ parser_configuration.o: ./configuration/parser_configuration.cpp ./configuration
 chain_parser.o: ./parser/chain_parser.cpp ./parser/chain_parser.hpp ./configuration/parser_configuration.hpp ./graph/nf_graph.hpp
 	$(CC) $(CFLAGS) ./parser/chain_parser.cpp
 
-synthesizer.o: ./synthesis/synthesizer.cpp ./synthesis/synthesizer.hpp ./parser/chain_parser.hpp click_tree.cpp click_tree.hpp \
+synthesizer.o: ./synthesizer/synthesizer.cpp ./synthesizer/synthesizer.hpp ./parser/chain_parser.hpp click_tree.cpp click_tree.hpp \
 				output_class.hpp operation.hpp element_type.hpp filter.hpp
-	$(CC) $(CFLAGS) ./synthesis/synthesizer.cpp
+	$(CC) $(CFLAGS) ./synthesizer/synthesizer.cpp
 
 ### House keeping
 clean:
