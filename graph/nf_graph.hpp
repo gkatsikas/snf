@@ -1,7 +1,7 @@
 //============================================================================
 //        Name: nf_graph.hpp
 //   Copyright: KTH ICT CoS Network Systems Lab
-// Description: Extensions of basic Vertex and Graph classes to represent 
+// Description: Extensions of basic Vertex and Graph classes to represent
 //              Click elements in a NF DAG.
 //============================================================================
 
@@ -35,7 +35,7 @@ class ElementVertex : public Vertex
 		bool _is_endpoint;
 
 		/*
-		 * In case that this is an Output vertex and it is not an endpoint (which means that 
+		 * In case that this is an Output vertex and it is not an endpoint (which means that
 		 * there is a successive NF connected to this one), then keep the NF's position in the
 		 * chain and the interface that is bound to this one. With this information we can fetch
 		 * the next element in the graph when doing DFS.
@@ -54,7 +54,7 @@ class ElementVertex : public Vertex
 		void set_endpoint(bool ep);
 
 		inline void           set_glue_info       (unsigned short next_nf_pos, std::string next_nf_iface) {
-			this->glue = std::make_pair(next_nf_pos, next_nf_iface); 
+			this->glue = std::make_pair(next_nf_pos, next_nf_iface);
 		};
 		inline std::string    get_glue_iface      (void) { return this->glue.second; };
 		inline unsigned short get_glue_nf_position(void) { return this->glue.first;  };

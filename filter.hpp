@@ -48,7 +48,7 @@ class Filter {
 	private:
 		DisjointSegmentList m_filter;
 		HeaderField m_field;
-		
+
 		std::string ip_filter_to_ip_class_pattern(std::string keyword) const;
 };
 
@@ -84,7 +84,7 @@ class TrafficClass {
 
 	public:
 		TrafficClass ();
-	
+
 		/*
 		 * Adds the element with output port port
 		 * |-> -1 indicates no output port (end of chain)
@@ -94,7 +94,7 @@ class TrafficClass {
 		std::string to_str () const;
 		bool is_discarded () const;
 		std::vector<std::shared_ptr<ClickElement> > synthesize_chain();
-		
+
 		std::string to_ip_classifier_pattern() const;
 
 	private:

@@ -18,7 +18,7 @@ enum OperationType {
 };
 
 const std::string OperationName[7] = { "Write", "Write-Round Robin", "Write-Random",
-										 "Write-Stateful", "Translate", "Monitor", "Noop"};
+					 "Write-Stateful", "Translate", "Monitor", "Noop"};
 
 struct FieldOperation {
 	OperationType m_type;
@@ -39,19 +39,18 @@ struct FieldOperation {
 
 class Operation {
 
-public:
-	void add_field_op(const FieldOperation &field_op);
-	void compose_op(const Operation &operation);
-	
-	FieldOperation* get_field_op(HeaderField field);
-	
-	std::string to_str() const;
+	public:
+		void add_field_op(const FieldOperation &field_op);
+		void compose_op(const Operation &operation);
 
-private:
-	std::unordered_map<HeaderField, FieldOperation, std::hash<int> > m_fieldOps;
-	uint32_t m_identifier;
-	std::vector<int> monitors; /* List of monitors that this class goes through */
+		FieldOperation* get_field_op(HeaderField field);
+
+		std::string to_str() const;
+
+	private:
+		std::unordered_map<HeaderField, FieldOperation, std::hash<int> > m_fieldOps;
+		uint32_t m_identifier;
+		std::vector<int> monitors; /* List of monitors that this class goes through */
 };
-
 
 #endif

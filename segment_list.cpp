@@ -52,7 +52,7 @@ bool SegmentNode::operator==(const SegmentNode& node) const {
 
 DisjointSegmentList::DisjointSegmentList () {}
 
-DisjointSegmentList::DisjointSegmentList (const DisjointSegmentList& rhs) : m_head(copy_list(rhs.m_head) ) {};
+DisjointSegmentList::DisjointSegmentList (const DisjointSegmentList& rhs) : m_head(copy_list(rhs.m_head) ) {}
 
 DisjointSegmentList::~DisjointSegmentList () {
 	if(m_head) { destroy_list(m_head); }

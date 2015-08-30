@@ -53,7 +53,7 @@
  */
 namespace ClickCleaner {
 	void cleanup(Clp_Parser *clp, bool clean_all);
-};
+}
 
 /*
  * Generate an equivalent Click configuration with flattened statements

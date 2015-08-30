@@ -18,7 +18,7 @@ ChainParser::ChainParser(ParserConfiguration* pc) : chain_graph(pc) {
 		this->chain_graph = NULL;
 		throw std::runtime_error("ChainParser: Invalid chain length");
 	}
-	//log << debug << "Chain Parser constructed" << def << std::endl;
+	log << debug << "Chain Parser constructed" << def << std::endl;
 }
 
 ChainParser::~ChainParser() {
@@ -36,11 +36,8 @@ ChainParser::~ChainParser() {
 	log << debug << "Chain Parser deleted" << def << std::endl;
 }
 
-/*ChainParser::clean_up_if_error(void) {
-	
-}*/
-
 /*
+ * PUBLIC API
  * A.
  * Reads, verifies and loads the input Click configurations one-by-one.
  * It belongs to the public API.
@@ -79,6 +76,7 @@ short ChainParser::load_nf_configurations(void) {
 }
 
 /*
+ * PUBLIC API
  * B.
  * After passing the loading step above, we are ready to chain these configurations
  * into one big Click graph so as to start the synthesis.
@@ -94,63 +92,12 @@ short ChainParser::chain_nf_configurations(void) {
 	for ( Vertex* v : this->chain_graph->get_chain()->get_vertex_order() ) {
 		ChainVertex* cv = (ChainVertex*) v;
 
-		log << info << "Network Function: " << cv->get_name() << def << std::endl;
+		log << "Network Function: " << cv->get_name() << def << std::endl;
 
 		// 3. Verify the NF chain against the property file and create connections between NFs
 		exit_status = this->verify_and_connect_nfs(cv->get_name(), cv->get_position());
 		if ( exit_status != SUCCESS )
 			return exit_status;
-
-		log << "" << std::endl;
-	}
-	log << info << "==============================================================================" << def << std::endl;
-
-	return SUCCESS;
-}
-
-/*
- * C.
- * Build the traffic classes as a test
- */
-short ChainParser::test_chain_nf(void) {
-
-	log << "" << std::endl;
-	log << info << "==============================================================================" << def << std::endl;
-	log << info << "Test the chaining..." << def << std::endl;
-
-	// Get all NFs, one-by-one
-	for ( Vertex* v : this->chain_graph->get_chain()->get_vertex_order() ) {
-		// The node of this NF in the chain graph
-		ChainVertex* cv = (ChainVertex*) v;
-		unsigned short nf_position = cv->get_position();
-
-		// The Click DAG of this NF
-		NFGraph* nf_graph = this->nf_dag[nf_position];
-		if ( nf_graph == NULL )
-			return NO_MEM_AVAILABLE;
-
-		log << info << "Network Function: " << cv->get_name() << def << std::endl;
-
-		Graph::VertexMap<Colour> visited;
-
-		// Get all the input entry points of this NF (if any)
-		// From these points, we start building the traffic classes
-		for ( auto& endpoint : nf_graph->get_endpoint_vertices(VertexType::Input) ) {
-			std::string elem_name = endpoint->get_name();
-			std::string elem_conf = endpoint->get_configuration();
-
-			log << "\t" << elem_name << "(" << elem_conf << ")" << def << std::endl;
-
-			Colour& colour = visited[endpoint];
-
-			// This should never happen here because vertex has in degree 0
-			assert (colour == White);
-
-			// Not visited, go DFS
-			TrafficBuilder::traffic_class_builder_dfs(this->nf_dag, nf_position, endpoint, elem_conf, colour, visited);
-
-			log << "" << def << std::endl;
-		}
 
 		log << "" << std::endl;
 	}
@@ -229,7 +176,7 @@ short ChainParser::build_nf_dag(std::string nf_name, unsigned short position) {
 		log << error << "\t|--> " << e.what() << def << std::endl;
 		return NF_CHAIN_NOT_ACYCLIC;
 	}
-	log << info << "\tClick Graph is acyclic" << def << std::endl;
+	log << "\tClick Graph is acyclic" << def << std::endl;
 
 	// If acyclic, print the adjacency list
 	nf_graph->print_adjacency_list();
@@ -408,86 +355,7 @@ ElementVertex* ChainParser::find_input_element_of_nf(NFGraph* next_nf_graph, std
 }
 
 /*
- * Recursive DFS function to visit all vertices from 'vertex'.
- * The vertices can also belong to different graph, so in reality,
- * this is a recursive graph composition function.
- */
-void TrafficBuilder::traffic_class_builder_dfs(	NF_Map<NFGraph*> nf_chain, unsigned short nf_position,
-												ElementVertex* nf_vertex, std::string nf_conf,
-												Colour& nf_colour, Graph::VertexMap<Colour>& nf_visited) {
-
-	Logger log(__FILE__);
-
-	// Retrieve the appropriate adjacency list
-	Graph::AdjacencyList adjacency_list = nf_chain[nf_position]->get_adjacency_list();
-
-	// We reached an Output vertex and need to find for a conneciton with a following NF
-	if ( adjacency_list.at(nf_vertex).size() == 0 ) {
-		// We are looking for an endpoint Outpout element with different configuration (aka interface)
-		// Otherwise a loop will be created
-		if ( (nf_vertex->is_endpoint()) && (nf_vertex->get_configuration() != nf_conf) ) {
-			log << "\t\t ----->  ENDPOINT " << nf_vertex->get_name() << "(" << nf_vertex->get_configuration() << ")" << def << std::endl;
-			return;
-		}
-		// A way to continue in the chain
-		else if ( (!nf_vertex->is_endpoint()) && (nf_vertex->get_configuration() != nf_conf) ) {
-			// We don't care about drops
-			if ( (nf_vertex->get_class() != "Discard") ) {
-				unsigned short next_nf_position = nf_vertex->get_glue_nf_position();
-				std::string next_nf_iface = nf_vertex->get_glue_iface();
-
-				log << "\t\t -----> JUMP FROM " << nf_vertex->get_name() << "(" << nf_vertex->get_configuration() << ")" << def << std::endl;
-
-				// Change context, move to next graph
-				// 1. Change adjacency list 
-				adjacency_list = nf_chain[next_nf_position]->get_adjacency_list();
-
-				// 2. Change vertex pointer to the first element of the next NF
-				for ( ElementVertex* input_elem : nf_chain[next_nf_position]->get_vertices_by_stage(VertexType::Input) ) {
-					if ( input_elem->get_configuration() == next_nf_iface ) {
-						nf_vertex = input_elem;
-						log << "\t\t ----->        TO " << nf_vertex->get_class() <<  "(" << nf_vertex->get_configuration() << ")" << def << std::endl;
-						break;
-					}
-				}
-
-				// 3. Change origin interface using the interface of the new vertex
-				nf_conf = next_nf_iface;
-				
-				// 4. Change NF postion in the Chain DAG
-				nf_position = next_nf_position;
-			}
-		}
-		// Do not chain because a loop will be created
-		else if ( nf_vertex->get_configuration() == nf_conf ) {
-			log << "\t\t ----->      LOOP " << nf_vertex->get_name() << "(" << nf_vertex->get_configuration() << ")" << def << std::endl;
-			return;
-		}
-	}
-
-	nf_colour = Grey;
-
-	for ( auto& neighbour : adjacency_list.at(nf_vertex) ) {
-		ElementVertex* ev = (ElementVertex*) neighbour;
-		Colour& neighbour_colour = nf_visited[ev];
-
-		//log << "\t\t Child: " << ev->get_name() << def << std::endl;
-
-		// Unvisited node --> recursion
-		if (neighbour_colour == White) {
-			traffic_class_builder_dfs(nf_chain, nf_position, ev, nf_conf, neighbour_colour, nf_visited);
-		}
-		// Ambiguous color denotes a cycle!
-		else if (neighbour_colour == Grey) {
-			throw std::logic_error("Cycle in graph");
-		}
-	}
-
-	// Visited nodes are in black list :p
-	nf_colour = Black;
-}
-
-/*Vector<Element*> ChainParser::visit_dag(unsigned short position) {
+Vector<Element*> ChainParser::visit_dag(unsigned short position) {
 
 	// Storage to put the visited elements
 	Vector<Element*> path_elements;

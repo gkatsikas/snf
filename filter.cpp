@@ -309,11 +309,11 @@ std::string Filter::to_ip_class_pattern() const {
 			keyword = "tcp win ";
 			break;
 		default:
-			BUG("Cannot convert filter to classifier "+to_str());		
+			BUG("Cannot convert filter to classifier "+to_str());
 	}
-	
+
 	std::vector<std::pair<uint32_t,uint32_t> > segments = m_filter.get_segments();
-	
+
 	for  (auto &seg:segments) {
 		//FIXME: handle IP subnets differently
 		if(seg.first==seg.second) {
@@ -324,7 +324,7 @@ std::string Filter::to_ip_class_pattern() const {
 					  "<= "+std::to_string(seg.second)+") || ";
 		}
 	}
-	
+
 	return output.substr(0,output.size()-4); //Removes trailing  " || "
 }
 
@@ -337,7 +337,7 @@ std::string ip_segment_to_ip_class_pattern(std::string keyword, uint32_t lower, 
 	uint32_t current_low = lower;
 	while(current_low <= upper) {
 		int prefix_size = 32;
-		while(prefix_size > 0 && (current_low>>(32-prefix_size))%2 == 0 
+		while(prefix_size > 0 && (current_low>>(32-prefix_size))%2 == 0
 				&& current_low + (0xffffffff>>(prefix_size-1)) <= upper) {
 				prefix_size--;
 		}
@@ -345,7 +345,7 @@ std::string ip_segment_to_ip_class_pattern(std::string keyword, uint32_t lower, 
 		current_low += (0xffffffff >> prefix_size) + 1;
 		if(current_low==0){break;}
 	}
-	
+
 	return output.substr(0,output.size()-4);
 }
 
@@ -355,9 +355,9 @@ std::string Filter::ip_filter_to_ip_class_pattern(std::string keyword) const {
 	if(segments.empty()) {
 		return "none";
 	}
-	
+
 	for (auto &seg:segments) {
-		output += ip_segment_to_ip_class_pattern(keyword, seg.first, seg.second)+" || ";		
+		output += ip_segment_to_ip_class_pattern(keyword, seg.first, seg.second)+" || ";
 	}
 	return output.substr(0,output.size()-4);
 }
@@ -392,7 +392,7 @@ bool TrafficClass::is_discarded() const {
 }
 
 TrafficClass::TrafficClass () : m_filters(), m_writeConditions(), m_dropBroadcasts(false),
-								m_ipgwoptions(false), m_etherEncapConf(), m_elementPath(), 
+								m_ipgwoptions(false), m_etherEncapConf(), m_elementPath(),
 								m_operation() {}
 
 std::vector<std::shared_ptr<ClickElement> > TrafficClass::synthesize_chain () {
@@ -404,27 +404,27 @@ std::vector<std::shared_ptr<ClickElement> > TrafficClass::synthesize_chain () {
 		if(m_dropBroadcasts) {
 			synthesized_chain.push_back(std::shared_ptr<ClickElement>(new ClickElement(DropBroadcasts,std::string())));
 		}
-		
+
 		if(m_ipgwoptions) {
 			synthesized_chain.push_back(std::shared_ptr<ClickElement>(new ClickElement(DropBroadcasts,std::string())));
 		}
 		FieldOperation* field_op;
-		
+
 		//TODO: do the voodoo that you want to do
-		
+
 		field_op = m_operation.get_field_op(mtu);
 		if(field_op) {
 			synthesized_chain.push_back(std::shared_ptr<ClickElement>(new ClickElement(DropBroadcasts,
 											std::to_string(field_op->m_value[0]) )));
 		}
-		
+
 		if(m_etherEncapConf.empty()) {
 			BUG("Empty EtherEncap configuration");
 		}
 		synthesized_chain.push_back(std::shared_ptr<ClickElement>(new ClickElement(EtherEncap,m_etherEncapConf)));
 		synthesized_chain.push_back(m_elementPath.back());
 	}
-	
+
 	return synthesized_chain;
 }
 
@@ -432,7 +432,7 @@ std::string TrafficClass::to_ip_classifier_pattern() const {
 	std::string output;
 	for (auto &it : m_filters) {
 		output += "("+it.second.to_ip_class_pattern() + ") && ";
-	}	
+	}
 	return output.substr(0, output.size()-4); //Removes trailing " && "
 }
 

@@ -1,7 +1,7 @@
 ### System
 CC     = g++
-CFLAGS = -O3 -Wall -c -std=c++11 -Wextra -g
-LFLAGS = -Wall -std=c++11 -g
+CFLAGS = -O3 -Wall -c -std=c++1y -pedantic -Wextra -g
+LFLAGS = -Wall -std=c++1y -pedantic -g
 
 ### The Click library
 LIBS = -L/usr/local/lib/ -lclick -ldl -lpthread -lpcap
@@ -14,6 +14,7 @@ OBJS =  main.o helpers.o chameleon.o vertex.o segment_list.o operation.o \
 		synthesizer.o 
 
 ### Object files of Click
+### -----> Give a variable with the Click home path instead of a fixed path
 CLICK_ELEMENT_OBJS = $(shell find /opt/click/userlevel/ ! -name "click.o" ! -name "exportstub.o" -name "*.o")
 
 ### Final compilation rule

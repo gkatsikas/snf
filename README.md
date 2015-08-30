@@ -12,21 +12,24 @@ A framework to turn a chain of Click-based network functions (NFs) into a sythes
 
 ## Steps
 #### NF Synthesis
-  * cd /opt/
   * git clone git@bitbucket.org:nslab/nf-synthesis.git
+  * cd nf-synthesis/
+  * export NF_SYNTH_HOME=`pwd`
+  * cd ../
 
 #### Click
   * git clone https://github.com/kohler/click.git
   * cd ./click
+  * export CLICK_HOME=`pwd`
   * ./configure --enable-user-multithread --enable-multithread --enable-ip6 --enable-nanotimestamp
 		--enable-intel-cpu --enable-analysis --enable-ipsec --enable-local --enable-simple
-		--enable-all-elements #(This is an indicative list of parameters)
-  * patch -p0 < /opt/nf-synthesis/click.patch
+		--enable-all-elements #(This is an indicative configuration)
+  * patch -p0 < ${NF_SYNTH_HOME}/click.patch
   * make elemlist
   * make install (uses default prefix=/usr/local/)
 
 #### NF Synthesis  
-  * cd /opt/click/nf-synthesis
+  * cd ${NF_SYNTH_HOME}
   * make
     * It uses the click libraries built under /usr/local/lib/ (-lclick) and the object files
       of the Click elements generated under /opt/click/<driver> (userlevel, linuxmodule, etc.)

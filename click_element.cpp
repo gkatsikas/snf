@@ -362,12 +362,12 @@ void ClickElement::parse_rr_ip_mapper (const std::string& configuration) {
 
 	start = configuration.find_first_not_of(separators, end);
 	end = configuration.find('-',start);
-	
+
 	uint32_t start_ip = aton(configuration.substr(start,end-start));
 	start = end+1;
 	end = configuration.find_first_of(separators,start);
 	uint32_t end_ip = aton(configuration.substr(start,end-start));
-	
+
 	OutputClass port(0);
 	FieldOperation field_op;
 	field_op.m_type = WriteRR;
@@ -375,16 +375,16 @@ void ClickElement::parse_rr_ip_mapper (const std::string& configuration) {
 	field_op.m_value[0] = start_ip;
 	field_op.m_value[1] = end_ip;
 	port.add_field_op(field_op);
-	
+
 	this->add_output_class(port);
-	
+
 }
 
 void ClickElement::parse_ip_fragmenter_configuration(const std::string& configuration) {
 	if(configuration.find_first_not_of("0123456789") != std::string::npos) {
 		configuration_fail();
 	}
-	
+
 	OutputClass port(0);
 	FieldOperation field_op = {Write,mtu,(uint32_t) atoi(configuration.c_str())};
 	port.add_field_op(field_op);

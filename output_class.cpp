@@ -25,31 +25,31 @@ OutputClass OutputClass::port_from_lookup_rule(std::string& rule, Filter& parsed
 			<<rule<<std::endl;
 		exit(1);
 	}
-	
+
 	uint32_t port_nb = atoi(decomposed_rule[nb_arg-1].c_str());
 	std::vector<std::string> address_and_mask = split(decomposed_rule[0],'/');
-	
-	Filter f = Filter::get_filter_from_v4_prefix(ip_dst, aton(address_and_mask[0]), 
+
+	Filter f = Filter::get_filter_from_v4_prefix(ip_dst, aton(address_and_mask[0]),
 									atoi(address_and_mask[1].c_str()));
-									
+
 	f.differentiate(parsed_rules);
 	parsed_rules.unite(f);
-	
+
 	OutputClass port(port_nb);
 	port.add_filter(ip_dst,f);
 	return port;
 }
 
 std::pair<OutputClass,OutputClass> OutputClass::output_class_from_pattern(
-											std::vector<std::string>& pattern) {
-											
+							std::vector<std::string>& pattern) {
+
 	if(pattern.size() != 7) {
 		std::cerr<<"["<<__FILE__<<":"<<__LINE__<<"] Incorrect pattern size\n";
 		exit(1);
 	}
 	uint32_t unmodified_port_nb = atoi(pattern[6].c_str());
 	uint32_t modified_port_nb = atoi(pattern[5].c_str());
-	
+
 	OutputClass foutput (modified_port_nb);
 	if (pattern[1].compare("-")) {
 		foutput.add_field_op({Write,ip_src,aton(pattern[0])});
@@ -71,9 +71,9 @@ std::pair<OutputClass,OutputClass> OutputClass::output_class_from_pattern(
 					split_pattern[1].pop_back();
 					break;
 				default:
-					break;	
+					break;
 			}
-			
+
 			FieldOperation field_op;
 			field_op.m_type = op_type;
 			field_op.m_field = tp_srcPort;
@@ -107,9 +107,9 @@ std::pair<OutputClass,OutputClass> OutputClass::output_class_from_pattern(
 					split_pattern[1].pop_back();
 					break;
 				default:
-					break;	
+					break;
 			}
-			
+
 			FieldOperation field_op;
 			field_op.m_type = op_type;
 			field_op.m_field = tp_srcPort;
@@ -122,8 +122,7 @@ std::pair<OutputClass,OutputClass> OutputClass::output_class_from_pattern(
 			exit(1);
 		}
 	}
-	
-	
+
 	return std::pair<OutputClass,OutputClass>(foutput,OutputClass(unmodified_port_nb));
 }
 
@@ -133,7 +132,7 @@ std::string OutputClass::to_str() const {
 		output += ("\t"+it.second.to_str()+"\n");
 	}
 	output += m_operation.to_str();
-	
+
 	output += "========= End Output Class =========\n";
 	return output;
 }

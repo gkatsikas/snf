@@ -52,8 +52,25 @@ class Synthesizer {
 		 * The configuration must achieve equivalent functionality with the initial one.
 		 */
 		short generate_equivalent_configuration(void);
+
+		/*
+		 * Test the traffic classes's construction
+		 */
+		void test_traffic_class_builder(void);
 };
 
-void test_click_tree(void);
+/*
+ * Recursive DFS function to visit all vertices from 'vertex'.
+ * The vertices can also belong to different graph, so in reality,
+ * this is a recursive graph composition function.
+ */
+namespace TrafficBuilder {
+	void traffic_class_builder_dfs(
+		NF_Map<NFGraph*> nf_chain,
+		unsigned short nf_position,
+		ElementVertex* nf_vertex,
+		std::string nf_conf
+	);
+}
 
 #endif

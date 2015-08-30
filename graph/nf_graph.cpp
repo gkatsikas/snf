@@ -11,7 +11,7 @@
 // ElementVertex
 ////////////////////////////////////////////////////////////////////////
 ElementVertex::ElementVertex(Element* element, std::string name, unsigned short pos) :
-				Vertex(std::move(name), pos, VertexType::None), 
+				Vertex(std::move(name), pos, VertexType::None),
 				click_element(element), _is_endpoint(false) {
 	if ( element->ninputs() == 0 )
 		this->type = Input;
@@ -180,25 +180,3 @@ Vector<ElementVertex*> NFGraph::get_endpoint_vertices(VertexType t) {
 	}
 	return endpoints;
 }
-
-/*std::vector<std::shared_ptr<ElementVertex>> NFGraph::get_vertex_children(ElementVertex* u) {
-	std::vector<std::shared_ptr<ElementVertex>> children;
-
-	// Output nodes can be:
-	//  1. Endpoints (They are connected to external domains so they do not have children --> End of graph)
-	//  2. Normal output nodes ( They are connected to input elements of following NFs in the chain )
-	//  The data member _jump_to_next_nf will tell you the truth.
-	if ( u->get_type() == VertexType::Output ) {
-		log << "\tMpike: " << def << std::endl;
-		return u->get_jump_to_next_nfs();
-	}
-	// Input and Processing elements have a normal adjacency list
-	else {
-		for ( auto& v : this->get_adjacency_list().at(u) ) {
-			ElementVertex* ev = (ElementVertex*) v;
-			children.push_back( (std::shared_ptr<ElementVertex>)ev );
-		}
-	}
-
-	return children;
-}*/

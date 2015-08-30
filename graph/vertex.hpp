@@ -7,9 +7,6 @@
 #ifndef _VERTEX_HPP_
 #define _VERTEX_HPP_
 
-//#include <string>
-//#include <iostream>
-
 #include <memory>
 #include <unordered_map>
 #include "../logger/logger.hpp"

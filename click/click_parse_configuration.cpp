@@ -30,7 +30,6 @@
 //              instantiate the router is intentionally removed.
 //============================================================================
 
-#include <stdio.h>
 #include "../helpers.hpp"
 #include "../logger/logger.hpp"
 #include "click_parse_configuration.hpp"
@@ -48,6 +47,7 @@ static const Clp_Option options[] = {
 };
 
 // Global variables useful to Click
+Logger logger(__FILE__);
 int    click_nthreads = 1;
 static ErrorHandler* errh;
 static Router* click_router = NULL;
@@ -58,14 +58,14 @@ void ClickCleaner::cleanup(Clp_Parser *clp, bool clean_all) {
 		Clp_DeleteParser(clp);
 
 	if ( clean_all ) {
-		printf("Cleaning up Click...\n");
+		logger << debug << "Cleaning up Click..." << def << std::endl;
 		click_static_cleanup();
-		printf("|-> Static clean up\n");
+		logger << debug << "|-> Static clean up" << def << std::endl;
 		if ( (click_router != NULL) && (click_master != NULL) )
 			delete click_master;
-		printf("|-> Click Master is deleted\n");
+		logger << debug << "|-> Click Master is deleted" << def << std::endl;
 		errh = NULL;
-		printf("|-> Click Error Handler is deleted\n");
+		logger << debug << "|-> Click Error Handler is deleted" << def << std::endl;
 	}
 }
 
@@ -191,7 +191,7 @@ Router* input_a_click_configuration (const char* click_source_configuration) {
 	done:
 		// Get current error status
 		int before_errors = errh->nerrors();
-	
+
 		// Parse configuration
 		click_master = new Master(click_nthreads);
 		click_router = parse_configuration(router_file, file_is_expr, errh);

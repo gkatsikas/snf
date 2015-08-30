@@ -29,14 +29,12 @@ class ChainParser {
 
 		/*
 		 * Maps the position of a NF in the chain with a Click Router object.
-		 *
 		 * The key is the position of the NF in the chain.
 		 */
 		NF_Map<Router*> nf_configuration;
 
 		/*
 		 * One DAG of Click elements per NF in the chain.
-		 *
 		 * The key is the position of the NF in the chain.
 		 */
 		NF_Map<NFGraph*> nf_dag;
@@ -73,12 +71,8 @@ class ChainParser {
 		ElementVertex* find_input_element_of_nf(NFGraph* next_nf_graph, std::string target_interface);
 
 		/*
-		 * Build the traffic classes as a test
-		 */
-		short test_chain_nf(void);
-
-		/*
-		 * Visits recursively the Click DAG and returns the vector of Elements it contains
+		 * Visits recursively the Click DAG and returns the vector of Elements it contains.
+		 * DEPRECATED from Click
 		 */
 		//Vector<Element*> visit_dag(unsigned short position);
 
@@ -111,22 +105,6 @@ class ChainParser {
 		 * by linking leaf nodes with roots.
 		 */
 		short chain_nf_configurations(void);
-};
-
-/*
- * Recursive DFS function to visit all vertices from 'vertex'.
- * The vertices can also belong to different graph, so in reality,
- * this is a recursive graph composition function.
- */
-namespace TrafficBuilder {
-	void traffic_class_builder_dfs(
-		NF_Map<NFGraph*> nf_chain,
-		unsigned short nf_position,
-		ElementVertex* nf_vertex,
-		std::string nf_conf, 
-		Colour& nf_colour,
-		Graph::VertexMap<Colour>& nf_visited
-	);
 };
 
 #endif

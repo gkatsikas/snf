@@ -134,7 +134,7 @@ Graph::VertexMap<int> Graph::get_in_degrees() {
 	if ( this->in_degrees.empty() )
 		this->find_in_degrees();
 	return this->in_degrees;
-};
+}
 
 /*
  * Get the number of vertices in the graph
@@ -201,13 +201,13 @@ void Graph::print_in_degrees(void) {
 void Graph::print_adjacency_list(void) {
 	log << "\t================ Adjacency List ===============" << def << std::endl;
 	for (auto& pair : this->get_adjacency_list()) {
-		log << std::setw(2) << "\t" << pair.first->get_name() << "-> ";
+		log << std::setw(2) << "\t" << pair.first->get_name() << ":" << pair.first->get_position() << "-> ";
 		for (Vertex* neighbour : pair.second)
-			log << neighbour->get_name() << ", " << def;
+			log << neighbour->get_name() << ":" << neighbour->get_position() << ", " << def;
 		log << def << std::endl;
 	}
 	log << "\t===============================================" << def << std::endl;
-};
+}
 
 void Graph::print_topological_sort(void) {
 	log << "\t=============== Topological Sort ==============" << def << std::endl;

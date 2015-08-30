@@ -92,7 +92,7 @@ std::string FieldOperation::to_str () const {
 								","+std::to_string(m_value[1])+")");
 			}
 			break;
-		case Noop:	
+		case Noop:
 		case Monitor:
 			output += (": "+OperationName[m_type]+"()");
 	}
@@ -101,7 +101,7 @@ std::string FieldOperation::to_str () const {
 
 void Operation::add_field_op(const FieldOperation &field_op) {
 	OperationType new_op_type = field_op.m_type;
-	
+
 	switch (new_op_type) {
 		case Monitor: {
 			this->monitors.push_back(field_op.m_value[0]);
@@ -109,13 +109,13 @@ void Operation::add_field_op(const FieldOperation &field_op) {
 		}
 		case Noop:
 			return;
-		case Write: 
+		case Write:
 		case Translate:
 		case WriteRR:
 		case WriteRa:
 		case WriteSF:
 			HeaderField field = field_op.m_field;
-		
+
 			//If we don't have any operation yet
 			if (m_fieldOps.find(field) == m_fieldOps.end() ) {
 				this->m_fieldOps.emplace(field, field_op);
@@ -127,7 +127,7 @@ void Operation::add_field_op(const FieldOperation &field_op) {
 }
 
 void Operation::compose_op (const Operation & operation) {
-	std::unordered_map<HeaderField, FieldOperation, std::hash<int> > 
+	std::unordered_map<HeaderField, FieldOperation, std::hash<int> >
 					field_ops = operation.m_fieldOps;
 	for (auto it=field_ops.begin(); it!=field_ops.end(); ++it) {
 		this->add_field_op (it->second);

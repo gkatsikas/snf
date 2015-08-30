@@ -17,6 +17,7 @@
 ParserConfiguration::ParserConfiguration(const std::string& config_file) : GenericConfiguration(config_file) {
 	this->nf_chain   = new Graph();
 	this->nf_domains = new Graph();
+	log << debug << "ParserConfiguration constructed" << def << std::endl;
 }
 
 /*
@@ -106,7 +107,7 @@ short ParserConfiguration::parse_topology(const std::string& nf_topo) {
 			this->usage("Each connection statement must have two parts separated by ->.", "Syntax: NF_1[iface]->[iface]NF_2;");
 			return CHAIN_PARSING_PROBLEM;
 		}
-		
+
 		// Now split
 		boost::char_separator<char> element_sep("->");
 		boost::tokenizer<boost::char_separator<char>> connections(*line, element_sep);
@@ -215,7 +216,7 @@ short ParserConfiguration::parse_topology(const std::string& nf_topo) {
 			return CHAIN_PARSING_PROBLEM;
 		}
 
-		// Now that eveything is read properly, associate the interface names with the NF names in the InterfaceMap		
+		// Now that eveything is read properly, associate the interface names with the NF names in the InterfaceMap
 		vertices.at(0)->add_chain_interface_pair(ifaces[0], "", vertices.at(1)->get_name());
 		vertices.at(1)->add_chain_interface_pair(ifaces[1], "", vertices.at(0)->get_name());
 
@@ -381,7 +382,7 @@ void ParserConfiguration::print_loaded_property_status(void) {
 		v->print_chain_interface_map();
 	}
 	log << "\t+++++++++++++++++++++++++++++++++++++++++++++++++++" << def << std::endl;
-	
+
 	log << "\t+++++++++++++++ Entry Interface Map +++++++++++++++" << def << std::endl;
 	for (auto& pair : this->nf_chain->get_adjacency_list()) {
 		ChainVertex* v = (ChainVertex*) pair.first;

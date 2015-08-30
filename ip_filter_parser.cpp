@@ -71,7 +71,7 @@ std::vector<PacketFilter> negate_pf_vec (const std::vector<PacketFilter> &vec) {
 	result.push_back(PacketFilter());
 	for (auto &it : vec) {
 		result = and_pf_vec(result,negate_pf(it));
-	}	
+	}
 	return result;
 }
 
@@ -119,7 +119,7 @@ PacketFilter filter_from_src_option (Option option, std::string& arg) {
 		case Option::SRC_HOST:
 			f = Filter::get_filter_from_ipclass_pattern(ip_src, arg);
 			break;
-		case Option::SRC_NET: 
+		case Option::SRC_NET:
 			f = Filter::get_filter_from_prefix_pattern (ip_src, arg);
 			break;
 		case Option::SRC_UDP_PORT:
@@ -147,7 +147,7 @@ PacketFilter filter_from_dst_option (Option option, std::string& arg) {
 		case Option::DST_HOST:
 			f = Filter::get_filter_from_ipclass_pattern(ip_dst, arg);
 			break;
-		case Option::DST_NET: 
+		case Option::DST_NET:
 			f = Filter::get_filter_from_prefix_pattern (ip_dst, arg);
 			break;
 		case Option::DST_UDP_PORT:
@@ -174,7 +174,7 @@ PacketFilter filter_from_ip_option (Option option, std::string& arg) {
 	switch (option) {
 		case Option::IP_PROTO:
 			if (!arg.compare("tcp")) {
-				f = Filter(ip_proto, 6);				
+				f = Filter(ip_proto, 6);
 			}
 			else if (!arg.compare("udp")) {
 				f = Filter(ip_proto, 6);
@@ -327,7 +327,7 @@ Primitive primitive_from_string (std::string str) {
 				break;
 		}
 	}
-	
+
 	return Primitive::Undefined;
 }
 
@@ -455,7 +455,7 @@ Option srcdst_option_from_string(Primitive prim, std::string str) {
 	return Option::Undefined;
 }
 
-Option tcp_option_from_string(std::string str) { 
+Option tcp_option_from_string(std::string str) {
 	if(str.size()) {
 		switch (str[0])	{
 			case 'o':
@@ -469,8 +469,8 @@ Option tcp_option_from_string(std::string str) {
 			default:
 				break;
 		}
-	}	
-	return Option::Undefined; 
+	}
+	return Option::Undefined;
 }
 
 Option option_from_string(Primitive curr_prim, std::string str) {
@@ -500,7 +500,7 @@ std::string parse_value (char** position, char* end) {
 	std::string value;
 	std::string temp;
 	char* current_position = *position;
-	
+
 	while (current_position != end && *current_position != ')') {
 		DEBUG("Current pos in parse_value: "+ *current_position );
 		if (*current_position == ' ' ) {
@@ -510,7 +510,7 @@ std::string parse_value (char** position, char* end) {
 				/*
 				 *
 				 * FIX ME: ip proto tcp -> tcp is not the primitive but the value
-				 *				
+				 *
 				 */
 			}
 			else if(is_operator(p)) { //We wait to see whether the next one is a primitive or not
@@ -548,7 +548,7 @@ std::string parse_value (char** position, char* end) {
 std::vector<PacketFilter> filters_from_substr (char** position, char* end) {
 
 /*
- * TODO: 
+ * TODO:
  * - support pattern that are not of the type "primitive option [value]"
  * - Add a PacketFilter containing the current filter and wait for "or" that
  *   change the primitive to push it into open_filters
@@ -563,13 +563,13 @@ std::vector<PacketFilter> filters_from_substr (char** position, char* end) {
 		insert_last(finished_filters, open_filters);
 		return finished_filters;
 	}
-	
+
 	std::string current_word;
 	bool negate=false;
 	Primitive curr_prim = Primitive::Undefined;
 	Primitive curr_operator = Primitive::AND;
 	Option curr_opt = Option::Undefined;
-	
+
 	while (*position < end && **position != ')') {
 		DEBUG("Considering character: \"" + **position+"\"");
 		if (**position == '!') {
@@ -578,7 +578,7 @@ std::vector<PacketFilter> filters_from_substr (char** position, char* end) {
 		}
 		else if(**position == '(') {
 			(*position)++;
-			
+
 			std::vector<PacketFilter> pf_vec = filters_from_substr(position, end);
 			DEBUG("Ended recursion");
 			if (negate) {
@@ -624,7 +624,7 @@ std::vector<PacketFilter> filters_from_substr (char** position, char* end) {
 					case Option::SRC_UDP_PORT:
 					case Option::SRC_TCP_PORT:
 					case Option::DST_UDP_PORT:
-					case Option::DST_TCP_PORT: 
+					case Option::DST_TCP_PORT:
 						current_word.clear();
 						while (*position < end && **position != ')' && **position != ' ') {
 							current_word.push_back(**position);
@@ -635,7 +635,7 @@ std::vector<PacketFilter> filters_from_substr (char** position, char* end) {
 						}
 						(*position)++;
 					default:
-						value = parse_value(position,end);						
+						value = parse_value(position,end);
 				}
 				PacketFilter pf = filter_from_option (curr_prim, curr_opt, value);
 				std::vector<PacketFilter> temp;
@@ -660,7 +660,7 @@ std::vector<PacketFilter> filters_from_substr (char** position, char* end) {
 						BUG("Expected operator");
 				}
 				curr_operator = curr_prim = Primitive::Undefined;
-				curr_opt = Option::Undefined;				
+				curr_opt = Option::Undefined;
 			}
 			current_word.clear();
 		}
@@ -672,7 +672,7 @@ std::vector<PacketFilter> filters_from_substr (char** position, char* end) {
 	(*position)++;
 	insert_last(finished_filters, open_filters);
 	return finished_filters;
-	
+
 }
 
 std::vector<PacketFilter> filters_from_ipfilter_line (std::string line) {

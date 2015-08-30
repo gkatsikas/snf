@@ -15,9 +15,9 @@ ClickTree::ClickTree (std::shared_ptr<ClickElement> root) : m_root( {root, Traff
 	this->find_classes();
 }
 
-ClickTree::ClickTree (int input_nf, std::string input_interface, 
+ClickTree::ClickTree (int input_nf, std::string input_interface,
 						std::shared_ptr<ClickElement> root) : m_root( {root, TrafficClass()}),
-								m_inputNF(input_nf), m_inputIface(input_interface),	
+								m_inputNF(input_nf), m_inputIface(input_interface),
 								m_trafficClasses() {
 	this->find_classes();
 }
@@ -56,7 +56,7 @@ void ClickTree::find_classes (void) {
 
 					if (!add_elem_failure) {
 						std::shared_ptr<ClickElement> child = (curr_element->get_outputClasses()[i]).get_child();
-						ClickNode next_node = (ClickNode) {
+						ClickNode next_node = ClickNode{
 							child,
 							next_tc
 						 };
