@@ -395,7 +395,8 @@ std::string Condition::to_str() const {
 }
 
 bool TrafficClass::is_discarded() const {
-	return (this->m_elementPath.back()->get_type() == Discard);
+	return (this->m_elementPath.back()->get_type() == Discard ||
+			this->m_elementPath.back()->get_type() == Discard_def);
 }
 
 TrafficClass::TrafficClass () : m_filters(), m_writeConditions(), m_dropBroadcasts(false),

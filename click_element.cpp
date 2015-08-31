@@ -46,6 +46,7 @@ ClickElement::ClickElement (ElementType type, const std::string& configuration, 
 			break;
 		case Discard:
 		case Discard_def:
+		case No_elem:
 			break;
 		case RadixIPLookup:
 		case LinearIPLookup:

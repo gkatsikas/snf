@@ -65,7 +65,7 @@ short Synthesizer::build_traffic_classes(void) {
 			std::cout<<"####################################################";
 			std::cout<<"####################################################";
 			for (auto &it : ct.get_trafficClasses()) {
-				std::cout<<it.to_str();
+				if (!it.is_discarded ()) std::cout<<it.to_str();
 			}
 
 			log << "" << def << std::endl;

@@ -5,7 +5,7 @@
 
 #include "helpers.hpp"
 
-OutputClass::OutputClass (int port_nb) : m_portNumber(port_nb), m_child(ClickElement::get_discard_elem()) {
+OutputClass::OutputClass (int port_nb) : m_portNumber(port_nb), m_child(new ClickElement(No_elem, "")) {
 }
 
 void OutputClass::add_filter (HeaderField field, Filter& filter) {

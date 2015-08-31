@@ -38,7 +38,8 @@ static const uint32_t elem_start = __LINE__;
 	FOO(Paint) \
 	FOO(PaintTee) \
 	FOO(Print) \
-	FOO(Discard_def)
+	FOO(Discard_def) \
+	FOO(No_elem)
 static const uint32_t elem_end = __LINE__;
 
 const uint32_t NB_ELEMENT_TYPES = elem_end - elem_start - 2;
