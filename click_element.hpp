@@ -5,13 +5,17 @@
 #include <string>
 #include <memory>
 #include <unordered_map>
+
 #include "element_type.hpp"
+#include "graph/nf_graph.hpp"
 
 class OutputClass;
 
 //Abstract representation of a Click element
 class ClickElement {
 	public:
+		ClickElement (ElementVertex* ev);
+		ClickElement (const std::string& name, const std::string& configuration);
 		ClickElement (ElementType type, const std::string& configuration);
 
 		void set_child (std::shared_ptr<ClickElement> child, int port);
@@ -25,10 +29,15 @@ class ClickElement {
 		void set_nbPorts(int nbPorts);
 		std::vector<OutputClass> get_outputClasses() const;
 		ElementType get_type() const;
+		ElementVertex* get_ev () const;
 
 		std::string to_str() const;
+		
+		static ElementType type_from_name (const std::string& name);
 
 	private:
+		ClickElement (ElementType type, const std::string& configuration, ElementVertex* ev);
+	
 		static std::shared_ptr<ClickElement> discard_elem_ptr;
 
 		//Configuration string parsing functions:
@@ -51,7 +60,9 @@ class ClickElement {
 		ElementType m_type;
 		std::string m_configuration; //FIXME: is this really necessary?
 		int m_nbPorts; //Number of output ports
+		ElementVertex* m_ev;
 		std::vector<OutputClass> m_outputClasses;
+
 };
 
 #endif

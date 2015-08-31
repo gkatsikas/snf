@@ -1,19 +1,13 @@
 c0 :: Classifier(
-	12/0806 20/0001,
-	12/0806 20/0002,
 	12/0800,
 	-
 );
 c1 :: Classifier(
-	12/0806 20/0001,
-	12/0806 20/0002,
 	12/0800,
 	-
 );
 
 c2 :: Classifier(
-        12/0806 20/0001,
-        12/0806 20/0002,
         12/0800,
         -
 );
@@ -32,9 +26,9 @@ fake_arpq1 :: EtherEncap(0x0800, 00:00:c0:4f:71:ef, 00:00:c0:4f:71:ef); //ARPQue
 fake_arpq2 :: EtherEncap(0x0800, 00:00:c0:4f:81:ef, 00:00:c0:4f:71:ef); //ARPQuerier(18.26.8.1, 00:00:C0:4F:71:EF);
 
 // Deliver ARP responses to ARP queriers as well as Linux.
-c0[1] -> fake_arpq0;
-c1[1] -> fake_arpq1;
-c2[1] -> fake_arpq2;
+//c0[1] -> fake_arpq0;
+//c1[1] -> fake_arpq1;
+//c2[1] -> fake_arpq2;
 
 // Connect ARP outputs to the interface queues.
 fake_arpq0 -> out0;
@@ -42,19 +36,19 @@ fake_arpq1 -> out1;
 fake_arpq2 -> out2;
 
 // Proxy ARP on eth0 for 18.26.7, as well as cone's IP address.
-ar0 :: ARPResponder(
-	18.26.4.24 00:00:C0:AE:67:EF,
-	18.26.7.0/24 00:00:C0:AE:67:EF,
-	18.26.8.0/24 00:00:C0:AE:67:EF,
-);
+//ar0 :: ARPResponder(
+//	18.26.4.24 00:00:C0:AE:67:EF,
+//	18.26.7.0/24 00:00:C0:AE:67:EF,
+//	18.26.8.0/24 00:00:C0:AE:67:EF,
+//);
 
-c0[0] -> ar0 -> out0;
+//c0[0] -> ar0 -> out0;
 
 // Ordinary ARP on eth1.
-ar1 :: ARPResponder(18.26.7.1 00:00:C0:4F:71:EF);
-ar2 :: ARPResponder(18.26.8.1 00:00:C0:4F:81:EF);
-c1[0] -> ar1 -> out1;
-c2[0] -> ar2 -> out2;
+//ar1 :: ARPResponder(18.26.7.1 00:00:C0:4F:71:EF);
+//ar2 :: ARPResponder(18.26.8.1 00:00:C0:4F:81:EF);
+//c1[0] -> ar1 -> out1;
+//c2[0] -> ar2 -> out2;
 
 // IP routing table. Outputs:
 // 0: packets for this machine.
@@ -84,9 +78,9 @@ rt :: StaticIPLookup(
 ip ::   Strip(14)
 	-> CheckIPHeader(INTERFACES 18.26.4.1/24 18.26.7.1/24 18.26.8.1/24)
 	-> [0]rt;
-c0[2] -> Paint(1) -> ip;
-c1[2] -> Paint(2) -> ip;
-c2[2] -> Paint(3) -> ip;
+c0[0] -> Paint(1) -> ip;
+c1[0] -> Paint(2) -> ip;
+c2[0] -> Paint(3) -> ip;
 
 // IP packets for this machine.
 // ToHost expects ethernet packets, so cook up a fake header.
@@ -128,6 +122,6 @@ cp2[1] -> Discard;
 cp3[1] -> Discard;
 
 // Unknown ethernet type numbers.
-c0[3] -> Print(c3) -> Discard;
-c1[3] -> Print(c3) -> Discard;
-c2[3] -> Print(c3) -> Discard;
+c0[1] -> Print(c3) -> Discard;
+c1[1] -> Print(c3) -> Discard;
+c2[1] -> Print(c3) -> Discard;

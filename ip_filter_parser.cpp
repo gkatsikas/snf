@@ -198,7 +198,7 @@ PacketFilter filter_from_ip_option (Option option, std::string& arg) {
 		case Option::IP_ID:
 			f = Filter::get_filter_from_ipclass_pattern(ip_id,arg);
 			break;
-		case Option::IP_TOS:
+		case Option::IP_ToS:
 			BUG("ip tos not supported, please use ip dscp and ip ect/ce");
 		case Option::IP_DSCP:
 			f = Filter::get_filter_from_ipclass_pattern(ip_dscp,arg);
@@ -209,7 +209,7 @@ PacketFilter filter_from_ip_option (Option option, std::string& arg) {
 		case Option::IP_CE:
 			f = Filter(ip_ce,1);
 			break;
-		case Option::IP_TTL:
+		case Option::IP_ttl:
 			f = Filter::get_filter_from_ipclass_pattern(ip_TTL,arg);
 			break;
 		case Option::IP_FRAG:
@@ -372,10 +372,10 @@ Option ip_option_from_string(std::string str) {
 			case 't':
 				if (str.size() == 3) {
 					if(str[1] == 'o' && str[2] == 's') {
-						return Option::IP_TOS;
+						return Option::IP_ToS;
 					}
 					else if(str[1] == 't' && str[2]=='l') {
-						return Option::IP_TTL;
+						return Option::IP_ttl;
 					}
 				}
 				break;

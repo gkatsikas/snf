@@ -58,7 +58,15 @@ short Synthesizer::build_traffic_classes(void) {
 			log << "\t" << elem_name << "(" << elem_conf << ")" << def << std::endl;
 
 			// Go DFS until the end of life
-			TrafficBuilder::traffic_class_builder_dfs(this->get_chain_parser()->get_nf_graphs(), nf_position, endpoint, elem_conf);
+			std::shared_ptr<ClickElement> ep(new ClickElement(endpoint));
+			TrafficBuilder::traffic_class_builder_dfs(this->get_chain_parser()->get_nf_graphs(), nf_position, ep, elem_conf);
+
+			ClickTree ct (ep);
+			std::cout<<"####################################################";
+			std::cout<<"####################################################";
+			for (auto &it : ct.get_trafficClasses()) {
+				std::cout<<it.to_str();
+			}
 
 			log << "" << def << std::endl;
 		}
@@ -94,9 +102,10 @@ short Synthesizer::generate_equivalent_configuration(void) {
  * this is a recursive graph composition function.
  */
 void TrafficBuilder::traffic_class_builder_dfs(	NF_Map<NFGraph*> nf_chain, unsigned short nf_position,
-												ElementVertex* nf_vertex, std::string nf_conf) {
+												std::shared_ptr<ClickElement> elem, std::string nf_conf) {
 
 	Logger log(__FILE__);
+	ElementVertex* nf_vertex = elem->get_ev();
 
 	// Retrieve the appropriate adjacency list
 	Graph::AdjacencyList adjacency_list = nf_chain[nf_position]->get_adjacency_list();
@@ -153,13 +162,15 @@ void TrafficBuilder::traffic_class_builder_dfs(	NF_Map<NFGraph*> nf_chain, unsig
 		}
 	}
 
+	int count = 0;
 	for ( auto& neighbour : adjacency_list.at(nf_vertex) ) {
-		ElementVertex* ev = (ElementVertex*) neighbour;
-
+		std::shared_ptr<ClickElement> child(new ClickElement((ElementVertex*) neighbour));
+		elem->set_child(child, count++);
+		//log<< "\t\tCreated: "+child->to_str()<<std::endl;
 		//log << "\t\t Child: " << ev->get_name() << def << std::endl;
 
 		// Unvisited node --> recursion
-		traffic_class_builder_dfs(nf_chain, nf_position, ev, nf_conf);
+		traffic_class_builder_dfs(nf_chain, nf_position, child, nf_conf);
 	}
 }
 
@@ -167,21 +178,21 @@ void Synthesizer::test_traffic_class_builder(void) {
 	setvbuf(stdout, NULL, _IONBF, 0);
 
 	std::string routing_table = "10/8 0,192.168.5/24 1,0/0 2";
-	std::shared_ptr<ClickElement> lookup (new ClickElement(RadixIPLookup,routing_table));
+	std::shared_ptr<ClickElement> lookup (new ClickElement("RadixIPLookup",routing_table));
 
 	std::string empty;
-	std::shared_ptr<ClickElement> discard (new ClickElement(Discard, empty));
+	std::shared_ptr<ClickElement> discard (new ClickElement("Discard", empty));
 
-	std::shared_ptr<ClickElement> ttl (new ClickElement(DecIPTTL, empty));
+	std::shared_ptr<ClickElement> ttl (new ClickElement("DecIPTTL", empty));
 
 	std::string address = "192.10.0.1";
-	std::shared_ptr<ClickElement> fixip (new ClickElement(FixIPSrc, address ));
+	std::shared_ptr<ClickElement> fixip (new ClickElement("FixIPSrc", address ));
 
 	//std::string rewrite = "- - 192.168.0.1 100-200# 0 1";
 	//std::shared_ptr<ClickElement> iprewriter(new ClickElement(IPRewriter, rewrite));
 
 	std::string filter = "allow src port 100-150";
-	std::shared_ptr<ClickElement> ipfilter(new ClickElement(IPFilter, filter));
+	std::shared_ptr<ClickElement> ipfilter(new ClickElement("IPFilter", filter));
 
 	//fixip->set_child(iprewriter,0);
 	//iprewriter->set_child(ipfilter,0);

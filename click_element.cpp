@@ -19,8 +19,17 @@
 std::string empty;
 std::shared_ptr<ClickElement> ClickElement::discard_elem_ptr(new ClickElement(Discard_def,empty));
 
-ClickElement::ClickElement ( ElementType type, const std::string& configuration ) :
-					m_type(type), m_configuration(configuration), m_nbPorts(0)
+ClickElement::ClickElement (ElementVertex* ev) : ClickElement(type_from_name(ev->get_class()),
+													ev->get_configuration(),ev) {}
+
+ClickElement::ClickElement (const std::string& name, const std::string& configuration) : 
+					ClickElement(type_from_name(name),configuration, nullptr) {}
+
+ClickElement::ClickElement (ElementType type, const std::string& configuration) :
+	ClickElement(type, configuration, nullptr) {}
+
+ClickElement::ClickElement (ElementType type, const std::string& configuration, ElementVertex* ev) :
+					m_type(type), m_configuration(configuration), m_nbPorts(0), m_ev(ev)
 {
 	switch (type) {
 		case DecIPTTL:
@@ -41,6 +50,7 @@ ClickElement::ClickElement ( ElementType type, const std::string& configuration 
 		case RadixIPLookup:
 		case LinearIPLookup:
 		case DirectIPLookup:
+		case StaticIPLookup:
 			parse_lookup_filter (configuration);
 			break;
 		case IPRewriter:
@@ -61,6 +71,12 @@ ClickElement::ClickElement ( ElementType type, const std::string& configuration 
 		case GetIPAddress:
 		case CheckUDPHeader:
 		case Classifier:
+		case Queue:
+		//TODO: start handling annotations
+		case Paint:
+		case PaintTee:
+		//TODO: handle Print?
+		case Print:
 		case CheckTCPHeader: {
 			OutputClass port(0);
 			this->add_output_class (port);
@@ -116,8 +132,21 @@ ElementType ClickElement::get_type() const {
 	return m_type;
 }
 
+ElementVertex* ClickElement::get_ev() const {
+	return m_ev;
+}
+
 std::string ClickElement::to_str() const {
 	return elementNames[m_type]+" with configuration \""+m_configuration+"\"";
+}
+
+ElementType ClickElement::type_from_name (const std::string& name) {
+	for (size_t i=0; i<NB_ELEMENT_TYPES; i++) {
+		if(!name.compare(elementNames[i])) {
+			return (ElementType) i;
+		}
+	}
+	BUG("Unknown name: "+name);
 }
 
 void ClickElement::add_output_class (OutputClass & output_class) {

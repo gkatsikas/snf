@@ -8,6 +8,7 @@
 #define _SYNTHESIZER_HPP_
 
 #include "../parser/chain_parser.hpp"
+#include "../click_element.hpp"
 
 class Synthesizer {
 	private:
@@ -68,7 +69,7 @@ namespace TrafficBuilder {
 	void traffic_class_builder_dfs(
 		NF_Map<NFGraph*> nf_chain,
 		unsigned short nf_position,
-		ElementVertex* nf_vertex,
+		std::shared_ptr<ClickElement>,
 		std::string nf_conf
 	);
 }

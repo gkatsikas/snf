@@ -20,11 +20,11 @@ static const int opt_start = __LINE__;
 	FOO(IP_VERS) \
 	FOO(IP_HL) \
 	FOO(IP_ID) \
-	FOO(IP_TOS) \
+	FOO(IP_ToS) \
 	FOO(IP_DSCP) \
 	FOO(IP_ECT) \
 	FOO(IP_CE) \
-	FOO(IP_TTL) \
+	FOO(IP_ttl) \
 	FOO(IP_FRAG) \
 	FOO(IP_UNFRAG) \
 	FOO(TCP_OPT) \

@@ -13,6 +13,7 @@ static const uint32_t elem_start = __LINE__;
 	FOO(RadixIPLookup) \
 	FOO(DirectIPLookup) \
 	FOO(LinearIPLookup) \
+	FOO(StaticIPLookup) \
 	FOO(IPRewriter) \
 	FOO(Discard) \
 	FOO(MarkIPHeader) \
@@ -33,13 +34,19 @@ static const uint32_t elem_start = __LINE__;
 	FOO(DropBroadcasts) \
 	FOO(IPFragmenter) \
 	FOO(Classifier) \
+	FOO(Queue) \
+	FOO(Paint) \
+	FOO(PaintTee) \
+	FOO(Print) \
 	FOO(Discard_def)
 static const uint32_t elem_end = __LINE__;
+
+const uint32_t NB_ELEMENT_TYPES = elem_end - elem_start - 2;
 
 #define DO_DESCRIPTION(e) #e,
 #define DO_ENUM(e) e,
 
-const std::string elementNames[elem_end - elem_start - 2] = {
+const std::string elementNames[NB_ELEMENT_TYPES] = {
 	_Element(DO_DESCRIPTION)
 };
 

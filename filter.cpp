@@ -29,10 +29,17 @@ Filter::Filter (HeaderField field, uint32_t lower_value, uint32_t upper_value) :
 }
 
 Filter Filter::get_filter_from_v4_prefix(HeaderField field, uint32_t value, uint32_t prefix) {
+
+	if(prefix > 32) {
+		BUG("Prefix higher than 32");
+	}
+	else if(prefix==32) {
+		return Filter(field,value);
+	}
 	uint32_t translation = 32 - prefix;
 	uint32_t lowerLimit = value & (0xffffffff << translation);
 	uint32_t upperLimit = value | (0xffffffff >> prefix);
-
+	
 	return Filter(field, lowerLimit, upperLimit);
 }
 
@@ -128,7 +135,6 @@ Filter Filter::get_filter_from_ipclass_pattern(HeaderField field, const std::str
 				pos = args.find_first_not_of(numbers,start);
 				uint32_t upper = to_uint(args.substr(start,pos));
 				f= Filter(field,lower,upper);
-				std::cout<<"Created filter :"<<f.to_str()<<"\n";
 			}
 			else {
 				f = Filter(field,to_uint(args.substr(0,pos)));
@@ -254,6 +260,7 @@ std::string Filter::to_ip_class_pattern() const {
 	switch (m_field) {
 		case ip_ver:
 			keyword = "ip vers ";
+			break;
 		case ip_src:
 			keyword = "src net ";
 			break;

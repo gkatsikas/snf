@@ -102,7 +102,7 @@ int main(int argc, char** argv) {
 			exit(exit_status);
 		}
 
-		synthesizer->test_traffic_class_builder();
+		//synthesizer->test_traffic_class_builder();
 	}
 	) << "  microseconds" << def << std::endl;
 	log << info << "+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+" << def << std::endl;
