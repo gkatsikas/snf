@@ -1,100 +1,145 @@
-c0 :: Classifier(
-	12/0800,
-	-
+/////////////////////////////////////////////////////////////////////////////
+//      Module: router_2if.click
+// Description: Click implementation of an n-port (even number) 
+//              L4 PNAT (RFC 1631) + Load Balancer (across 2 servers) 
+//              with performance counters.
+//      Author: Georgios Katsikas (katsikas@kth.se)
+/////////////////////////////////////////////////////////////////////////////
+
+/////////////////////////////////////////////////////////////////////////////
+// Configuration
+define(
+	$iface0      eth0,
+	$macAddr0    30:00:00:00:00:02,
+	$ipAddr0     12.0.0.2,
+	$ipNetHost0  12.0.0.0/32,
+	$ipBcast0    12.0.0.255/32,
+	$ipNet0      12.0.0.0/24,
+	$color0      1,
+
+	$iface1      eth1,
+	$macAddr1    40:00:00:00:00:01,
+	$ipAddr1     13.0.0.1,
+	$ipNetHost1  13.0.0.0/32,
+	$ipBcast1    13.0.0.255/32,
+	$ipNet1      13.0.0.0/24,
+	$color1      2,
+
+	$gwIPAddr0   12.0.0.2,
+	$gwIPAddr1   13.0.0.2,
+	$gwPort      2,
+
+	$queueSize   1000000,
+	$mtuSize     1500
 );
-c1 :: Classifier(
-	12/0800,
-	-
+/////////////////////////////////////////////////////////////////////////////
+
+
+/////////////////////////////////////////////////////////////////////////////
+// Elements
+// Queues
+queue0 :: Queue($queueSize);
+queue1 :: Queue($queueSize);
+
+// Module's I/O
+in0     :: FromDevice($iface0);
+out0    :: ToDevice  ($iface0);
+in1     :: FromDevice($iface1);
+out1    :: ToDevice  ($iface1);
+toLinux :: Discard;
+	
+// Classifier
+classifier0   :: Classifier(
+	12/0800,            /* IPv4 packets    */
+	-                   /* Everything else */
 );
 
-FromDevice(eth0) -> [0]c0;
-FromDevice(eth1) -> [0]c1;
-
-out0 :: Queue(200) -> ToDevice(eth0);
-out1 :: Queue(200) -> ToDevice(eth1);
-
-// An "ARP querier" for each interface.
-fake_arpq0 :: EtherEncap(0x0800, 00:00:c0:ae:67:ef, 00:00:c0:4f:71:ef); //ARPQuerier(18.26.4.24, 00:00:C0:AE:67:EF);
-fake_arpq1 :: EtherEncap(0x0800, 00:00:c0:4f:71:ef, 00:00:c0:4f:71:ef); //ARPQuerier(18.26.7.1, 00:00:C0:4F:71:EF);
-
-// Deliver ARP responses to ARP queriers as well as Linux.
-//c0[1] -> fake_arpq0;
-//c1[1] -> fake_arpq1;
-
-
-// Connect ARP outputs to the interface queues.
-fake_arpq0 -> out0;
-fake_arpq1 -> out1;
-
-// Proxy ARP on eth0 for 18.26.7, as well as cone's IP address.
-//ar0 :: ARPResponder(
-//	18.26.4.24 00:00:C0:AE:67:EF,
-//	18.26.7.0/24 00:00:C0:AE:67:EF
-//);
-
-//c0[0] -> ar0 -> out0;
-
-// Ordinary ARP on eth1.
-//ar1 :: ARPResponder(18.26.7.1 00:00:C0:4F:71:EF);
-//c1[0] -> ar1 -> out1;
-
-// IP routing table. Outputs:
-// 0: packets for this machine.
-// 1: packets for 18.26.4.
-// 2: packets for 18.26.7.
-// All other packets are sent to output 1, with 18.26.4.1 as the gateway.
-rt :: StaticIPLookup(
-	18.26.4.24/32 0,
-	18.26.4.255/32 0,
-	18.26.4.0/32 0,
-	18.26.7.1/32 0,
-	18.26.7.255/32 0,
-	18.26.7.0/32 0,
-	18.26.4.0/24 1,
-	18.26.7.0/24 2,
-	0.0.0.0/0 18.26.4.1 1
+classifier1   :: Classifier(
+	12/0800,            /* IPv4 packets    */
+	-                   /* Everything else */
 );
 
-// Hand incoming IP packets to the routing table.
-// CheckIPHeader checks all the lengths and length fields
-// for sanity.
-ip ::   Strip(14)
-	-> CheckIPHeader(INTERFACES 18.26.4.1/24 18.26.7.1/24)
-	-> [0]rt;
-c0[0] -> Paint(1) -> ip;
-c1[0] -> Paint(2) -> ip;
+eth_encap0 :: EtherEncap(0x0800, $macAddr0, $gwIPAddr0);
+eth_encap1 :: EtherEncap(0x0800, $macAddr1, $gwIPAddr1);
 
-// IP packets for this machine.
-// ToHost expects ethernet packets, so cook up a fake header.
-rt[0] -> EtherEncap(0x0800, 1:1:1:1:1:1, 2:2:2:2:2:2) -> Discard;
+// Strip Ethernet header
+strip :: Strip(14);
 
-// These are the main output paths; we've committed to a
-// particular output device.
-// Check paint to see if a redirect is required.
-// Process record route and timestamp IP options.
-// Fill in missing ip_src fields.
-// Discard packets that arrived over link-level broadcast or multicast.
-// Decrement and check the TTL after deciding to forward.
-// Fragment.
-// Send outgoing packets through ARP to the interfaces.
-rt[1]	-> DropBroadcasts
-	-> cp1 :: PaintTee(1)
-	-> gio1 :: IPGWOptions(18.26.4.24)
-	-> FixIPSrc(18.26.4.24)
-	-> dt1 :: DecIPTTL
-	-> fr1 :: IPFragmenter(300)
-	-> [0]fake_arpq0;
-rt[2]	-> DropBroadcasts
-	-> cp2 :: PaintTee(2)
-	-> gio2 :: IPGWOptions(18.26.7.1)
-	-> FixIPSrc(18.26.7.1)
-	-> dt2 :: DecIPTTL
-	-> fr2 :: IPFragmenter(300)
-	-> [0]fake_arpq1;
+// Check header's integrity
+checkIPHeader :: CheckIPHeader;
 
-cp1[1] -> Discard;
-cp2[1] -> Discard;
+// Routing table
+lookUp :: RadixIPLookup(
+	$ipAddr0     0,
+	$ipBcast0    0,
+	$ipNetHost0  0,
+	$ipAddr1     0,
+	$ipBcast1    0,
+	$ipNetHost1  0,
+	$ipNet0      1,
+	$ipNet1      2,
+	0.0.0.0/0 $gwIPAddr0 $gwPort
+);
 
-// Unknown ethernet type numbers.
-c0[1] -> Print(c3) -> Discard;
-c1[1] -> Print(c3) -> Discard;
+// Process the IP options field (mandatory based on RFC 791)
+ipOpt0  :: IPGWOptions($ipAddr0);
+ipOpt1  :: IPGWOptions($ipAddr1);
+
+// Set source IP
+fixIP0  :: FixIPSrc($ipAddr0);
+fixIP1  :: FixIPSrc($ipAddr1);
+
+// Decrement IP TTL field
+decTTL0 :: DecIPTTL;
+decTTL1 :: DecIPTTL;
+
+// Fragment packets
+fragIP0 :: IPFragmenter($mtuSize);
+fragIP1 :: IPFragmenter($mtuSize);
+
+/////////////////////////////////////////////////////////////////////
+// Interface's pipeline
+/////////////////////////////////////////////////////////////////////
+// Input --> Classifiers
+in0 -> [0]classifier0;
+in1 -> [0]classifier1;
+
+// --> IP packets
+classifier0[0] -> Paint($color0) -> strip;
+classifier1[0] -> Paint($color1) -> strip;
+
+// --> Drop the rest
+classifier0[1] -> Print(Dropped-If0) -> Discard;
+classifier1[1] -> Print(Dropped-If1) -> Discard;
+
+// Packets coming from Intranet go to port 0 of Rewriter
+strip
+	-> checkIPHeader
+	-> GetIPAddress(16)
+	-> [0]lookUp;
+
+// Packets for this machine
+lookUp[0]
+	-> EtherEncap(0x0800, 1:1:1:1:1:1, 2:2:2:2:2:2)
+	-> Print(Host)
+	-> toLinux;
+
+// Routed through local ifaces
+lookUp[1]
+	-> DropBroadcasts
+	-> ipOpt0[0]
+	-> fixIP0
+	-> decTTL0[0]
+	-> fragIP0[0]
+	//-> Print(Iface_0)
+	-> [0]eth_encap0;
+
+lookUp[2]
+	-> DropBroadcasts
+	-> ipOpt1[0]
+	-> fixIP1
+	-> decTTL1[0]
+	-> fragIP1[0]
+	//-> Print(Iface_1)
+	-> [0]eth_encap1;
+/////////////////////////////////////////////////////////////////////
