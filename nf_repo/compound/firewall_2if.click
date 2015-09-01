@@ -7,7 +7,7 @@
 /////////////////////////////////////////////////////////////////////////////
 // Configuration
 define(
-	$iface0      0,
+	$iface0      eth0,
 	$macAddr0    10:00:00:00:00:01,
 	$ipAddr0     10.0.0.1,
 	$ipNetHost0  10.0.0.0/32,
@@ -15,7 +15,7 @@ define(
 	$ipNet0      10.0.0.0/24,
 	$color0      1,
 
-	$iface1      1,
+	$iface1      eth1,
 	$macAddr1    20:00:00:00:00:01,
 	$ipAddr1     11.0.0.1,
 	$ipNetHost1  11.0.0.0/32,
@@ -51,7 +51,6 @@ elementclass L3Firewall {
 	out0    :: ToDevice  ($iface0, BURST $burst);
 	in1     :: FromDevice($iface1, BURST $burst);
 	out1    :: ToDevice  ($iface1, BURST $burst);
-	toLinux :: Discard;
 	
 	// ARP Querier
 	// The querier for the 2nd iface is replaced with a static
@@ -151,8 +150,8 @@ elementclass L3Firewall {
 	classifier1[2] -> Paint($color1) -> strip;
 
 	// --> Drop the rest
-	classifier0[3] -> Print(Dropped_0) -> Discard;
-	classifier1[3] -> Print(Dropped_1) -> Discard;
+	classifier0[3] -> Discard;
+	classifier1[3] -> Discard;
 
 	// Get IP address for routing
 	strip
@@ -162,10 +161,7 @@ elementclass L3Firewall {
 		-> [0]lookUp;
 
 	// Packets for this machine
-	lookUp[0]
-		-> EtherEncap(0x0800, 1:1:1:1:1:1, 2:2:2:2:2:2)
-		-> Print(Host)
-		-> toLinux;
+	lookUp[0] -> Discard;
 
 	// Routed through local ifaces
 	lookUp[1]
@@ -174,7 +170,6 @@ elementclass L3Firewall {
 		-> fixIP0
 		-> decTTL0[0]
 		-> fragIP0[0]
-		//-> Print(FW-Iface_0)
 		-> [0]arpQuerier0;
 
 	lookUp[2]
@@ -183,28 +178,10 @@ elementclass L3Firewall {
 		-> fixIP1
 		-> decTTL1[0]
 		-> fragIP1[0]
-		//-> Print(FW-Iface_1)
 		-> [0]arpQuerier1;
 
 	// Discarded by firewall
-	filter[1] -> Print(FW-Dropped) -> Discard;
-	/////////////////////////////////////////////////////////////////////
-
-	/////////////////////////////////////////////////////////////////////
-	// ERROR Cheching
-	/////////////////////////////////////////////////////////////////////
-	// DecIPTTL[1] emits packets with expired TTLs. Reply with ICMPs.
-	decTTL0[1] -> ICMPError($ipAddr0, timeexceeded) -> [0]lookUp;
-	decTTL1[1] -> ICMPError($ipAddr1, timeexceeded) -> [0]lookUp;
-
-	// Send back ICMP Parameter Problem msgs for badly formed IP options.
-	ipOpt0[1] -> ICMPError($ipAddr0, parameterproblem) -> [0]lookUp;
-	ipOpt1[1] -> ICMPError($ipAddr1, parameterproblem) -> [0]lookUp;
-
-	// Send back ICMP UNREACH/NEEDFRAG msgs on big packets with DF set.
-	// This makes path MTU discovery work.
-	fragIP0[1] -> ICMPError($ipAddr0, unreachable, needfrag) -> [0]lookUp;
-	fragIP1[1] -> ICMPError($ipAddr1, unreachable, needfrag) -> [0]lookUp;
+	filter[1] -> Discard;
 	/////////////////////////////////////////////////////////////////////
 }
 /////////////////////////////////////////////////////////////////////////////

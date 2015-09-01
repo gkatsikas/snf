@@ -1,8 +1,6 @@
 /////////////////////////////////////////////////////////////////////////////
 //      Module: router_3if.click
-// Description: Click implementation of an n-port (even number) 
-//              L4 PNAT (RFC 1631) + Load Balancer (across 2 servers) 
-//              with performance counters.
+// Description: Click implementation of a L3 router with 3 ports
 //      Author: Georgios Katsikas (katsikas@kth.se)
 /////////////////////////////////////////////////////////////////////////////
 
@@ -31,13 +29,10 @@ define(
 	$ipNetHost2  14.0.0.0/32,
 	$ipBcast2    14.0.0.255/32,
 	$ipNet2      14.0.0.0/24,
-	$color2      2,
+	$color2      3,
 
 	$gwIPAddr    13.0.0.2,
 	$gwPort      2,
-
-	$lbIPAddr0   13.0.0.2,
-	$lbIPAddr1   14.0.0.2,
 
 	$queueSize   1000000,
 	$mtuSize     1500
@@ -51,8 +46,8 @@ elementclass Router_3IF {
 	// Module's arguments
 	$iface0, $macAddr0,  $ipAddr0,   $ipNetHost0, $ipBcast0, $ipNet0, $color0,
 	$iface1, $macAddr1,  $ipAddr1,   $ipNetHost1, $ipBcast1, $ipNet1, $color1,
-	$iface3, $macAddr2,  $ipAddr2,   $ipNetHost2, $ipBcast2, $ipNet2, $color2,
-	$gwIPAddr, $gwPort, $queueSize, $mtuSize, $lbIPAddr0, $lbIPAddr1 |
+	$iface2, $macAddr2,  $ipAddr2,   $ipNetHost2, $ipBcast2, $ipNet2, $color2,
+	$gwIPAddr, $gwPort, $queueSize, $mtuSize |
 
 	// Queues
 	queue0 :: Queue($queueSize);
@@ -66,7 +61,6 @@ elementclass Router_3IF {
 	out1    :: ToDevice  ($iface1);
 	in2     :: FromDevice($iface2);
 	out2    :: ToDevice  ($iface2);
-	toLinux :: Discard;
 	
 	// ARP Querier
 	arpQuerier0   :: ARPQuerier($ipAddr0, $macAddr0);
@@ -168,9 +162,9 @@ elementclass Router_3IF {
 	classifier2[2] -> Paint($color2) -> strip;
 
 	// --> Drop the rest
-	classifier0[3] -> Print(Dropped-If0) -> Discard;
-	classifier1[3] -> Print(Dropped-If1) -> Discard;
-	classifier2[3] -> Print(Dropped-If2) -> Discard;
+	classifier0[3] -> Discard;
+	classifier1[3] -> Discard;
+	classifier2[3] -> Discard;
 
 	// Packets coming from Intranet go to port 0 of Rewriter
 	strip
@@ -179,10 +173,7 @@ elementclass Router_3IF {
 		-> [0]lookUp;
 
 	// Packets for this machine
-	lookUp[0]
-		-> EtherEncap(0x0800, 1:1:1:1:1:1, 2:2:2:2:2:2)
-		-> Print(Host)
-		-> toLinux;
+	lookUp[0] -> Discard;
 
 	// Routed through local ifaces
 	lookUp[1]
@@ -191,7 +182,6 @@ elementclass Router_3IF {
 		-> fixIP0
 		-> decTTL0[0]
 		-> fragIP0[0]
-		//-> Print(LB-Iface_0)
 		-> [0]arpQuerier0;
 
 	lookUp[2]
@@ -200,7 +190,6 @@ elementclass Router_3IF {
 		-> fixIP1
 		-> decTTL1[0]
 		-> fragIP1[0]
-		//-> Print(LB-Iface_1)
 		-> [0]arpQuerier1;
 
 	lookUp[3]
@@ -209,7 +198,6 @@ elementclass Router_3IF {
 		-> fixIP2
 		-> decTTL2[0]
 		-> fragIP2[0]
-		//-> Print(LB-Iface_2)
 		-> [0]arpQuerier2;
 	/////////////////////////////////////////////////////////////////////
 }
@@ -219,14 +207,10 @@ elementclass Router_3IF {
 /////////////////////////////////////////////////////////////////////////////
 // Scenario
 /////////////////////////////////////////////////////////////////////////////
-//AddressInfo(dev0 $ipAddr0 $macAddr0);
-//AddressInfo(dev1 $ipAddr1 $macAddr1);
-//AddressInfo(dev2 $ipAddr2 $macAddr2);
-
 router :: Router_3IF(
 	$iface0, $macAddr0, $ipAddr0, $ipNetHost0, $ipBcast0, $ipNet0, $color0,
 	$iface1, $macAddr1, $ipAddr1, $ipNetHost1, $ipBcast1, $ipNet1, $color1,
 	$iface2, $macAddr2, $ipAddr2, $ipNetHost2, $ipBcast2, $ipNet2, $color2,
-	$gwIPAddr, $gwPort, $queueSize, $mtuSize, $lbIPAddr0, $lbIPAddr1
+	$gwIPAddr, $gwPort, $queueSize, $mtuSize
 );
 /////////////////////////////////////////////////////////////////////////////

@@ -65,7 +65,7 @@ void NFGraph::add_vertex_and_neighbours(ElementVertex* u) {
 	Element* e = u->get_click_element().get();
 	Element* neighbour = NULL;
 
-	log << info << "\t" << e->class_name() << ":" << e->eindex() << " has " << e->ninputs() << " input ports" << def << std::endl;
+	//log << info << "\t" << e->class_name() << ":" << e->eindex() << " has " << e->ninputs() << " input ports" << def << std::endl;
 
 	// For each active input port
 	for ( int i=0 ; i < e->ninputs() ; i++ ) {
@@ -76,7 +76,7 @@ void NFGraph::add_vertex_and_neighbours(ElementVertex* u) {
 
 			// This element is not in the graph. New vertex needs to be created
 			if ( v == NULL ) {
-				log << info << "\t\t" << neighbour->class_name() << ":" << neighbour->eindex() << def << std::endl;
+				//log << info << "\t\tNEW " << neighbour->class_name() << ":" << neighbour->eindex() << def << std::endl;
 				v = new ElementVertex(neighbour, neighbour->class_name(), (unsigned short) neighbour->eindex());
 			}
 			this->add_edge(std::move(v), std::move(u));
@@ -92,16 +92,17 @@ void NFGraph::add_vertex_and_neighbours(ElementVertex* u) {
 
 			// Make pairs between the current node (e) and all these vertices found
 			for ( Vector<Element*>::const_iterator j=found.begin(); j!=found.end(); ++j) {
-				log << info << "\t\t" << (*j)->class_name() << ":" << (*j)->eindex() << def << std::endl;
+				//log << info << "\t\t" << (*j)->class_name() << ":" << (*j)->eindex() << def << std::endl;
 				ElementVertex* v = (ElementVertex*) this->get_vertex_by_position((*j)->eindex());
-				if ( v == NULL )
+				if ( v == NULL ) {
 					v = new ElementVertex(*j, (*j)->class_name(), (*j)->eindex());
+				}
 				this->add_edge(std::move(v), std::move(u));
 			}
 		}
 	}
 
-	log << info << "\t" << e->class_name() << ":" << e->eindex() << " has " << e->noutputs() << " output ports" << def << std::endl;
+	//log << info << "\t" << e->class_name() << ":" << e->eindex() << " has " << e->noutputs() << " output ports" << def << std::endl;
 
 	// For each active output port
 	for ( int i=0 ; i < e->noutputs() ; i++ ) {
@@ -112,7 +113,7 @@ void NFGraph::add_vertex_and_neighbours(ElementVertex* u) {
 
 			// This element is not in the graph. New vertex needs to be created
 			if ( v == NULL ) {
-				log << info << "\t\t" << neighbour->class_name() << ":" << neighbour->eindex() << def << std::endl;
+				//log << info << "\t\tNEW " << neighbour->class_name() << ":" << neighbour->eindex() << def << std::endl;
 				v = new ElementVertex(neighbour, neighbour->class_name(), (unsigned short) neighbour->eindex());
 			}
 			this->add_edge(std::move(u), std::move(v));
@@ -127,10 +128,11 @@ void NFGraph::add_vertex_and_neighbours(ElementVertex* u) {
 			Vector<Element*> found = tracker.elements();
 
 			for ( Vector<Element*>::const_iterator j=found.begin(); j!=found.end(); ++j) {
-				log << info << "\t\t" << (*j)->class_name() << ":" << (*j)->eindex() << def << std::endl;
+				//log << info << "\t\t" << (*j)->class_name() << ":" << (*j)->eindex() << def << std::endl;
 				ElementVertex* v = (ElementVertex*) this->get_vertex_by_position((*j)->eindex());
-				if ( v == NULL )
+				if ( v == NULL ) {
 					v = new ElementVertex(*j, (*j)->class_name(), (*j)->eindex());
+				}
 				this->add_edge(std::move(u), std::move(v));
 			}
 		}

@@ -48,15 +48,14 @@ in0     :: FromDevice($iface0);
 out0    :: ToDevice  ($iface0);
 in1     :: FromDevice($iface1);
 out1    :: ToDevice  ($iface1);
-toLinux :: Discard;
 	
 // Classifier
-classifier0   :: Classifier(
+classifier0 :: Classifier(
 	12/0800,            /* IPv4 packets    */
 	-                   /* Everything else */
 );
 
-classifier1   :: Classifier(
+classifier1 :: Classifier(
 	12/0800,            /* IPv4 packets    */
 	-                   /* Everything else */
 );
@@ -92,8 +91,8 @@ fixIP0  :: FixIPSrc($ipAddr0);
 fixIP1  :: FixIPSrc($ipAddr1);
 
 // Decrement IP TTL field
-decTTL0 :: DecIPTTL;
-decTTL1 :: DecIPTTL;
+decTTL0 :: DecIPTTL(CALC_CHECKSUM false);
+decTTL1 :: DecIPTTL(CALC_CHECKSUM false);
 
 // Fragment packets
 fragIP0 :: IPFragmenter($mtuSize);
@@ -114,8 +113,8 @@ classifier0[0] -> Paint($color0) -> strip;
 classifier1[0] -> Paint($color1) -> strip;
 
 // --> Drop the rest
-classifier0[1] -> Print(Dropped-If0) -> Discard;
-classifier1[1] -> Print(Dropped-If1) -> Discard;
+classifier0[1] -> Discard;
+classifier1[1] -> Discard;
 
 // Packets coming from Intranet go to port 0 of Rewriter
 strip
@@ -126,8 +125,7 @@ strip
 // Packets for this machine
 lookUp[0]
 	-> EtherEncap(0x0800, 1:1:1:1:1:1, 2:2:2:2:2:2)
-	-> Print(Host)
-	-> toLinux;
+	-> Discard;
 
 // Routed through local ifaces
 lookUp[1]
@@ -136,7 +134,6 @@ lookUp[1]
 	-> fixIP0
 	-> decTTL0[0]
 	-> fragIP0[0]
-	//-> Print(Iface_0)
 	-> [0]eth_encap0;
 
 lookUp[2]
@@ -145,6 +142,14 @@ lookUp[2]
 	-> fixIP1
 	-> decTTL1[0]
 	-> fragIP1[0]
-	//-> Print(Iface_1)
 	-> [0]eth_encap1;
+
+ipOpt0[1] -> Discard;
+ipOpt1[1] -> Discard;
+
+decTTL0[1] -> Discard;
+decTTL1[1] -> Discard;
+
+fragIP0[1] -> Discard;
+fragIP1[1] -> Discard;
 /////////////////////////////////////////////////////////////////////

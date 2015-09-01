@@ -177,12 +177,11 @@ Vertex* Graph::get_vertex_by_position(unsigned short pos) {
 	if ( this->is_empty() )
 		return NULL;
 
-	if ( pos > this->get_vertices_no() )
-		return NULL;
-
-	for ( auto& pair : this->vertices )
-		if ( pair.first->get_position() == pos )
+	for ( auto& pair : this->vertices ) {
+		if ( pair.first->get_position() == pos ) {
 			return pair.first;
+		}
+	}
 
 	return NULL;
 }
@@ -325,6 +324,9 @@ void dfs(Vertex* vertex, Colour& colour, const Graph::AdjacencyList& adjacency_l
 			else if (neighbour_colour == Grey)
 				throw std::logic_error("Cycle in graph");
 		}
+	}
+	catch (const std::logic_error& e) {
+		throw e;
 	}
 	catch (const std::exception& e) {
 		throw std::logic_error("Graph is not built properly. Invalid access to memory \nCheck Click Configuration file");

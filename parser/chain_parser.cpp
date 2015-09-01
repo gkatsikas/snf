@@ -144,27 +144,36 @@ short ChainParser::build_nf_dag(std::string nf_name, unsigned short position) {
 	log << "" << std::endl;
 	log << info << "Building Click Graph for " << nf_name << def << std::endl;
 
+	unsigned short total_elements = router->nelements();
+
 	for ( int i=0 ; i < router->nelements() ; i++ ) {
 		Element* e = Router::element(router, i);
-		log << "Element " << e->class_name() << std::endl;
+		//log << "Element " << e->class_name() << " " << e->eindex() << ": " << e->configuration().c_str() << std::endl;
+
+		ElementVertex* u = NULL;
 
 		// Turn this Click element into a DAG Vertex
-		if ( !nf_graph->contains(i) ) {
-			ElementVertex* u = new ElementVertex(e, e->class_name(), e->eindex());
+		if ( !nf_graph->contains(e->eindex()) )
+			u = new ElementVertex(e, e->class_name(), e->eindex());
+		else
+			u = (ElementVertex*) nf_graph->get_vertex_by_position(e->eindex());
 
-			// Add this vertex to the NF DAG along with its neighbouring connections (vertices)
-			try {
-				nf_graph->add_vertex_and_neighbours(std::move(u));
-			}
-			catch (const std::exception& e) {
-				log << error << "|--> " << e.what() << def << std::endl;
-				exit(CLICK_PARSING_PROBLEM);
-			}
+		//log << "Element " << u->get_name() << " " << u->get_position() << ": " << u->get_configuration() << std::endl;
+
+		// Add this vertex to the NF DAG along with its neighbouring connections (vertices)
+		try {
+			nf_graph->add_vertex_and_neighbours(std::move(u));
+		}
+		catch (const std::exception& e) {
+			log << error << "|--> " << e.what() << def << std::endl;
+			exit(CLICK_PARSING_PROBLEM);
 		}
 	}
 
-	// The generated DAG should contain the same number of vertices with the Click configuration
-	if ( nf_graph->get_vertices_no() != router->nelements() ) {
+	// The generated DAG should not contain more vertices than the original one.
+	// It can contain less though because we may have AddressInfo elements that are used only 
+	// as configuration elements.
+	if ( nf_graph->get_vertices_no() > total_elements ) {
 		delete nf_graph;
 		return CLICK_PARSING_PROBLEM;
 	}
@@ -239,11 +248,11 @@ short ChainParser::verify_and_connect_nfs(std::string nf_name, unsigned short po
 			 (el_class == "ToNetFront")) {
 
 			//log << "" << def << std::endl;
-			//log << "\t Element  Name: " << el_name       << def << std::endl;
-			//log << "\t Element Class: " << el_class      << def << std::endl;
-			//log << "\t Element  Type: " << type_str      << def << std::endl;
-			//log << "\t Configuration: " << configuration << def << std::endl;
-			//log << "\t     Interface: " << interface     << def << std::endl;
+			//log << "\tElement  Name: " << el_name       << def << std::endl;
+			//log << "\tElement Class: " << el_class      << def << std::endl;
+			//log << "\tElement  Type: " << type_str      << def << std::endl;
+			//log << "\tConfiguration: " << configuration << def << std::endl;
+			//log << "\t    Interface: " << interface     << def << std::endl;
 
 			// This is an entry interface that connects the chain to a domain
 			if ( this_nf->has_entry_interface(interface) ) {

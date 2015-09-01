@@ -8,7 +8,7 @@
 /////////////////////////////////////////////////////////////////////////////
 // Configuration
 define(
-	$iface0      0,
+	$iface0      eth0,
 	$macAddr0    10:00:00:00:00:01,
 	$ipAddr0     10.0.0.1,
 	$ipNetHost0  10.0.0.0/32,
@@ -16,7 +16,7 @@ define(
 	$ipNet0      10.0.0.0/24,
 	$color0      1,
 
-	$iface1      1,
+	$iface1      eth1,
 	$macAddr1    20:00:00:00:00:01,
 	$ipAddr1     11.0.0.1,
 	$ipNetHost1  11.0.0.0/32,
@@ -39,8 +39,8 @@ define(
 // Elements
 elementclass Router {
 	// Module's arguments
-	$dev0,   $iface0, $macAddr0,  $ipAddr0, $ipNetHost0, $ipBcast0, $ipNet0, $color0,
-	$dev1,   $iface1, $macAddr1,  $ipAddr1, $ipNetHost1, $ipBcast1, $ipNet1, $color1,
+	$iface0, $macAddr0,  $ipAddr0, $ipNetHost0, $ipBcast0, $ipNet0, $color0,
+	$iface1, $macAddr1,  $ipAddr1, $ipNetHost1, $ipBcast1, $ipNet1, $color1,
 	$gwIPAddr, $gwMACAddr, $gwPort, $queueSize, $mtuSize, $burst |
 
 	// Queues
@@ -52,8 +52,6 @@ elementclass Router {
 	out0    :: ToDevice  ($iface0, BURST $burst);
 	in1     :: FromDevice($iface1, BURST $burst);
 	out1    :: ToDevice  ($iface1, BURST $burst);
-	//toLinux :: ToHost;
-	toLinux :: Discard;
 	
 	// ARP Querier
 	arpQuerier0 :: ARPQuerier($ipAddr0, $macAddr0);
@@ -144,10 +142,7 @@ elementclass Router {
 		-> [0]lookUp;
 
 	// Packets for this machine
-	lookUp[0]
-		-> EtherEncap(0x0800, 1:1:1:1:1:1, 2:2:2:2:2:2)
-		-> Print(Host)
-		-> toLinux;
+	lookUp[0] -> Discard;
 
 	// Routed through local ifaces
 	lookUp[1]
@@ -173,17 +168,17 @@ elementclass Router {
 	// ERROR Cheching
 	/////////////////////////////////////////////////////////////////////
 	// DecIPTTL[1] emits packets with expired TTLs. Reply with ICMPs.
-	decTTL0[1] -> ICMPError($ipAddr0, timeexceeded) -> [0]lookUp;
-	decTTL1[1] -> ICMPError($ipAddr1, timeexceeded) -> [0]lookUp;
+	decTTL0[1] -> Discard;
+	decTTL1[1] -> Discard;
 
 	// Send back ICMP Parameter Problem msgs for badly formed IP options.
-	ipOpt0[1] -> ICMPError($ipAddr0, parameterproblem) -> [0]lookUp;
-	ipOpt1[1] -> ICMPError($ipAddr1, parameterproblem) -> [0]lookUp;
+	ipOpt0[1] -> Discard;
+	ipOpt1[1] -> Discard;
 
 	// Send back ICMP UNREACH/NEEDFRAG msgs on big packets with DF set.
 	// This makes path MTU discovery work.
-	fragIP0[1] -> ICMPError($ipAddr0, unreachable, needfrag) -> [0]lookUp;
-	fragIP1[1] -> ICMPError($ipAddr1, unreachable, needfrag) -> [0]lookUp;
+	fragIP0[1] -> Discard;
+	fragIP1[1] -> Discard;
 	/////////////////////////////////////////////////////////////////////
 }
 /////////////////////////////////////////////////////////////////////////////
@@ -192,12 +187,9 @@ elementclass Router {
 /////////////////////////////////////////////////////////////////////////////
 // Scenario
 /////////////////////////////////////////////////////////////////////////////
-AddressInfo(dev0 $ipAddr0 $macAddr0);
-AddressInfo(dev1 $ipAddr1 $macAddr1);
-
 router :: Router(
-	dev0, $iface0, $macAddr0, $ipAddr0, $ipNetHost0, $ipBcast0, $ipNet0, $color0,
-	dev1, $iface1, $macAddr1, $ipAddr1, $ipNetHost1, $ipBcast1, $ipNet1, $color1,
+	$iface0, $macAddr0, $ipAddr0, $ipNetHost0, $ipBcast0, $ipNet0, $color0,
+	$iface1, $macAddr1, $ipAddr1, $ipNetHost1, $ipBcast1, $ipNet1, $color1,
 	$gwIPAddr, $gwMACAddr, $gwPort, $queueSize, $mtuSize, $burst
 );
 /////////////////////////////////////////////////////////////////////////////
