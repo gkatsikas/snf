@@ -1,163 +1,77 @@
-/////////////////////////////////////////////////////////////////////////////
-//      Module: napt.click
-// Description: Click implementation of an n-port (even number) 
-//              L4 NAPT (RFC 1631).
-//      Author: Georgios Katsikas (katsikas@kth.se)
-/////////////////////////////////////////////////////////////////////////////
-
-/////////////////////////////////////////////////////////////////////////////
-// Configuration
-define(
-	$iface0      0,
-	$macAddr0    10:00:00:00:00:01,
-	$ipAddr0     10.0.0.1,
-	$ipNetHost0  10.0.0.0/32,
-	$ipBcast0    10.0.0.255/32,
-	$ipNet0      10.0.0.0/24,
-	$color0      1,
-
-	$iface1      1,
-	$macAddr1    20:00:00:00:00:01,
-	$ipAddr1     11.0.0.1,
-	$ipNetHost1  11.0.0.0/32,
-	$ipBcast1    11.0.0.255/32,
-	$ipNet1      11.0.0.0/24,
-	$color1      2,
-
-	$gwIPAddr0   10.0.0.2,
-	$gwIPAddr1   11.0.0.2,
-	$gwMACAddr   20:00:00:00:00:02,
-	$gwPort      2,
-
-	$queueSize   1000000,
-	$mtuSize     1500,
-	$burst       10
+c0 :: Classifier(
+	12/0800,
+	-
 );
-/////////////////////////////////////////////////////////////////////////////
-
-
-/////////////////////////////////////////////////////////////////////////////
-// Elements
-// Queues
-queue0 :: Queue($queueSize);
-queue1 :: Queue($queueSize);
-
-// Module's I/O
-in0     :: FromDevice($iface0, BURST $burst);
-out0    :: ToDevice  ($iface0, BURST $burst);
-in1     :: FromDevice($iface1, BURST $burst);
-out1    :: ToDevice  ($iface1, BURST $burst);
-toLinux :: Discard;
-	
-eth_encap0 :: EtherEncap(0x0800, $macAddr0, $gwIPAddr0);
-eth_encap1 :: EtherEncap(0x0800, $macAddr1, $gwIPAddr1);
-
-// Classifier
-classifier0 :: Classifier(
-	12/0800,            /* IPv4 packets    */
-	-                   /* Everything else */
+c1 :: Classifier(
+	12/0800,
+	-
 );
 
-classifier1 :: Classifier(
-	12/0800,            /* IPv4 packets    */
-	-                   /* Everything else */
-);
+FromDevice(eth0) -> [0]c0;
+FromDevice(eth1) -> [0]c1;
 
-// Strip Ethernet header
-strip0 :: Strip(14);
-strip1 :: Strip(14);
+out0 :: Queue(200) -> Discard;
+out1 :: Queue(200) -> Discard;
+tol :: Discard;
 
-// Check header's integrity
-checkIPHeader0 :: MarkIPHeader;
-checkIPHeader1 :: MarkIPHeader;
+eth_encap0 :: EtherEncap(0x0800, 00:00:c0:ae:67:ef, 00:00:c0:4f:71:ef);
+eth_encap1 :: EtherEncap(0x0800, 00:00:c0:4f:71:ef, 00:00:c0:4f:71:ef);
 
-// Routing table
-lookUp :: RadixIPLookup(
-	$ipAddr0     0,
-	$ipBcast0    0,
-	$ipNetHost0  0,
-	$ipAddr1     0,
-	$ipBcast1    0,
-	$ipNetHost1  0,
-	$ipNet0      1,
-	$ipNet1      2,
-	0.0.0.0/0 $gwIPAddr1 $gwPort
-);
+eth_encap0 -> out0;
+eth_encap1 -> out1;
 
-// Implements PNAT
+// Implements NAPT
 ipRewriter :: IPRewriter(
-	pattern $ipAddr1 1024-65535 - - 0 0,   /* Packets from Intranet change src IP and port */
-	pattern - - $ipAddr0 - 0 0,            /* Packets from Internet change dst IP and port */
+	pattern 18.26.7.1 1024-65535 - - 0 1,  /* Packets from 18.26.4/24 change src IP and port */
+	pattern - - 18.26.4.24 1024-65535 1 0  /* Packets from 18.26.7/24 change dst IP and port */
 );
 
-// Process the IP options field (mandatory based on RFC 791)
-ipOpt0  :: IPGWOptions($ipAddr0);
-ipOpt1  :: IPGWOptions($ipAddr1);
+rt :: StaticIPLookup(
+	18.26.4.24/32 0,
+	18.26.4.255/32 0,
+	18.26.4.0/32 0,
+	18.26.7.1/32 0,
+	18.26.7.255/32 0,
+	18.26.7.0/32 0,
+	18.26.4.0/24 1,
+	18.26.7.0/24 2,
+	0.0.0.0/0 18.26.4.1 1
+);
 
-// Set source IP
-fixIP0  :: FixIPSrc($ipAddr0);
-fixIP1  :: FixIPSrc($ipAddr1);
-
-// Decrement IP TTL field
-decTTL0 :: DecIPTTL;
-decTTL1 :: DecIPTTL;
-
-// Fragment packets
-fragIP0 :: IPFragmenter($mtuSize);
-fragIP1 :: IPFragmenter($mtuSize);
-
-/////////////////////////////////////////////////////////////////////
-// Interface's pipeline
-/////////////////////////////////////////////////////////////////////
-// Input --> Classifiers
-in0 -> [0]classifier0;
-in1 -> [0]classifier1;
-
-// --> IP packets
-classifier0[0] -> Paint($color0) -> strip0;
-classifier1[0] -> Paint($color1) -> strip1;
-
-// --> Drop the rest
-classifier0[1] -> Print(Dropped-If0) -> Discard;
-classifier1[1] -> Print(Dropped-If1) -> Discard;
-
-// Packets coming from Intranet go to port 0 of Rewriter
-strip0
-	-> checkIPHeader0
+// From 18.26.4
+ip0 :: Strip(14)
+	-> CheckIPHeader()
 	-> [0]ipRewriter;
 
-// Packets coming from Internet go to port 1 of Rewriter
-strip1
-	-> checkIPHeader1
+// From 18.26.7
+ip1 :: Strip(14)
+	-> CheckIPHeader()
 	-> [1]ipRewriter;
 
 // Rewrite IP address for routing
 ipRewriter
 	-> GetIPAddress(16)
-	-> [0]lookUp;
+	-> [0]rt;
 
-// Packets for this machine
-lookUp[0]
-	-> EtherEncap(0x0800, 1:1:1:1:1:1, 2:2:2:2:2:2)
-	-> Print(Host)
-	-> toLinux;
+c0[0] -> Paint(1) -> ip;
+c1[0] -> Paint(2) -> ip;
 
-// Routed through local ifaces
-lookUp[1]
-	-> DropBroadcasts
-	-> ipOpt0[0]
-	-> fixIP0
-	-> decTTL0[0]
-	-> fragIP0[0]
-	//-> Print(If0)
-	-> [0]eth_encap0;
+// IP packets for this machine.
+rt[0] -> EtherEncap(0x0800, 1:1:1:1:1:1, 2:2:2:2:2:2) -> tol;
 
-lookUp[2]
-	-> DropBroadcasts
-	-> ipOpt1[0]
-	-> fixIP1
-	-> decTTL1[0]
-	-> fragIP1[0]
-	//-> Print(If1)
-	-> [0]eth_encap1;
-/////////////////////////////////////////////////////////////////////
+rt[1] -> DropBroadcasts
+      -> gio1 :: IPGWOptions(18.26.4.24)
+      -> FixIPSrc(18.26.4.24)
+      -> dt1 :: DecIPTTL
+      -> fr1 :: IPFragmenter(300)
+      -> [0]eth_encap0;
+rt[2] -> DropBroadcasts
+      -> gio2 :: IPGWOptions(18.26.7.1)
+      -> FixIPSrc(18.26.7.1)
+      -> dt2 :: DecIPTTL
+      -> fr2 :: IPFragmenter(300)
+      -> [0]eth_encap1;
+
+// Unknown ethernet type numbers.
+c0[1] -> Print() -> Discard;
+c1[1] -> Print() -> Discard;

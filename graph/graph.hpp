@@ -84,12 +84,6 @@ class Graph
 		 */
 		std::vector<Vertex*> get_vertex_order(void);
 		std::vector<Vertex*> topological_sort(void);
-
-		/*
-		 * ATTENTION: Under development (Use with own risk :p)
-		 */
-		//std::vector<Vertex*> all_paths_from_vertex(Vertex* vertex);
-		//std::vector<std::vector<Vertex*>> all_paths(void);
 };
 
 /*

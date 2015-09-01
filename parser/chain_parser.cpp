@@ -146,6 +146,7 @@ short ChainParser::build_nf_dag(std::string nf_name, unsigned short position) {
 
 	for ( int i=0 ; i < router->nelements() ; i++ ) {
 		Element* e = Router::element(router, i);
+		log << "Element " << e->class_name() << std::endl;
 
 		// Turn this Click element into a DAG Vertex
 		if ( !nf_graph->contains(i) ) {

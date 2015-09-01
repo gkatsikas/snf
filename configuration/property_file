@@ -1,10 +1,9 @@
-#######################################################################################################
-### ATTENTION: Each [NF_CHAIN] entry (list of NF_i key-value pairs)
-### goes along with a [NF_TOPO] TOPOLOGY key-value pair.
-#######################################################################################################
-
 [NF_MODULES]
-NF_1 = nf_repo/flat_router_2if.click
+#NF_1 = nf_repo/fake-iprouter.click
+#NF_2 = nf_repo/fake-iprouter.click
+#NF_3 = nf_repo/fake-iprouter.click
+
+NF_1 = nf_repo/fake-iprouter.click
 NF_2 = nf_repo/flat_router_3if.click
 NF_3 = nf_repo/flat_router_2if.click
 NF_4 = nf_repo/flat_router_2if.click
@@ -31,6 +30,8 @@ NF_4 = nf_repo/flat_router_2if.click
 
 [NF_TOPO]
 TOPOLOGY = NF_1[eth1] -> [eth0]NF_2;NF_2[eth1] -> [eth0]NF_3;NF_2[eth2] -> [eth0]NF_4;
+#TOPOLOGY = NF_1[eth1] -> [eth0]NF_2;NF_2[eth1] -> [eth0]NF_3;
 
 [ENTRY_POINTS]
 DOMAINS  = [eth0]NF_1, [eth1]NF_3, [eth1]NF_4
+#DOMAINS  = [eth0]NF_1, [eth1]NF_3
