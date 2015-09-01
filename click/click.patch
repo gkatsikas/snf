@@ -1,5 +1,668 @@
+diff --git elements/icmp/icmprewriter.cc elements/icmp/icmprewriter.cc
+index 28de1db..e780844 100644
+--- elements/icmp/icmprewriter.cc
++++ elements/icmp/icmprewriter.cc
+@@ -43,6 +43,7 @@ ICMPRewriter::configure(Vector<String> &conf, ErrorHandler *errh)
+     if (Args(conf, this, errh)
+ 	.read_mp("MAPS", AnyArg(), arg)
+ 	.read("DST_ANNO", dst_anno)
++	.read("CALC_CHECKSUM", _calc_checksum)
+ 	.read("REPLY_ANNO", AnnoArg(1), reply_anno).read_status(has_reply_anno)
+ 	.complete() < 0)
+ 	return -1;
+@@ -163,7 +164,9 @@ ICMPRewriter::handle(WritablePacket *p)
+ 	click_ip *iph = p->ip_header();
+ 	memcpy(old_hw, &iph->ip_dst, 4);
+ 	iph->ip_dst = new_flowid.daddr();
+-	update_in_cksum(&iph->ip_sum, old_hw, reinterpret_cast<const uint16_t *>(&iph->ip_dst), 2);
++	if ( _calc_checksum ) {
++		update_in_cksum(&iph->ip_sum, old_hw, reinterpret_cast<const uint16_t *>(&iph->ip_dst), 2);
++	}
+ 	if (_annos & 1)
+ 	    p->set_dst_ip_anno(new_flowid.daddr());
+     }
+@@ -176,7 +179,9 @@ ICMPRewriter::handle(WritablePacket *p)
+     enc_iph->ip_src = new_flowid.daddr();
+     enc_iph->ip_dst = new_flowid.saddr(); // XXX source routing
+     memcpy(&new_hw[1], &enc_iph->ip_src, 8);
+-    update_in_cksum(&enc_iph->ip_sum, old_hw + 1, new_hw + 1, 4);
++    if ( _calc_checksum ) {
++	update_in_cksum(&enc_iph->ip_sum, old_hw + 1, new_hw + 1, 4);
++    }
+     new_hw[0] = enc_iph->ip_sum;
+     nhw = 5;
+ 
+@@ -200,7 +205,9 @@ ICMPRewriter::handle(WritablePacket *p)
+ 		enc_csum = &(reinterpret_cast<click_udp *>(enc_transp)->uh_sum);
+ 	    if (enc_csum) {
+ 		old_hw[nhw] = *enc_csum;
+-		update_in_cksum(enc_csum, old_hw + 1, new_hw + 1, nhw - 1);
++		if ( _calc_checksum ) {
++			update_in_cksum(enc_csum, old_hw + 1, new_hw + 1, nhw - 1);
++		}
+ 		new_hw[nhw] = *enc_csum;
+ 		nhw++;
+ 	    }
+@@ -211,15 +218,19 @@ ICMPRewriter::handle(WritablePacket *p)
+ 	    enc_icmph->icmp_identifier = new_hw[nhw] = new_flowid.dport();
+ 	    nhw++;
+ 	    old_hw[nhw] = enc_icmph->icmp_cksum;
+-	    click_update_in_cksum(&enc_icmph->icmp_cksum, old_hw[nhw-1], new_hw[nhw-1]);
+-	    click_update_zero_in_cksum(&enc_icmph->icmp_cksum, enc_transp, p->end_data() - enc_transp);
++	    if ( _calc_checksum ) {
++		click_update_in_cksum(&enc_icmph->icmp_cksum, old_hw[nhw-1], new_hw[nhw-1]);
++		click_update_zero_in_cksum(&enc_icmph->icmp_cksum, enc_transp, p->end_data() - enc_transp);
++	    }
+ 	    new_hw[nhw] = enc_icmph->icmp_cksum;
+ 	    nhw++;
+ 	}
+     }
+ 
+     // patch outer ICMP checksum
+-    update_in_cksum(&icmph->icmp_cksum, old_hw, new_hw, nhw);
++    if ( _calc_checksum ) {
++	update_in_cksum(&icmph->icmp_cksum, old_hw, new_hw, nhw);
++    }
+ 
+     if (_maps[mapid]._port_offset >= 0)
+ 	return _maps[mapid]._port_offset + entry->output();
+diff --git elements/icmp/icmprewriter.hh elements/icmp/icmprewriter.hh
+index 4ae7236..ed6b56e 100644
+--- elements/icmp/icmprewriter.hh
++++ elements/icmp/icmprewriter.hh
+@@ -86,6 +86,10 @@ class ICMPRewriter : public Element { public:
+     Vector<MapEntry> _maps;
+     unsigned _annos;
+ 
++    // NF synthesis extension:
++    // Make the Checksum calculation optional
++    bool _calc_checksum;
++
+     void rewrite_packet(WritablePacket *, click_ip *, click_udp *,
+ 			const IPFlowID &, IPRewriterEntry *);
+     void rewrite_ping_packet(WritablePacket *, click_ip *, click_icmp_echo *,
+diff --git elements/ip/decipttl.cc elements/ip/decipttl.cc
+index cdc8dca..a69ea44 100644
+--- elements/ip/decipttl.cc
++++ elements/ip/decipttl.cc
+@@ -24,9 +24,10 @@
+ CLICK_DECLS
+ 
+ DecIPTTL::DecIPTTL()
+-    : _active(true), _multicast(true)
++    : _active(true), _multicast(true), _calc_checksum(true)
+ {
+     _drops = 0;
++    _dec_value = 1;
+ }
+ 
+ DecIPTTL::~DecIPTTL()
+@@ -37,8 +38,10 @@ int
+ DecIPTTL::configure(Vector<String> &conf, ErrorHandler *errh)
+ {
+     return Args(conf, this, errh)
+-	.read("ACTIVE", _active)
+-	.read("MULTICAST", _multicast).complete();
++	.read("ACTIVE",        _active)
++	.read("DEC_VALUE",     _dec_value)
++	.read("CALC_CHECKSUM", _calc_checksum)
++	.read("MULTICAST",     _multicast).complete();
+ }
+ 
+ Packet *
+@@ -51,7 +54,12 @@ DecIPTTL::simple_action(Packet *p)
+     if (!_multicast && IPAddress(ip_in->ip_dst).is_multicast())
+ 	return p;
+ 
+-    if (ip_in->ip_ttl <= 1) {
++    // NF synthesis extension: Decrement value must be positive
++    if ( _dec_value <= 0 )
++	return 0;
++
++    // Time to drop
++    if (ip_in->ip_ttl <= _dec_value) {
+ 	++_drops;
+ 	checked_output_push(1, p);
+ 	return 0;
+@@ -60,7 +68,13 @@ DecIPTTL::simple_action(Packet *p)
+ 	if (!q)
+ 	    return 0;
+ 	click_ip *ip = q->ip_header();
+-	--ip->ip_ttl;
++
++	// Decrement by _decr_value (default is 1 but it can be more)
++	ip->ip_ttl -= _dec_value;
++
++	// Do not calculate IP checksum if you are requested to do so
++	if ( !_calc_checksum )
++		return q;
+ 
+ 	// 19.Aug.1999 - incrementally update IP checksum as suggested by SOSP
+ 	// reviewers, according to RFC1141, as updated by RFC1624.
+@@ -81,6 +95,8 @@ DecIPTTL::add_handlers()
+ {
+     add_data_handlers("drops", Handler::OP_READ, &_drops);
+     add_data_handlers("active", Handler::OP_READ | Handler::OP_WRITE | Handler::CHECKBOX, &_active);
++    add_data_handlers("dec_value", Handler::OP_READ | Handler::OP_WRITE | Handler::CHECKBOX, &_dec_value);
++    add_data_handlers("calc_checksum", Handler::OP_READ | Handler::OP_WRITE | Handler::CHECKBOX, &_calc_checksum);
+ }
+ 
+ CLICK_ENDDECLS
+diff --git elements/ip/decipttl.hh elements/ip/decipttl.hh
+index b2ff703..bf95c82 100644
+--- elements/ip/decipttl.hh
++++ elements/ip/decipttl.hh
+@@ -62,6 +62,11 @@ class DecIPTTL : public Element { public:
+     bool _active;
+     bool _multicast;
+ 
++    // NF synthesis extensions:
++    // 1. Flexible TTL decrement (Default is 1)
++    uint32_t _dec_value;
++    // 2. Flexible IP checksum calculation (default true)
++    bool _calc_checksum;
+ };
+ 
+ CLICK_ENDDECLS
+diff --git elements/ip/ipaddrpairrewriter.cc elements/ip/ipaddrpairrewriter.cc
+index 05ac76f..f57da59 100644
+--- elements/ip/ipaddrpairrewriter.cc
++++ elements/ip/ipaddrpairrewriter.cc
+@@ -27,7 +27,7 @@ CLICK_DECLS
+ 
+ void
+ IPAddrPairRewriter::IPAddrPairFlow::apply(WritablePacket *p, bool direction,
+-					  unsigned annos)
++					  unsigned annos, bool calc_checksum)
+ {
+     assert(p->has_network_header());
+     click_ip *iph = p->ip_header();
+@@ -40,18 +40,29 @@ IPAddrPairRewriter::IPAddrPairFlow::apply(WritablePacket *p, bool direction,
+ 	p->set_dst_ip_anno(revflow.saddr());
+     if (direction && (annos & 2))
+ 	p->set_anno_u8(annos >> 2, _reply_anno);
+-    update_csum(&iph->ip_sum, direction, _ip_csum_delta);
++
++    // NF synthesis extension: Allow to skip IP checksum calculation
++    if ( calc_checksum ) {
++	update_csum(&iph->ip_sum, direction, _ip_csum_delta);
++    }
+ 
+     // UDP/TCP header
+     if (!IP_FIRSTFRAG(iph))
+ 	/* do nothing */;
+     else if (iph->ip_p == IP_PROTO_TCP && p->transport_length() >= 18) {
+ 	click_tcp *tcph = p->tcp_header();
+-	update_csum(&tcph->th_sum, direction, _udp_csum_delta);
++	// NF synthesis extension: Allow to skip TCP checksum calculation
++	if ( calc_checksum ) {
++		update_csum(&tcph->th_sum, direction, _udp_csum_delta);
++	}
+     } else if (iph->ip_p == IP_PROTO_UDP && p->transport_length() >= 8) {
+ 	click_udp *udph = p->udp_header();
+-	if (udph->uh_sum)	// 0 checksum is no checksum
+-	    update_csum(&udph->uh_sum, direction, _udp_csum_delta);
++	if (udph->uh_sum) {	// 0 checksum is no checksum
++	    // NF synthesis extension: Allow to skip UDP checksum calculation
++	    if ( calc_checksum ) {
++	    	update_csum(&udph->uh_sum, direction, _udp_csum_delta);
++	    }
++	}
+     }
+ }
+ 
+@@ -155,7 +166,7 @@ IPAddrPairRewriter::push(int port, Packet *p_in)
+     }
+ 
+     IPAddrPairFlow *mf = static_cast<IPAddrPairFlow *>(m->flow());
+-    mf->apply(p, m->direction(), _annos);
++    mf->apply(p, m->direction(), _annos, _calc_checksum);
+     mf->change_expiry_by_timeout(_heap, click_jiffies(), _timeouts);
+     output(m->output()).push(p);
+ }
+diff --git elements/ip/ipaddrpairrewriter.hh elements/ip/ipaddrpairrewriter.hh
+index 27921a0..3289ed7 100644
+--- elements/ip/ipaddrpairrewriter.hh
++++ elements/ip/ipaddrpairrewriter.hh
+@@ -125,7 +125,7 @@ class IPAddrPairRewriter : public IPRewriterBase { public:
+ 			     0, guaranteed, expiry_j) {
+ 	}
+ 
+-	void apply(WritablePacket *p, bool direction, unsigned annos);
++	void apply(WritablePacket *p, bool direction, unsigned annos, bool calc_checksum);
+ 
+ 	void unparse(StringAccum &sa, bool direction, click_jiffies_t now) const;
+ 
+diff --git elements/ip/ipaddrrewriter.cc elements/ip/ipaddrrewriter.cc
+index 868513e..32308a8 100644
+--- elements/ip/ipaddrrewriter.cc
++++ elements/ip/ipaddrrewriter.cc
+@@ -27,7 +27,7 @@ CLICK_DECLS
+ 
+ void
+ IPAddrRewriter::IPAddrFlow::apply(WritablePacket *p, bool direction,
+-				  unsigned annos)
++				  unsigned annos, bool calc_checksum)
+ {
+     assert(p->has_network_header());
+     click_ip *iph = p->ip_header();
+@@ -43,18 +43,29 @@ IPAddrRewriter::IPAddrFlow::apply(WritablePacket *p, bool direction,
+ 	if (annos & 2)
+ 	    p->set_anno_u8(annos >> 2, _reply_anno);
+     }
+-    update_csum(&iph->ip_sum, direction, _ip_csum_delta);
++
++    // NF synthesis extension: Allow to skip IP checksum calculation
++    if ( calc_checksum ) {
++	    update_csum(&iph->ip_sum, direction, _ip_csum_delta);
++    }
+ 
+     // UDP/TCP header
+     if (!IP_FIRSTFRAG(iph))
+ 	/* do nothing */;
+     else if (iph->ip_p == IP_PROTO_TCP && p->transport_length() >= 18) {
+ 	click_tcp *tcph = p->tcp_header();
+-	update_csum(&tcph->th_sum, direction, _udp_csum_delta);
++	// NF synthesis extension: Allow to skip TCP checksum calculation
++	if ( calc_checksum ) {
++		update_csum(&tcph->th_sum, direction, _udp_csum_delta);
++	}
+     } else if (iph->ip_p == IP_PROTO_UDP && p->transport_length() >= 8) {
+ 	click_udp *udph = p->udp_header();
+-	if (udph->uh_sum)	// 0 checksum is no checksum
+-	    update_csum(&udph->uh_sum, direction, _udp_csum_delta);
++	if (udph->uh_sum) {	// 0 checksum is no checksum
++	    // NF synthesis extension: Allow to skip UDP checksum calculation
++	    if ( calc_checksum ) {
++	    	update_csum(&udph->uh_sum, direction, _udp_csum_delta);
++	    }
++	}
+     }
+ }
+ 
+@@ -166,7 +177,7 @@ IPAddrRewriter::push(int port, Packet *p_in)
+     }
+ 
+     IPAddrFlow *mf = static_cast<IPAddrFlow *>(m->flow());
+-    mf->apply(p, m->direction(), _annos);
++    mf->apply(p, m->direction(), _annos, _calc_checksum);
+     mf->change_expiry_by_timeout(_heap, click_jiffies(), _timeouts);
+     output(m->output()).push(p);
+ }
+diff --git elements/ip/ipaddrrewriter.hh elements/ip/ipaddrrewriter.hh
+index edf6357..fe331c7 100644
+--- elements/ip/ipaddrrewriter.hh
++++ elements/ip/ipaddrrewriter.hh
+@@ -124,7 +124,7 @@ class IPAddrRewriter : public IPRewriterBase { public:
+ 			     0, guaranteed, expiry_j) {
+ 	}
+ 
+-	void apply(WritablePacket *p, bool direction, unsigned annos);
++	void apply(WritablePacket *p, bool direction, unsigned annos, bool calc_checksum);
+ 
+ 	void unparse(StringAccum &sa, bool direction, click_jiffies_t now) const;
+ 
+diff --git elements/ip/iprewriterbase.cc elements/ip/iprewriterbase.cc
+index 50e3f34..c19acaf 100644
+--- elements/ip/iprewriterbase.cc
++++ elements/ip/iprewriterbase.cc
+@@ -65,10 +65,11 @@ IPMapper::rewrite_flowid(IPRewriterInput *, const IPFlowID &, IPFlowID &,
+ 
+ //
+ // IPRewriterBase
++// NF extension: Set the checksum calculation parameter to true by default
+ //
+ 
+ IPRewriterBase::IPRewriterBase()
+-    : _map(0), _heap(new IPRewriterHeap), _gc_timer(gc_timer_hook, this)
++    : _map(0), _heap(new IPRewriterHeap), _gc_timer(gc_timer_hook, this), _calc_checksum(true)
+ {
+     _timeouts[0] = default_timeout;
+     _timeouts[1] = default_guarantee;
+@@ -158,6 +159,7 @@ IPRewriterBase::configure(Vector<String> &conf, ErrorHandler *errh)
+ 	.read("GUARANTEE", SecondsArg(), _timeouts[1])
+ 	.read("REAP_INTERVAL", SecondsArg(), _gc_interval_sec)
+ 	.read("REAP_TIME", Args::deprecated, SecondsArg(), _gc_interval_sec)
++	.read("CALC_CHECKSUM", _calc_checksum)
+ 	.consume() < 0)
+ 	return -1;
+ 
+diff --git elements/ip/iprewriterbase.hh elements/ip/iprewriterbase.hh
+index b7ced3a..77a3c2e 100644
+--- elements/ip/iprewriterbase.hh
++++ elements/ip/iprewriterbase.hh
+@@ -140,6 +140,10 @@ class IPRewriterBase : public Element { public:
+     uint32_t _gc_interval_sec;
+     Timer _gc_timer;
+ 
++    // NF synthesis extension: Read one extra input argument to allow
++    // skipping IP/TCP/UDP checksum calculation
++    bool _calc_checksum;
++
+     enum {
+ 	default_timeout = 300,	   // 5 minutes
+ 	default_guarantee = 5,	   // 5 seconds
+diff --git elements/ip/iprwmapping.cc elements/ip/iprwmapping.cc
+index 966382c..4695ec1 100644
+--- elements/ip/iprwmapping.cc
++++ elements/ip/iprwmapping.cc
+@@ -55,7 +55,7 @@ IPRewriterFlow::IPRewriterFlow(IPRewriterInput *owner, const IPFlowID &flowid,
+ }
+ 
+ void
+-IPRewriterFlow::apply(WritablePacket *p, bool direction, unsigned annos)
++IPRewriterFlow::apply(WritablePacket *p, bool direction, unsigned annos, bool calc_checksum)
+ {
+     assert(p->has_network_header());
+     click_ip *iph = p->ip_header();
+@@ -68,7 +68,11 @@ IPRewriterFlow::apply(WritablePacket *p, bool direction, unsigned annos)
+ 	p->set_dst_ip_anno(revflow.saddr());
+     if (direction && (annos & 2))
+ 	p->set_anno_u8(annos >> 2, _reply_anno);
+-    update_csum(&iph->ip_sum, direction, _ip_csum_delta);
++
++    // NF synthesis extension: Allow to skip IP checksum calculation
++    if ( calc_checksum ) {
++	update_csum(&iph->ip_sum, direction, _ip_csum_delta);
++    }
+ 
+     // end if not first fragment
+     if (!IP_FIRSTFRAG(iph))
+@@ -79,13 +83,21 @@ IPRewriterFlow::apply(WritablePacket *p, bool direction, unsigned annos)
+ 	click_tcp *tcph = p->tcp_header();
+ 	tcph->th_sport = revflow.dport();
+ 	tcph->th_dport = revflow.sport();
+-	update_csum(&tcph->th_sum, direction, _udp_csum_delta);
++
++	// NF synthesis extension: Allow to skip TCP checksum calculation
++	if ( calc_checksum ) {
++		update_csum(&tcph->th_sum, direction, _udp_csum_delta);
++	}
+     } else if (iph->ip_p == IP_PROTO_UDP) {
+ 	click_udp *udph = p->udp_header();
+ 	udph->uh_sport = revflow.dport();
+ 	udph->uh_dport = revflow.sport();
+-	if (udph->uh_sum)	// 0 checksum is no checksum
+-	    update_csum(&udph->uh_sum, direction, _udp_csum_delta);
++	if (udph->uh_sum) {	// 0 checksum is no checksum
++	    // NF synthesis extension: Allow to skip UDP checksum calculation
++	    if ( calc_checksum ) {
++	    	update_csum(&udph->uh_sum, direction, _udp_csum_delta);
++	    }
++	}
+     }
+ }
+ 
+diff --git elements/ip/iprwmapping.hh elements/ip/iprwmapping.hh
+index 446f95b..5ee3860 100644
+--- elements/ip/iprwmapping.hh
++++ elements/ip/iprwmapping.hh
+@@ -135,7 +135,7 @@ class IPRewriterFlow { public:
+     static inline void update_csum(uint16_t *csum, bool direction,
+ 				   uint16_t csum_delta);
+ 
+-    void apply(WritablePacket *p, bool direction, unsigned annos);
++    void apply(WritablePacket *p, bool direction, unsigned annos, bool calc_checksum);
+ 
+     void unparse(StringAccum &sa, bool direction, click_jiffies_t now) const;
+     void unparse_ports(StringAccum &sa, bool direction, click_jiffies_t now) const;
+diff --git elements/tcpudp/iprewriter.cc elements/tcpudp/iprewriter.cc
+index 0bc909b..26d84a9 100644
+--- elements/tcpudp/iprewriter.cc
++++ elements/tcpudp/iprewriter.cc
+@@ -148,14 +148,14 @@ IPRewriter::push(int port, Packet *p_in)
+     IPRewriterFlow *mf = m->flow();
+     if (iph->ip_p == IP_PROTO_TCP) {
+ 	TCPFlow *tcpmf = static_cast<TCPFlow *>(mf);
+-	tcpmf->apply(p, m->direction(), _annos);
++	tcpmf->apply(p, m->direction(), _annos, _calc_checksum);
+ 	if (_timeouts[1])
+ 	    tcpmf->change_expiry(_heap, true, now_j + _timeouts[1]);
+ 	else
+ 	    tcpmf->change_expiry(_heap, false, now_j + tcp_flow_timeout(tcpmf));
+     } else {
+ 	UDPFlow *udpmf = static_cast<UDPFlow *>(mf);
+-	udpmf->apply(p, m->direction(), _annos);
++	udpmf->apply(p, m->direction(), _annos, _calc_checksum);
+ 	if (_udp_timeouts[1])
+ 	    udpmf->change_expiry(_heap, true, now_j + _udp_timeouts[1]);
+ 	else
+diff --git elements/tcpudp/tcprewriter.cc elements/tcpudp/tcprewriter.cc
+index 6e10003..d6f3333 100644
+--- elements/tcpudp/tcprewriter.cc
++++ elements/tcpudp/tcprewriter.cc
+@@ -84,7 +84,7 @@ TCPRewriter::TCPFlow::update_seqno_delta(bool direction,
+ }
+ 
+ void
+-TCPRewriter::TCPFlow::apply_sack(bool direction, click_tcp *tcph, int len)
++TCPRewriter::TCPFlow::apply_sack(bool direction, click_tcp *tcph, int len, bool calc_checksum)
+ {
+     if ((int)(tcph->th_off << 2) < len)
+ 	len = tcph->th_off << 2;
+@@ -106,10 +106,14 @@ TCPRewriter::TCPFlow::apply_sack(bool direction, click_tcp *tcph, int len)
+ 	      } else {
+ 		  uint8_t *end_sack = opt + opt[1];
+ 
+-		  // develop initial checksum value
+-		  uint16_t *csum_begin = reinterpret_cast<uint16_t *>(begin_opt + ((opt + 2 - begin_opt) & ~1));
+-		  for (uint16_t *csum = csum_begin; reinterpret_cast<uint8_t *>(csum) < end_sack; csum++)
+-		      csum_delta += ~*csum & 0xFFFF;
++		  // NF synthesis extension: Allow to skip TCP checksum calculation
++		  uint16_t *csum_begin= 0;
++		  if ( calc_checksum ) {
++		  	// develop initial checksum value
++		  	csum_begin = reinterpret_cast<uint16_t *>(begin_opt + ((opt + 2 - begin_opt) & ~1));
++		  	for (uint16_t *csum = csum_begin; reinterpret_cast<uint8_t *>(csum) < end_sack; csum++)
++		  	    csum_delta += ~*csum & 0xFFFF;
++		  }
+ 
+ 		  for (opt += 2; opt < end_sack; opt += 8) {
+ #if HAVE_INDIFFERENT_ALIGNMENT
+@@ -125,10 +129,13 @@ TCPRewriter::TCPFlow::apply_sack(bool direction, click_tcp *tcph, int len)
+ #endif
+ 		  }
+ 
+-		  // finish off csum_delta calculation
+-		  for (uint16_t *csum = csum_begin; reinterpret_cast<uint8_t *>(csum) < end_sack; csum++)
+-		      csum_delta += *csum;
+-		  break;
++		  // NF synthesis extension: Allow to skip TCP checksum calculation
++		  if ( calc_checksum ) {
++			  // finish off csum_delta calculation
++			  for (uint16_t *csum = csum_begin; reinterpret_cast<uint8_t *>(csum) < end_sack; csum++)
++			      csum_delta += *csum;
++			  break;
++		  }
+ 	      }
+ 	  default:
+ 	    if (opt[1] < 2)
+@@ -138,7 +145,8 @@ TCPRewriter::TCPFlow::apply_sack(bool direction, click_tcp *tcph, int len)
+ 	}
+ 
+   done:
+-    if (csum_delta) {
++    // NF synthesis extension: Allow to skip TCP checksum calculation
++    if (csum_delta && !calc_checksum) {
+ 	uint32_t sum = (~tcph->th_sum & 0xFFFF) + csum_delta;
+ 	sum = (sum & 0xFFFF) + (sum >> 16);
+ 	tcph->th_sum = ~(sum + (sum >> 16));
+@@ -146,7 +154,7 @@ TCPRewriter::TCPFlow::apply_sack(bool direction, click_tcp *tcph, int len)
+ }
+ 
+ void
+-TCPRewriter::TCPFlow::apply(WritablePacket *p, bool direction, unsigned annos)
++TCPRewriter::TCPFlow::apply(WritablePacket *p, bool direction, unsigned annos, bool calc_checksum)
+ {
+     assert(p->has_network_header());
+     click_ip *iph = p->ip_header();
+@@ -159,7 +167,11 @@ TCPRewriter::TCPFlow::apply(WritablePacket *p, bool direction, unsigned annos)
+ 	p->set_dst_ip_anno(revflow.saddr());
+     if (direction && (annos & 2))
+ 	p->set_anno_u8(annos >> 2, _reply_anno);
+-    update_csum(&iph->ip_sum, direction, _ip_csum_delta);
++
++    // NF synthesis extension: Allow to skip IP checksum calculation
++    if ( calc_checksum ) {
++	update_csum(&iph->ip_sum, direction, _ip_csum_delta);
++    }
+ 
+     // end if not first fragment
+     if (!IP_FIRSTFRAG(iph) || p->transport_length() < 18)
+@@ -169,7 +181,11 @@ TCPRewriter::TCPFlow::apply(WritablePacket *p, bool direction, unsigned annos)
+     click_tcp *tcph = p->tcp_header();
+     tcph->th_sport = revflow.dport();
+     tcph->th_dport = revflow.sport();
+-    update_csum(&tcph->th_sum, direction, _udp_csum_delta);
++
++    // NF synthesis extension: Allow to skip TCP checksum calculation
++    if ( calc_checksum ) {
++	update_csum(&tcph->th_sum, direction, _udp_csum_delta);
++    }
+ 
+     // track connection state
+     bool have_payload = ((iph->ip_hl + tcph->th_off) << 2) < ntohs(iph->ip_len);
+@@ -203,22 +219,28 @@ TCPRewriter::TCPFlow::apply(WritablePacket *p, bool direction, unsigned annos)
+ 
+     if (_dt->delta[direction] || _dt->has_trigger(direction)) {
+ 	uint32_t newval = htonl(new_seq(direction, ntohl(tcph->th_seq)));
+-	click_update_in_cksum(&tcph->th_sum, tcph->th_seq >> 16, newval >> 16);
+-	click_update_in_cksum(&tcph->th_sum, tcph->th_seq, newval);
++	// NF synthesis extension: Allow to skip TCP checksum calculation
++	if ( calc_checksum ) {
++		click_update_in_cksum(&tcph->th_sum, tcph->th_seq >> 16, newval >> 16);
++		click_update_in_cksum(&tcph->th_sum, tcph->th_seq, newval);
++	}
+ 	tcph->th_seq = newval;
+     }
+ 
+     if (_dt->delta[!direction] || _dt->has_trigger(!direction)) {
+ 	uint32_t newval = htonl(new_ack(direction, ntohl(tcph->th_ack)));
+-	click_update_in_cksum(&tcph->th_sum, tcph->th_ack >> 16, newval >> 16);
+-	click_update_in_cksum(&tcph->th_sum, tcph->th_ack, newval);
++	// NF synthesis extension: Allow to skip TCP checksum calculation
++	if ( calc_checksum ) {
++		click_update_in_cksum(&tcph->th_sum, tcph->th_ack >> 16, newval >> 16);
++		click_update_in_cksum(&tcph->th_sum, tcph->th_ack, newval);
++	}
+ 	tcph->th_ack = newval;
+ 
+ 	// update SACK sequence numbers
+ 	if (tcph->th_off > 8
+ 	    || (tcph->th_off == 8
+ 		&& *(reinterpret_cast<const uint32_t *>(tcph + 1)) != htonl(0x0101080A)))
+-	    apply_sack(direction, tcph, p->transport_length());
++	    apply_sack(direction, tcph, p->transport_length(), calc_checksum);
+     }
+ }
+ 
+@@ -331,7 +353,7 @@ TCPRewriter::push(int port, Packet *p_in)
+     }
+ 
+     TCPFlow *mf = static_cast<TCPFlow *>(m->flow());
+-    mf->apply(p, m->direction(), _annos);
++    mf->apply(p, m->direction(), _annos, _calc_checksum);
+ 
+     click_jiffies_t now_j = click_jiffies();
+     if (_timeouts[1])
+diff --git elements/tcpudp/tcprewriter.hh elements/tcpudp/tcprewriter.hh
+index bcae3fc..2bb8a6c 100644
+--- elements/tcpudp/tcprewriter.hh
++++ elements/tcpudp/tcprewriter.hh
+@@ -127,7 +127,7 @@ class TCPRewriter : public IPRewriterBase { public:
+ 	tcp_seq_t new_seq(bool direction, tcp_seq_t seqno) const;
+ 	tcp_seq_t new_ack(bool direction, tcp_seq_t seqno) const;
+ 
+-	void apply(WritablePacket *p, bool direction, unsigned annos);
++	void apply(WritablePacket *p, bool direction, unsigned annos, bool calc_checksum);
+ 
+ 	void unparse(StringAccum &sa, bool direction, click_jiffies_t now) const;
+ 
+@@ -150,7 +150,7 @@ class TCPRewriter : public IPRewriterBase { public:
+ 
+ 	delta_transition *_dt;
+ 
+-	void apply_sack(bool direction, click_tcp *tcp, int transport_len);
++	void apply_sack(bool direction, click_tcp *tcp, int transport_len, bool calc_checksum);
+ 
+     };
+ 
+diff --git elements/tcpudp/udprewriter.cc elements/tcpudp/udprewriter.cc
+index b3d0f62..4d67822 100644
+--- elements/tcpudp/udprewriter.cc
++++ elements/tcpudp/udprewriter.cc
+@@ -27,7 +27,7 @@
+ CLICK_DECLS
+ 
+ void
+-UDPRewriter::UDPFlow::apply(WritablePacket *p, bool direction, unsigned annos)
++UDPRewriter::UDPFlow::apply(WritablePacket *p, bool direction, unsigned annos, bool calc_checksum)
+ {
+     assert(p->has_network_header());
+     click_ip *iph = p->ip_header();
+@@ -40,7 +40,11 @@ UDPRewriter::UDPFlow::apply(WritablePacket *p, bool direction, unsigned annos)
+ 	p->set_dst_ip_anno(revflow.saddr());
+     if (direction && (annos & 2))
+ 	p->set_anno_u8(annos >> 2, _reply_anno);
+-    update_csum(&iph->ip_sum, direction, _ip_csum_delta);
++
++    // NF synthesis extension: Allow to skip IP checksum calculation
++    if ( calc_checksum ) {
++    	update_csum(&iph->ip_sum, direction, _ip_csum_delta);
++    }
+ 
+     // end if not first fragment
+     if (!IP_FIRSTFRAG(iph))
+@@ -51,12 +55,20 @@ UDPRewriter::UDPFlow::apply(WritablePacket *p, bool direction, unsigned annos)
+     udph->uh_sport = revflow.dport(); // TCP ports in the same place
+     udph->uh_dport = revflow.sport();
+     if (iph->ip_p == IP_PROTO_TCP) {
+-	if (p->transport_length() >= 18)
+-	    update_csum(&reinterpret_cast<click_tcp *>(udph)->th_sum, direction, _udp_csum_delta);
++	if (p->transport_length() >= 18) {
++	    // NF synthesis extension: Allow to skip UDP checksum calculation
++	    if ( calc_checksum ) {
++	    	update_csum(&reinterpret_cast<click_tcp *>(udph)->th_sum, direction, _udp_csum_delta);
++	    }
++	}
+     } else if (iph->ip_p == IP_PROTO_UDP) {
+-	if (p->transport_length() >= 8 && udph->uh_sum)
+-	    // 0 checksum is no checksum
+-	    update_csum(&udph->uh_sum, direction, _udp_csum_delta);
++	if (p->transport_length() >= 8 && udph->uh_sum) {
++	    // NF synthesis extension: Allow to skip UDP checksum calculation
++	    if ( calc_checksum ) {
++	    	// 0 checksum is no checksum
++	    	update_csum(&udph->uh_sum, direction, _udp_csum_delta);
++	    }
++	}
+     }
+ 
+     // track connection state
+@@ -165,7 +177,7 @@ UDPRewriter::push(int port, Packet *p_in)
+     }
+ 
+     UDPFlow *mf = static_cast<UDPFlow *>(m->flow());
+-    mf->apply(p, m->direction(), _annos);
++    mf->apply(p, m->direction(), _annos, _calc_checksum);
+ 
+     click_jiffies_t now_j = click_jiffies();
+     if (_timeouts[1])
+diff --git elements/tcpudp/udprewriter.hh elements/tcpudp/udprewriter.hh
+index 4246624..6cd0caa 100644
+--- elements/tcpudp/udprewriter.hh
++++ elements/tcpudp/udprewriter.hh
+@@ -175,7 +175,7 @@ class UDPRewriter : public IPRewriterBase { public:
+ 	    return _tflags > 6;
+ 	}
+ 
+-	void apply(WritablePacket *p, bool direction, unsigned annos);
++	void apply(WritablePacket *p, bool direction, unsigned annos, bool calc_checksum);
+ 
+     };
+ 
 diff --git include/click/router.hh include/click/router.hh
-index dc83606..25e50d5 100644
+index dc83606..2fd7d7f 100644
 --- include/click/router.hh
 +++ include/click/router.hh
 @@ -129,7 +129,14 @@ class Router { public:
@@ -18,11 +681,32 @@ index dc83606..25e50d5 100644
      void activate(bool foreground, ErrorHandler* errh);
      inline void activate(ErrorHandler* errh);
      inline void set_foreground(bool foreground);
+@@ -296,6 +303,10 @@ class Router { public:
+ 
+     Router* _next_router;
+ 
++    // NF synthesis extension: If set to true, the router's elements are not initialized
++    // Router::initialize() and ~Router() use this field to properly set and reset the router
++    bool _do_not_initialize;
++
+ #if CLICK_LINUXMODULE
+     Vector<struct module*> _modules;
+ #endif
 diff --git lib/router.cc lib/router.cc
-index d345236..3173f94 100644
+index d345236..3759dc5 100644
 --- lib/router.cc
 +++ lib/router.cc
-@@ -117,7 +117,8 @@ Router::~Router()
+@@ -83,7 +83,8 @@ Router::Router(const String &configuration, Master *master)
+       _configuration(configuration),
+       _notifier_signals(0),
+       _arena_factory(new HashMap_ArenaFactory),
+-      _hotswap_router(0), _thread_sched(0), _name_info(0), _next_router(0)
++      _hotswap_router(0), _thread_sched(0), _name_info(0), _next_router(0),
++      _do_not_initialize(false)
+ {
+     _refcount = 0;
+     _runcount = 0;
+@@ -117,7 +118,8 @@ Router::~Router()
  	for (int ord = _elements.size() - 1; ord >= 0; ord--)
  	    _elements[ _element_configure_order[ord] ]->cleanup(Element::CLEANUP_ROUTER_INITIALIZED);
      } else if (_state != ROUTER_DEAD) {
@@ -32,38 +716,43 @@ index d345236..3173f94 100644
  	for (int i = _elements.size() - 1; i >= 0; i--)
  	    _elements[i]->cleanup(Element::CLEANUP_NO_ROUTER);
      }
-@@ -151,6 +152,10 @@ Router::~Router()
+@@ -151,6 +153,12 @@ Router::~Router()
  	delete ns;
      }
      delete _name_info;
 +
-+    // Return here because we haven't registered our Router in the first place
-+    return;
++    // Return here in case that the router has been constructed by setting this member to true.
++    // In this case we haven't registered our Router in the first place.
++    if ( _do_not_initialize )
++    	return;
 +
      if (_master)
  	_master->unregister_router(this);
  }
-@@ -1085,7 +1090,7 @@ Router::initialize_handlers(bool defaults, bool specifics)
+@@ -1085,7 +1093,7 @@ Router::initialize_handlers(bool defaults, bool specifics)
  }
  
  int
 -Router::initialize(ErrorHandler *errh)
-+Router::initialize(ErrorHandler *errh, bool initialize_only_dag)
++Router::initialize(ErrorHandler *errh, bool do_not_initialize)
  {
      if (_state != ROUTER_NEW)
  	return errh->error("second attempt to initialize router");
-@@ -1165,6 +1170,15 @@ Router::initialize(ErrorHandler *errh)
+@@ -1165,6 +1173,18 @@ Router::initialize(ErrorHandler *errh)
  	}
      }
  
 +    //////////////////////////////////////////////////////////////////////////////
 +    /*
-+     * NF Synthesis modification to prevent the initialization of Click elements
++     * NF Synthesis modificaiton to prevent the initialization of Click elements
 +     * It happens only when the boolean argument is true. Default is false.
 +     */
 +    //////////////////////////////////////////////////////////////////////////////
-+    if ( initialize_only_dag )
++    if ( do_not_initialize ) {
++	// This field is useful in the destructor
++	_do_not_initialize = true;
 +	return 0;
++    }
 +
  #if CLICK_DMALLOC
      CLICK_DMALLOC_REG("iHoo");
