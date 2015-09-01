@@ -30,48 +30,71 @@ eth_encap0 -> out0;
 eth_encap1 -> out1;
 eth_encap2 -> out2;
 
-rt :: StaticIPLookup(
-	18.26.4.24/32 0,
-	18.26.4.255/32 0,
-	18.26.4.0/32 0,
-	18.26.7.1/32 0,
-	18.26.7.255/32 0,
-	18.26.7.0/32 0,
-	18.26.8.1/32 0,
-	18.26.8.255/32 0,
-	18.26.8.0/32 0,	
-	18.26.4.0/24 1,
-	18.26.7.0/24 2,
-	0.0.0.0/0 18.26.4.1 1
+// Implements NAPT
+ipRewriter :: IPRewriter(
+	pattern 195.135.65.1 1024-65535 - - 0 0,  /* Packets from 10.0.0/24 change src IP and port */
+	pattern - - 10.0.0.1 - 0 0,  /* Packets from 192.168.0/24 change dst IP and port */
+	pattern - - 10.0.0.1 - 0 0   /* Packets from 195.135.65/24 change dst IP and port */
 );
 
-ip :: Strip(14)
-	-> CheckIPHeader()
-	-> [0]rt;
+rt :: StaticIPLookup(
+	10.0.0.1/32 0,
+	10.0.0.255/32 0,
+	10.0.0.0/32 0,
+	192.168.0.1/32 0,
+	192.168.0.255/32 0,
+	192.168.0.0/32 0,
+	195.135.65.1/32 0,
+	195.135.65.255/32 0,
+	195.135.65.0/32 0,	
+	10.0.0.0/24 1,
+	192.168.0.0/24 2,
+	195.135.65.0/24 3,
+	0.0.0.0/0 10.0.0.1 1
+);
 
-c0[0] -> Paint(1) -> ip;
-c1[0] -> Paint(2) -> ip;
-c2[0] -> Paint(3) -> ip;
+ip0 :: Strip(14)
+	-> CheckIPHeader()
+	-> [0]ipRewriter;
+
+// From 18.26.7
+ip1 :: Strip(14)
+	-> CheckIPHeader()
+	-> [1]ipRewriter;
+
+// From 18.26.7
+ip2 :: Strip(14)
+	-> CheckIPHeader()
+	-> [2]ipRewriter;
+
+c0[0] -> Paint(1) -> ip0;
+c1[0] -> Paint(2) -> ip1;
+c2[0] -> Paint(3) -> ip2;
+
+// Rewrite IP address for routing
+ipRewriter
+	-> GetIPAddress(16)
+	-> [0]rt;
 
 rt[0] -> EtherEncap(0x0800, 1:1:1:1:1:1, 2:2:2:2:2:2) -> tol;
 rt[1]
 	-> DropBroadcasts
-	-> gio0 :: IPGWOptions(18.26.4.24)
-	-> FixIPSrc(18.26.4.24)
+	-> gio0 :: IPGWOptions(10.0.0.1)
+	-> FixIPSrc(10.0.0.1)
 	-> dt0 :: DecIPTTL
 	-> fr0 :: IPFragmenter(300)
 	-> [0]eth_encap0;
 rt[2]
 	-> DropBroadcasts
-	-> gio1 :: IPGWOptions(18.26.7.1)
-	-> FixIPSrc(18.26.7.1)
+	-> gio1 :: IPGWOptions(192.168.0.1)
+	-> FixIPSrc(192.168.0.1)
 	-> dt1 :: DecIPTTL
 	-> fr1 :: IPFragmenter(300)
 	-> [0]eth_encap1;
 rt[3]
 	-> DropBroadcasts
-	-> gio2 :: IPGWOptions(18.26.8.1)
-	-> FixIPSrc(18.26.8.1)
+	-> gio2 :: IPGWOptions(195.135.65.1)
+	-> FixIPSrc(195.135.65.1)
 	-> dt2 :: DecIPTTL
 	-> fr2 :: IPFragmenter(300)
 	-> [0]eth_encap2;

@@ -22,8 +22,8 @@ eth_encap1 -> out1;
 
 // Implements NAPT
 ipRewriter :: IPRewriter(
-	pattern 18.26.7.1 1024-65535 - - 0 1,  /* Packets from 18.26.4/24 change src IP and port */
-	pattern - - 18.26.4.24 1024-65535 1 0  /* Packets from 18.26.7/24 change dst IP and port */
+	pattern 18.26.7.1 1024-65535 - - 0 0,  /* Packets from 18.26.4/24 change src IP and port */
+	pattern - - 18.26.4.24 - 0 0  /* Packets from 18.26.7/24 change dst IP and port */
 );
 
 rt :: StaticIPLookup(
@@ -53,8 +53,8 @@ ipRewriter
 	-> GetIPAddress(16)
 	-> [0]rt;
 
-c0[0] -> Paint(1) -> ip;
-c1[0] -> Paint(2) -> ip;
+c0[0] -> Paint(1) -> ip0;
+c1[0] -> Paint(2) -> ip1;
 
 // IP packets for this machine.
 rt[0] -> EtherEncap(0x0800, 1:1:1:1:1:1, 2:2:2:2:2:2) -> tol;

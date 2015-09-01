@@ -30,6 +30,20 @@ eth_encap0 -> out0;
 eth_encap1 -> out1;
 eth_encap2 -> out2;
 
+// The module that turns this router into L3 firewall
+filter :: IPFilter(
+	allow dst host 18.26.4.24,
+	allow dst host 18.26.7.1,
+	allow dst host 18.26.8.1,
+	allow src host 60.0.0.10  && tcp,
+	allow src host 70.0.0.10  && udp,
+	allow src host 80.0.0.10  && tcp,
+	allow src host 90.0.0.10  && icmp,
+	allow src host 100.0.0.10 && icmp,
+	allow src host 18.26.4.24 || src host 18.26.7.1 || src host 18.26.8.1,
+	drop all
+);
+
 rt :: StaticIPLookup(
 	18.26.4.24/32 0,
 	18.26.4.255/32 0,
@@ -47,6 +61,7 @@ rt :: StaticIPLookup(
 
 ip :: Strip(14)
 	-> CheckIPHeader()
+	-> filter
 	-> [0]rt;
 
 c0[0] -> Paint(1) -> ip;

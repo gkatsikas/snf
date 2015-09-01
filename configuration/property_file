@@ -3,8 +3,9 @@
 #NF_2 = nf_repo/fake-iprouter.click
 #NF_3 = nf_repo/fake-iprouter.click
 
-NF_1 = nf_repo/fake-iprouter.click
-NF_2 = nf_repo/flat_router_3if.click
+NF_1 = nf_repo/flat_router_2if.click
+#NF_2 = nf_repo/flat_lb_3if.click
+NF_2 = nf_repo/flat_fw_3if.click
 NF_3 = nf_repo/flat_router_2if.click
 NF_4 = nf_repo/flat_router_2if.click
 

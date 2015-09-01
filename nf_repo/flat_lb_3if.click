@@ -24,7 +24,7 @@ tol :: Discard;
 
 eth_encap0 :: EtherEncap(0x0800, 00:00:c0:ae:67:ef, 00:00:c0:4f:67:ff);
 eth_encap1 :: EtherEncap(0x0800, 00:00:c0:4f:71:ef, 00:00:c0:4f:71:ff);
-eth_encap1 :: EtherEncap(0x0800, 00:00:c0:4f:81:ef, 00:00:c0:4f:81:ff);
+eth_encap2 :: EtherEncap(0x0800, 00:00:c0:4f:81:ef, 00:00:c0:4f:81:ff);
 
 eth_encap0 -> out0;
 eth_encap1 -> out1;
@@ -32,8 +32,8 @@ eth_encap2 -> out2;
 
 // Classifies packets. Port 80 goes to LB
 ipClassifier :: IPClassifier(
-	udp port 1234,            /* UDP packets */
-	-                         /* Unclassified packets are for me */
+	tcp port 80,  /* UDP packets */
+	-             /* Unclassified packets are for me */
 );
 
 // Implements Round Robin Load Balancing across 3 servers
@@ -63,7 +63,8 @@ rt :: StaticIPLookup(
 	18.26.4.0/24 1,
 	18.26.7.0/24 2,
 	18.26.8.0/24 3,
-	0.0.0.0/0 18.26.4.1 1);
+	0.0.0.0/0 18.26.4.1 1
+);
 
 // Packets to be load balanced
 strip0 :: Strip(14)
@@ -97,19 +98,7 @@ c0[0] -> Paint(1) -> strip0;
 c1[0] -> Paint(2) -> strip1;
 c2[0] -> Paint(3) -> strip2;
 
-// IP packets for this machine.
-// ToHost expects ethernet packets, so cook up a fake header.
 rt[0] -> EtherEncap(0x0800, 1:1:1:1:1:1, 2:2:2:2:2:2) -> tol;
-
-// These are the main output paths; we've committed to a
-// particular output device.
-// Check paint to see if a redirect is required.
-// Process record route and timestamp IP options.
-// Fill in missing ip_src fields.
-// Discard packets that arrived over link-level broadcast or multicast.
-// Decrement and check the TTL after deciding to forward.
-// Fragment.
-// Send outgoing packets through ARP to the interfaces.
 rt[1]
 	-> DropBroadcasts
 	-> gio0 :: IPGWOptions(18.26.4.24)
