@@ -129,7 +129,7 @@ void NFGraph::add_vertex_and_neighbours(ElementVertex* u) {
 
 			unsigned short neighbour_inport = 0;
 			for ( Vector<Element*>::const_iterator j=found.begin(); j!=found.end(); ++j) {
-				log << info << "\t\t" << (*j)->class_name() << ":" << (*j)->eindex() << def << std::endl;
+				//log << info << "\t\t" << (*j)->class_name() << ":" << (*j)->eindex() << def << std::endl;
 				ElementVertex* v = (ElementVertex*) this->get_vertex_by_position((*j)->eindex());
 				if ( v == NULL ) {
 					v = new ElementVertex(*j, (*j)->class_name(), (*j)->eindex());
