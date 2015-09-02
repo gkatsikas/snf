@@ -7,6 +7,9 @@
 #define MIN(a,b) (a>b) ? b : a
 #define MAX(a,b) (a>b) ? a : b
 
+#define BUG(A) std::cerr<<"["<<__FILE__<<":"<<__LINE__<<"] ERROR: "<<A <<std::endl; exit(1)
+#define DEBUG(A) std::cerr<<"["<<__FILE__<<":"<<__LINE__<<"] DEBUG: "<<A <<std::endl
+
 uint32_t safe_substract (uint32_t a, uint32_t b) {
 	return ((b>a) ? 0 : a-b);
 }
@@ -190,7 +193,7 @@ std::shared_ptr<SegmentNode> DisjointSegmentList::differentiate(
 	if(!container || !to_substract) { //There's nothing to substract 
 		return container;			  //or to substract from
 	}
-
+	
 	std::shared_ptr<SegmentNode> current_parent;
 	std::shared_ptr<SegmentNode> current_child = container;
 
@@ -269,7 +272,7 @@ std::shared_ptr<SegmentNode> DisjointSegmentList::intersect (
 		current_node = current_node->m_child;
 	}
 
-	if (!current_node) {
+	if (!current_node || upper_limit < current_node->m_lowerLimit) {
 		destroy_list(container);
 		return std::shared_ptr<SegmentNode>();
 	}

@@ -94,7 +94,7 @@ elementclass NAPT {
 		$ipNetHost1  0,
 		$ipNet0      1,
 		$ipNet1      2,
-		0.0.0.0/0 $gwIPAddr $gwPort
+		0.0.0.0/0 $gwPort
 	);
 
 	// Implements PNAT

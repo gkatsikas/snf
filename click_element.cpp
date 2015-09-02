@@ -14,6 +14,7 @@
 #include "ip_filter_parser.hpp"
 
 #define BUG(A) std::cerr<<"["<<__FILE__<<":"<<__LINE__<<"] ERROR: "<<A <<std::endl; exit(1)
+//#define DEBUGGING
 #ifdef DEBUGGING
 #define DEBUG(A) std::cerr<<"["<<__FILE__<<":"<<__LINE__<<"] DEBUG: "<<A <<std::endl
 #else
@@ -44,9 +45,10 @@ ClickElement::ClickElement (ElementType type, const std::string& configuration, 
 		case DecIPTTL:
 			parse_dec_ttl_conf (configuration);
 			break;
+		/*
 		case FixIPSrc:
 			parse_fix_ip_src (configuration);
-			break;
+			break;*/
 		case IPFilter:
 			parse_ip_filter (configuration);
 			break;
@@ -71,6 +73,7 @@ ClickElement::ClickElement (ElementType type, const std::string& configuration, 
 		case RoundRobinIPMapper:
 			parse_rr_ip_mapper (configuration);
 			break;
+		case FixIPSrc: //sort of
 		case IPGWOptions:
 		case DropBroadcasts:
 		case EtherEncap:

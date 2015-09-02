@@ -15,7 +15,12 @@
 #define MAX(a,b) (a>b) ? a : b
 
 #define in_range(x,lower,upper) (x>=lower && x<=upper)
-#define DEBUG(a) printf("[%s:%d] %s\n",__FILE__,__LINE__,a)
+//#define DEBUGGING
+#ifdef DEBUGGING
+#define DEBUG(A) std::cerr<<"["<<__FILE__<<":"<<__LINE__<<"] DEBUG: "<<A <<std::endl
+#else
+#define DEBUG(A) 
+#endif
 
 Filter::Filter() : Filter(unknown, 0, UINT32_MAX) {}
 
@@ -26,6 +31,7 @@ Filter::Filter(HeaderField field,uint32_t value) : Filter(field, value, value) {
 Filter::Filter (HeaderField field, uint32_t lower_value, uint32_t upper_value) :
 					m_filter(), m_field(field) {
 	m_filter.add_segment(lower_value,upper_value);
+	if(lower_value > upper_value) {BUG("Weird filter: "+to_str());}
 }
 
 Filter Filter::get_filter_from_v4_prefix(HeaderField field, uint32_t value, uint32_t prefix) {
@@ -39,7 +45,7 @@ Filter Filter::get_filter_from_v4_prefix(HeaderField field, uint32_t value, uint
 	uint32_t translation = 32 - prefix;
 	uint32_t lowerLimit = value & (0xffffffff << translation);
 	uint32_t upperLimit = value | (0xffffffff >> prefix);
-	
+	if(lowerLimit > upperLimit) {BUG("Weird filter");}
 	return Filter(field, lowerLimit, upperLimit);
 }
 
@@ -222,16 +228,19 @@ Filter& Filter::translate(uint32_t value, bool forward) {
 }
 
 Filter& Filter::unite (const Filter &filter) {
+	DEBUG("unite "+to_str());
 	m_filter.add_seglist(filter.m_filter);
 	return *this;
 }
 
 Filter& Filter::intersect (const Filter &filter) {
+	DEBUG("intersect "+to_str()+" with "+filter.to_str());
 	m_filter.intersect_seglist(filter.m_filter);
 	return *this;
 }
 
 Filter& Filter::differentiate (const Filter& filter) {
+	DEBUG("Differentiate"+to_str());
 	m_filter.substract_seglist(filter.m_filter);
 	return *this;
 }

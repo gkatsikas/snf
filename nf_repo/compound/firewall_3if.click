@@ -132,7 +132,7 @@ elementclass Firewall_3IF {
 		$ipNet0      1,
 		$ipNet1      2,
 		$ipNet2      3,
-		0.0.0.0/0 $gwIPAddr $gwPort
+		0.0.0.0/0 $gwPort
 	);
 
 	// Process the IP options field (mandatory based on RFC 791)
