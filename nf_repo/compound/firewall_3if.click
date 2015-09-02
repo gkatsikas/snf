@@ -9,10 +9,10 @@
 define(
 	$iface0      eth0,
 	$macAddr0    30:00:00:00:00:02,
-	$ipAddr0     12.0.0.2,
-	$ipNetHost0  12.0.0.0/32,
-	$ipBcast0    12.0.0.255/32,
-	$ipNet0      12.0.0.0/24,
+	$ipAddr0     11.0.0.2,
+	$ipNetHost0  11.0.0.0/32,
+	$ipBcast0    11.0.0.255/32,
+	$ipNet0      11.0.0.0/24,
 	$color0      1,
 
 	$iface1      eth1,
@@ -31,8 +31,8 @@ define(
 	$ipNet2      14.0.0.0/24,
 	$color2      3,
 
-	$gwIPAddr    13.0.0.2,
-	$gwPort      2,
+	$gwIPAddr    14.0.0.2,
+	$gwPort      3,
 
 	$queueSize   1000000,
 	$mtuSize     1500
@@ -105,6 +105,7 @@ elementclass Firewall_3IF {
 		allow dst host $ipAddr0,
 		allow dst host $ipAddr1,
 		allow dst host $ipAddr2,
+		allow dst host $gwIPAddr,
 		allow src host 20.0.0.10  && udp,
 		allow src host 30.0.0.10  && tcp,
 		allow src host 40.0.0.10  && udp,

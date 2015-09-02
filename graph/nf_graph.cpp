@@ -79,7 +79,7 @@ void NFGraph::add_vertex_and_neighbours(ElementVertex* u) {
 				//log << info << "\t\tNEW " << neighbour->class_name() << ":" << neighbour->eindex() << def << std::endl;
 				v = new ElementVertex(neighbour, neighbour->class_name(), (unsigned short) neighbour->eindex());
 			}
-			this->add_edge(std::move(v), std::move(u));
+			this->add_edge(std::move(v), std::move(u), i);
 		}
 		else {
 			// Search with diameter=1
@@ -90,6 +90,7 @@ void NFGraph::add_vertex_and_neighbours(ElementVertex* u) {
 				throw std::logic_error("Lost element");
 			Vector<Element*> found = tracker.elements();
 
+			unsigned short neighbour_inport = 0;
 			// Make pairs between the current node (e) and all these vertices found
 			for ( Vector<Element*>::const_iterator j=found.begin(); j!=found.end(); ++j) {
 				//log << info << "\t\t" << (*j)->class_name() << ":" << (*j)->eindex() << def << std::endl;
@@ -97,7 +98,9 @@ void NFGraph::add_vertex_and_neighbours(ElementVertex* u) {
 				if ( v == NULL ) {
 					v = new ElementVertex(*j, (*j)->class_name(), (*j)->eindex());
 				}
-				this->add_edge(std::move(v), std::move(u));
+				this->add_edge(std::move(v), std::move(u), neighbour_inport);
+
+				neighbour_inport++;
 			}
 		}
 	}
@@ -116,7 +119,7 @@ void NFGraph::add_vertex_and_neighbours(ElementVertex* u) {
 				//log << info << "\t\tNEW " << neighbour->class_name() << ":" << neighbour->eindex() << def << std::endl;
 				v = new ElementVertex(neighbour, neighbour->class_name(), (unsigned short) neighbour->eindex());
 			}
-			this->add_edge(std::move(u), std::move(v));
+			this->add_edge(std::move(u), std::move(v), e->output(i).port());
 		}
 		else {
 			// Search with diameter=1
@@ -127,13 +130,16 @@ void NFGraph::add_vertex_and_neighbours(ElementVertex* u) {
 				throw std::logic_error("Lost element");
 			Vector<Element*> found = tracker.elements();
 
+			unsigned short neighbour_inport = 0;
 			for ( Vector<Element*>::const_iterator j=found.begin(); j!=found.end(); ++j) {
 				//log << info << "\t\t" << (*j)->class_name() << ":" << (*j)->eindex() << def << std::endl;
 				ElementVertex* v = (ElementVertex*) this->get_vertex_by_position((*j)->eindex());
 				if ( v == NULL ) {
 					v = new ElementVertex(*j, (*j)->class_name(), (*j)->eindex());
 				}
-				this->add_edge(std::move(u), std::move(v));
+				this->add_edge(std::move(u), std::move(v), neighbour_inport);
+
+				neighbour_inport++;
 			}
 		}
 	}

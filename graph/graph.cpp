@@ -78,15 +78,15 @@ void Graph::add_vertex(Vertex* u) {
 /*
  * Add a new connection in the graph
  */
-void Graph::add_edge(Vertex* u, Vertex* v) {
+void Graph::add_edge(Vertex* u, Vertex* v, unsigned short input_port_v) {
 
 	// Add these two vertices if do not exist
 	this->add_vertex(std::move(u));
 	this->add_vertex(std::move(v));
 
 	// Check whether the edge does exist
-	for ( Vertex* neighbour : this->vertices[u] ) {
-		if ( neighbour->get_position() == v->get_position() ) {
+	for ( auto& neighbour : this->vertices[u] ) {
+		if ( neighbour.second->get_position() == v->get_position() ) {
 			//log 	<< warn  << "\t\tEdge exists: [" << u->get_name() << ":" << u->get_position() << "] -> ["
 			//<< v->get_name() << ":" << v->get_position() << "]" << def << std::endl;
 			return;
@@ -94,7 +94,7 @@ void Graph::add_edge(Vertex* u, Vertex* v) {
 	}
 
 	// Add v as being adjacent to u
-	this->vertices[u].push_back(std::move(v));
+	this->vertices[u].push_back(std::make_pair(input_port_v, std::move(v)));
 	//log 	<< debug << "\t\tEdge  added: [" << u->get_name() << ":" << u->get_position() << "] -> ["
 	//		<< v->get_name() << ":" << v->get_position() << "]" << def << std::endl;
 }
@@ -111,8 +111,8 @@ void Graph::find_in_degrees(void) {
 		// Initialise in degree for this vertex
 		this->in_degrees[pair.first];
 
-		for (Vertex* neighbour : pair.second)
-			++this->in_degrees[neighbour];
+		for (auto& neighbour : pair.second)
+			++this->in_degrees[neighbour.second];
 	}
 }
 
@@ -201,8 +201,8 @@ void Graph::print_adjacency_list(void) {
 	log << "\t================ Adjacency List ===============" << def << std::endl;
 	for (auto& pair : this->get_adjacency_list()) {
 		log << std::setw(2) << "\t" << pair.first->get_name() << ":" << pair.first->get_position() << "-> ";
-		for (Vertex* neighbour : pair.second)
-			log << neighbour->get_name() << ":" << neighbour->get_position() << ", " << def;
+		for (auto& neighbour : pair.second)
+			log << "[" << neighbour.first << "]" << neighbour.second->get_name() << ":" << neighbour.second->get_position() << ", " << def;
 		log << def << std::endl;
 	}
 	log << "\t===============================================" << def << std::endl;
@@ -264,6 +264,14 @@ std::vector<Vertex*> Graph::get_vertex_order(void) {
  * The natural flow of the NF chain is the reverse topological sort
  */
 std::vector<Vertex*> Graph::get_vertex_children(Vertex* u) {
+	std::vector<Vertex*> children;
+	for ( auto& pair : this->vertices.at(u) ) {
+		children.push_back(pair.second);
+	}
+	return children;
+}
+
+std::vector<std::pair<unsigned short, Vertex*>> Graph::get_vertex_children_and_ports(Vertex* u) {
 	return this->vertices.at(u);
 }
 
@@ -321,12 +329,12 @@ void dfs(Vertex* vertex, Colour& colour, const Graph::AdjacencyList& adjacency_l
 	colour = Grey;
 
 	try {		
-		for ( Vertex* neighbour : adjacency_list.at(vertex) ) {
-			Colour& neighbour_colour = visited[neighbour];
+		for ( auto& neighbour : adjacency_list.at(vertex) ) {
+			Colour& neighbour_colour = visited[neighbour.second];
 
 			// Unvisited node --> recursion
 			if (neighbour_colour == White)
-				dfs(neighbour, neighbour_colour, adjacency_list, visited, sorted);
+				dfs(neighbour.second, neighbour_colour, adjacency_list, visited, sorted);
 			// Ambiguous color denotes a cycle!
 			else if (neighbour_colour == Grey)
 				throw std::logic_error("Cycle in graph");

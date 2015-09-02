@@ -13,13 +13,11 @@
 TODO:
 	* add ID to all elements
 	* add pointer->element in Write operations
-	* Debug compound element implementations
+	* Check inport assignemnts for non-active ports
  
 ###################
 # Element support #
 ###################
 
  * DecIPTTL -> MULTICAST keyword
- * IPRewriter options
- * Patch IPRewriter to omit Checksum calculations if asked to do so.
- 
+ * IPRewriter options 

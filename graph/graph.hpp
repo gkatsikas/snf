@@ -28,7 +28,7 @@ class Graph
 		 */
 		template<typename U>
 		using VertexMap     = std::unordered_map<Vertex*, U>;
-		using AdjacencyList = VertexMap< std::vector< Vertex*> >;
+		using AdjacencyList = VertexMap< std::vector<std::pair<unsigned short, Vertex*>>>;
 
 	protected:
 		/*
@@ -59,7 +59,7 @@ class Graph
 		bool                   vertex_exists(Vertex* u);
 
 		void                   add_vertex(Vertex* u);
-		void                   add_edge  (Vertex* u, Vertex* v);
+		void                   add_edge  (Vertex* u, Vertex* v, unsigned short input_port_v);
 
 		void                   find_in_degrees(void);
 		int                    get_in_degree(Vertex* u);
@@ -67,9 +67,12 @@ class Graph
 
 		unsigned short         get_vertices_no(void);
 		const AdjacencyList    get_adjacency_list(void) const;
-		std::vector<Vertex*>   get_vertex_children(Vertex* u);
+
+
 		Vertex* get_vertex_by_name(std::string& name);
 		Vertex* get_vertex_by_position(unsigned short pos);
+		std::vector<Vertex*> get_vertex_children(Vertex* u);
+		std::vector<std::pair<unsigned short, Vertex*>> get_vertex_children_and_ports(Vertex* u);
 
 		/*
 		 * Printouts

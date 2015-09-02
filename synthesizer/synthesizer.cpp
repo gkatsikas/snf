@@ -164,7 +164,7 @@ void TrafficBuilder::traffic_class_builder_dfs(	NF_Map<NFGraph*> nf_chain, unsig
 
 	int count = 0;
 	for ( auto& neighbour : adjacency_list.at(nf_vertex) ) {
-		std::shared_ptr<ClickElement> child(new ClickElement((ElementVertex*) neighbour));
+		std::shared_ptr<ClickElement> child(new ClickElement((ElementVertex*) neighbour.second));
 		elem->set_child(child, count++);
 		//log<< "\t\tCreated: "+child->to_str()<<std::endl;
 		//log << "\t\t Child: " << ev->get_name() << def << std::endl;

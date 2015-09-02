@@ -221,7 +221,7 @@ short ParserConfiguration::parse_topology(const std::string& nf_topo) {
 		vertices.at(1)->add_chain_interface_pair(ifaces[1], "", vertices.at(0)->get_name());
 
 		// Finally, add the edge to the graph
-		this->nf_chain->add_edge(std::move(vertices.at(0)), std::move(vertices.at(1)));
+		this->nf_chain->add_edge( std::move(vertices.at(0)), std::move(vertices.at(1)), 0 );
 	}
 
 	// Check if the elements given in the [NF] section of the property file, correspond to the
@@ -315,7 +315,7 @@ short ParserConfiguration::parse_domains(const std::string& nf_domains) {
 		ChainVertex* f = new ChainVertex(*v);
 
 		// Add a link
-		this->nf_domains->add_edge(std::move(d), std::move(f));
+		this->nf_domains->add_edge( std::move(d), std::move(f), 0 );
 
 		domain++;
 	}
