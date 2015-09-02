@@ -27,6 +27,8 @@ static const uint32_t elem_start = __LINE__;
 	FOO(VLANDecap) \
 	FOO(SetVLANAnno) \
 	FOO(EtherEncap) \
+	FOO(ARPResponder) \
+	FOO(ARPQuerier) \
 	FOO(FromDevice) \
 	FOO(ToDevice) \
 	FOO(Strip) \

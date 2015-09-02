@@ -14,6 +14,7 @@
 #include "ip_filter_parser.hpp"
 
 #define BUG(A) std::cerr<<"["<<__FILE__<<":"<<__LINE__<<"] ERROR: "<<A <<std::endl; exit(1)
+#define DEBUG(A) std::cerr<<"["<<__FILE__<<":"<<__LINE__<<"] DEBUG: "<<A <<std::endl
 
 //ClickElement class
 std::string empty;
@@ -44,6 +45,8 @@ ClickElement::ClickElement (ElementType type, const std::string& configuration, 
 		case IPClassifier:
 			parse_ip_classifier(configuration);
 			break;
+		case ARPResponder:
+			this->m_type = Discard_def;
 		case Discard:
 		case Discard_def:
 		case No_elem:
@@ -71,8 +74,8 @@ ClickElement::ClickElement (ElementType type, const std::string& configuration, 
 		case CheckICMPHeader:
 		case GetIPAddress:
 		case CheckUDPHeader:
-		case Classifier:
 		case Queue:
+		case ARPQuerier:
 		//TODO: start handling annotations
 		case Paint:
 		case PaintTee:
@@ -81,6 +84,11 @@ ClickElement::ClickElement (ElementType type, const std::string& configuration, 
 		case CheckTCPHeader: {
 			OutputClass port(0);
 			this->add_output_class (port);
+			break;
+		}
+		case Classifier: {
+			OutputClass port(2);
+			this->add_output_class(port);
 			break;
 		}
 		case IPFragmenter:
@@ -101,6 +109,7 @@ ClickElement::ClickElement (ElementType type, const std::string& configuration, 
 }
 
 void ClickElement::set_child (std::shared_ptr<ClickElement> child, int port) {
+	DEBUG("Adding child "+elementNames[child->get_type()]+" to "+to_str());
 	for (auto &it : m_outputClasses) {
 		if (it.get_portNumber() == port) {
 			it.set_child(child);
