@@ -21,23 +21,68 @@ std::vector<std::string> &split(const std::string &s, char delim, std::vector<st
 }
 
 
-std::vector<std::string> split(const std::string &s, char delim) {
+std::vector<std::string> split(const std::string &s, const std::string& delim) {
 	std::vector<std::string> elems;
-	size_t start=0;
+	size_t start=s.find_first_not_of(delim);
 	size_t end=0;
 	while(start != std::string::npos) {
-		end = s.find(delim,start);
-		elems.push_back(s.substr(start,end-start));
+		end = s.find_first_of(delim,start);
+		std::string temp = s.substr(start,end-start);
+		elems.push_back(temp);
 		start = s.find_first_not_of(delim,end);
 	}
 	return elems;
+	
+}
+
+std::vector<std::string> separate_args(const std::string &s) {
+	std::vector<std::string> args;
+	std::string current_arg;
+	size_t size = s.size();
+	size_t position=0;
+	std::string spaces = " \t\n";
+
+	
+	while(position < size && position != std::string::npos) {
+		switch(s[position]) {
+			case ' ':
+			case '\t':
+			case '\n':
+				current_arg.push_back(' ');
+				position = s.find_first_not_of(spaces,position);
+				break;
+			case ',':
+				args.push_back(current_arg);
+				current_arg.clear();
+				position = s.find_first_not_of(spaces,position+1);
+				break;
+			case '/':
+				if(position < size-1 && s[position+1] =='*') {
+					position++;
+					do {
+						position = s.find('*',position);
+					} while (position<size-1 && s[++position] != '/');
+					position++;
+					break;
+				}
+				else if(position < size-1 && s[position+1] =='/') {
+					position = s.find('\n',position)+1;
+					break;
+				}
+			default:
+				current_arg.push_back(s[position]);
+				position++;
+		}
+	}
+	
+	return args;
 }
 
 /*
  * IP helpers
  */
 bool is_ip4_prefix (const std::string &address, bool full) {
-	std::vector<std::string> split_address = split(address,'.');
+	std::vector<std::string> split_address = split(address,".");
 	if (address.find_first_not_of(".0123456789") != std::string::npos
 		|| split_address.size() > 4) {
 		return false;
@@ -55,7 +100,7 @@ bool is_ip4_prefix (const std::string &address, bool full) {
 uint32_t aton (const std::string &address) {
 
 	uint32_t result = 0;
-	std::vector<std::string> split_address = split(address,'.');
+	std::vector<std::string> split_address = split(address,".");
 
 	for (uint32_t i=0; i<split_address.size(); i++) {
 		result <<= 8;

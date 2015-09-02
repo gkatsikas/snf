@@ -21,7 +21,7 @@ void OutputClass::add_filter (HeaderField field, Filter& filter) {
 
 OutputClass OutputClass::port_from_lookup_rule(std::string& rule, Filter& parsed_rules) {
 
-	std::vector<std::string> decomposed_rule = split(rule,' ');
+	std::vector<std::string> decomposed_rule = split(rule," \t\n");
 	int nb_arg = decomposed_rule.size();
 	if (nb_arg>3 || nb_arg<2) {
 		std::cerr << "[" << __FILE__ << ":" << __LINE__ <<"] Wrong lookup format: "
@@ -30,7 +30,7 @@ OutputClass OutputClass::port_from_lookup_rule(std::string& rule, Filter& parsed
 	}
 	
 	uint32_t port_nb = atoi(decomposed_rule[nb_arg-1].c_str());
-	std::vector<std::string> address_and_mask = split(decomposed_rule[0],'/');
+	std::vector<std::string> address_and_mask = split(decomposed_rule[0],"/");
 	Filter f;
 	switch(address_and_mask.size()) {
 		case 1:
@@ -69,7 +69,7 @@ std::pair<OutputClass,OutputClass> OutputClass::output_class_from_pattern(
 		foutput.add_field_op({Write,ip_src,aton(pattern[0])});
 	}
 	if (pattern[2].compare("-")) {
-		std::vector<std::string> split_pattern = split(pattern[2],'-');
+		std::vector<std::string> split_pattern = split(pattern[2],"-");
 		if (split_pattern.size() == 1){
 			foutput.add_field_op({Write,tp_srcPort,(uint32_t) atoi(pattern[2].c_str())});
 		}
@@ -105,7 +105,7 @@ std::pair<OutputClass,OutputClass> OutputClass::output_class_from_pattern(
 		foutput.add_field_op({Write,ip_dst,aton(pattern[3])});
 	}
 	if (pattern[4].compare("-")) {
-		std::vector<std::string> split_pattern = split(pattern[4],'-');
+		std::vector<std::string> split_pattern = split(pattern[4],"-");
 		if (split_pattern.size() == 1){
 			foutput.add_field_op({Write,tp_srcPort,(uint32_t) atoi(pattern[4].c_str())});
 		}

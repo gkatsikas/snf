@@ -14,7 +14,13 @@
 #include "ip_filter_parser.hpp"
 
 #define BUG(A) std::cerr<<"["<<__FILE__<<":"<<__LINE__<<"] ERROR: "<<A <<std::endl; exit(1)
+#ifdef DEBUGGING
 #define DEBUG(A) std::cerr<<"["<<__FILE__<<":"<<__LINE__<<"] DEBUG: "<<A <<std::endl
+#else
+#define DEBUG(A) 
+#endif
+
+std::string spaces=" \t\n";
 
 //ClickElement class
 std::string empty;
@@ -196,7 +202,7 @@ void ClickElement::parse_dec_ttl_conf (const std::string& configuration) {
 }
 
 void ClickElement::parse_fix_ip_src (const std::string& configuration) {
-	std::vector<std::string> split_conf = split(configuration, ' ');
+	std::vector<std::string> split_conf = split(configuration, spaces);
 
 	uint32_t new_ip_value=0;
 
@@ -225,7 +231,7 @@ void ClickElement::parse_fix_ip_src (const std::string& configuration) {
 }
 
 void ClickElement::parse_ip_filter (const std::string& configuration) {
-	std::vector<std::string> rules = split(configuration,',');
+	std::vector<std::string> rules = separate_args(configuration);
 	std::vector<PacketFilter> to_discard;
 	for (size_t i=0; i<rules.size(); i++) {
 		if(rules[i].empty()) {
@@ -269,7 +275,7 @@ void ClickElement::parse_ip_filter (const std::string& configuration) {
 }
 
 void ClickElement::parse_ip_classifier (const std::string& configuration) {
-	std::vector<std::string> rules = split(configuration,',');
+	std::vector<std::string> rules = separate_args(configuration);
 
 	for (size_t i=0; i<rules.size(); i++) {
 		if(rules[i].empty()) {
@@ -286,7 +292,7 @@ void ClickElement::parse_ip_classifier (const std::string& configuration) {
 }
 
 void ClickElement::parse_lookup_filter(const std::string& configuration) {
-	std::vector<std::string> rules = split(configuration,',');
+	std::vector<std::string> rules = separate_args(configuration);
 	Filter parsed_prefixes(ip_src);
 	parsed_prefixes.make_none();
 	for (auto &it : rules) {
@@ -296,8 +302,8 @@ void ClickElement::parse_lookup_filter(const std::string& configuration) {
 }
 
 void ClickElement::parse_ip_rewriter (const std::string& configuration, int input_port) {
-	std::string conf_line = split(configuration, ',')[input_port];
-	std::vector<std::string> split_inputsec = split(conf_line, ' ');
+	std::string conf_line = separate_args(configuration)[input_port];
+	std::vector<std::string> split_inputsec = split(conf_line, spaces);
 
 	switch (split_inputsec.size()) {
 		case 1: {

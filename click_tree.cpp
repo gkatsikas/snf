@@ -64,7 +64,7 @@ void ClickTree::find_classes (void) {
 						 //		<<" to "<<elementNames[child->get_type()]<<std::endl;
 						 nodes_to_visit.push (next_node);
 					}else {
-						std::cerr<<"Failed to add element "<<elementNames[curr_element->get_type()]<<std::endl;
+						//std::cerr<<"Failed to add element "<<elementNames[curr_element->get_type()]<<std::endl;
 					}
 			}
 		} else { //It's a leaf
