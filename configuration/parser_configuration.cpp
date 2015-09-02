@@ -310,7 +310,7 @@ short ParserConfiguration::parse_domains(const std::string& nf_domains) {
 		v->add_entry_interface_pair(interface, "", domain_name);
 
 		// Create also a node that represents the domain to which the NF is connected.
-		ChainVertex* d = new ChainVertex("", domain_name, -1, VertexType::Domain);
+		ChainVertex* d = new ChainVertex("", domain_name, 0, VertexType::Domain);
 		// Create a copy of the chain's vertex to facilitate the memory clean-up at the end.
 		ChainVertex* f = new ChainVertex(*v);
 
@@ -320,6 +320,8 @@ short ParserConfiguration::parse_domains(const std::string& nf_domains) {
 		domain++;
 	}
 
+	this->nf_domains->print_adjacency_list();
+
 	return SUCCESS;
 }
 
@@ -327,12 +329,12 @@ short ParserConfiguration::parse_domains(const std::string& nf_domains) {
  * Check whether the formulated graph of the chain is acyclic
  */
 short ParserConfiguration::check_for_loops(void) {
-	if ( (this->nf_chain == NULL) || (this->nf_domains == NULL) ) {
+	if ( this->nf_chain == NULL ) {
 		log << warn << "\tGraph(s) do(es) not exist" << def << std::endl;
 		return NO_MEM_AVAILABLE;
 	}
 
-	if ( this->nf_chain->is_empty() || this->nf_domains->is_empty() ) {
+	if ( this->nf_chain->is_empty() ) {
 		log << warn << "\tGraph(s) is(are) empty" << def << std::endl;
 		return NO_MEM_AVAILABLE;
 	}
@@ -340,9 +342,7 @@ short ParserConfiguration::check_for_loops(void) {
 	try {
 		log << "\tTopological sort ... " << def << std::endl;
 		this->nf_chain->topological_sort();
-		log << "\t|---> NF Chain  graph is acyclic" << def << std::endl;
-		this->nf_domains->topological_sort();
-		log << "\t|---> NF Domain graph is acyclic" << def << std::endl;
+		log << "\t|---> NF Chain graph is acyclic" << def << std::endl;
 	}
 	catch (const std::exception& e) {
 		log << error << "|--> " << e.what() << def << std::endl;

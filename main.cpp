@@ -37,7 +37,6 @@ int main(int argc, char** argv) {
 			exit(exit_status);
 		}
 		pcf->get_chain()->print_vertex_order();
-		pcf->get_chain_domains()->print_vertex_order();
 	}
 	) << "  microseconds" << def << std::endl;
 	log << info << "+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+" << def << std::endl;

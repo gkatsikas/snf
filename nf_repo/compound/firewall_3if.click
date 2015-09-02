@@ -113,7 +113,7 @@ elementclass Firewall_3IF {
 		allow src host 80.0.0.10  && tcp,
 		allow src host 90.0.0.10  && icmp,
 		allow src host 100.0.0.10 && icmp,
-		allow src host $ipAddr0 || src host $ipAdd1 || src host $ipAddr2,
+		allow src host $ipAddr0 || src host $ipAddr1 || src host $ipAddr2,
 		drop all
 	);
 

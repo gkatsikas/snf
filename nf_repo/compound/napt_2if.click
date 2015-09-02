@@ -39,9 +39,9 @@ define(
 // Elements
 elementclass NAPT {
 	// Module's arguments
-	$iface0, $macAddr0,  $ipAddr0, $ipNetHost0, $ipBcast0, $ipNet0, $color0,
-	$iface1, $macAddr1,  $ipAddr1, $ipNetHost1, $ipBcast1, $ipNet1, $color1,
-	$gwIPAddr, $gwMACAddr, $queueSize, $mtuSize, $burst |
+	$iface0, $macAddr0, $ipAddr0, $ipNetHost0, $ipBcast0, $ipNet0, $color0,
+	$iface1, $macAddr1, $ipAddr1, $ipNetHost1, $ipBcast1, $ipNet1, $color1,
+	$gwIPAddr, $gwMACAddr, $gwPort, $queueSize, $mtuSize, $burst |
 
 	// Queues
 	queue0 :: Queue($queueSize);

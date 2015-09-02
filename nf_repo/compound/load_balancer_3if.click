@@ -65,7 +65,6 @@ elementclass LoadBalancer {
 	out1    :: ToDevice  ($iface1);
 	in2     :: FromDevice($iface2);
 	out2    :: ToDevice  ($iface2);
-	toLinux :: Discard;
 	
 	// ARP Querier
 	arpQuerier0   :: ARPQuerier($ipAddr0, $macAddr0);
@@ -134,8 +133,8 @@ elementclass LoadBalancer {
 
 	// Implements Round Robin Load Balancing across 3 servers
 	lb :: RoundRobinIPMapper(
-		pattern - - $lbIPAddr0 - 0 0,
-		pattern - - $lbIPAddr1 - 0 0
+		pattern - - $lbIPAddr0 - 0 1,
+		pattern - - $lbIPAddr1 - 0 1
 	);
 
 	// Implements PNAT

@@ -44,9 +44,9 @@ define(
 // Elements
 elementclass NAPT_3IF {
 	// Module's arguments
-	$iface0, $macAddr0,  $ipAddr0,   $ipNetHost0, $ipBcast0, $ipNet0, $color0,
-	$iface1, $macAddr1,  $ipAddr1,   $ipNetHost1, $ipBcast1, $ipNet1, $color1,
-	$iface2, $macAddr2,  $ipAddr2,   $ipNetHost2, $ipBcast2, $ipNet2, $color2,
+	$iface0, $macAddr0, $ipAddr0, $ipNetHost0, $ipBcast0, $ipNet0, $color0,
+	$iface1, $macAddr1, $ipAddr1, $ipNetHost1, $ipBcast1, $ipNet1, $color1,
+	$iface2, $macAddr2, $ipAddr2, $ipNetHost2, $ipBcast2, $ipNet2, $color2,
 	$gwIPAddr, $gwPort, $queueSize, $mtuSize |
 
 	// Queues
@@ -168,9 +168,9 @@ elementclass NAPT_3IF {
 	classifier2[1] -> [1]arpQuerier2 -> queue2 -> out2;
 
 	// --> IP packets
-	classifier0[2] -> Paint($color0) -> strip;
-	classifier1[2] -> Paint($color1) -> strip;
-	classifier2[2] -> Paint($color2) -> strip;
+	classifier0[2] -> Paint($color0) -> strip0;
+	classifier1[2] -> Paint($color1) -> strip1;
+	classifier2[2] -> Paint($color2) -> strip2;
 
 	// --> Drop the rest
 	classifier0[3] -> Discard;

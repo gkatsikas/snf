@@ -250,6 +250,9 @@ std::vector<Vertex*> Graph::get_vertex_order(void) {
 		exit(NF_CHAIN_NOT_ACYCLIC);
 	}
 
+	if ( topo_sort.empty() )
+		return chain_order;
+
 	std::reverse(topo_sort.begin(), topo_sort.end());
 	for ( Vertex* v : topo_sort )
 		chain_order.push_back(v);
@@ -285,11 +288,16 @@ std::vector<Vertex*> Graph::topological_sort(void) {
 	for (auto& pair : in_degs) {
 		// Vertex has in degree of 0
 		if (pair.second == 0) {
+			
 			Vertex* vertex = pair.first;
 			Colour& colour = visited[vertex];
 
 			// This should never happen here because vertex has in degree 0
 			assert (colour == White);
+
+			// If no successors exist, DFS is in vain.
+			if ( this->is_leaf(vertex) )
+				continue;
 
 			// Not visited, go DFS
 			dfs(vertex, colour, this->vertices, visited, sorted);
@@ -312,21 +320,20 @@ void dfs(Vertex* vertex, Colour& colour, const Graph::AdjacencyList& adjacency_l
 
 	colour = Grey;
 
-	try {
+	try {		
 		for ( Vertex* neighbour : adjacency_list.at(vertex) ) {
 			Colour& neighbour_colour = visited[neighbour];
 
 			// Unvisited node --> recursion
-			if (neighbour_colour == White) {
+			if (neighbour_colour == White)
 				dfs(neighbour, neighbour_colour, adjacency_list, visited, sorted);
-			}
 			// Ambiguous color denotes a cycle!
 			else if (neighbour_colour == Grey)
 				throw std::logic_error("Cycle in graph");
 		}
 	}
-	catch (const std::logic_error& e) {
-		throw e;
+	catch (const std::logic_error& le) {
+		throw std::logic_error("Cycle in graph");
 	}
 	catch (const std::exception& e) {
 		throw std::logic_error("Graph is not built properly. Invalid access to memory \nCheck Click Configuration file");

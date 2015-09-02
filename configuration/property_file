@@ -1,39 +1,29 @@
 [NF_MODULES]
+NF_1 = nf_repo/compound/napt_2if.click
+NF_2 = nf_repo/compound/firewall_3if.click
+
 #NF_1 = nf_repo/flat_router_2if.click
 ##NF_2 = nf_repo/flat_lb_3if.click
 #NF_2 = nf_repo/flat_fw_3if.click
 #NF_3 = nf_repo/flat_router_2if.click
 #NF_4 = nf_repo/flat_router_2if.click
 
-NF_1 = nf_repo/compound/router_2if.click
-NF_2 = nf_repo/compound/router_3if.click
-NF_3 = nf_repo/compound/router_2if.click
-NF_4 = nf_repo/compound/router_2if.click
+#NF_1 = nf_repo/compound/router_2if.click
+#NF_2 = nf_repo/compound/router_3if.click
+#NF_3 = nf_repo/compound/router_2if.click
+#NF_4 = nf_repo/compound/router_2if.click
 
 #NF_1 = nf_repo/flat_router_2if.click
 #NF_2 = nf_repo/router_3if.click
 #NF_3 = nf_repo/compound/router_2if.click
 #NF_4 = nf_repo/router_2if.click
 
-#NF_1 = nf_repo/router_2if.click
-#NF_2 = nf_repo/router_2if.click
-#NF_3 = nf_repo/firewall_2if.click
-#NF_4 = nf_repo/napt_2if.click
-
-#NF_4 = nf_repo/napt_2if.click
-#NF_4 = nf_repo/firewall_2if.click
-#NF_5 = nf_repo/napt_2if.click
-#NF_6 = nf_repo/firewall_2if.click
-#NF_7 = nf_repo/load_balancer_2if.click
-
-#NF_1 = nf_repo/loadbalancer_3if.click
-#NF_2 = nf_repo/loadbalancer_3if.click
-
-
 [NF_TOPO]
-TOPOLOGY = NF_1[eth1] -> [eth0]NF_2;NF_2[eth1] -> [eth0]NF_3;NF_2[eth2] -> [eth0]NF_4;
+TOPOLOGY = NF_1[eth1] -> [eth0]NF_2;
+#TOPOLOGY = NF_1[eth1] -> [eth0]NF_2;NF_2[eth1] -> [eth0]NF_3;NF_2[eth2] -> [eth0]NF_4;
 #TOPOLOGY = NF_1[eth1] -> [eth0]NF_2;NF_2[eth1] -> [eth0]NF_3;
 
 [ENTRY_POINTS]
-DOMAINS  = [eth0]NF_1, [eth1]NF_3, [eth1]NF_4
+DOMAINS  = [eth0]NF_1, [eth1]NF_2, [eth2]NF_2
+#DOMAINS  = [eth0]NF_1, [eth1]NF_3, [eth1]NF_4
 #DOMAINS  = [eth0]NF_1, [eth1]NF_3
