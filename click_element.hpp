@@ -14,11 +14,12 @@ class OutputClass;
 //Abstract representation of a Click element
 class ClickElement {
 	public:
-		ClickElement (ElementVertex* ev);
+		ClickElement (ElementVertex* ev, int input_port = 0);
 		ClickElement (const std::string& name, const std::string& configuration);
 		ClickElement (ElementType type, const std::string& configuration);
 
-		void set_child (std::shared_ptr<ClickElement> child, int port);
+		//TODO: add next_input_port with default = 0
+		void set_child (std::shared_ptr<ClickElement> child, int port, int next_input_port=0);
 
 		bool is_leaf();
 
@@ -36,7 +37,7 @@ class ClickElement {
 		static ElementType type_from_name (const std::string& name);
 
 	private:
-		ClickElement (ElementType type, const std::string& configuration, ElementVertex* ev);
+		ClickElement (ElementType type, const std::string& configuration, ElementVertex* ev, int input_port=0);
 	
 		static std::shared_ptr<ClickElement> discard_elem_ptr;
 
@@ -46,7 +47,7 @@ class ClickElement {
 		void parse_ip_filter (const std::string& configuration);
 		void parse_ip_classifier (const std::string& configuration);
 		void parse_lookup_filter (const std::string& configuration);
-		void parse_ip_rewriter (const std::string& configuration);
+		void parse_ip_rewriter (const std::string& configuration, int input_port);
 		void parse_rr_ip_mapper (const std::string& configuration);
 		void parse_vlan_encap_configuration(const std::string& configuration);
 		void parse_vlan_decap_configuration(const std::string& configuration);

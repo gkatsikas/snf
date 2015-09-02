@@ -27,7 +27,7 @@ class OutputClass {
 
 		//Getters & setters
 		void set_operation (const Operation & op);
-		void set_child (std::shared_ptr<ClickElement> child);
+		void set_child (std::shared_ptr<ClickElement> child, int next_input_port=0);
 		std::shared_ptr<ClickElement> get_child() const;
 		PacketFilter get_filter() const;
 		void set_filter(PacketFilter filter);
@@ -37,6 +37,7 @@ class OutputClass {
 
 	private:
 		int m_portNumber;
+		int m_nextInputPort;
 		std::shared_ptr<ClickElement> m_child;
 		Operation m_operation;
 		PacketFilter m_filter;

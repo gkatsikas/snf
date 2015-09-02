@@ -20,8 +20,8 @@
 std::string empty;
 std::shared_ptr<ClickElement> ClickElement::discard_elem_ptr(new ClickElement(Discard_def,empty));
 
-ClickElement::ClickElement (ElementVertex* ev) : ClickElement(type_from_name(ev->get_class()),
-													ev->get_configuration(),ev) {}
+ClickElement::ClickElement (ElementVertex* ev, int input_port) : ClickElement(type_from_name(ev->get_class()),
+													ev->get_configuration(),ev,input_port) {}
 
 ClickElement::ClickElement (const std::string& name, const std::string& configuration) : 
 					ClickElement(type_from_name(name),configuration, nullptr) {}
@@ -29,9 +29,11 @@ ClickElement::ClickElement (const std::string& name, const std::string& configur
 ClickElement::ClickElement (ElementType type, const std::string& configuration) :
 	ClickElement(type, configuration, nullptr) {}
 
-ClickElement::ClickElement (ElementType type, const std::string& configuration, ElementVertex* ev) :
+ClickElement::ClickElement (ElementType type, const std::string& configuration, ElementVertex* ev,
+							int input_port) :
 					m_type(type), m_configuration(configuration), m_nbPorts(0), m_ev(ev)
 {
+	DEBUG("Creating element "+to_str());
 	switch (type) {
 		case DecIPTTL:
 			parse_dec_ttl_conf (configuration);
@@ -58,7 +60,7 @@ ClickElement::ClickElement (ElementType type, const std::string& configuration, 
 			parse_lookup_filter (configuration);
 			break;
 		case IPRewriter:
-			parse_ip_rewriter (configuration);
+			parse_ip_rewriter (configuration,input_port);
 			break;
 		case RoundRobinIPMapper:
 			parse_rr_ip_mapper (configuration);
@@ -108,11 +110,11 @@ ClickElement::ClickElement (ElementType type, const std::string& configuration, 
 	}
 }
 
-void ClickElement::set_child (std::shared_ptr<ClickElement> child, int port) {
+void ClickElement::set_child (std::shared_ptr<ClickElement> child, int port, int next_input_port) {
 	DEBUG("Adding child "+elementNames[child->get_type()]+" to "+to_str());
 	for (auto &it : m_outputClasses) {
 		if (it.get_portNumber() == port) {
-			it.set_child(child);
+			it.set_child(child, next_input_port);
 		}
 	}
 }
@@ -229,7 +231,7 @@ void ClickElement::parse_ip_filter (const std::string& configuration) {
 		if(rules[i].empty()) {
 			BUG("Empty classifying rule in IPFilter element");
 		}
-		std::string rule = (rules[i][0]==' ') ? rules[i].substr(1,rules[i].size()-1) : rules[i];
+		std::string rule = rules[i].substr(rules[i].find_first_not_of("\n\t "), rules[i].size());
 
 		size_t first_space = rule.find(' ');
 		std::string behaviour = rule.substr(0,first_space);
@@ -293,13 +295,13 @@ void ClickElement::parse_lookup_filter(const std::string& configuration) {
 	}
 }
 
-void ClickElement::parse_ip_rewriter (const std::string& configuration) {
-	//We assume that the configuration holds for only one input port
-	std::vector<std::string> split_inputsec = split(configuration, ' ');
+void ClickElement::parse_ip_rewriter (const std::string& configuration, int input_port) {
+	std::string conf_line = split(configuration, ',')[input_port];
+	std::vector<std::string> split_inputsec = split(conf_line, ' ');
 
 	switch (split_inputsec.size()) {
 		case 1: {
-			if (configuration.compare("drop")==0 || configuration.compare("discard")==0) {
+			if (conf_line.compare("drop")==0 || conf_line.compare("discard")==0) {
 				OutputClass discard(0);
 				discard.set_child(discard_elem_ptr);
 				this->add_output_class(discard);

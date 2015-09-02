@@ -5,8 +5,10 @@
 
 #include "helpers.hpp"
 
-OutputClass::OutputClass (int port_nb) : m_portNumber(port_nb), m_child(new ClickElement(No_elem, "")) {
-}
+#define DEBUG(A) std::cerr<<"["<<__FILE__<<":"<<__LINE__<<"] DEBUG: "<<A <<std::endl
+
+OutputClass::OutputClass (int port_nb) : m_portNumber(port_nb), m_nextInputPort(0), 
+	m_child(new ClickElement(No_elem, "")) {}
 
 void OutputClass::add_filter (HeaderField field, Filter& filter) {
 	if ( m_filter.find(field) != m_filter.end() ) {
@@ -18,6 +20,7 @@ void OutputClass::add_filter (HeaderField field, Filter& filter) {
 }
 
 OutputClass OutputClass::port_from_lookup_rule(std::string& rule, Filter& parsed_rules) {
+
 	std::vector<std::string> decomposed_rule = split(rule,' ');
 	int nb_arg = decomposed_rule.size();
 	if (nb_arg>3 || nb_arg<2) {
@@ -25,13 +28,24 @@ OutputClass OutputClass::port_from_lookup_rule(std::string& rule, Filter& parsed
 			<<rule<<std::endl;
 		exit(1);
 	}
-
+	
 	uint32_t port_nb = atoi(decomposed_rule[nb_arg-1].c_str());
 	std::vector<std::string> address_and_mask = split(decomposed_rule[0],'/');
-
-	Filter f = Filter::get_filter_from_v4_prefix(ip_dst, aton(address_and_mask[0]),
+	Filter f;
+	switch(address_and_mask.size()) {
+		case 1:
+			f = Filter(ip_dst, aton(decomposed_rule[0]));
+			break;
+		case 2:
+			f = Filter::get_filter_from_v4_prefix(ip_dst, aton(address_and_mask[0]),
 									atoi(address_and_mask[1].c_str()));
-
+			break;
+		default:
+			std::cerr << "[" << __FILE__ << ":" << __LINE__ <<"] Wrong lookup format: "
+				<<rule<<std::endl;
+			exit(1);
+	}
+ 
 	f.differentiate(parsed_rules);
 	parsed_rules.unite(f);
 
@@ -169,6 +183,7 @@ void OutputClass::set_operation (const Operation & op) {
 	this->m_operation = op;
 }
 
-void OutputClass::set_child (std::shared_ptr<ClickElement> child) {
+void OutputClass::set_child (std::shared_ptr<ClickElement> child, int next_input_port /*=0*/) {
 	this->m_child = child;
+	this->m_nextInputPort = next_input_port;
 }

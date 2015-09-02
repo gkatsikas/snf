@@ -23,7 +23,13 @@ std::vector<std::string> &split(const std::string &s, char delim, std::vector<st
 
 std::vector<std::string> split(const std::string &s, char delim) {
 	std::vector<std::string> elems;
-	split(s, delim, elems);
+	size_t start=0;
+	size_t end=0;
+	while(start != std::string::npos) {
+		end = s.find(delim,start);
+		elems.push_back(s.substr(start,end-start));
+		start = s.find_first_not_of(delim,end);
+	}
 	return elems;
 }
 
