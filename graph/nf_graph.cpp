@@ -46,6 +46,11 @@ void ElementVertex::set_endpoint(bool ep) {
 	this->_is_endpoint = ep;
 }
 
+std::string ElementVertex::get_interface(void) const {
+	std::string elem_conf = this->get_configuration();
+	return elem_conf.substr(0, elem_conf.find(","));
+}
+
 void ElementVertex::print_info(void) {
 	log << info << "===============================================" << def << std::endl;
 	Vertex::print_info();

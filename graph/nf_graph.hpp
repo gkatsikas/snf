@@ -59,6 +59,7 @@ class ElementVertex : public Vertex
 		inline std::string    get_glue_iface      (void) { return this->glue.second; };
 		inline unsigned short get_glue_nf_position(void) { return this->glue.first;  };
 
+		std::string get_interface(void) const;
 		inline std::string get_class(void)         const { return this->click_element->class_name(); };
 		inline std::string get_configuration(void) const { return this->click_element->router()->econfiguration(this->get_position()).c_str(); };
 		inline std::shared_ptr<Element> get_click_element(void) const { return this->click_element; };
