@@ -54,16 +54,17 @@ short Synthesizer::build_traffic_classes(void) {
 		for ( auto& endpoint : nf_graph->get_endpoint_vertices(VertexType::Input) ) {
 			std::string elem_name = endpoint->get_name();
 			std::string elem_conf = endpoint->get_configuration();
+			std::string interface = elem_conf.substr(0, elem_conf.find(","));
 
-			log << "\t" << elem_name << "(" << elem_conf << ")" << def << std::endl;
+			log << "\t" << elem_name << "(" << interface << ")" << def << std::endl;
 
 			// Go DFS until the end of life
 			std::shared_ptr<ClickElement> ep(new ClickElement(endpoint));
-			TrafficBuilder::traffic_class_builder_dfs(this->get_chain_parser()->get_nf_graphs(), nf_position, ep, elem_conf);
+			TrafficBuilder::traffic_class_builder_dfs(this->get_chain_parser()->get_nf_graphs(), nf_position, ep, interface);
 
 			ClickTree ct (ep);
 			std::cout<<"####################################################";
-			std::cout<<"####################################################";
+			std::cout<<"####################################################"<< std::endl;
 			for (auto &it : ct.get_trafficClasses()) {
 				if (!it.is_discarded ()) std::cout<<it.to_str();
 			}
@@ -102,7 +103,7 @@ short Synthesizer::generate_equivalent_configuration(void) {
  * this is a recursive graph composition function.
  */
 void TrafficBuilder::traffic_class_builder_dfs(	NF_Map<NFGraph*> nf_chain, unsigned short nf_position,
-												std::shared_ptr<ClickElement> elem, std::string nf_conf) {
+												std::shared_ptr<ClickElement> elem, std::string nf_iface) {
 
 	Logger log(__FILE__);
 	ElementVertex* nf_vertex = elem->get_ev();
@@ -114,50 +115,58 @@ void TrafficBuilder::traffic_class_builder_dfs(	NF_Map<NFGraph*> nf_chain, unsig
 	if ( adjacency_list.at(nf_vertex).size() == 0 ) {
 		// We are looking for an endpoint Outpout element with different configuration (aka interface)
 		// Otherwise a loop will be created
-		if ( (nf_vertex->is_endpoint()) && (nf_vertex->get_configuration() != nf_conf) ) {
-			log << "\t\t ----->  ENDPOINT " << nf_vertex->get_name() << "(" << nf_vertex->get_configuration() << ")" << def << std::endl;
+		if ( (nf_vertex->is_endpoint()) && (nf_vertex->get_interface() != nf_iface) ) {
+			log << "\t\t ----->  ENDPOINT " << nf_vertex->get_name() << "(" << nf_vertex->get_interface() << ")" << def << std::endl;
 			return;
 		}
 		// A way to continue in the chain
-		else if ( (!nf_vertex->is_endpoint()) && (nf_vertex->get_configuration() != nf_conf) ) {
+		else if ( (!nf_vertex->is_endpoint()) && (nf_vertex->get_interface() != nf_iface) ) {
 			// Give me the 'good' paths
 			if ( (nf_vertex->get_class() != "Discard") ) {
 				unsigned short next_nf_position = nf_vertex->get_glue_nf_position();
 				std::string next_nf_iface = nf_vertex->get_glue_iface();
 
-				log << "\t\t -----> JUMP FROM " << nf_vertex->get_name() << "(" << nf_vertex->get_configuration() << ")" << def << std::endl;
+				log << "\t\t -----> JUMP FROM " << nf_vertex->get_name() << "(" << nf_vertex->get_interface() << ")" << def << std::endl;
+				//log << "\t\t -----> Next Pos: " << next_nf_position << " at iface " << next_nf_iface << def << std::endl;
 
 				// Change context, move to next graph
 				// 1. Change adjacency list
 				adjacency_list = nf_chain[next_nf_position]->get_adjacency_list();
 
 				// 2. Change vertex pointer to the first element of the next NF
+				bool found = false;
 				for ( ElementVertex* input_elem : nf_chain[next_nf_position]->get_vertices_by_stage(VertexType::Input) ) {
-					if ( input_elem->get_configuration() == next_nf_iface ) {
+					if ( input_elem->get_interface() == next_nf_iface ) {
 						nf_vertex = input_elem;
-						log << "\t\t ----->        TO " << nf_vertex->get_class() <<  "(" << nf_vertex->get_configuration() << ")" << def << std::endl;
+						found = true;
+						log << "\t\t ----->        TO " << nf_vertex->get_class() <<  "(" << nf_vertex->get_interface() << ")" << def << std::endl;
 						break;
 					}
 				}
 
+				if ( !found ) {
+					log << error << "\t\t Unable to find next jump " << def << std::endl;
+					
+				}
+
 				// 3. Change origin interface using the interface of the new vertex
-				nf_conf = next_nf_iface;
+				nf_iface = next_nf_iface;
 
 				// 4. Change NF postion in the Chain DAG
 				nf_position = next_nf_position;
 			}
 			// A path that leads to the cliff
 			else {
-				log << "\t\t ----->      DROP " << nf_vertex->get_name() << "(" << nf_vertex->get_configuration() << ")" << def << std::endl;
+				log << "\t\t ----->      DROP " << nf_vertex->get_name() << "(" << nf_vertex->get_interface() << ")" << def << std::endl;
 			}
 		}
 		// Do not chain because a loop will be created
-		else if ( nf_vertex->get_configuration() == nf_conf ) {
-			log << "\t\t ----->      LOOP " << nf_vertex->get_name() << "(" << nf_vertex->get_configuration() << ")" << def << std::endl;
+		else if ( nf_vertex->get_interface() == nf_iface ) {
+			log << "\t\t ----->      LOOP " << nf_vertex->get_name() << "(" << nf_vertex->get_interface() << ")" << def << std::endl;
 			return;
 		}
 		else {
-			log << "\t\t ----->       BUG " << nf_vertex->get_name() << "(" << nf_vertex->get_configuration() << ")" << def << std::endl;
+			log << "\t\t ----->       BUG " << nf_vertex->get_name() << "(" << nf_vertex->get_interface() << ")" << def << std::endl;
 			return;
 		}
 	}
@@ -170,7 +179,7 @@ void TrafficBuilder::traffic_class_builder_dfs(	NF_Map<NFGraph*> nf_chain, unsig
 		//log << "\t\t Child: " << ev->get_name() << def << std::endl;
 
 		// Unvisited node --> recursion
-		traffic_class_builder_dfs(nf_chain, nf_position, child, nf_conf);
+		traffic_class_builder_dfs(nf_chain, nf_position, child, nf_iface);
 	}
 }
 

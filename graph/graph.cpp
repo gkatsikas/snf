@@ -367,40 +367,4 @@ void dfs(Vertex* vertex, Colour& colour, const Graph::AdjacencyList& adjacency_l
 	dfs(vertex, colour, this->vertices, visited, paths);
 
 	return paths;
-}
-
-std::vector<std::vector<Vertex*>> Graph::all_paths(void) {
-	if ( this->is_empty() ) {
-		log << warn << "\tGraph is empty" << def << std::endl;
-		std::vector<std::vector<Vertex*>> all_paths;
-		return all_paths;
-	}
-
-	VertexMap<int> in_degs = this->get_in_degrees();
-
-	std::vector<std::vector<Vertex*>> all_paths;
-
-	VertexMap<Colour> visited;
-	visited.reserve(in_degs.size());
-
-	for (auto& pair : in_degs) {
-
-		std::vector<Vertex*> sorted;
-
-		// Vertex has in degree of 0
-		if (pair.second == 0) {
-			Vertex* vertex = pair.first;
-			Colour& colour = visited[vertex];
-
-			// This should never happen here because vertex has in degree 0
-			assert (colour == White);
-
-			// Not visited, go DFS
-			dfs(vertex, colour, this->vertices, visited, sorted);
-
-			all_paths.push_back(sorted);
-		}
-	}
-
-	return all_paths;
 }*/
