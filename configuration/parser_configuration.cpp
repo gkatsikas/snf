@@ -63,7 +63,7 @@ short ParserConfiguration::load_property_file(void) {
 	if ( (exit_status=this->parse_domains(nf_domains)) != SUCCESS )
 		return exit_status;
 
-	log << "\t The property file is successfully parsed" << def << std::endl;
+	log << "\tThe property file is successfully parsed" << def << std::endl;
 	log << "" << def << std::endl;
 
 	// Check if the graph is acyclic
@@ -320,7 +320,7 @@ short ParserConfiguration::parse_domains(const std::string& nf_domains) {
 		domain++;
 	}
 
-	this->nf_domains->print_adjacency_list();
+	//this->nf_domains->print_adjacency_list();
 
 	return SUCCESS;
 }
