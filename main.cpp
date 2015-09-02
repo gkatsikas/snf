@@ -10,6 +10,7 @@
 short int parseArguments (int cmd_args_no, char** cmd_args, std::string* property_file);
 
 int main(int argc, char** argv) {
+	setvbuf(stdout, NULL, _IONBF, 0);
 	std::string property_file;
 	short exit_status = 0;
 
