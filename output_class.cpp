@@ -46,6 +46,8 @@ OutputClass OutputClass::port_from_lookup_rule(std::string& rule, Filter& parsed
 			exit(1);
 	}
  
+ 	//DEBUG("From lookup rule \""+rule+"\" we created: "+f.to_str());
+ 
 	f.differentiate(parsed_rules);
 	parsed_rules.unite(f);
 

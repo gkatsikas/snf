@@ -75,6 +75,10 @@ std::vector<std::string> separate_args(const std::string &s) {
 		}
 	}
 	
+	if(!current_arg.empty()) {
+		args.push_back(current_arg);
+	}
+	
 	return args;
 }
 

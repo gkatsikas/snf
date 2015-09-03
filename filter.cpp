@@ -46,17 +46,18 @@ Filter Filter::get_filter_from_v4_prefix(HeaderField field, uint32_t value, uint
 	uint32_t lowerLimit = value & (0xffffffff << translation);
 	uint32_t upperLimit = value | (0xffffffff >> prefix);
 	if(lowerLimit > upperLimit) {BUG("Weird filter");}
+	
 	return Filter(field, lowerLimit, upperLimit);
 }
 
 Filter Filter::get_filter_from_v4_prefix_str(HeaderField field, const std::string& prefix_as_str) {
+	DEBUG("Parsing: "+prefix_as_str);
 
 	size_t prefix_pos = prefix_as_str.find("/");
-	if (prefix_pos == std::string::npos) {
-		BUG("Expected IP prefix and got: "+prefix_as_str);
-	}
 	uint32_t addr = aton(prefix_as_str.substr(0,prefix_pos));
 	uint32_t prefix = atoi(prefix_as_str.substr(prefix_pos+1,2).c_str());
+	
+	
 	return get_filter_from_v4_prefix(field, addr, prefix);
 }
 

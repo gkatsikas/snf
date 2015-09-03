@@ -103,6 +103,8 @@ elementclass Firewall_3IF {
 	// The module that turns this router into L3 firewall
 	filter :: IPFilter(
 		allow dst host $ipAddr0,
+		allow dst net  $ipNet0,
+		allow src net  $ipNet0,
 		allow dst host $ipAddr1,
 		allow dst host $ipAddr2,
 		allow dst host $gwIPAddr,
