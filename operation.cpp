@@ -101,7 +101,7 @@ std::string FieldOperation::to_str () const {
 
 void Operation::add_field_op(const FieldOperation &field_op) {
 	OperationType new_op_type = field_op.m_type;
-
+	
 	switch (new_op_type) {
 		case Monitor: {
 			this->monitors.push_back(field_op.m_value[0]);

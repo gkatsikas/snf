@@ -113,10 +113,12 @@ ClickElement::ClickElement (ElementType type, const std::string& configuration, 
 			break;
 		case SetVLANAnno:
 			parse_set_vlan_anno_configuration(configuration);
+			break;
 		default:
 			std::cerr << "["<<__FILE__<<":"<<__LINE__<<"] "<< "Unsupported Element"<<std::endl;
 			exit(1);
 	}
+	DEBUG("CREATED ELEM: "+to_str());
 }
 
 void ClickElement::set_child (std::shared_ptr<ClickElement> child, int port, int next_input_port) {
@@ -322,7 +324,7 @@ void ClickElement::parse_ip_rewriter (const std::string& configuration, int inpu
 			std::pair<OutputClass,OutputClass> ports =
 					OutputClass::output_class_from_pattern(split_inputsec);
 			this->add_output_class(ports.first);
-			this->add_output_class(ports.second);
+			//this->add_output_class(ports.second);
 			break;
 		}
 		default:

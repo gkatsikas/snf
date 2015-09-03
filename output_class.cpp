@@ -66,7 +66,11 @@ std::pair<OutputClass,OutputClass> OutputClass::output_class_from_pattern(
 
 	OutputClass foutput (modified_port_nb);
 	if (pattern[1].compare("-")) {
-		foutput.add_field_op({Write,ip_src,aton(pattern[0])});
+		if(!aton(pattern[1])) {
+			std::cerr<<"["<<__FILE__<<":"<<__LINE__<<"] IP pattern null?: "<<pattern[1]<<"\n";
+			exit(1);
+		}
+		foutput.add_field_op({Write,ip_src,aton(pattern[1])});
 	}
 	if (pattern[2].compare("-")) {
 		std::vector<std::string> split_pattern = split(pattern[2],"-");
@@ -136,7 +140,7 @@ std::pair<OutputClass,OutputClass> OutputClass::output_class_from_pattern(
 			exit(1);
 		}
 	}
-
+	//DEBUG("Created output class: "+foutput.to_str());
 	return std::pair<OutputClass,OutputClass>(foutput,OutputClass(unmodified_port_nb));
 }
 
