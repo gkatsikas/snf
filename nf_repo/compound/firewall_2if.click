@@ -36,7 +36,7 @@ define(
 
 /////////////////////////////////////////////////////////////////////////////
 // Elements
-elementclass L3Firewall {
+elementclass Firewall {
 	// Module's arguments
 	$iface0, $macAddr0,  $ipAddr0, $ipNetHost0, $ipBcast0, $ipNet0, $color0,
 	$iface1, $macAddr1,  $ipAddr1, $ipNetHost1, $ipBcast1, $ipNet1, $color1,
@@ -79,19 +79,18 @@ elementclass L3Firewall {
 
 	// The module that turns this router into L3 firewall
 	filter :: IPFilter(
-		allow dst host $ipAddr0,
-                allow dst net  $ipNet0,
-                allow src net  $ipNet0,
-                allow dst host $ipAddr1,
-                allow dst host $ipAddr2,
-                allow dst host $gwIPAddr,
-                allow src host 20.0.0.10  && ip proto 17,
-                allow src host 30.0.0.10  && ip proto 6,
-                drop all
+		//allow dst host $ipAddr0,
+		allow dst net  $ipNet0,
+		allow src net  $ipNet0,
+		//allow dst host $ipAddr1,
+		//allow dst host $gwIPAddr,
+		allow src host 20.0.0.10  && ip proto 17,
+		allow src host 30.0.0.10  && ip proto 6,
+		drop all
 	);
 
 	// Strip Ethernet header
-	strip  :: Strip(14);
+	strip :: Strip(14);
 
 	// Check header's integrity
 	checkIPHeader :: MarkIPHeader;
@@ -106,7 +105,7 @@ elementclass L3Firewall {
 		$ipNetHost1  0,
 		$ipNet0      1,
 		$ipNet1      2,
-		0.0.0.0/0 $gwIPAddr $gwPort
+		0.0.0.0/0 $gwPort
 	);
 
 	// Process the IP options field (mandatory based on RFC 791)
@@ -186,7 +185,7 @@ elementclass L3Firewall {
 /////////////////////////////////////////////////////////////////////////////
 // Scenario
 /////////////////////////////////////////////////////////////////////////////
-firewall :: L3Firewall(
+firewall :: Firewall(
 	$iface0, $macAddr0, $ipAddr0, $ipNetHost0, $ipBcast0, $ipNet0, $color0,
 	$iface1, $macAddr1, $ipAddr1, $ipNetHost1, $ipBcast1, $ipNet1, $color1,
 	$gwIPAddr, $gwMACAddr, $gwPort, $queueSize, $mtuSize, $burst

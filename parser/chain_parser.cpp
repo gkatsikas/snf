@@ -301,8 +301,9 @@ short ChainParser::verify_and_connect_nfs(std::string nf_name, unsigned short po
 			// If you check property file, section [NF_TOPO], you will see that we do not specify
 			// the input interfaces if these are not entry interfaces.
 			else {
-				log << error << "Undeclared interface " << interface << def << std::endl;
-				return CLICK_PARSING_PROBLEM;
+				//log << error << "\tUndeclared interface " << interface << def << std::endl;
+				element->set_endpoint(true);
+				//return CLICK_PARSING_PROBLEM;
 			}
 		}
 	}

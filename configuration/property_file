@@ -12,8 +12,8 @@
 #                     |
 #                    DMZ
 #
-NF_1 = nf_repo/compound/napt_2if.click
-NF_2 = nf_repo/compound/firewall_3if.click
+#NF_1 = nf_repo/compound/napt_2if.click
+#NF_2 = nf_repo/compound/firewall_3if.click
 
 
 ### TOPO 2
@@ -47,10 +47,10 @@ NF_2 = nf_repo/compound/firewall_3if.click
 #                          \    /
 #                         Domain 2
 #
-#NF_1 = nf_repo/compound/router_2if.click
-#NF_2 = nf_repo/compound/router_3if.click
-#NF_3 = nf_repo/compound/router_3if.click
-#NF_4 = nf_repo/compound/router_2if.click
+NF_1 = nf_repo/compound/router_2if.click
+NF_2 = nf_repo/compound/router_3if.click
+NF_3 = nf_repo/compound/router_3if.click
+NF_4 = nf_repo/compound/router_2if.click
 
 #######
 ####### SECTION 2: In this section you specifiy the topology of the modules.
@@ -59,7 +59,7 @@ NF_2 = nf_repo/compound/firewall_3if.click
 [NF_TOPO]
 
 ### TOPO 1
-TOPOLOGY = NF_1[eth1] -> [eth0]NF_2;
+#TOPOLOGY = NF_1[eth1] -> [eth0]NF_2;
 
 ### TOPO 2
 #TOPOLOGY = NF_1[eth2] -> [eth0]NF_2;
@@ -68,7 +68,7 @@ TOPOLOGY = NF_1[eth1] -> [eth0]NF_2;
 #TOPOLOGY = NF_1[eth1] -> [eth0]NF_2;NF_2[eth1] -> [eth0]NF_3;
 
 ### TOPO 4
-#TOPOLOGY = NF_1[eth1] -> [eth0]NF_2;NF_2[eth2] -> [eth0]NF_3;NF_3[eth2] -> [eth0]NF_4;
+TOPOLOGY = NF_1[eth1] -> [eth0]NF_2;NF_2[eth2] -> [eth0]NF_3;NF_3[eth2] -> [eth0]NF_4;
 
 
 ####### SECTION 3: In this section you specifiy the entry/end points of the chain.
@@ -78,14 +78,18 @@ TOPOLOGY = NF_1[eth1] -> [eth0]NF_2;
 #######
 [ENTRY_POINTS]
 ### TOPO 1
-DOMAINS  = [eth0]NF_1, [eth1]NF_2, [eth2]NF_2
+#DOMAINS  = [eth0]NF_1, [eth1]NF_2, [eth2]NF_2
+#DOMAINS  = [eth0]NF_1
 
 ### TOPO 2
 #DOMAINS  = [eth0]NF_1, [eth1]NF_1, [eth1]NF_2, [eth2]NF_2
+#DOMAINS  = [eth0]NF_1, [eth1]NF_1, [eth1]NF_2
 
 ### TOPO 3
 #DOMAINS  = [eth0]NF_1, [eth1]NF_3
+#DOMAINS  = [eth0]NF_1
 
 ### TOPO 4
 #DOMAINS  = [eth0]NF_1, [eth1]NF_2, [eth1]NF_3, [eth1]NF_4
+DOMAINS  = [eth0]NF_1, [eth1]NF_2, [eth1]NF_3
 ###################################################################################################
