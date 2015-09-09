@@ -333,10 +333,29 @@ index b7ced3a..3d68abb 100644
  	default_timeout = 300,	   // 5 minutes
  	default_guarantee = 5,	   // 5 seconds
 diff --git elements/ip/iprwmapping.cc elements/ip/iprwmapping.cc
-index 966382c..cc98ea3 100644
+index 966382c..03c755e 100644
 --- elements/ip/iprwmapping.cc
 +++ elements/ip/iprwmapping.cc
-@@ -55,7 +55,7 @@ IPRewriterFlow::IPRewriterFlow(IPRewriterInput *owner, const IPFlowID &flowid,
+@@ -19,6 +19,8 @@
+  * legally binding.
+  */
+ 
++#include <stdio.h>
++
+ #include <click/config.h>
+ #include "iprwmapping.hh"
+ #include "iprewriterbase.hh"
+@@ -40,6 +42,9 @@ IPRewriterFlow::IPRewriterFlow(IPRewriterInput *owner, const IPFlowID &flowid,
+       _guaranteed(guaranteed), _reply_anno(0),
+       _owner(owner)
+ {
++    //printf("Forward Port: %d\n", owner->foutput);
++    //printf("Reverse Port: %d\n", owner->routput);
++
+     _e[0].initialize(flowid, owner->foutput, false);
+     _e[1].initialize(rewritten_flowid.reverse(), owner->routput, true);
+ 
+@@ -55,7 +60,7 @@ IPRewriterFlow::IPRewriterFlow(IPRewriterInput *owner, const IPFlowID &flowid,
  }
  
  void
@@ -345,7 +364,7 @@ index 966382c..cc98ea3 100644
  {
      assert(p->has_network_header());
      click_ip *iph = p->ip_header();
-@@ -68,7 +68,11 @@ IPRewriterFlow::apply(WritablePacket *p, bool direction, unsigned annos)
+@@ -68,7 +73,11 @@ IPRewriterFlow::apply(WritablePacket *p, bool direction, unsigned annos)
  	p->set_dst_ip_anno(revflow.saddr());
      if (direction && (annos & 2))
  	p->set_anno_u8(annos >> 2, _reply_anno);
@@ -358,7 +377,7 @@ index 966382c..cc98ea3 100644
  
      // end if not first fragment
      if (!IP_FIRSTFRAG(iph))
-@@ -79,13 +83,21 @@ IPRewriterFlow::apply(WritablePacket *p, bool direction, unsigned annos)
+@@ -79,13 +88,21 @@ IPRewriterFlow::apply(WritablePacket *p, bool direction, unsigned annos)
  	click_tcp *tcph = p->tcp_header();
  	tcph->th_sport = revflow.dport();
  	tcph->th_dport = revflow.sport();
@@ -396,11 +415,90 @@ index 446f95b..5ee3860 100644
  
      void unparse(StringAccum &sa, bool direction, click_jiffies_t now) const;
      void unparse_ports(StringAccum &sa, bool direction, click_jiffies_t now) const;
+diff --git elements/standard/paint.cc elements/standard/paint.cc
+index 1c1545e..5a50701 100644
+--- elements/standard/paint.cc
++++ elements/standard/paint.cc
+@@ -16,6 +16,8 @@
+  * legally binding.
+  */
+ 
++#include <stdio.h>
++
+ #include <click/config.h>
+ #include "paint.hh"
+ #include <click/args.hh>
+@@ -43,6 +45,8 @@ Paint::configure(Vector<String> &conf, ErrorHandler *errh)
+ Packet *
+ Paint::simple_action(Packet *p)
+ {
++    //printf("Annotation position: %d\n", _anno);
++    //printf("Annotation    color: %d\n", _color);
+     p->set_anno_u8(_anno, _color);
+     return p;
+ }
 diff --git elements/tcpudp/iprewriter.cc elements/tcpudp/iprewriter.cc
-index 0bc909b..726a2a9 100644
+index 0bc909b..74f9698 100644
 --- elements/tcpudp/iprewriter.cc
 +++ elements/tcpudp/iprewriter.cc
-@@ -127,6 +127,25 @@ IPRewriter::push(int port, Packet *p_in)
+@@ -16,6 +16,8 @@
+  * legally binding.
+  */
+ 
++#include <stdio.h>
++
+ #include <click/config.h>
+ #include "iprewriter.hh"
+ #include <clicknet/ip.h>
+@@ -28,6 +30,10 @@
+ #include <click/router.hh>
+ CLICK_DECLS
+ 
++// Hyper-NF: A statically-specified byte position in the packet annotation area
++//           used by Hyper-NF to encode the path of a flow across several NATs
++#define HYPER_NF_LABEL_POS 47
++
+ IPRewriter::IPRewriter()
+     : _udp_map(0)
+ {
+@@ -85,14 +91,15 @@ IPRewriter::get_entry(int ip_p, const IPFlowID &flowid, int input)
+ 	IPRewriterInput &is = _input_specs[input];
+ 	IPFlowID rewritten_flowid = IPFlowID::uninitialized_t();
+ 	if (is.rewrite_flowid(flowid, rewritten_flowid, 0, IPRewriterInput::mapid_iprewriter_udp) == rw_addmap)
+-	    m = IPRewriter::add_flow(0, flowid, rewritten_flowid, input);
++	    m = IPRewriter::add_flow(0, flowid, rewritten_flowid, input, -1);
+     }
++
+     return m;
+ }
+ 
+ IPRewriterEntry *
+ IPRewriter::add_flow(int ip_p, const IPFlowID &flowid,
+-		     const IPFlowID &rewritten_flowid, int input)
++		     const IPFlowID &rewritten_flowid, int input, int hyper_nf_label)
+ {
+     if (ip_p == IP_PROTO_TCP)
+ 	return TCPRewriter::add_flow(ip_p, flowid, rewritten_flowid, input);
+@@ -101,7 +108,18 @@ IPRewriter::add_flow(int ip_p, const IPFlowID &flowid,
+     if (!(data = _udp_allocator.allocate()))
+ 	return 0;
+ 
++    // Hyper-NF: If your packet has been arrived annotated, hyper_nf_label is zero or positive.
++    // This means that the reverse output to be installed in the map table must get the value of
++    // hyper_nf_label.
+     IPRewriterInput *rwinput = &_input_specs[input];
++
++    // We have something to give you!!! A different reverse port
++    if ( hyper_nf_label != -1 ) {
++	printf("---->  ROUTPUT before: %d\n", rwinput->routput);
++	rwinput->routput = hyper_nf_label;
++	printf("---->  ROUTPUT  after: %d\n", rwinput->routput);
++    }
++
+     IPRewriterFlow *flow = new(data) IPRewriterFlow
+ 	(rwinput, flowid, rewritten_flowid, ip_p,
+ 	 !!_udp_timeouts[1], click_jiffies() + relevant_timeout(_udp_timeouts));
+@@ -127,41 +145,96 @@ IPRewriter::push(int port, Packet *p_in)
  	return;
      }
  
@@ -422,11 +520,61 @@ index 0bc909b..726a2a9 100644
 +	}
 +    }
 +
++    // Hyper-NF: Read a specific position in the annotation area
++    // If set, this position tells you how to route the packet on
++    // the reverse outport specified by the value (the NAT's table
++    // routput must be set accordingly in method IPRewriter::add_flow)
++    // If not set, it must have a value 255 in order to use the standard
++    // port allocation of this element
++    uint8_t hyper_nf_label = p->anno_u8(HYPER_NF_LABEL_POS);
++    // There is no annotation, behave normally
++    if ( hyper_nf_label == 255 ) {
++	hyper_nf_label = -1;
++    }
++    else {
++	//printf("\n----> Routing annotation: %d\n", hyper_nf_label);
++	// Check whether the given label is in the range of ports of this element
++	if ( this->noutputs() < (hyper_nf_label+1) ) {
++		printf("----> Invalid routing annotation: %d. Element has only %d output ports\n", hyper_nf_label, this->noutputs());
++		return;
++	}
++    }
 +
      IPFlowID flowid(p);
      HashContainer<IPRewriterEntry> *map = (iph->ip_p == IP_PROTO_TCP ? &_map : &_udp_map);
      IPRewriterEntry *m = map->get(flowid);
-@@ -148,14 +167,14 @@ IPRewriter::push(int port, Packet *p_in)
+ 
++    // This is a fresh flow, store the annotation
+     if (!m) {			// create new mapping
++	//printf("----> NEW FLOW \n");
+ 	IPRewriterInput &is = _input_specs.unchecked_at(port);
+ 	IPFlowID rewritten_flowid = IPFlowID::uninitialized_t();
++
+ 	int result = is.rewrite_flowid(flowid, rewritten_flowid, p, iph->ip_p == IP_PROTO_TCP ? 0 : IPRewriterInput::mapid_iprewriter_udp);
+-	if (result == rw_addmap)
+-	    m = IPRewriter::add_flow(iph->ip_p, flowid, rewritten_flowid, port);
++	if (result == rw_addmap) {
++	    m = IPRewriter::add_flow(iph->ip_p, flowid, rewritten_flowid, port, hyper_nf_label);
++	    printf("---->        IP Proto: %d\n", iph->ip_p);
++	    printf("---->        Src   IP: %s\n", m->flowid().saddr().s().c_str());
++	    printf("---->        Src Port: %d\n", htons(m->flowid().sport()));
++	    printf("---->        Dst   IP: %s\n", m->flowid().daddr().s().c_str());
++	    printf("---->        Dst Port: %d\n", htons(m->flowid().dport()));
++	    printf("---->       Direction: %s\n", m->direction()? "Response":"Forward");
++	    printf("----> Forward Outport: %d\n", m->output());
++	    printf("----> Reverse Outport: %d\n", hyper_nf_label);
++	}
+ 	if (!m) {
+ 	    checked_output_push(result, p);
+ 	    return;
+-	} else if (_annos & 2)
++	} else if (_annos & 2) {
+ 	    m->flow()->set_reply_anno(p->anno_u8(_annos >> 2));
++	}
+     }
+ 
++    // Flow exists for sure now, go to transport header
+     click_jiffies_t now_j = click_jiffies();
      IPRewriterFlow *mf = m->flow();
      if (iph->ip_p == IP_PROTO_TCP) {
  	TCPFlow *tcpmf = static_cast<TCPFlow *>(mf);
@@ -443,6 +591,32 @@ index 0bc909b..726a2a9 100644
  	if (_udp_timeouts[1])
  	    udpmf->change_expiry(_heap, true, now_j + _udp_timeouts[1]);
  	else
+ 	    udpmf->change_expiry(_heap, false, now_j + udp_flow_timeout(udpmf));
+     }
+ 
++    // Hyper-NF: Check the output port before the final push
++    printf("----> Output Port: %d\n", m->output());
++
+     output(m->output()).push(p);
+ }
+ 
+diff --git elements/tcpudp/iprewriter.hh elements/tcpudp/iprewriter.hh
+index 50fb742..c9f2e95 100644
+--- elements/tcpudp/iprewriter.hh
++++ elements/tcpudp/iprewriter.hh
+@@ -237,8 +237,11 @@ class IPRewriter : public TCPRewriter { public:
+ 	else
+ 	    return 0;
+     }
++
++    // Hyper-NF: Interface for add flow changed to accommodate label-based lookup in the map table
+     IPRewriterEntry *add_flow(int ip_p, const IPFlowID &flowid,
+-			      const IPFlowID &rewritten_flowid, int input);
++			      const IPFlowID &rewritten_flowid, int input, int hyper_nf_label);
++
+     void destroy_flow(IPRewriterFlow *flow);
+     click_jiffies_t best_effort_expiry(const IPRewriterFlow *flow) {
+ 	if (flow->ip_p() == IP_PROTO_TCP)
 diff --git elements/tcpudp/tcprewriter.cc elements/tcpudp/tcprewriter.cc
 index 6e10003..242a384 100644
 --- elements/tcpudp/tcprewriter.cc

@@ -127,7 +127,7 @@ elementclass LoadBalancer {
 
 	// Classifies packets. Port 80 goes to LB
 	ipClassifier :: IPClassifier(
-		tcp port 80,              /* TCP packets */
+		dst tcp port 80,          /* TCP packets */
 		-                         /* Unclassified packets are for me */
 	);
 
