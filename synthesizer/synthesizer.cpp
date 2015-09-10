@@ -12,7 +12,7 @@
 #include "../output_class.hpp"
 #include "../click_element.hpp"
 
-Synthesizer::Synthesizer(ChainParser* cp) {
+Synthesizer::Synthesizer(ChainParser* cp) : tc_per_iface() {
 	this->log.set_logger_file(__FILE__);
 	if ( cp == NULL )
 		throw std::runtime_error("Synthesizer: Invalid Parser object");
@@ -60,13 +60,15 @@ short Synthesizer::build_traffic_classes(void) {
 
 			// Go DFS until the end of life
 			std::shared_ptr<ClickElement> ep(new ClickElement(endpoint));
-			TrafficBuilder::traffic_class_builder_dfs(this->get_chain_parser()->get_nf_graphs(), nf_position, ep, interface);
+			TrafficBuilder::traffic_class_builder_dfs(this->get_chain_parser()->get_chain_graph()->get_chain(),
+									this->get_chain_parser()->get_nf_graphs(), nf_position, ep, interface);
 
+			std::string key = cv->get_name()+","+interface;
 			ClickTree ct (ep);
 			std::cout<<"####################################################";
 			std::cout<<"####################################################"<< std::endl;
 			for (auto &it : ct.get_trafficClasses()) {
-				if (!it.is_discarded ())/**/ std::cout<<it.to_str();/**/
+				if (!it.is_discarded ())/**/ { tc_per_iface.emplace(key,it); }/**/
 			}
 
 			log << "" << def << std::endl;
@@ -86,6 +88,8 @@ short Synthesizer::build_traffic_classes(void) {
  *   3. Applying the chain-level packet operations in one or few elements (SINGLE WRITE)
  */
 short Synthesizer::eliminate_redundancy(void) {
+	
+
 	return SUCCESS;
 }
 
@@ -102,7 +106,7 @@ short Synthesizer::generate_equivalent_configuration(void) {
  * The vertices can also belong to different graph, so in reality,
  * this is a recursive graph composition function.
  */
-void TrafficBuilder::traffic_class_builder_dfs(	NF_Map<NFGraph*> nf_chain, unsigned short nf_position,
+void TrafficBuilder::traffic_class_builder_dfs(Graph* graph, NF_Map<NFGraph*> nf_chain, unsigned short nf_position,
 												std::shared_ptr<ClickElement> elem, std::string nf_iface) {
 
 	Logger log(__FILE__);
@@ -174,12 +178,13 @@ void TrafficBuilder::traffic_class_builder_dfs(	NF_Map<NFGraph*> nf_chain, unsig
 	int count = 0;
 	for ( auto& neighbour : adjacency_list.at(nf_vertex) ) {
 		std::shared_ptr<ClickElement> child(new ClickElement((ElementVertex*) neighbour.second, neighbour.first));
+		child->set_nfName(((ChainVertex*) graph->get_vertex_by_position(nf_position))->get_name() );
 		elem->set_child(child, count++);
 		//log<< "\t\tCreated: "+child->to_str()<<std::endl;
 		//log << "\t\t Child: " << ev->get_name() << def << std::endl;
 
 		// Unvisited node --> recursion
-		traffic_class_builder_dfs(nf_chain, nf_position, child, nf_iface);
+		traffic_class_builder_dfs(graph, nf_chain, nf_position, child, nf_iface);
 	}
 }
 

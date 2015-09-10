@@ -63,6 +63,10 @@ FieldOperation* Operation::get_field_op(HeaderField field) {
 	}
 }
 
+bool Operation::has_field_op(HeaderField field) const {
+	return (m_fieldOps.find(field) != m_fieldOps.end());
+}
+
 std::string FieldOperation::to_str () const {
 	std::string output = headerFieldNames[m_field];
 	switch (m_type) {

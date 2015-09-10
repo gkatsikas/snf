@@ -410,6 +410,11 @@ bool TrafficClass::is_discarded() const {
 			this->m_elementPath.back()->get_type() == Discard_def);
 }
 
+bool TrafficClass::is_SNATed(){
+	FieldOperation* src_port = m_operation.get_field_op(tp_srcPort);
+	return (src_port && src_port->m_type==WriteSF);
+}
+
 TrafficClass::TrafficClass () : m_filters(), m_writeConditions(), m_dropBroadcasts(false),
 								m_ipgwoptions(false), m_etherEncapConf(), m_elementPath(),
 								m_operation() {}
@@ -553,6 +558,24 @@ int TrafficClass::addElement (std::shared_ptr<ClickElement> element, int port) {
 
 	this->m_operation.compose_op((element->get_outputClasses()[port]).get_operation());
 	return nb_none_filters;
+}
+
+std::string TrafficClass::get_outputIface () const {
+	if(!is_discarded()) {
+		if(m_elementPath.size()>1) {
+			std::shared_ptr<ClickElement> todev = m_elementPath.back();
+			if(todev->get_type() == ToDevice) {
+				return (todev->get_nfName()+","+todev->get_configuration());
+			}
+			else if(todev->get_type() == No_elem) {
+				todev = m_elementPath[m_elementPath.size()-2];
+				if(todev->get_type() == ToDevice) {
+					return (todev->get_nfName()+","+todev->get_configuration());
+				}
+			}
+		}
+	}
+	BUG("Could not provide output interface for traffic class "+to_str());
 }
 
 std::string TrafficClass::to_str() const {

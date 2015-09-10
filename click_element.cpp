@@ -160,6 +160,14 @@ ElementVertex* ClickElement::get_ev() const {
 	return m_ev;
 }
 
+void ClickElement::set_nfName (const std::string& name) {
+	this->m_nfName = name;
+}
+
+std::string ClickElement::get_nfName () const {
+	return this->m_nfName;
+}
+
 std::string ClickElement::to_str() const {
 	return elementNames[m_type]+" with configuration \""+m_configuration+"\"";
 }
