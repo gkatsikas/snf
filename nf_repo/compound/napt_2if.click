@@ -98,10 +98,10 @@ elementclass NAPT {
 	);
 
 	// Implements PNAT
-	ipRewriter :: IPRewriter(
-		DEC_IP_TTL false, CALC_CHECKSUM true, 
+	ipRewriter :: IPRewriter( 
 		pattern $ipAddr1 1024-65535 - - 0 0,   /* Packets from Intranet change src IP and port */
 		pattern - - $ipAddr0 - 0 0,            /* Packets from Internet change dst IP and port */
+		DEC_IP_TTL false, CALC_CHECKSUM true
 	);
 
 	// Process the IP options field (mandatory based on RFC 791)

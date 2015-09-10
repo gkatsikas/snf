@@ -21,6 +21,11 @@ class Synthesizer {
 		 * Logger instance
 		 */
 		Logger log;
+		
+		/*
+		 * Generated traffic classes
+		 */
+		//std::unordered_map<TrafficClasses>
 
 	public:
 		/*

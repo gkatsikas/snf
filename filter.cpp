@@ -273,10 +273,10 @@ std::string Filter::to_ip_class_pattern() const {
 			break;
 		case ip_src:
 			keyword = "src net ";
-			break;
+			return ip_filter_to_ip_class_pattern(keyword);
 		case ip_dst:
 			keyword = "dst net ";
-			break;
+			return ip_filter_to_ip_class_pattern(keyword);
 		case ip_proto:
 			keyword = "ip proto ";
 			break;
@@ -359,7 +359,8 @@ std::string ip_segment_to_ip_class_pattern(std::string keyword, uint32_t lower, 
 				prefix_size--;
 		}
 		output += "("+keyword+ntoa(current_low)+"/"+std::to_string(prefix_size)+") || ";
-		current_low += (0xffffffff >> prefix_size) + 1;
+		if(prefix_size==32) current_low++;
+		else current_low += (0xffffffff >> prefix_size) + 1;
 		if(current_low==0){break;}
 	}
 
@@ -555,11 +556,9 @@ int TrafficClass::addElement (std::shared_ptr<ClickElement> element, int port) {
 }
 
 std::string TrafficClass::to_str() const {
-	std::string output = "\n================= Begin Traffic Class =================\nFilters:\n";
-	for_fields_in_pf(it,m_filters) {
-		output += ("\t"+it->second.to_str()+"\n");
-	}
-	output += "Conditions on Write operations:\n";
+	std::string output = "\n================= Begin Traffic Class =================\nFilters:";
+	output += to_ip_classifier_pattern();
+	output += "\nConditions on Write operations:\n";
 	for_fields_in_pf(it,m_writeConditions) {
 		for(auto &condition : it->second) {
 			output += ("\t"+condition.to_str()+"\n");
