@@ -273,10 +273,10 @@ std::string Filter::to_ip_class_pattern() const {
 			break;
 		case ip_src:
 			keyword = "src net ";
-			break;
+			return ip_filter_to_ip_class_pattern(keyword);
 		case ip_dst:
 			keyword = "dst net ";
-			break;
+			return ip_filter_to_ip_class_pattern(keyword);
 		case ip_proto:
 			keyword = "ip proto ";
 			break;
@@ -359,7 +359,8 @@ std::string ip_segment_to_ip_class_pattern(std::string keyword, uint32_t lower, 
 				prefix_size--;
 		}
 		output += "("+keyword+ntoa(current_low)+"/"+std::to_string(prefix_size)+") || ";
-		current_low += (0xffffffff >> prefix_size) + 1;
+		if(prefix_size==32) current_low++;
+		else current_low += (0xffffffff >> prefix_size) + 1;
 		if(current_low==0){break;}
 	}
 
@@ -407,6 +408,11 @@ std::string Condition::to_str() const {
 bool TrafficClass::is_discarded() const {
 	return (this->m_elementPath.back()->get_type() == Discard ||
 			this->m_elementPath.back()->get_type() == Discard_def);
+}
+
+bool TrafficClass::is_SNATed(){
+	FieldOperation* src_port = m_operation.get_field_op(tp_srcPort);
+	return (src_port && src_port->m_type==WriteSF);
 }
 
 TrafficClass::TrafficClass () : m_filters(), m_writeConditions(), m_dropBroadcasts(false),
@@ -554,12 +560,28 @@ int TrafficClass::addElement (std::shared_ptr<ClickElement> element, int port) {
 	return nb_none_filters;
 }
 
-std::string TrafficClass::to_str() const {
-	std::string output = "\n================= Begin Traffic Class =================\nFilters:\n";
-	for_fields_in_pf(it,m_filters) {
-		output += ("\t"+it->second.to_str()+"\n");
+std::string TrafficClass::get_outputIface () const {
+	if(!is_discarded()) {
+		if(m_elementPath.size()>1) {
+			std::shared_ptr<ClickElement> todev = m_elementPath.back();
+			if(todev->get_type() == ToDevice) {
+				return (todev->get_nfName()+","+todev->get_configuration());
+			}
+			else if(todev->get_type() == No_elem) {
+				todev = m_elementPath[m_elementPath.size()-2];
+				if(todev->get_type() == ToDevice) {
+					return (todev->get_nfName()+","+todev->get_configuration());
+				}
+			}
+		}
 	}
-	output += "Conditions on Write operations:\n";
+	BUG("Could not provide output interface for traffic class "+to_str());
+}
+
+std::string TrafficClass::to_str() const {
+	std::string output = "\n================= Begin Traffic Class =================\nFilters:";
+	output += to_ip_classifier_pattern();
+	output += "\nConditions on Write operations:\n";
 	for_fields_in_pf(it,m_writeConditions) {
 		for(auto &condition : it->second) {
 			output += ("\t"+condition.to_str()+"\n");

@@ -9,6 +9,7 @@
 
 #include "../parser/chain_parser.hpp"
 #include "../click_element.hpp"
+#include "../filter.hpp"
 
 class Synthesizer {
 	private:
@@ -21,6 +22,11 @@ class Synthesizer {
 		 * Logger instance
 		 */
 		Logger log;
+		
+		/*
+		 * Generated traffic classes
+		 */
+		std::unordered_multimap<std::string,TrafficClass> tc_per_iface;
 
 	public:
 		/*
@@ -67,6 +73,7 @@ class Synthesizer {
  */
 namespace TrafficBuilder {
 	void traffic_class_builder_dfs(
+		Graph* graph,
 		NF_Map<NFGraph*> nf_chain,
 		unsigned short nf_position,
 		std::shared_ptr<ClickElement>,

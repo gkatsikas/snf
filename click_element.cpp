@@ -42,7 +42,7 @@ ClickElement::ClickElement (ElementType type, const std::string& configuration, 
 {
 	DEBUG("Creating element "+to_str());
 	switch (type) {
-		case DecIPTTL:
+		/*case DecIPTTL:
 			parse_dec_ttl_conf (configuration);
 			break;
 		/*
@@ -74,6 +74,7 @@ ClickElement::ClickElement (ElementType type, const std::string& configuration, 
 			parse_rr_ip_mapper (configuration);
 			break;
 		case FixIPSrc: //sort of
+		case DecIPTTL:
 		case IPGWOptions:
 		case DropBroadcasts:
 		case EtherEncap:
@@ -157,6 +158,14 @@ ElementType ClickElement::get_type() const {
 
 ElementVertex* ClickElement::get_ev() const {
 	return m_ev;
+}
+
+void ClickElement::set_nfName (const std::string& name) {
+	this->m_nfName = name;
+}
+
+std::string ClickElement::get_nfName () const {
+	return this->m_nfName;
 }
 
 std::string ClickElement::to_str() const {

@@ -42,6 +42,8 @@ class Operation {
 	public:
 		void add_field_op(const FieldOperation &field_op);
 		void compose_op(const Operation &operation);
+		
+		bool has_field_op(HeaderField field) const;
 
 		FieldOperation* get_field_op(HeaderField field);
 

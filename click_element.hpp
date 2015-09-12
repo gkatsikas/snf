@@ -31,6 +31,8 @@ class ClickElement {
 		std::vector<OutputClass> get_outputClasses() const;
 		ElementType get_type() const;
 		ElementVertex* get_ev () const;
+		void set_nfName (const std::string& name);
+		std::string get_nfName () const;
 
 		std::string to_str() const;
 		
@@ -63,7 +65,7 @@ class ClickElement {
 		int m_nbPorts; //Number of output ports
 		ElementVertex* m_ev;
 		std::vector<OutputClass> m_outputClasses;
-
+		std::string m_nfName;
 };
 
 #endif
