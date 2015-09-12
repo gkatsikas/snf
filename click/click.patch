@@ -490,9 +490,9 @@ index 0bc909b..74f9698 100644
 +
 +    // We have something to give you!!! A different reverse port
 +    if ( hyper_nf_label != -1 ) {
-+	printf("---->  ROUTPUT before: %d\n", rwinput->routput);
++	//printf("---->  ROUTPUT before: %d\n", rwinput->routput);
 +	rwinput->routput = hyper_nf_label;
-+	printf("---->  ROUTPUT  after: %d\n", rwinput->routput);
++	//printf("---->  ROUTPUT  after: %d\n", rwinput->routput);
 +    }
 +
      IPRewriterFlow *flow = new(data) IPRewriterFlow
@@ -526,7 +526,7 @@ index 0bc909b..74f9698 100644
 +    // routput must be set accordingly in method IPRewriter::add_flow)
 +    // If not set, it must have a value 255 in order to use the standard
 +    // port allocation of this element
-+    uint8_t hyper_nf_label = p->anno_u8(HYPER_NF_LABEL_POS);
++    int hyper_nf_label = (uint8_t) p->anno_u8(HYPER_NF_LABEL_POS);
 +    // There is no annotation, behave normally
 +    if ( hyper_nf_label == 255 ) {
 +	hyper_nf_label = -1;
@@ -555,14 +555,14 @@ index 0bc909b..74f9698 100644
 -	    m = IPRewriter::add_flow(iph->ip_p, flowid, rewritten_flowid, port);
 +	if (result == rw_addmap) {
 +	    m = IPRewriter::add_flow(iph->ip_p, flowid, rewritten_flowid, port, hyper_nf_label);
-+	    printf("---->        IP Proto: %d\n", iph->ip_p);
++	    /*printf("---->        IP Proto: %d\n", iph->ip_p);
 +	    printf("---->        Src   IP: %s\n", m->flowid().saddr().s().c_str());
 +	    printf("---->        Src Port: %d\n", htons(m->flowid().sport()));
 +	    printf("---->        Dst   IP: %s\n", m->flowid().daddr().s().c_str());
 +	    printf("---->        Dst Port: %d\n", htons(m->flowid().dport()));
 +	    printf("---->       Direction: %s\n", m->direction()? "Response":"Forward");
 +	    printf("----> Forward Outport: %d\n", m->output());
-+	    printf("----> Reverse Outport: %d\n", hyper_nf_label);
++	    printf("----> Reverse Outport: %d\n", hyper_nf_label);*/
 +	}
  	if (!m) {
  	    checked_output_push(result, p);
@@ -595,7 +595,7 @@ index 0bc909b..74f9698 100644
      }
  
 +    // Hyper-NF: Check the output port before the final push
-+    printf("----> Output Port: %d\n", m->output());
++    //printf("----> Output Port: %d\n", m->output());
 +
      output(m->output()).push(p);
  }
