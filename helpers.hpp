@@ -7,11 +7,14 @@
 #ifndef _HELPERS_HPP_
 #define _HELPERS_HPP_
 
-#include <iostream>
-#include <fstream>
+#include <set>
 #include <vector>
 #include <string>
 #include <chrono>
+#include <sstream>
+#include <fstream>
+#include <iostream>
+//#include <algorithm>
 
 /*
  * Shared variables
@@ -99,6 +102,10 @@ const short CHAIN_SYNTHESIS_PROBLEM  = -39;
 // Protocol Management
 const short INVALID_PROTOCOL         = -40;
 
+// List of IPMapper elements
+const std::set<std::string> MAPPER_ELEMENTS = {"SourceIPHashMapper", "RoundRobinIPMapper", "FTPPortMapper"};
+const std::set<std::string> SUPPORTED_MAPPER_ELEMENTS = {"RoundRobinIPMapper"};
+
 /*
  * String helpers
  */
@@ -139,7 +146,6 @@ struct measure
         return  (double) duration.count();
     }
 };
-
 
 /*
  * Vector manipulation functions.

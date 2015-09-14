@@ -150,7 +150,6 @@ void TrafficBuilder::traffic_class_builder_dfs(Graph* graph, NF_Map<NFGraph*> nf
 
 				if ( !found ) {
 					log << error << "\t\t Unable to find next jump " << def << std::endl;
-					
 				}
 
 				// 3. Change origin interface using the interface of the new vertex
@@ -177,6 +176,17 @@ void TrafficBuilder::traffic_class_builder_dfs(Graph* graph, NF_Map<NFGraph*> nf
 
 	int count = 0;
 	for ( auto& neighbour : adjacency_list.at(nf_vertex) ) {
+
+		// A way to get an IPMapper's patterns when you encounter IPRewriter
+		ElementVertex* ev = (ElementVertex*) neighbour.second;
+		if ( ev->get_name() == std::string("IPRewriter") ) {
+			log << warn << "\t\tFound: " << ev->get_name() << def << std::endl;
+			//log << warn << "\t\t\t with conf: " << ev->get_configuration() << def << std::endl;
+			for (auto& pattern : ev->get_extra_configuration() ) {
+				log << warn << "\t\t\t IPMapper Pattern: " << pattern << def << std::endl;
+			}
+		}
+
 		std::shared_ptr<ClickElement> child(new ClickElement((ElementVertex*) neighbour.second, neighbour.first));
 		child->set_nfName(((ChainVertex*) graph->get_vertex_by_position(nf_position))->get_name() );
 		elem->set_child(child, count++);

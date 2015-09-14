@@ -41,9 +41,9 @@ CLICK_USING_DECLS
 #define EXPRESSION_OPT          304
 
 static const Clp_Option options[] = {
-	{ "clickpath", 'C', CLICKPATH_OPT, Clp_ValString, 0 },
+	{ "clickpath",  'C', CLICKPATH_OPT,  Clp_ValString, 0 },
 	{ "expression", 'e', EXPRESSION_OPT, Clp_ValString, 0 },
-	{ "file", 'f', ROUTER_OPT, Clp_ValString, 0 },
+	{ "file",       'f', ROUTER_OPT,     Clp_ValString, 0 },
 };
 
 // Global variables useful to Click
