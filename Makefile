@@ -11,7 +11,7 @@ OBJS =  main.o helpers.o chameleon.o vertex.o segment_list.o operation.o \
 		generic_configuration.o graph.o filter.o ip_filter_parser.o \
 		click_parse_configuration.o nf_graph.o click_element.o \
 		output_class.o click_tree.o parser_configuration.o chain_parser.o \
-		synthesizer.o 
+		synthesizer.o synth_nat.o
 
 ### Object files of Click
 ### -----> Give a variable with the Click home path instead of a fixed path
@@ -78,9 +78,12 @@ chain_parser.o: ./parser/chain_parser.cpp ./parser/chain_parser.hpp ./configurat
 	$(CC) $(CFLAGS) ./parser/chain_parser.cpp
 
 synthesizer.o: ./synthesizer/synthesizer.cpp ./synthesizer/synthesizer.hpp ./parser/chain_parser.hpp click_tree.cpp click_tree.hpp \
-				output_class.hpp operation.hpp element_type.hpp filter.hpp
+				output_class.hpp operation.hpp element_type.hpp filter.hpp ./synthesizer/synth_nat.hpp
 	$(CC) $(CFLAGS) ./synthesizer/synthesizer.cpp
-
+	
+synth_nat.o: ./synthesizer/synth_nat.hpp ./synthesizer/synth_nat.cpp filter.hpp
+	$(CC) $(CFLAGS) ./synthesizer/synth_nat.cpp
+	
 ### House keeping
 clean:
 	\rm -f *.o *.plist *.gch *.log

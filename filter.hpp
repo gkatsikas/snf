@@ -12,6 +12,7 @@
 #include "segment_list.hpp"
 
 class ClickElement;
+class SynthesizedNat;
 
 /*
  * Contains one field-specific filter
@@ -99,6 +100,10 @@ class TrafficClass {
 		std::string to_ip_classifier_pattern() const;
 		
 		std::string get_outputIface() const;
+		
+		Operation get_operation ();
+		
+		void set_nat (std::shared_ptr<SynthesizedNat>, unsigned short);
 
 	private:
 		PacketFilter m_filters;
@@ -114,6 +119,9 @@ class TrafficClass {
 		 */
 		std::vector<std::shared_ptr<ClickElement> > m_elementPath;
 		Operation m_operation;
+
+		std::shared_ptr<SynthesizedNat> m_nat;
+		unsigned short m_natInputPort;
 
 		void addFilter(Filter filter,HeaderField field);
 		int intersect_filter(const Filter& filter);

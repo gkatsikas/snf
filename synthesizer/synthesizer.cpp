@@ -12,7 +12,7 @@
 #include "../output_class.hpp"
 #include "../click_element.hpp"
 
-Synthesizer::Synthesizer(ChainParser* cp) : tc_per_iface() {
+Synthesizer::Synthesizer(ChainParser* cp) : tc_per_input_iface(), nat_per_output_iface() {
 	this->log.set_logger_file(__FILE__);
 	if ( cp == NULL )
 		throw std::runtime_error("Synthesizer: Invalid Parser object");
@@ -68,7 +68,9 @@ short Synthesizer::build_traffic_classes(void) {
 			std::cout<<"####################################################";
 			std::cout<<"####################################################"<< std::endl;
 			for (auto &it : ct.get_trafficClasses()) {
-				if (!it.is_discarded ())/**/ { tc_per_iface.emplace(key,it); }/**/
+				if (!it.is_discarded ())/**/ { 
+					tc_per_input_iface[key].push_back(it);
+				}/**/
 			}
 
 			log << "" << def << std::endl;
@@ -79,17 +81,18 @@ short Synthesizer::build_traffic_classes(void) {
 	return SUCCESS;
 }
 
-/*
- * Synthesis Core
- * Traverse the traffic classes and eliminate redundancy by:
- *   1. Removing unecessary I/O elements (the internal connecitons
- *      between chained NFs).
- *   2. Applying the chain-level classifiaction in one element (SINGLE READ)
- *   3. Applying the chain-level packet operations in one or few elements (SINGLE WRITE)
- */
-short Synthesizer::eliminate_redundancy(void) {
+short Synthesizer::synthesize_nat(void) {
+	for (auto &it : tc_per_input_iface) {		
+		for(auto &tc : it.second) {
+					std::string out_iface = tc.get_outputIface();
+			if (nat_per_output_iface.find(out_iface) == nat_per_output_iface.end()) {
+				nat_per_output_iface[out_iface] = std::shared_ptr<SynthesizedNat> ( new SynthesizedNat() );
+			}
+			tc.set_nat(nat_per_output_iface[out_iface],
+					nat_per_output_iface[out_iface]->add_traffic_class(tc,it.first));
+		}
+	}
 	
-
 	return SUCCESS;
 }
 
@@ -98,6 +101,10 @@ short Synthesizer::eliminate_redundancy(void) {
  * The configuration must achieve equivalent functionality with the initial one.
  */
 short Synthesizer::generate_equivalent_configuration(void) {
+	for (auto &it : tc_per_input_iface) {
+		//std::cout<<it.first<<": "<<it.second.to_ip_classifier_pattern()<<" --> "<<it.second.get_outputIface()<<"\n";
+	}
+
 	return SUCCESS;
 }
 

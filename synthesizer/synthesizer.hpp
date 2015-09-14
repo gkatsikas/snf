@@ -10,6 +10,7 @@
 #include "../parser/chain_parser.hpp"
 #include "../click_element.hpp"
 #include "../filter.hpp"
+#include "synth_nat.hpp"
 
 class Synthesizer {
 	private:
@@ -26,7 +27,8 @@ class Synthesizer {
 		/*
 		 * Generated traffic classes
 		 */
-		std::unordered_multimap<std::string,TrafficClass> tc_per_iface;
+		std::unordered_map<std::string,std::vector<TrafficClass> > tc_per_input_iface;
+		std::unordered_map<std::string, std::shared_ptr<SynthesizedNat> > nat_per_output_iface;
 
 	public:
 		/*
@@ -44,15 +46,8 @@ class Synthesizer {
 		 */
 		short build_traffic_classes(void);
 
-		/*
-		 * Synthesis Core
-		 * Traverse the traffic classes and eliminate redundancy by:
-		 *   1. Removing unecessary I/O elements (the internal connecitons
-		 *      between chained NFs).
-		 *   2. Applying the chain-level classifiaction in one element (SINGLE READ)
-		 *   3. Applying the chain-level packet operations in one or few elements (SINGLE WRITE)
-		 */
-		short eliminate_redundancy(void);
+		
+		short synthesize_nat(void);
 
 		/*
 		 * Create a new Click configuration that implements the chain in one Click module.
