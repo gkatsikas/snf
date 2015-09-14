@@ -578,6 +578,15 @@ std::string TrafficClass::get_outputIface () const {
 	BUG("Could not provide output interface for traffic class "+to_str());
 }
 
+Operation TrafficClass::get_operation () {
+	return m_operation;
+}
+
+void TrafficClass::set_nat (std::shared_ptr<SynthesizedNat> nat, unsigned short port) {
+	this->m_nat = nat;
+	this->m_natInputPort = port;
+}
+
 std::string TrafficClass::to_str() const {
 	std::string output = "\n================= Begin Traffic Class =================\nFilters:";
 	output += to_ip_classifier_pattern();
