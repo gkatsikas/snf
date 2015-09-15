@@ -101,6 +101,7 @@ int main(int argc, char** argv) {
 			delete synthesizer;
 			exit(exit_status);
 		}
+		synthesizer->synthesize_nat();
 		synthesizer->generate_equivalent_configuration();
 		//synthesizer->test_traffic_class_builder();
 	}

@@ -104,6 +104,8 @@ class TrafficClass {
 		Operation get_operation ();
 		
 		void set_nat (std::shared_ptr<SynthesizedNat>, unsigned short);
+		std::shared_ptr<SynthesizedNat> get_nat ();
+		unsigned short get_natInputPort ();
 
 	private:
 		PacketFilter m_filters;

@@ -102,7 +102,10 @@ short Synthesizer::synthesize_nat(void) {
  */
 short Synthesizer::generate_equivalent_configuration(void) {
 	for (auto &it : tc_per_input_iface) {
-		//std::cout<<it.first<<": "<<it.second.to_ip_classifier_pattern()<<" --> "<<it.second.get_outputIface()<<"\n";
+		for (auto &tc: it.second) {
+			std::cout<<it.first<<"-->["<<tc.get_natInputPort()<<"]"<<
+						tc.get_nat()->get_name()<<"-->"<<tc.get_outputIface()<<"\n";
+		}
 	}
 
 	return SUCCESS;

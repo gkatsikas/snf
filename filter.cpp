@@ -587,6 +587,10 @@ void TrafficClass::set_nat (std::shared_ptr<SynthesizedNat> nat, unsigned short 
 	this->m_natInputPort = port;
 }
 
+std::shared_ptr<SynthesizedNat> TrafficClass::get_nat () { return m_nat; }
+
+unsigned short TrafficClass::get_natInputPort () { return m_natInputPort; }
+
 std::string TrafficClass::to_str() const {
 	std::string output = "\n================= Begin Traffic Class =================\nFilters:";
 	output += to_ip_classifier_pattern();
