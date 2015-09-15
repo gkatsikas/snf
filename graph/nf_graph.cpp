@@ -10,15 +10,20 @@
 ////////////////////////////////////////////////////////////////////////
 // ElementVertex
 ////////////////////////////////////////////////////////////////////////
-ElementVertex::ElementVertex(Element* element, std::string name, unsigned short pos) :
-				Vertex(std::move(name), pos, VertexType::None),
-				click_element(element), _is_endpoint(false) {
+ElementVertex::ElementVertex(Element* element, std::string name, 
+							unsigned short pos, const std::vector<std::string>& extra_conf) :
+							Vertex(std::move(name), pos, VertexType::None),
+							click_element(element), _is_endpoint(false) {
 	if ( element->ninputs() == 0 )
 		this->type = Input;
 	else if ( element->noutputs() == 0 )
 		this->type = Output;
 	else
 		this->type = Processing;
+
+	//if ( extra_conf )
+	if ( !extra_conf.empty() )
+		this->extra_configuration = std::move(extra_conf);
 }
 
 ElementVertex& ElementVertex::operator=(ElementVertex& ev) {
@@ -46,9 +51,21 @@ void ElementVertex::set_endpoint(bool ep) {
 	this->_is_endpoint = ep;
 }
 
+void ElementVertex::set_glue_info(unsigned short next_nf_pos, std::string next_nf_iface) {
+	this->glue = std::make_pair(next_nf_pos, next_nf_iface);
+}
+
 std::string ElementVertex::get_interface(void) const {
 	std::string elem_conf = this->get_configuration();
 	return elem_conf.substr(0, elem_conf.find(","));
+}
+
+std::vector<std::string> ElementVertex::get_extra_configuration(void) const {
+	return this->extra_configuration;
+}
+
+void ElementVertex::set_extra_configuration(const std::vector<std::string> extra_conf) {
+	this->extra_configuration = extra_conf;
 }
 
 void ElementVertex::print_info(void) {

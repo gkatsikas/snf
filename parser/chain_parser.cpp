@@ -127,6 +127,10 @@ short ChainParser::load_nf(std::string nf_name, std::string nf_source, unsigned 
 	return SUCCESS;
 }
 
+/*
+ * After loading all the NFs into the parser's memory, run a DFS visit per DAG
+ * to build the NF Synthesizer's graph.
+ */
 short ChainParser::build_nf_dag(std::string nf_name, unsigned short position) {
 
 	Router* router = this->nf_configuration[position];
@@ -145,18 +149,48 @@ short ChainParser::build_nf_dag(std::string nf_name, unsigned short position) {
 	log << info << "Building Click Graph for " << nf_name << def << std::endl;
 
 	unsigned short total_elements = router->nelements();
+	std::unordered_map< short, std::vector<std::string> > extra_conf_mappings;
 
 	for ( int i=0 ; i < router->nelements() ; i++ ) {
 		Element* e = Router::element(router, i);
+		
 		//log << "Element " << e->class_name() << " " << e->eindex() << ": " << e->configuration().c_str() << std::endl;
+		
+		// This is an exceptional element! It has no inputs and outputs but serves as input to IPRewriter
+		// We need to hand its configuration over the corresponding IPRewriter.
+		if( SUPPORTED_MAPPER_ELEMENTS.find(e->class_name()) != SUPPORTED_MAPPER_ELEMENTS.end() ){
+			std::string lb_variable = e->name().c_str();
+			std::string lb_patterns = e->configuration().c_str();
+
+			std::vector<std::string> extra_conf;
+
+			// Find the IPRewriter that uses this IP Mapper, parse the Mapper's configuration and 
+			// return it along with the position of the IPRewriter.
+			int receiver_pos = this->associate_ip_mapper_to_rewriter(router, lb_variable, lb_patterns, extra_conf);
+			
+			// Now the Mapper's configuration is available in the map where the IPRewriter's position is the key.
+			if ( receiver_pos >= 0 )
+				extra_conf_mappings[receiver_pos] = extra_conf;
+			// This is definitely a bug!
+			else {
+				log << error << "\tERROR while retrieving IPMapper's patterns" << def << std::endl;
+				delete nf_graph;
+				return CLICK_PARSING_PROBLEM;
+			}
+
+			// IPMapper elements do not have any ports so there is no point to proceed! 
+			continue;
+		}
 
 		ElementVertex* u = NULL;
 
 		// Turn this Click element into a DAG Vertex
 		if ( !nf_graph->contains(e->eindex()) )
-			u = new ElementVertex(e, e->class_name(), e->eindex());
-		else
+			u = new ElementVertex(e, e->class_name(), e->eindex(), extra_conf_mappings[e->eindex()]);
+		else {
 			u = (ElementVertex*) nf_graph->get_vertex_by_position(e->eindex());
+			u->set_extra_configuration(extra_conf_mappings[e->eindex()]);
+		}
 
 		//log << "Element " << u->get_name() << " " << u->get_position() << ": " << u->get_configuration() << std::endl;
 
@@ -194,6 +228,46 @@ short ChainParser::build_nf_dag(std::string nf_name, unsigned short position) {
 	return SUCCESS;
 }
 
+/*
+ * Assign IPMapper element to the appropriate IPRewriter.
+ * IPMapper elements are exceptional. They have no inputs and outputs but serve as inputs to IPRewriters.
+ */
+int ChainParser::associate_ip_mapper_to_rewriter(Router* router, const std::string mapper_variable, 
+												const std::string mapper_conf, std::vector<std::string>& extra_conf) {
+
+	std::size_t pos = mapper_variable.find_last_of("/");
+	std::string short_variable = mapper_variable.substr(pos+1);
+
+	// We want to return the posiiton of the element that uses this IPMapper, 
+	// along with a vector with the patterns of this IPMapper (see last argument of this function)
+	int position = -1;
+
+	for ( int i=0 ; i < router->nelements() ; i++ ) {
+		Element* e = Router::element(router, i);
+		std::string elem_conf = e->configuration().c_str();
+
+		// We found an IPRewriter with this IPMapper as argument!
+		if ( ((e->class_name() == std::string("IPRewriter"))) &&  (elem_conf.find(short_variable) != std::string::npos) ) {
+
+			// Keep the position
+			position = i;
+
+			// Target found. We need to tokenize and store the IPMapper's patterns
+			for ( auto& i : split(mapper_conf, ",\t\n") )
+				extra_conf.push_back("pattern " + i);
+
+			break;
+		}
+	}
+
+	return position;
+}
+
+/*
+ * After loading the Click elements into the DAG, we go back to the loaded topology and NFs (from property file)
+ * and verify whether the interfaces are correct. The property file interfaces must be included int the actual
+ * Click configuration, otherwise the synthesizer cannot assess the connectivity between two NFs.
+ */
 short ChainParser::verify_and_connect_nfs(std::string nf_name, unsigned short position) {
 	Router* router = this->nf_configuration[position];
 

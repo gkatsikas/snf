@@ -71,6 +71,12 @@ class ChainParser {
 		ElementVertex* find_input_element_of_nf(NFGraph* next_nf_graph, std::string target_interface);
 
 		/*
+		 * Assign IPMapper element to the appropriate IPRewriter.
+		 * IPMapper elements are exceptional. They have no inputs and outputs but serve as inputs to IPRewriters.
+		 */
+		int associate_ip_mapper_to_rewriter(Router* router, const std::string mapper_variable, const std::string mapper_conf, std::vector<std::string>& extra_conf);
+
+		/*
 		 * Visits recursively the Click DAG and returns the vector of Elements it contains.
 		 * DEPRECATED from Click
 		 */

@@ -42,8 +42,14 @@ class ElementVertex : public Vertex
 		 */
 		std::pair<unsigned short, std::string> glue;
 
+		/*
+		 * This member is valid only for elements that use other elements as information source.
+		 * For example an IPRewriter that uses an IPMapper
+		 */
+		std::vector<std::string> extra_configuration;
+
 	public:
-		ElementVertex(Element* element, std::string name, unsigned short pos);
+		ElementVertex(Element* element, std::string name, unsigned short pos, const std::vector<std::string>& extra_conf = std::vector<std::string>());
 		~ElementVertex() {};
 		ElementVertex& operator=(ElementVertex& ev);
 
@@ -53,16 +59,17 @@ class ElementVertex : public Vertex
 		bool is_endpoint (void);
 		void set_endpoint(bool ep);
 
-		inline void           set_glue_info       (unsigned short next_nf_pos, std::string next_nf_iface) {
-			this->glue = std::make_pair(next_nf_pos, next_nf_iface);
-		};
+		void                  set_glue_info       (unsigned short next_nf_pos, std::string next_nf_iface);
 		inline std::string    get_glue_iface      (void) { return this->glue.second; };
 		inline unsigned short get_glue_nf_position(void) { return this->glue.first;  };
 
-		std::string get_interface(void) const;
-		inline std::string get_class(void)         const { return this->click_element->class_name(); };
-		inline std::string get_configuration(void) const { return this->click_element->router()->econfiguration(this->get_position()).c_str(); };
+		std::string                     get_interface    (void) const;
+		inline std::string              get_class        (void) const { return this->click_element->class_name(); };
+		inline std::string              get_configuration(void) const { return this->click_element->router()->econfiguration(this->get_position()).c_str(); };
 		inline std::shared_ptr<Element> get_click_element(void) const { return this->click_element; };
+
+		std::vector<std::string>        get_extra_configuration(void) const;
+		void                            set_extra_configuration(const std::vector<std::string> extra_conf);
 
 		/*
 		 * Debugging
