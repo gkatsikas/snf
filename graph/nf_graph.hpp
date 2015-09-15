@@ -46,10 +46,10 @@ class ElementVertex : public Vertex
 		 * This member is valid only for elements that use other elements as information source.
 		 * For example an IPRewriter that uses an IPMapper
 		 */
-		std::vector<std::string> extra_configuration;
+		std::unordered_map<short, std::vector<std::string>> implicit_configuration;
 
 	public:
-		ElementVertex(Element* element, std::string name, unsigned short pos, const std::vector<std::string>& extra_conf = std::vector<std::string>());
+		ElementVertex(Element* element, std::string name, unsigned short pos); //, const std::vector<std::string>& extra_conf = std::vector<std::string>());
 		~ElementVertex() {};
 		ElementVertex& operator=(ElementVertex& ev);
 
@@ -68,8 +68,8 @@ class ElementVertex : public Vertex
 		inline std::string              get_configuration(void) const { return this->click_element->router()->econfiguration(this->get_position()).c_str(); };
 		inline std::shared_ptr<Element> get_click_element(void) const { return this->click_element; };
 
-		std::vector<std::string>        get_extra_configuration(void) const;
-		void                            set_extra_configuration(const std::vector<std::string> extra_conf);
+		std::unordered_map<short, std::vector<std::string>> get_implicit_configuration(void) const;
+		void set_implicit_configuration(const short port, const std::vector<std::string> implicit_conf);
 
 		/*
 		 * Debugging

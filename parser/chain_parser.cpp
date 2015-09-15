@@ -149,7 +149,8 @@ short ChainParser::build_nf_dag(std::string nf_name, unsigned short position) {
 	log << info << "Building Click Graph for " << nf_name << def << std::endl;
 
 	unsigned short total_elements = router->nelements();
-	std::unordered_map< short, std::vector<std::string> > extra_conf_mappings;
+	std::unordered_map< short, std::vector<std::string> > implicit_conf_mappings;
+	std::unordered_map< short, short > implicit_port_mappings;
 
 	for ( int i=0 ; i < router->nelements() ; i++ ) {
 		Element* e = Router::element(router, i);
@@ -162,15 +163,18 @@ short ChainParser::build_nf_dag(std::string nf_name, unsigned short position) {
 			std::string lb_variable = e->name().c_str();
 			std::string lb_patterns = e->configuration().c_str();
 
-			std::vector<std::string> extra_conf;
+			short implicit_port = -1;
+			std::vector<std::string> implicit_conf;
 
 			// Find the IPRewriter that uses this IP Mapper, parse the Mapper's configuration and 
 			// return it along with the position of the IPRewriter.
-			int receiver_pos = this->associate_ip_mapper_to_rewriter(router, lb_variable, lb_patterns, extra_conf);
+			int receiver_pos = this->associate_ip_mapper_to_rewriter(router, lb_variable, lb_patterns, implicit_conf, implicit_port);
 			
 			// Now the Mapper's configuration is available in the map where the IPRewriter's position is the key.
-			if ( receiver_pos >= 0 )
-				extra_conf_mappings[receiver_pos] = extra_conf;
+			if ( receiver_pos >= 0 ) {
+				implicit_conf_mappings[receiver_pos] = implicit_conf;
+				implicit_port_mappings[receiver_pos] = implicit_port;
+			}
 			// This is definitely a bug!
 			else {
 				log << error << "\tERROR while retrieving IPMapper's patterns" << def << std::endl;
@@ -186,11 +190,12 @@ short ChainParser::build_nf_dag(std::string nf_name, unsigned short position) {
 
 		// Turn this Click element into a DAG Vertex
 		if ( !nf_graph->contains(e->eindex()) )
-			u = new ElementVertex(e, e->class_name(), e->eindex(), extra_conf_mappings[e->eindex()]);
-		else {
+			u = new ElementVertex(e, e->class_name(), e->eindex());
+		else
 			u = (ElementVertex*) nf_graph->get_vertex_by_position(e->eindex());
-			u->set_extra_configuration(extra_conf_mappings[e->eindex()]);
-		}
+		// This element may have some implicit configuration arguments coming from auxiliary elements.
+		// If any, these are stored to the implicit_mappings below.
+		u->set_implicit_configuration(implicit_port_mappings[e->eindex()], implicit_conf_mappings[e->eindex()]);
 
 		//log << "Element " << u->get_name() << " " << u->get_position() << ": " << u->get_configuration() << std::endl;
 
@@ -232,8 +237,8 @@ short ChainParser::build_nf_dag(std::string nf_name, unsigned short position) {
  * Assign IPMapper element to the appropriate IPRewriter.
  * IPMapper elements are exceptional. They have no inputs and outputs but serve as inputs to IPRewriters.
  */
-int ChainParser::associate_ip_mapper_to_rewriter(Router* router, const std::string mapper_variable, 
-												const std::string mapper_conf, std::vector<std::string>& extra_conf) {
+int ChainParser::associate_ip_mapper_to_rewriter(Router* router, const std::string mapper_variable, const std::string mapper_conf, 
+													std::vector<std::string>& implicit_conf, short& implicit_port) {
 
 	std::size_t pos = mapper_variable.find_last_of("/");
 	std::string short_variable = mapper_variable.substr(pos+1);
@@ -252,9 +257,29 @@ int ChainParser::associate_ip_mapper_to_rewriter(Router* router, const std::stri
 			// Keep the position
 			position = i;
 
+			// Tokenize the IPRewriter's configuration to find the port that corresponds to the IPMapper
+			short port = 0;
+			bool found = false;
+			for ( auto& tok : split(elem_conf, ",\t\n") ) {
+				if ( tok == short_variable ) {
+					// This port is returned by reference
+					implicit_port = port;
+					found = true;
+					break;
+				}
+				port++;
+			}
+
+			if ( !found ) {
+				log << error << "\tCannot map IPMapper " << mapper_variable << " to any port of element IPRewriter:" << e->eindex() << def << std::endl;
+				return CHAIN_PARSING_PROBLEM;
+			}
+
 			// Target found. We need to tokenize and store the IPMapper's patterns
-			for ( auto& i : split(mapper_conf, ",\t\n") )
-				extra_conf.push_back("pattern " + i);
+			// The tokenized configuration of the IPMapper is returned by reference
+			for ( auto& tok : split(mapper_conf, ",\t\n") ) {
+				implicit_conf.push_back(tok);
+			}
 
 			break;
 		}

@@ -74,7 +74,8 @@ class ChainParser {
 		 * Assign IPMapper element to the appropriate IPRewriter.
 		 * IPMapper elements are exceptional. They have no inputs and outputs but serve as inputs to IPRewriters.
 		 */
-		int associate_ip_mapper_to_rewriter(Router* router, const std::string mapper_variable, const std::string mapper_conf, std::vector<std::string>& extra_conf);
+		int associate_ip_mapper_to_rewriter(Router* router, const std::string mapper_variable, const std::string mapper_conf, 
+											std::vector<std::string>& implicit_conf, short& implicit_port);
 
 		/*
 		 * Visits recursively the Click DAG and returns the vector of Elements it contains.

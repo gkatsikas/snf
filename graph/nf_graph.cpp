@@ -11,7 +11,7 @@
 // ElementVertex
 ////////////////////////////////////////////////////////////////////////
 ElementVertex::ElementVertex(Element* element, std::string name, 
-							unsigned short pos, const std::vector<std::string>& extra_conf) :
+							unsigned short pos) :
 							Vertex(std::move(name), pos, VertexType::None),
 							click_element(element), _is_endpoint(false) {
 	if ( element->ninputs() == 0 )
@@ -21,9 +21,8 @@ ElementVertex::ElementVertex(Element* element, std::string name,
 	else
 		this->type = Processing;
 
-	//if ( extra_conf )
-	if ( !extra_conf.empty() )
-		this->extra_configuration = std::move(extra_conf);
+	//if ( !extra_conf.empty() )
+	//	this->extra_configuration = std::move(extra_conf);
 }
 
 ElementVertex& ElementVertex::operator=(ElementVertex& ev) {
@@ -60,12 +59,12 @@ std::string ElementVertex::get_interface(void) const {
 	return elem_conf.substr(0, elem_conf.find(","));
 }
 
-std::vector<std::string> ElementVertex::get_extra_configuration(void) const {
-	return this->extra_configuration;
+std::unordered_map<short, std::vector<std::string>> ElementVertex::get_implicit_configuration(void) const {
+	return this->implicit_configuration;
 }
 
-void ElementVertex::set_extra_configuration(const std::vector<std::string> extra_conf) {
-	this->extra_configuration = extra_conf;
+void ElementVertex::set_implicit_configuration(const short port, const std::vector<std::string> implicit_conf) {
+	this->implicit_configuration[port] = implicit_conf;
 }
 
 void ElementVertex::print_info(void) {
