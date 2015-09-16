@@ -193,9 +193,13 @@ short ChainParser::build_nf_dag(std::string nf_name, unsigned short position) {
 			u = new ElementVertex(e, e->class_name(), e->eindex());
 		else
 			u = (ElementVertex*) nf_graph->get_vertex_by_position(e->eindex());
-		// This element may have some implicit configuration arguments coming from auxiliary elements.
-		// If any, these are stored to the implicit_mappings below.
-		u->set_implicit_configuration(implicit_port_mappings[e->eindex()], implicit_conf_mappings[e->eindex()]);
+
+		// This element has some implicit configuration arguments coming from auxiliary elements.
+		if ( implicit_conf_mappings.find(e->eindex()) != implicit_conf_mappings.end() ) {
+			// Only an IPRewriter can be such an element
+			assert(e->class_name() == std::string("IPRewriter"));
+			u->set_implicit_configuration(implicit_port_mappings[e->eindex()], implicit_conf_mappings[e->eindex()]);
+		}
 
 		//log << "Element " << u->get_name() << " " << u->get_position() << ": " << u->get_configuration() << std::endl;
 
