@@ -12,15 +12,19 @@ enum OperationType {
 	WriteRR, //Round-robin value selection
 	WriteRa, //Random value selection
 	WriteSF, //Write from stateful map
+	WriteLB, //Manual fix for load-balancing, TODO: switch FieldOperation.m_value to SegmentList object
 	Translate,
 	Monitor,
 	Noop
 };
 
-const std::string OperationName[7] = { "Write", "Write-Round Robin", "Write-Random",
-					 "Write-Stateful", "Translate", "Monitor", "Noop"};
+const std::string OperationName[8] = { "Write", "Write-Round Robin", "Write-Random",
+					 "Write-Stateful", "Write load-balance", "Translate", "Monitor", "Noop"};
 
 struct FieldOperation {
+	FieldOperation ();
+	FieldOperation (OperationType, HeaderField, uint32_t);
+
 	OperationType m_type;
 	HeaderField m_field;
 	/*
@@ -30,6 +34,7 @@ struct FieldOperation {
 	 *    - Monitor ID for Monitor: Monitor[i](packet)
 	 */
 	uint32_t m_value[2];
+	std::vector<uint32_t> m_lbValues; //Values for the load balancer
 	void compose (const FieldOperation & rhs);
 	uint32_t get_value() const;
 	std::string to_str() const;

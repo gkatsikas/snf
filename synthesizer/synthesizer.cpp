@@ -192,9 +192,9 @@ void TrafficBuilder::traffic_class_builder_dfs(Graph* graph, NF_Map<NFGraph*> nf
 		if ( ev->get_name() == std::string("IPRewriter") ) {
 			log << warn << "\t\tFound: " << ev->get_name() << def << std::endl;
 			log << warn << "\t\t\t with conf: " << ev->get_configuration() << def << std::endl;
-			for (const auto& pair : ev->get_implicit_configuration() ) {
+			for (auto& pair : *(ev->get_implicit_configuration()) ) {
 				log << warn << "\t\t\t Port: " << pair.first << " maps to patterns: " << def << std::endl;
-				for (const auto& pattern : pair.second ) {
+				for (auto& pattern : pair.second ) {
 					log << warn << "\t\t\t    " << pattern << def << std::endl;
 				}
 			}

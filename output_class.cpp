@@ -99,7 +99,7 @@ std::pair<OutputClass,OutputClass> OutputClass::output_class_from_pattern(
 			field_op.m_field = tp_srcPort;
 			field_op.m_value[0] = (uint32_t) atoi(split_pattern[0].c_str());
 			field_op.m_value[1] = (uint32_t) atoi(split_pattern[1].c_str());
-			std::cout<<"Adding field operation: "<<field_op.to_str()<<"\n";
+
 			foutput.add_field_op(field_op);
 		}
 		else {

@@ -27,8 +27,9 @@ std::string spaces=" \t\n";
 std::string empty;
 std::shared_ptr<ClickElement> ClickElement::discard_elem_ptr(new ClickElement(Discard_def,empty));
 
-ClickElement::ClickElement (ElementVertex* ev, int input_port) : ClickElement(type_from_name(ev->get_class()),
-													ev->get_configuration(),ev,input_port) {}
+ClickElement::ClickElement (ElementVertex* ev, short input_port) : ClickElement(type_from_name(ev->get_class()),
+													ev->get_configuration(),ev,input_port, 
+													ev->get_implicit_configuration() ) {}
 
 ClickElement::ClickElement (const std::string& name, const std::string& configuration) : 
 					ClickElement(type_from_name(name),configuration, nullptr) {}
@@ -37,7 +38,7 @@ ClickElement::ClickElement (ElementType type, const std::string& configuration) 
 	ClickElement(type, configuration, nullptr) {}
 
 ClickElement::ClickElement (ElementType type, const std::string& configuration, ElementVertex* ev,
-							int input_port) :
+							short input_port, std::unordered_map<short, std::vector<std::string> >* extra_conf) :
 					m_type(type), m_configuration(configuration), m_nbPorts(0), m_ev(ev)
 {
 	DEBUG("Creating element "+to_str());
@@ -68,7 +69,7 @@ ClickElement::ClickElement (ElementType type, const std::string& configuration, 
 			parse_lookup_filter (configuration);
 			break;
 		case IPRewriter:
-			parse_ip_rewriter (configuration,input_port);
+			parse_ip_rewriter (configuration,input_port,extra_conf);
 			break;
 		case RoundRobinIPMapper:
 			parse_rr_ip_mapper (configuration);
@@ -194,7 +195,7 @@ std::shared_ptr<ClickElement> ClickElement::get_discard_elem () {
 
 void ClickElement::parse_dec_ttl_conf (const std::string& configuration) {
 	if (configuration.size() != 0) {
-		configuration_fail();
+		configuration_fail(__LINE__);
 	}
 
 	FieldOperation ttl_op = {Translate, ip_TTL, 1};
@@ -225,17 +226,17 @@ void ClickElement::parse_fix_ip_src (const std::string& configuration) {
 
 	switch (split_conf.size()) {
 		case 1:
-			if (!is_ip4_prefix(configuration)) {configuration_fail(); }
+			if (!is_ip4_prefix(configuration)) {configuration_fail(__LINE__); }
 			new_ip_value = aton(configuration);
 			break;
 		case 2:
 			if (split_conf[0].compare("IPADDR") !=0 || !is_ip4_prefix(split_conf[1], true) ) {
-				configuration_fail();
+				configuration_fail(__LINE__);
 			}
 			new_ip_value = aton(split_conf[1]);
 			break;
 		default:
-			configuration_fail();
+			configuration_fail(__LINE__);
 	}
 
 	fix_ip_src_op.m_value[0] = new_ip_value;
@@ -315,29 +316,57 @@ void ClickElement::parse_lookup_filter(const std::string& configuration) {
 	}
 }
 
-void ClickElement::parse_ip_rewriter (const std::string& configuration, int input_port) {
-	std::string conf_line = separate_args(configuration)[input_port];
-	std::vector<std::string> split_inputsec = split(conf_line, spaces);
+void ClickElement::parse_ip_rewriter (const std::string& configuration, short input_port, 
+					std::unordered_map<short,std::vector<std::string> >* extra_conf) {
+				
+	DEBUG("Entering IPRewriter at port "+std::to_string(input_port));
+	
+	if(extra_conf && (extra_conf->find(input_port) != extra_conf->end()) ) {
+		std::vector<std::string> rr_ip_mapper_conf = extra_conf->at(input_port);
+		FieldOperation field_op (WriteLB, ip_dst, 0);
+		unsigned short output_port =0;
+		for (auto &line : rr_ip_mapper_conf) {
+			std::vector<std::string> split_line = split(line, " \n\t");
+			if(! (split_line.size() == 6)) {
+				DEBUG(line);
+				configuration_fail(__LINE__);
+			}
+			else {
+				field_op.m_lbValues.push_back(aton(split_line[2]));
+				std::cerr<<"Pushed back: "<<aton(split_line[2])<<"\n";
+				output_port = (unsigned short) atoi(split_line[5].c_str());
+			}
+		}
+		
+		OutputClass port(output_port);
+		port.add_field_op(field_op);
+		std::cerr<<"Current port: "<<port.to_str()<<"\n";
+		this->add_output_class(port);
+	}
+	else {
+		std::string conf_line = separate_args(configuration)[input_port];
+		std::vector<std::string> split_inputsec = split(conf_line, spaces);
 
-	switch (split_inputsec.size()) {
-		case 1: {
-			if (conf_line.compare("drop")==0 || conf_line.compare("discard")==0) {
-				OutputClass discard(0);
-				discard.set_child(discard_elem_ptr);
-				this->add_output_class(discard);
+		switch (split_inputsec.size()) {
+			case 1: {
+				if (conf_line.compare("drop")==0 || conf_line.compare("discard")==0) {
+					OutputClass discard(0);
+					discard.set_child(discard_elem_ptr);
+					this->add_output_class(discard);
+					break;
+				}
+				else{ configuration_fail(__LINE__); }
+			}
+			case 7: {
+				std::pair<OutputClass,OutputClass> ports =
+						OutputClass::output_class_from_pattern(split_inputsec);
+				this->add_output_class(ports.first);
+				//this->add_output_class(ports.second);
 				break;
 			}
-			else{ configuration_fail(); }
+			default:
+				configuration_fail(__LINE__);
 		}
-		case 7: {
-			std::pair<OutputClass,OutputClass> ports =
-					OutputClass::output_class_from_pattern(split_inputsec);
-			this->add_output_class(ports.first);
-			//this->add_output_class(ports.second);
-			break;
-		}
-		default:
-			configuration_fail();
 	}
 }
 
@@ -417,9 +446,9 @@ void ClickElement::parse_rr_ip_mapper (const std::string& configuration) {
 		else if(configuration[2]=='D' && configuration[3]=='S' && configuration[4]=='T') {
 			field = ip_dst;
 		}
-		else configuration_fail();
+		else configuration_fail(__LINE__);
 	}
-	else configuration_fail();
+	else configuration_fail(__LINE__);
 
 	start = configuration.find_first_not_of(separators, end);
 	end = configuration.find('-',start);
@@ -443,7 +472,7 @@ void ClickElement::parse_rr_ip_mapper (const std::string& configuration) {
 
 void ClickElement::parse_ip_fragmenter_configuration(const std::string& configuration) {
 	if(configuration.find_first_not_of("0123456789") != std::string::npos) {
-		configuration_fail();
+		configuration_fail(__LINE__);
 	}
 
 	OutputClass port(0);
@@ -452,8 +481,8 @@ void ClickElement::parse_ip_fragmenter_configuration(const std::string& configur
 	this->add_output_class(port);
 }
 
-void ClickElement::configuration_fail() {
-	std::cerr<<"Could not parse configuration for "<<elementNames[m_type]<<":\n\t"
-		<<m_configuration<<"\n";
+void ClickElement::configuration_fail(unsigned int line, std::string filename) {
+	std::cerr<<"["<<filename<<":"<<line<<"] Could not parse configuration for "<<
+			elementNames[m_type]<<":\n\t"<<m_configuration<<"\n";
 	exit(1);
 }

@@ -430,7 +430,7 @@ std::vector<std::shared_ptr<ClickElement> > TrafficClass::synthesize_chain () {
 		}
 
 		if(m_ipgwoptions) {
-			synthesized_chain.push_back(std::shared_ptr<ClickElement>(new ClickElement(DropBroadcasts,std::string())));
+			synthesized_chain.push_back(std::shared_ptr<ClickElement>(new ClickElement(IPGWOptions,std::string())));
 		}
 		FieldOperation* field_op;
 
@@ -538,6 +538,19 @@ int TrafficClass::addElement (std::shared_ptr<ClickElement> element, int port) {
 				case WriteRa:
 				case WriteSF: {
 					Filter write_condition(field, field_op->m_value[0], field_op->m_value[1]);
+					if (! filter.contains(write_condition)) {
+						write_condition.intersect (filter);
+						nb_none_filters += intersect_condition (write_condition, *field_op);
+						//FIXME: what if I have successive range writes?
+					}
+					break;
+				}
+				case WriteLB: {
+					Filter write_condition(field);
+					write_condition.make_none();
+					for (auto &value : field_op->m_lbValues) {
+						write_condition.unite(Filter(field,value));
+					}
 					if (! filter.contains(write_condition)) {
 						write_condition.intersect (filter);
 						nb_none_filters += intersect_condition (write_condition, *field_op);

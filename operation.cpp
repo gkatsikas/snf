@@ -1,8 +1,14 @@
 #include "operation.hpp"
 #include <iostream>
 #include <cstring>
+#include <functional>
 
 #include "helpers.hpp"
+
+FieldOperation::FieldOperation () : m_type(Noop), m_field(unknown) {}
+
+FieldOperation::FieldOperation (OperationType type, HeaderField field, uint32_t value) :
+	m_type(type), m_field(field) { m_value[0] = value; }
 
 void FieldOperation::compose (const FieldOperation & rhs) {
 	if (this->m_field != rhs.m_field) {
@@ -14,6 +20,13 @@ void FieldOperation::compose (const FieldOperation & rhs) {
 		case Write:
 			this->m_type = Write;
 			this->m_value[0] = rhs.m_value[0];
+			return;
+		case WriteLB:
+			this->m_type = WriteLB;
+			this->m_lbValues.clear();
+			std::cerr<<"Before composition: "<<to_str()<<"\n";
+			this->m_lbValues.insert(m_lbValues.begin(),rhs.m_lbValues.begin(),rhs.m_lbValues.end());
+			std::cerr<<"After composition: "<<to_str()<<"\n";
 			return;
 		case WriteRR:
 		case WriteRa:
@@ -69,6 +82,12 @@ bool Operation::has_field_op(HeaderField field) const {
 
 std::string FieldOperation::to_str () const {
 	std::string output = headerFieldNames[m_field];
+	
+	std::function<std::string(uint32_t)> to_str= [](uint32_t x){return std::to_string(x);};
+	if (m_field == ip_src || m_field == ip_dst) {
+		to_str = ntoa;
+	}
+	
 	switch (m_type) {
 		case Write:
 		case Translate:
@@ -81,6 +100,13 @@ std::string FieldOperation::to_str () const {
 					output+= (": "+OperationName[m_type]+"("+std::to_string(m_value[0])+")");
 					break;
 			}
+			break;
+		case WriteLB:
+			output += ":"+OperationName[m_type]+"(";
+			for(auto &value: m_lbValues) {
+				output+=to_str(value)+",";
+			}
+			output[output.size()-1]=')';
 			break;
 		case WriteRR:
 		case WriteRa:
@@ -118,6 +144,7 @@ void Operation::add_field_op(const FieldOperation &field_op) {
 		case WriteRR:
 		case WriteRa:
 		case WriteSF:
+		case WriteLB:
 			HeaderField field = field_op.m_field;
 
 			//If we don't have any operation yet

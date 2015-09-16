@@ -68,7 +68,7 @@ class ElementVertex : public Vertex
 		inline std::string              get_configuration(void) const { return this->click_element->router()->econfiguration(this->get_position()).c_str(); };
 		inline std::shared_ptr<Element> get_click_element(void) const { return this->click_element; };
 
-		std::unordered_map<short, std::vector<std::string>> get_implicit_configuration(void) const;
+		std::unordered_map<short, std::vector<std::string>>* get_implicit_configuration(void);
 		void set_implicit_configuration(const short port, const std::vector<std::string> implicit_conf);
 
 		/*

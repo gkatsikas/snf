@@ -59,8 +59,8 @@ std::string ElementVertex::get_interface(void) const {
 	return elem_conf.substr(0, elem_conf.find(","));
 }
 
-std::unordered_map<short, std::vector<std::string>> ElementVertex::get_implicit_configuration(void) const {
-	return this->implicit_configuration;
+std::unordered_map<short, std::vector<std::string>>* ElementVertex::get_implicit_configuration(void) {
+	return &(this->implicit_configuration);
 }
 
 void ElementVertex::set_implicit_configuration(const short port, const std::vector<std::string> implicit_conf) {
