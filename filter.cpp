@@ -8,6 +8,7 @@
 #include "helpers.hpp"
 #include "click_element.hpp"
 #include "output_class.hpp"
+#include "synthesizer/synth_nat.hpp"
 
 #define BUG(A) std::cerr<<"["<<__FILE__<<":"<<__LINE__<<"] "<<A <<std::endl; exit(1)
 
@@ -419,24 +420,92 @@ TrafficClass::TrafficClass () : m_filters(), m_writeConditions(), m_dropBroadcas
 								m_ipgwoptions(false), m_etherEncapConf(), m_elementPath(),
 								m_operation() {}
 
-std::vector<std::shared_ptr<ClickElement> > TrafficClass::synthesize_chain () {
-	std::vector<std::shared_ptr<ClickElement> > synthesized_chain;
+std::string TrafficClass::synthesize_chain () {
+	std::string output;
 	if(this->is_discarded()) {
-		synthesized_chain.push_back(std::shared_ptr<ClickElement>(new ClickElement(Discard,std::string())));
+		output = "Discard();";
 	}
 	else {
 		if(m_dropBroadcasts) {
-			synthesized_chain.push_back(std::shared_ptr<ClickElement>(new ClickElement(DropBroadcasts,std::string())));
+			output += "DropBroadcasts() -> ";
 		}
 
 		if(m_ipgwoptions) {
-			synthesized_chain.push_back(std::shared_ptr<ClickElement>(new ClickElement(IPGWOptions,std::string())));
+			output += "IPGWOptions($ipAddr) -> ";
 		}
-		FieldOperation* field_op;
+		
+		if(m_nat) {
+			output += "["+std::to_string(m_natInputPort)+"]"+m_nat->get_name()+";";
+		}
+		else {
+			output += "[0]IPRewriter(";
+			
+			std::string ipsrc, tpsrc, tpdst;
 
-		//TODO: do the voodoo that you want to do
+			FieldOperation* field_op = m_operation.get_field_op(ip_src);
+			if(field_op) {
+				if(field_op->m_type == Write) {
+					ipsrc = ntoa(field_op->m_value[0]);
+				}
+				else {
+					BUG("Expected write operation");
+				}
+			}
+			else{
+				ipsrc = "-";
+			}
+	
+			field_op = m_operation.get_field_op(tp_srcPort);
+			if(field_op) {
+				if(field_op->m_type == Write) {
+					tpsrc = std::to_string(field_op->m_value[0]);
+				}
+				else {
+					BUG("Expected write operation, got "+m_operation.to_str());
+				}
+			}
+			else{
+				tpsrc = "-";
+			}
+			
+			field_op = m_operation.get_field_op(tp_dstPort);
+			if(field_op) {
+				if(field_op->m_type == Write) {
+					tpdst = std::to_string(field_op->m_value[0]);
+				}
+				else {
+					BUG("Expected write operation, got "+m_operation.to_str());
+				}
+			}
+			else{
+				tpdst = "-";
+			}
+	
+			field_op = m_operation.get_field_op(ip_dst);
+			if(field_op) {
+				//TODO: add support for load balancing
+				if(field_op->m_type == Write) {
+					output += ipsrc+" "+tpsrc+" "+ntoa(field_op->m_value[0])+" "+tpdst+" ";
+				}
+				else if (field_op->m_type == WriteLB) {
+					std::string rr_output = "RoundRobinIPMapper(";
+					for (auto &ip : field_op->m_lbValues) {
+						rr_output += ipsrc+" "+tpsrc+" "+ntoa(ip)+" "+tpdst+", ";
+					}
+					rr_output[rr_output.size()-2] = ')';
+					output += rr_output;
+				}
+				else {
+					BUG("Expected write operation, got "+m_operation.to_str());
+				}
+			}
+			else{
+				output += ipsrc+" "+tpsrc+" "+"- "+tpdst+" ";
+			}
+			output += ");";
+		}
 
-		field_op = m_operation.get_field_op(mtu);
+		/*field_op = m_operation.get_field_op(mtu);
 		if(field_op) {
 			synthesized_chain.push_back(std::shared_ptr<ClickElement>(new ClickElement(DropBroadcasts,
 											std::to_string(field_op->m_value[0]) )));
@@ -446,10 +515,10 @@ std::vector<std::shared_ptr<ClickElement> > TrafficClass::synthesize_chain () {
 			BUG("Empty EtherEncap configuration");
 		}
 		synthesized_chain.push_back(std::shared_ptr<ClickElement>(new ClickElement(EtherEncap,m_etherEncapConf)));
-		synthesized_chain.push_back(m_elementPath.back());
+		synthesized_chain.push_back(m_elementPath.back());*/
 	}
 
-	return synthesized_chain;
+	return output;
 }
 
 std::string TrafficClass::to_ip_classifier_pattern() const {
@@ -588,6 +657,7 @@ std::string TrafficClass::get_outputIface () const {
 			}
 		}
 	}
+	return "None";
 	BUG("Could not provide output interface for traffic class "+to_str());
 }
 

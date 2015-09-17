@@ -95,7 +95,7 @@ class TrafficClass {
 		std::string to_str () const;
 		bool is_discarded () const;
 		bool is_SNATed();
-		std::vector<std::shared_ptr<ClickElement> > synthesize_chain();
+		std::string synthesize_chain();
 
 		std::string to_ip_classifier_pattern() const;
 		

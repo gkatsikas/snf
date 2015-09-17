@@ -27,6 +27,8 @@ class SynthesizedNat {
 		std::vector<std::string> m_confString;
 		
 		std::string m_name;
+		
+		unsigned short m_outboundPort;
 
 		//Returns the part of the pattern that sets the rewriting up
 		std::string conf_line_from_operation (Operation& op);

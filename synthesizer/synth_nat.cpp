@@ -30,9 +30,9 @@ std::string SynthesizedNat::compute_conf () {
 		}
 	}
 	
-	unsigned short outbound_port = m_outputPortToIface.size();
+	m_outboundPort = m_outputPortToIface.size();
 	for (size_t i=0; i<m_confString.size(); i++) {
-		output += m_confString[i] + std::to_string(outbound_port) + " " 
+		output += m_confString[i] + std::to_string(m_outboundPort) + " " 
 				+ std::to_string(m_ifaceToOutputPort[m_inputPortToIface[i]]) +", ";
 	}
 	
@@ -44,74 +44,78 @@ std::string SynthesizedNat::get_name () {
 }
 
 std::string SynthesizedNat::conf_line_from_operation (Operation& op) {
-	std::string output;
+
+	std::string ipsrc, tpsrc, tpdst;
+	
 	FieldOperation* field_op = op.get_field_op(ip_src);
 	if(field_op) {
 		if(field_op->m_type == Write) {
-			output += ntoa(field_op->m_value[0]);
+			ipsrc = ntoa(field_op->m_value[0]);
 		}
 		else {
 			BUG("Expected write operation");
 		}
 	}
 	else{
-		output+= "-";
+		ipsrc= "-";
 	}
-	output+=" ";
 	
 	
 	field_op = op.get_field_op(tp_srcPort);
 	if(field_op) {
 		switch (field_op->m_type) {
 			case Write:
-				output += std::to_string(field_op->m_value[0]);
+				tpsrc = std::to_string(field_op->m_value[0]);
 				break;
 			case WriteRR:
-				output += std::to_string(field_op->m_value[0])+"-"+std::to_string(field_op->m_value[1])+"#";
+				tpsrc = std::to_string(field_op->m_value[0])+"-"+std::to_string(field_op->m_value[1])+"#";
 				break;
 			case WriteRa:
-				output += std::to_string(field_op->m_value[0])+"-"+std::to_string(field_op->m_value[1])+"?";
+				tpsrc = std::to_string(field_op->m_value[0])+"-"+std::to_string(field_op->m_value[1])+"?";
 				break;
 			case WriteSF:
-				output += std::to_string(field_op->m_value[0])+"-"+std::to_string(field_op->m_value[1]);
+				tpsrc = std::to_string(field_op->m_value[0])+"-"+std::to_string(field_op->m_value[1]);
 				break;
 			default:
 				BUG("Expected write operation");
 		}
 	}
 	else{
-		output+= "-";
+		tpsrc = "-";
 	}
-	output += " ";
+	
+	field_op = op.get_field_op(tp_dstPort);
+	if(field_op) {
+		if(field_op->m_type == Write) {
+			tpdst = std::to_string(field_op->m_value[0]);
+		}
+		else {
+			BUG("Expected write operation, got "+op.to_str());
+		}
+	}
+	else{
+		tpdst = "-";
+	}
 	
 	field_op = op.get_field_op(ip_dst);
 	if(field_op) {
 		//TODO: add support for load balancing
 		if(field_op->m_type == Write) {
-			output += ntoa(field_op->m_value[0]);
+			return ipsrc+" "+tpsrc+" "+ntoa(field_op->m_value[0])+" "+tpdst+" ";
+		}
+		else if (field_op->m_type == WriteLB) {
+			std::string output = "RoundRobinIPMapper(";
+			for (auto &ip : field_op->m_lbValues) {
+				output += ipsrc+" "+tpsrc+" "+ntoa(ip)+" "+tpdst+", ";
+			}
+			output[output.size()-2] = ')';
+			return output;
 		}
 		else {
 			BUG("Expected write operation, got "+op.to_str());
 		}
 	}
 	else{
-		output+= "-";
+		return ipsrc+" "+tpsrc+" "+"- "+tpdst+" ";
 	}
-	output+=" ";
-	
-	field_op = op.get_field_op(tp_dstPort);
-	if(field_op) {
-		if(field_op->m_type == Write) {
-			output += std::to_string(field_op->m_value[0]);
-		}
-		else {
-			BUG("Expected write operation, got "+op.to_str());
-		}
-	}
-	else{
-		output+= "-";
-	}
-	output += " ";
-	
-	return output;
 }
