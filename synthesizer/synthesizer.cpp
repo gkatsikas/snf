@@ -110,12 +110,18 @@ short Synthesizer::generate_equivalent_configuration(void) {
 	
 	int i=0;
 	for (auto &it : tc_per_input_iface) {
-		std::cout<<"ipc"+std::to_string(i)+" :: IPClassifier (";
+		std::string ipc_name = "ipc"+std::to_string(i++);
+		std::cout<<ipc_name+" :: IPClassifier (\n";
 		std::vector<std::string> chains;
 		for (auto &tc: it.second) {
-			std::cout<<"From "<<it.first<<" with filter "<<tc.to_ip_classifier_pattern()
-						<<"\n\t"<<tc.synthesize_chain()<<"\n";
+			std::cout<<"\t"<<tc.to_ip_classifier_pattern()<<",\n";
+			chains.push_back(tc.synthesize_chain());
 		}
+		std::cout<<");\n";
+		for (size_t i = 0; i<chains.size(); i++) {
+			std::cout<<ipc_name+"["<<i<<"] -> "<<chains[i]<<"\n";
+		}
+		std::cout <<"FromDevice ("<<it.first<<") -> Strip(14) -> "+ipc_name;
 		i++;
 	}
 	
