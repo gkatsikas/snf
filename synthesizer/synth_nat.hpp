@@ -16,6 +16,8 @@ class SynthesizedNat {
 		std::string compute_conf();
 		
 		std::string get_name ();
+		
+		unsigned short get_outboundPort ();
 
 	private:
 		static int count;

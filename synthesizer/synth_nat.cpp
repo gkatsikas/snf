@@ -6,7 +6,7 @@
 
 int SynthesizedNat::count = 0;
 
-SynthesizedNat::SynthesizedNat() : m_name("nat"+std::to_string(count++)) {}
+SynthesizedNat::SynthesizedNat() : m_name("iprw"+std::to_string(count++)) {}
 
 unsigned short SynthesizedNat::add_traffic_class (TrafficClass& tc, const std::string& src_iface) {
 	Operation op = tc.get_operation();
@@ -32,6 +32,7 @@ std::string SynthesizedNat::compute_conf () {
 	
 	m_outboundPort = m_outputPortToIface.size();
 	for (size_t i=0; i<m_confString.size(); i++) {
+		//TODO: if RRIPMapper then include ports in the RR conf
 		output += m_confString[i] + std::to_string(m_outboundPort) + " " 
 				+ std::to_string(m_ifaceToOutputPort[m_inputPortToIface[i]]) +", ";
 	}
@@ -41,6 +42,10 @@ std::string SynthesizedNat::compute_conf () {
 
 std::string SynthesizedNat::get_name () {
 	return m_name;
+}
+
+unsigned short SynthesizedNat::get_outboundPort () {
+	return m_outboundPort;
 }
 
 std::string SynthesizedNat::conf_line_from_operation (Operation& op) {

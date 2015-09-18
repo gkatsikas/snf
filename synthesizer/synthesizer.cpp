@@ -101,17 +101,24 @@ short Synthesizer::synthesize_nat(void) {
  * The configuration must achieve equivalent functionality with the initial one.
  */
 short Synthesizer::generate_equivalent_configuration(void) {
-	for (auto &it : tc_per_input_iface) {
-		for (auto &tc: it.second) {
-			std::cout<<it.first<<"-->"<<tc.synthesize_chain()<<"-->"<<tc.get_outputIface()<<"\n";
-		}
-	}
-	
 	for (auto &it : nat_per_output_iface) {
 		auto nat = it.second;
 		std::cout<<nat->get_name()<<"::IPRewriter("<<nat->compute_conf()<<")\n";
+		std::cout<<nat->get_name()<<"["<<nat->get_outboundPort()<<
+					"] -> EtherEncap($etherEncapConf) -> ToDevice ("<<it.first<<");\n";
 	}
-
+	
+	int i=0;
+	for (auto &it : tc_per_input_iface) {
+		std::cout<<"ipc"+std::to_string(i)+" :: IPClassifier (";
+		std::vector<std::string> chains;
+		for (auto &tc: it.second) {
+			std::cout<<"From "<<it.first<<" with filter "<<tc.to_ip_classifier_pattern()
+						<<"\n\t"<<tc.synthesize_chain()<<"\n";
+		}
+		i++;
+	}
+	
 	return SUCCESS;
 }
 
