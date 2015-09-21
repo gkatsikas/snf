@@ -52,6 +52,19 @@ NF_3 = nf_repo/compound/load_balancer_2if.click
 #NF_3 = nf_repo/compound/router_3if.click
 #NF_4 = nf_repo/compound/router_2if.click
 
+### TOPO 5 - NSDI no1
+#
+#  Domain 1 -- |NAT| -- |NAT| -- |NAT| -- |NAT| -- |NAT| -- |NAT| -- |NAT| -- |NAT| -- Domain 2
+#
+NF_1 = nf_repo/compound/napt_2if.click
+NF_2 = nf_repo/compound/napt_2if.click
+NF_3 = nf_repo/compound/napt_2if.click
+NF_4 = nf_repo/compound/napt_2if.click
+NF_5 = nf_repo/compound/napt_2if.click
+NF_6 = nf_repo/compound/napt_2if.click
+NF_7 = nf_repo/compound/napt_2if.click
+NF_8 = nf_repo/compound/napt_2if.click
+
 #######
 ####### SECTION 2: In this section you specifiy the topology of the modules.
 ####### Use NF_number1[iface] -> [iface]NF_number2 to connect NFs. See the example below.
