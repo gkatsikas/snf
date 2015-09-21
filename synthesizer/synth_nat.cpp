@@ -135,6 +135,6 @@ std::string SynthesizedNat::conf_line_from_operation (Operation& op) {
 		}
 	}
 	else{
-		return ipsrc+" "+tpsrc+" "+"- "+tpdst+" ";
+		return "pattern "+ipsrc+" "+tpsrc+" "+"- "+tpdst+" ";
 	}
 }
