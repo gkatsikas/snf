@@ -32,12 +32,26 @@ std::string SynthesizedNat::compute_conf () {
 	
 	m_outboundPort = m_outputPortToIface.size();
 	for (size_t i=0; i<m_confString.size(); i++) {
-		//TODO: if RRIPMapper then include ports in the RR conf
-		output += m_confString[i] + std::to_string(m_outboundPort) + " " 
+		
+		if(m_confString[i][0] == 'R') { //if RRIPMapper then include ports in the RR conf
+			std::string conf_str = m_confString[i];
+			std::string ports = " " + std::to_string(m_outboundPort) + " " 
+					+ std::to_string(m_ifaceToOutputPort[m_inputPortToIface[i]]);
+					
+			size_t pos = conf_str.rfind(')');
+			while (pos != std::string::npos) {
+				conf_str.insert(pos,ports);
+				pos = conf_str.rfind(',',pos);
+			}
+			output += conf_str + ", ";
+		}
+		else {
+			output += m_confString[i] + std::to_string(m_outboundPort) + " " 
 				+ std::to_string(m_ifaceToOutputPort[m_inputPortToIface[i]]) +", ";
+		}
 	}
 	
-	return (output.substr(0, output.size()-2));
+	return (output.substr(0, output.size()));
 }
 
 std::string SynthesizedNat::get_name () {
@@ -114,13 +128,13 @@ std::string SynthesizedNat::conf_line_from_operation (Operation& op) {
 				output += ipsrc+" "+tpsrc+" "+ntoa(ip)+" "+tpdst+", ";
 			}
 			output[output.size()-2] = ')';
-			return output;
+			return output.substr(0,output.size()-1);
 		}
 		else {
 			BUG("Expected write operation, got "+op.to_str());
 		}
 	}
 	else{
-		return ipsrc+" "+tpsrc+" "+"- "+tpdst+" ";
+		return "pattern "+ipsrc+" "+tpsrc+" "+"- "+tpdst+" ";
 	}
 }

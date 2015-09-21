@@ -94,6 +94,8 @@ ClickElement::ClickElement (ElementType type, const std::string& configuration, 
 		case PaintTee:
 		//TODO: handle Print?
 		case Print:
+		case AverageCounter:
+		//TODO handle
 		case CheckTCPHeader: {
 			OutputClass port(0);
 			this->add_output_class (port);
