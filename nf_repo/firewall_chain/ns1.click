@@ -22,7 +22,7 @@ define(
 		$queueSize   5000000,
 		$mtuSize     9000,
 		$burst       8,
-		$io_method  /*NETMAP*/PCAP,
+		$io_method   NETMAP,
 		
 		$position    1,
 		

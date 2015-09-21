@@ -105,7 +105,7 @@ short Synthesizer::generate_equivalent_configuration(void) {
 		auto nat = it.second;
 		std::cout<<nat->get_name()<<"::IPRewriter("<<nat->compute_conf()<<");\n";
 		std::cout<<nat->get_name()<<"["<<nat->get_outboundPort()<<
-					"] -> EtherEncap($etherEncapConf) -> ToDevice ("<<it.first<<");\n";
+					"] -> EtherEncap(0x0800, $etherEncapConf) -> Queue ($queueSize) -> ToDevice ("<<it.first<<");\n";
 	}
 	
 	int i=0;

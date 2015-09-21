@@ -7,6 +7,7 @@
 static const uint32_t elem_start = __LINE__;
 #define _Element(FOO) \
 	FOO(DecIPTTL) \
+	FOO(AverageCounter) \
 	FOO(FixIPSrc) \
 	FOO(IPFilter) \
 	FOO(IPClassifier) \

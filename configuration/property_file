@@ -103,8 +103,11 @@ TOPOLOGY = NF_1[netmap:ns1veth1] -> [netmap:ns2veth0]NF_2; NF_2[netmap:ns2veth1]
 #DOMAINS  = [eth0]NF_1, [eth1]NF_1, [eth1]NF_2
 
 ### TOPO 3
-DOMAINS  = [eth0]NF_1
+#DOMAINS  = [eth0]NF_1
 
 ### TOPO 4
 #DOMAINS  = [eth0]NF_1, [eth1]NF_2, [eth1]NF_3
+
+### TEST TOPOS
+DOMAINS = [netmap:ns1veth0]NF_1;
 ###################################################################################################
