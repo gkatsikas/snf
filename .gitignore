@@ -1,3 +1,4 @@
 *.o
 *.plist
 nf_synthesizer
+class_test
