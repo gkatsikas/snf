@@ -35,10 +35,9 @@
 #                                       \
 #                                        Server 2
 #
-NF_1 = nf_repo/compound/napt_2if.click
-NF_2 = nf_repo/compound/firewall_2if.click
-NF_3 = nf_repo/compound/load_balancer_2if.click
-
+#NF_1 = nf_repo/compound/napt_2if.click
+#NF_2 = nf_repo/compound/firewall_2if.click
+#NF_3 = nf_repo/compound/load_balancer_2if.click
 
 ### TOPO 4
 #
@@ -51,6 +50,23 @@ NF_3 = nf_repo/compound/load_balancer_2if.click
 #NF_2 = nf_repo/compound/router_3if.click
 #NF_3 = nf_repo/compound/router_3if.click
 #NF_4 = nf_repo/compound/router_2if.click
+
+###TEST TOPO
+NF_1 = nf_repo/firewall_chain/ns1.click
+NF_2 = nf_repo/firewall_chain/ns2.click
+NF_3 = nf_repo/firewall_chain/ns3.click
+NF_4 = nf_repo/firewall_chain/ns4.click
+NF_5 = nf_repo/firewall_chain/ns5.click
+NF_6 = nf_repo/firewall_chain/ns6.click
+
+#NF_1 = nf_repo/napt_chain/ns1.click
+#NF_2 = nf_repo/napt_chain/ns2.click
+#NF_3 = nf_repo/napt_chain/ns3.click
+#NF_4 = nf_repo/napt_chain/ns4.click
+#NF_5 = nf_repo/napt_chain/ns5.click
+#NF_6 = nf_repo/napt_chain/ns6.click
+#NF_7 = nf_repo/napt_chain/ns7.click
+#NF_8 = nf_repo/napt_chain/ns8.click
 
 #######
 ####### SECTION 2: In this section you specifiy the topology of the modules.
@@ -65,11 +81,14 @@ NF_3 = nf_repo/compound/load_balancer_2if.click
 #TOPOLOGY = NF_1[eth2] -> [eth0]NF_2;
 
 ### TOPO 3
-TOPOLOGY = NF_1[eth1] -> [eth0]NF_2;NF_2[eth1] -> [eth0]NF_3;
+#TOPOLOGY = NF_1[eth1] -> [eth0]NF_2;NF_2[eth1] -> [eth0]NF_3;
 
 ### TOPO 4
 #TOPOLOGY = NF_1[eth1] -> [eth0]NF_2;NF_2[eth2] -> [eth0]NF_3;NF_3[eth2] -> [eth0]NF_4;
 
+### TEST TOPOS:
+TOPOLOGY = NF_1[eth1] -> eth[0]NF_2; NF_2[eth1] -> eth[0]NF_3; NF_3[eth1] -> eth[0]NF_4; NF_4[eth1] -> eth[0]NF_5; NF_5[eth1] -> eth[0]NF_6;
+TOPOLOGY = NF_1[eth1] -> eth[0]NF_2; NF_2[eth1] -> eth[0]NF_3; NF_3[eth1] -> eth[0]NF_4; NF_4[eth1] -> eth[0]NF_5; NF_5[eth1] -> eth[0]NF_6; NF_6[eth1] -> eth[0]NF_7; NF_7[eth1] -> eth[0]NF_8;
 
 ####### SECTION 3: In this section you specifiy the entry/end points of the chain.
 #######            In other words, how the chain is connected to the outside world.
