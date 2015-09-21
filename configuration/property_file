@@ -35,9 +35,9 @@
 #                                       \
 #                                        Server 2
 #
-#NF_1 = nf_repo/compound/napt_2if.click
-#NF_2 = nf_repo/compound/firewall_2if.click
-#NF_3 = nf_repo/compound/load_balancer_2if.click
+NF_1 = nf_repo/compound/napt_2if.click
+NF_2 = nf_repo/compound/firewall_2if.click
+NF_3 = nf_repo/compound/load_balancer_2if.click
 
 ### TOPO 4
 #
@@ -52,12 +52,12 @@
 #NF_4 = nf_repo/compound/router_2if.click
 
 ###TEST TOPO
-NF_1 = nf_repo/firewall_chain/ns1.click
-NF_2 = nf_repo/firewall_chain/ns2.click
-NF_3 = nf_repo/firewall_chain/ns3.click
-NF_4 = nf_repo/firewall_chain/ns4.click
-NF_5 = nf_repo/firewall_chain/ns5.click
-NF_6 = nf_repo/firewall_chain/ns6.click
+#NF_1 = nf_repo/firewall_chain/ns1.click
+#NF_2 = nf_repo/firewall_chain/ns2.click
+#NF_3 = nf_repo/firewall_chain/ns3.click
+#NF_4 = nf_repo/firewall_chain/ns4.click
+#NF_5 = nf_repo/firewall_chain/ns5.click
+#NF_6 = nf_repo/firewall_chain/ns6.click
 
 #NF_1 = nf_repo/napt_chain/ns1.click
 #NF_2 = nf_repo/napt_chain/ns2.click
@@ -81,13 +81,13 @@ NF_6 = nf_repo/firewall_chain/ns6.click
 #TOPOLOGY = NF_1[eth2] -> [eth0]NF_2;
 
 ### TOPO 3
-#TOPOLOGY = NF_1[eth1] -> [eth0]NF_2;NF_2[eth1] -> [eth0]NF_3;
+TOPOLOGY = NF_1[eth1] -> [eth0]NF_2;NF_2[eth1] -> [eth0]NF_3;
 
 ### TOPO 4
 #TOPOLOGY = NF_1[eth1] -> [eth0]NF_2;NF_2[eth2] -> [eth0]NF_3;NF_3[eth2] -> [eth0]NF_4;
 
 ### TEST TOPOS:
-TOPOLOGY = NF_1[netmap:ns1veth1] -> [netmap:ns2veth0]NF_2; NF_2[netmap:ns2veth1] -> [netmap:ns3veth0]NF_3; NF_3[netmap:ns3veth1] -> [netmap:ns4veth0]NF_4; NF_4[netmap:ns4veth1] -> [netmap:ns5veth0]NF_5; NF_5[netmap:ns5veth1] -> [netmap:ns6veth0]NF_6;
+#TOPOLOGY = NF_1[netmap:ns1veth1] -> [netmap:ns2veth0]NF_2; NF_2[netmap:ns2veth1] -> [netmap:ns3veth0]NF_3; NF_3[netmap:ns3veth1] -> [netmap:ns4veth0]NF_4; NF_4[netmap:ns4veth1] -> [netmap:ns5veth0]NF_5; NF_5[netmap:ns5veth1] -> [netmap:ns6veth0]NF_6;
 #TOPOLOGY = NF_1[netmap:ns1veth1] -> [netmap:ns2veth0]NF_2; NF_2[netmap:ns2veth1] -> [netmap:ns3veth0]NF_3; NF_3[netmap:ns3veth1] -> [netmap:ns4veth0]NF_4; NF_4[netmap:ns4veth1] -> [netmap:ns5veth0]NF_5; NF_5[netmap:ns5veth1] -> [netmap:ns6veth0]NF_6; NF_6[netmap:ns6veth1] -> [netmap:ns7veth0]NF_7; NF_7[netmap:ns7veth1] -> [netmap:ns8veth0]NF_8;
 
 ####### SECTION 3: In this section you specifiy the entry/end points of the chain.
@@ -103,11 +103,11 @@ TOPOLOGY = NF_1[netmap:ns1veth1] -> [netmap:ns2veth0]NF_2; NF_2[netmap:ns2veth1]
 #DOMAINS  = [eth0]NF_1, [eth1]NF_1, [eth1]NF_2
 
 ### TOPO 3
-#DOMAINS  = [eth0]NF_1
+DOMAINS  = [eth0]NF_1
 
 ### TOPO 4
 #DOMAINS  = [eth0]NF_1, [eth1]NF_2, [eth1]NF_3
 
 ### TEST TOPOS
-DOMAINS = [netmap:ns1veth0]NF_1;
+#DOMAINS = [netmap:ns1veth0]NF_1;
 ###################################################################################################

@@ -51,7 +51,7 @@ std::string SynthesizedNat::compute_conf () {
 		}
 	}
 	
-	return (output.substr(0, output.size()-2));
+	return (output.substr(0, output.size()));
 }
 
 std::string SynthesizedNat::get_name () {
@@ -128,7 +128,7 @@ std::string SynthesizedNat::conf_line_from_operation (Operation& op) {
 				output += ipsrc+" "+tpsrc+" "+ntoa(ip)+" "+tpdst+", ";
 			}
 			output[output.size()-2] = ')';
-			return output;
+			return output.substr(0,output.size()-1);
 		}
 		else {
 			BUG("Expected write operation, got "+op.to_str());
