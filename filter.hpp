@@ -106,6 +106,8 @@ class TrafficClass {
 		void set_nat (std::shared_ptr<SynthesizedNat>, unsigned short);
 		std::shared_ptr<SynthesizedNat> get_nat ();
 		unsigned short get_natInputPort ();
+		
+		int intersect_filter(const Filter& filter);
 
 	private:
 		PacketFilter m_filters;
@@ -126,7 +128,6 @@ class TrafficClass {
 		unsigned short m_natInputPort;
 
 		void addFilter(Filter filter,HeaderField field);
-		int intersect_filter(const Filter& filter);
 		int intersect_condition (const Filter& condition, const FieldOperation& operation);
 };
 

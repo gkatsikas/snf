@@ -7,7 +7,7 @@ LFLAGS = -Wall -std=c++1y -pedantic -g
 LIBS = -L/usr/local/lib/ -lclick -ldl -lpthread -lpcap
 
 ### Object files of NF Synthesizer
-OBJS =  main.o helpers.o chameleon.o vertex.o segment_list.o operation.o \
+OBJS =  helpers.o chameleon.o vertex.o segment_list.o operation.o \
 		generic_configuration.o graph.o filter.o ip_filter_parser.o \
 		click_parse_configuration.o nf_graph.o click_element.o \
 		output_class.o click_tree.o parser_configuration.o chain_parser.o \
@@ -18,10 +18,16 @@ OBJS =  main.o helpers.o chameleon.o vertex.o segment_list.o operation.o \
 CLICK_ELEMENT_OBJS = $(shell find /opt/click/userlevel/ ! -name "click.o" ! -name "exportstub.o" -name "*.o")
 
 ### Final compilation rule
-NFSynthesizer: $(OBJS)
-	$(CC) $(LFLAGS) $(OBJS) $(CLICK_ELEMENT_OBJS) -o nf_synthesizer $(LIBS)
+NFSynthesizer: $(OBJS) main.o
+	$(CC) $(LFLAGS) $(OBJS) main.o  $(CLICK_ELEMENT_OBJS) -o nf_synthesizer $(LIBS)
+	
+class_test: $(OBJS) classifier_test.o
+	$(CC) $(LFLAGS) $(OBJS) $(CLICK_ELEMENT_OBJS) classifier_test.o -o class_test $(LIBS)
 
 ### Individual modules' rules
+classifier_test.o: classifier_test.cpp filter.o helpers.o
+	$(CC) $(CFLAGS) classifier_test.cpp
+	
 main.o: main.cpp ./synthesizer/synthesizer.hpp ./logger/logger.hpp
 	$(CC) $(CFLAGS) main.cpp
 
@@ -89,4 +95,4 @@ clean:
 	\rm -f *.o *.plist *.gch *.log
 
 clean-dist: clean
-	\rm -f nf_synthesizer
+	\rm -f nf_synthesizer class_test
