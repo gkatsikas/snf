@@ -87,8 +87,8 @@ NF_6 = nf_repo/firewall_chain/ns6.click
 #TOPOLOGY = NF_1[eth1] -> [eth0]NF_2;NF_2[eth2] -> [eth0]NF_3;NF_3[eth2] -> [eth0]NF_4;
 
 ### TEST TOPOS:
-TOPOLOGY = NF_1[eth1] -> eth[0]NF_2; NF_2[eth1] -> eth[0]NF_3; NF_3[eth1] -> eth[0]NF_4; NF_4[eth1] -> eth[0]NF_5; NF_5[eth1] -> eth[0]NF_6;
-TOPOLOGY = NF_1[eth1] -> eth[0]NF_2; NF_2[eth1] -> eth[0]NF_3; NF_3[eth1] -> eth[0]NF_4; NF_4[eth1] -> eth[0]NF_5; NF_5[eth1] -> eth[0]NF_6; NF_6[eth1] -> eth[0]NF_7; NF_7[eth1] -> eth[0]NF_8;
+TOPOLOGY = NF_1[netmap:ns1veth1] -> [netmap:ns2veth0]NF_2; NF_2[netmap:ns2veth1] -> [netmap:ns3veth0]NF_3; NF_3[netmap:ns3veth1] -> [netmap:ns4veth0]NF_4; NF_4[netmap:ns4veth1] -> [netmap:ns5veth0]NF_5; NF_5[netmap:ns5veth1] -> [netmap:ns6veth0]NF_6;
+#TOPOLOGY = NF_1[netmap:ns1veth1] -> [netmap:ns2veth0]NF_2; NF_2[netmap:ns2veth1] -> [netmap:ns3veth0]NF_3; NF_3[netmap:ns3veth1] -> [netmap:ns4veth0]NF_4; NF_4[netmap:ns4veth1] -> [netmap:ns5veth0]NF_5; NF_5[netmap:ns5veth1] -> [netmap:ns6veth0]NF_6; NF_6[netmap:ns6veth1] -> [netmap:ns7veth0]NF_7; NF_7[netmap:ns7veth1] -> [netmap:ns8veth0]NF_8;
 
 ####### SECTION 3: In this section you specifiy the entry/end points of the chain.
 #######            In other words, how the chain is connected to the outside world.
