@@ -1,38 +1,38 @@
 define(
-		$iface0      netmap:ns6veth0,
-		$macAddr0    50:00:00:00:00:02,
-		$ipAddr0     15.0.0.2,
-		$ipNetHost0  15.0.0.0/32,
-		$ipBcast0    15.0.0.255/32,
-		$ipNet0      15.0.0.0/24,
+		$iface0      netmap:ns5veth0,
+		$macAddr0    40:00:00:00:00:02,
+		$ipAddr0     14.0.0.2,
+		$ipNetHost0  14.0.0.0/32,
+		$ipBcast0    14.0.0.255/32,
+		$ipNet0      14.0.0.0/24,
 		$color0      1,
 		
-		$iface1      netmap:ns6veth1,
-		$macAddr1    90:00:00:00:00:01,
-		$ipAddr1     200.0.0.1,
-		$ipNetHost1  200.0.0.0/32,
-		$ipBcast1    200.0.0.255/32,
-		$ipNet1      200.0.0.0/24,
+		$iface1      netmap:ns5veth1,
+		$macAddr1    50:00:00:00:00:01,
+		$ipAddr1     15.0.0.1,
+		$ipNetHost1  15.0.0.0/32,
+		$ipBcast1    15.0.0.255/32,
+		$ipNet1      15.0.0.0/24,
 		$color1      2,
 		
-		$gwIPAddr    200.0.0.2,
-		$gwMACAddr   90:00:00:00:01:00,
+		$gwIPAddr    15.0.0.2,
+		$gwMACAddr   50:00:00:00:00:02,
 		$gwPort      2,
 		
-		$queueSize   5000000,
+		$queueSize   2000000,
 		$mtuSize     9000,
-		$burst       8,
+		$burst       32,
 		$io_method   NETMAP,
 		
-		$position    6,
+		$position    5,
 		
-		$lbIPAddr0   200.0.0.2,
-		$lbIPAddr1   200.0.0.3
+		$lbIPAddr0   15.0.0.2,
+		$lbIPAddr1   15.0.0.3
 );
 
 /////////////////////////////////////////////////////////////////////////////
 // Elements
-elementclass Firewall {
+elementclass Router {
 	// Module's arguments
 	$iface0, $macAddr0,  $ipAddr0, $ipNetHost0, $ipBcast0, $ipNet0, $color0,
 	$iface1, $macAddr1,  $ipAddr1, $ipNetHost1, $ipBcast1, $ipNet1, $color1,
@@ -48,19 +48,11 @@ elementclass Firewall {
 	out0    :: ToDevice  ($iface0, BURST $burst, METHOD $io_method);
 	in1     :: FromDevice($iface1, BURST $burst, SNAPLEN $mtuSize, PROMISC true, METHOD $io_method, SNIFFER false);
 	out1    :: ToDevice  ($iface1, BURST $burst, METHOD $io_method);
-	
+
 	// EtherEncap because we always send to one gw
 	// Interface 0 has a fake destination since we never go back
 	etherEncap0 :: EtherEncap(0x0800, $macAddr0, 1:1:1:1:1:1);
 	etherEncap1 :: EtherEncap(0x0800, $macAddr1, $gwMACAddr);
-
-	// The module that turns this router into L3 firewall
-	filter :: IPFilter(
-		allow src net $ipNet1 && ip proto 17,
-		allow src net $ipNet0 && ip proto 17,
-		//allow dst 200.0.0.2,
-		drop all
-	);
 
 	// Strip Ethernet header
 	strip  :: Strip(14);
@@ -71,11 +63,11 @@ elementclass Firewall {
 	// Routing table
 	lookUp :: RadixIPLookup(
 		$ipAddr0     0,
-		//$ipBcast0    0,
-		//$ipNetHost0  0,
+		$ipBcast0    0,
+		$ipNetHost0  0,
 		$ipAddr1     0,
-		//$ipBcast1    0,
-		//$ipNetHost1  0,
+		$ipBcast1    0,
+		$ipNetHost1  0,
 		$ipNet0      1,
 		$ipNet1      2,
 		0.0.0.0/0 $gwPort
@@ -117,7 +109,6 @@ elementclass Firewall {
 	// Get IP address for routing
 	strip
 		-> markIPHeader
-		-> filter
 		-> GetIPAddress(16)
 		-> [0]lookUp;
 
@@ -132,7 +123,7 @@ elementclass Firewall {
 		-> fixIP0
 		-> decTTL0[0]
 		-> fragIP0[0]
-		//-> IPPrint(FW, TTL true)
+		//-> IPPrint(Router, TTL true)
 		-> [0]etherEncap0;
 
 	lookUp[2]
@@ -141,11 +132,8 @@ elementclass Firewall {
 		-> fixIP1
 		-> decTTL1[0]
 		-> fragIP1[0]
-		//-> IPPrint(FW, TTL true)
+		//-> IPPrint(Router, TTL true)
 		-> [0]etherEncap1;
-
-	// Discarded by firewall
-	filter[1] -> Discard;
 	/////////////////////////////////////////////////////////////////////
 
 	// Save useful counters
@@ -168,7 +156,7 @@ elementclass Firewall {
 /////////////////////////////////////////////////////////////////////////////
 // Scenario
 /////////////////////////////////////////////////////////////////////////////
-firewall :: Firewall(
+router :: Router(
 	$iface0, $macAddr0, $ipAddr0, $ipNetHost0, $ipBcast0, $ipNet0, $color0,
 	$iface1, $macAddr1, $ipAddr1, $ipNetHost1, $ipBcast1, $ipNet1, $color1,
 	$gwIPAddr, $gwMACAddr, $gwPort, $queueSize, $mtuSize, $burst, $io_method,
