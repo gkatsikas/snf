@@ -11,7 +11,7 @@
 #define ALLOWED_PORTS      5
 
 int main () {
-	int size = 128;
+	int size = 1;
 	
 	std::default_random_engine generator;
 	std::uniform_int_distribution<uint16_t> distribution(0,0xffff);
