@@ -1,33 +1,33 @@
 define(
-		$iface0      netmap:ns1veth0,
-		$macAddr0    10:00:00:00:00:01,
-		$ipAddr0     10.0.0.1,
-		$ipNetHost0  10.0.0.0/32,
-		$ipBcast0    10.0.0.255/32,
-		$ipNet0      10.0.0.0/24,
+		$iface0      netmap:ns6veth0,
+		$macAddr0    50:00:00:00:00:02,
+		$ipAddr0     15.0.0.2,
+		$ipNetHost0  15.0.0.0/32,
+		$ipBcast0    15.0.0.255/32,
+		$ipNet0      15.0.0.0/24,
 		$color0      1,
 		
-		$iface1      netmap:ns1veth1,
-		$macAddr1    10:00:00:00:00:01,
-		$ipAddr1     11.0.0.1,
-		$ipNetHost1  11.0.0.0/32,
-		$ipBcast1    11.0.0.255/32,
-		$ipNet1      11.0.0.0/24,
+		$iface1      netmap:ns6veth1,
+		$macAddr1    90:00:00:00:00:01,
+		$ipAddr1     200.0.0.1,
+		$ipNetHost1  200.0.0.0/32,
+		$ipBcast1    200.0.0.255/32,
+		$ipNet1      200.0.0.0/24,
 		$color1      2,
 		
-		$gwIPAddr    11.0.0.2,
-		$gwMACAddr   10:00:00:00:00:02,
+		$gwIPAddr    200.0.0.2,
+		$gwMACAddr   90:00:00:00:01:00,
 		$gwPort      2,
 		
-		$queueSize   5000000,
+		$queueSize   2000000,
 		$mtuSize     9000,
-		$burst       8,
+		$burst       32,
 		$io_method   NETMAP,
 		
-		$position    1,
+		$position    6,
 		
-		$lbIPAddr0   11.0.0.2,
-		$lbIPAddr1   11.0.0.3
+		$lbIPAddr0   200.0.0.2,
+		$lbIPAddr1   200.0.0.3
 );
 
 /////////////////////////////////////////////////////////////////////////////
@@ -65,11 +65,11 @@ elementclass NAPT {
 	// Routing table
 	lookUp :: RadixIPLookup(
 		$ipAddr0     0,
-		//$ipBcast0    0,
-		//$ipNetHost0  0,
+		$ipBcast0    0,
+		$ipNetHost0  0,
 		$ipAddr1     0,
-		//$ipBcast1    0,
-		//$ipNetHost1  0,
+		$ipBcast1    0,
+		$ipNetHost1  0,
 		$ipNet0      1,
 		$ipNet1      2,
 		0.0.0.0/0 $gwPort
@@ -107,8 +107,8 @@ elementclass NAPT {
 	// Interface's pipeline
 	/////////////////////////////////////////////////////////////////////
 	// Input --> Processing
-	in0 -> counter_rx0 -> Paint(ANNO 47, COLOR 255) -> strip0;
-	in1 -> counter_rx1 -> Paint(ANNO 47, COLOR 255) -> strip1;
+	in0 -> counter_rx0 -> Paint($color0) -> strip0;
+	in1 -> counter_rx1 -> Paint($color1) -> strip1;
 
 	// --> Way out
 	etherEncap0 -> counter_tx0 -> queue0 -> out0;
@@ -155,7 +155,7 @@ elementclass NAPT {
 
 	// Save useful counters
 	DriverManager(
-		wait,
+		pause,
 
 		print >> nf_rate.dat "In     Rate nf"$(position)": "$(counter_rx0.rate),
 		print >> nf_rate.dat "In  Counter nf"$(position)": "$(counter_rx0.count),
@@ -163,7 +163,7 @@ elementclass NAPT {
 		print >> nf_rate.dat "Out Counter nf"$(position)": "$(counter_tx1.count),
 		print >> nf_rate.dat "",
 
-		wait 0.5s,
+		wait 1s,
 		stop
 	);
 }

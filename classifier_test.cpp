@@ -1,7 +1,10 @@
-#include "filter.hpp"
 #include <cstdlib>
 #include <random>
+#include <fstream>
+#include <iostream>
+
 #include "helpers.hpp"
+#include "filter.hpp"
 
 #define MAX_NUMBER_CLASSES 256
 #define REMOVED_ADDRESSES  5
@@ -13,8 +16,12 @@ int main () {
 	std::default_random_engine generator;
 	std::uniform_int_distribution<uint16_t> distribution(0,0xffff);
 	
+	std::ofstream myfile;
+	
 	while (size < MAX_NUMBER_CLASSES) {
-		std::cout<<"\n\n#######################################################################################\n\n\t";
+		myfile.open("nf_repo/class/class_test_"+std::to_string(size)+".click", std::ios::out);
+		
+		myfile<<"ipclassifier :: IPClassifier(\n";
 		for(int i=0; i<size; i++) {
 			TrafficClass tc;
 			uint32_t base_address = aton(std::to_string(size)+".0.0.0");
@@ -39,10 +46,23 @@ int main () {
 
 			tc.intersect_filter(f);
 		
-			std::cout<<tc.to_ip_classifier_pattern();
-			std::cout<<",\n";
+			myfile<<"\t"<<tc.to_ip_classifier_pattern();
+			myfile<<",\n";
+		}
+		myfile<<");\n\n";
+
+		myfile<<"// Performance Testers\n";
+		myfile<<"setIPClas :: SetCycleCount;\n";
+		for(int i=0; i<size; i++) {
+			myfile<<"getIPClas"<<i<<" :: CycleCountAccum;\n";
+		}
+		myfile<<"\nstrip -> markIPHeader -> setIPClas -> [0]ipclassifier;\n\n";
+
+		for(int i=0; i<size; i++) {
+			myfile<<"ipclassifier["<<i<<"] -> getIPClas"<<i<<" -> Discard ();\n";
 		}
 		
+		myfile.close();
 		size *= 2;
 	}
 
