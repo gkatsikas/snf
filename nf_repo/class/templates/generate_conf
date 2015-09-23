@@ -2,6 +2,7 @@
 
 for file in *.click
 do
+rm -f ../$file
 touch ../$file
 cat head >> ../$file
 cat $file >> ../$file
