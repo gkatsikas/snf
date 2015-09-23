@@ -52,15 +52,15 @@
 #NF_4 = nf_repo/compound/router_2if.click
 
 ###TEST TOPO
-#NF_1 = nf_repo/firewall_chain/ns1.click
-#NF_2 = nf_repo/firewall_chain/ns2.click
-#NF_3 = nf_repo/firewall_chain/ns3.click
-#NF_4 = nf_repo/firewall_chain/ns4.click
-#NF_5 = nf_repo/firewall_chain/ns5.click
-#NF_6 = nf_repo/firewall_chain/ns6.click
+NF_1 = nf_repo/firewall_chain/FW_6/ns1.click
+NF_2 = nf_repo/firewall_chain/FW_6/ns2.click
+NF_3 = nf_repo/firewall_chain/FW_6/ns3.click
+NF_4 = nf_repo/firewall_chain/FW_6/ns4.click
+NF_5 = nf_repo/firewall_chain/FW_6/ns5.click
+NF_6 = nf_repo/firewall_chain/FW_6/ns6.click
 
-NF_1 = nf_repo/napt_chain/2_NATS/ns1.click
-NF_2 = nf_repo/napt_chain/2_NATS/ns2.click
+#NF_1 = nf_repo/napt_chain/2_NATS/ns1.click
+#NF_2 = nf_repo/napt_chain/2_NATS/ns2.click
 #NF_3 = nf_repo/napt_chain/3_NATS/ns3.click
 #NF_4 = nf_repo/napt_chain/4_NATS/ns4.click
 #NF_5 = nf_repo/napt_chain/5_NATS/ns5.click
@@ -87,8 +87,8 @@ NF_2 = nf_repo/napt_chain/2_NATS/ns2.click
 #TOPOLOGY = NF_1[eth1] -> [eth0]NF_2;NF_2[eth2] -> [eth0]NF_3;NF_3[eth2] -> [eth0]NF_4;
 
 ### TEST TOPOS:
-#TOPOLOGY = NF_1[netmap:ns1veth1] -> [netmap:ns2veth0]NF_2; NF_2[netmap:ns2veth1] -> [netmap:ns3veth0]NF_3; NF_3[netmap:ns3veth1] -> [netmap:ns4veth0]NF_4; NF_4[netmap:ns4veth1] -> [netmap:ns5veth0]NF_5; NF_5[netmap:ns5veth1] -> [netmap:ns6veth0]NF_6;
-TOPOLOGY = NF_1[netmap:ns1veth1] -> [netmap:ns2veth0]NF_2;
+TOPOLOGY = NF_1[netmap:ns1veth1] -> [netmap:ns2veth0]NF_2; NF_2[netmap:ns2veth1] -> [netmap:ns3veth0]NF_3; NF_3[netmap:ns3veth1] -> [netmap:ns4veth0]NF_4; NF_4[netmap:ns4veth1] -> [netmap:ns5veth0]NF_5; NF_5[netmap:ns5veth1] -> [netmap:ns6veth0]NF_6;
+#TOPOLOGY = NF_1[netmap:ns1veth1] -> [netmap:ns2veth0]NF_2;
 #NF_2[netmap:ns2veth1] -> [netmap:ns3veth0]NF_3;
 #NF_3[netmap:ns3veth1] -> [netmap:ns4veth0]NF_4;
 #NF_4[netmap:ns4veth1] -> [netmap:ns5veth0]NF_5;

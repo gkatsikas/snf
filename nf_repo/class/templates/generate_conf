@@ -1,0 +1,9 @@
+#!/bin/bash
+
+for file in *.click
+do
+touch ../$file
+cat head >> ../$file
+cat $file >> ../$file
+cat tail >> ../$file
+done
