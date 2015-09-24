@@ -15,29 +15,29 @@ unsigned short SynthesizedNat::add_traffic_class (TrafficClass& tc, const std::s
 	unsigned short idx = m_inputPortToIface.size();
 	m_inputPortToIface.push_back(src_iface);
 	m_confString.push_back(confLine);
-	
+
 	return idx;
 }
 
 std::string SynthesizedNat::compute_conf () {
-	
+
 	std::string output;
-	
+
 	for(auto &it : m_inputPortToIface) {
 		if (m_ifaceToOutputPort.find (it) == m_ifaceToOutputPort.end()) {
 			m_outputPortToIface.push_back(it);
 			m_ifaceToOutputPort.emplace(it, m_outputPortToIface.size()-1);
 		}
 	}
-	
+
 	m_outboundPort = m_outputPortToIface.size();
 	for (size_t i=0; i<m_confString.size(); i++) {
-		
+
 		if(m_confString[i][0] == 'R') { //if RRIPMapper then include ports in the RR conf
 			std::string conf_str = m_confString[i];
-			std::string ports = " " + std::to_string(m_outboundPort) + " " 
+			std::string ports = " " + std::to_string(m_outboundPort) + " "
 					+ std::to_string(m_ifaceToOutputPort[m_inputPortToIface[i]]);
-					
+
 			size_t pos = conf_str.rfind(')');
 			while (pos != std::string::npos) {
 				conf_str.insert(pos,ports);
@@ -46,11 +46,11 @@ std::string SynthesizedNat::compute_conf () {
 			output += conf_str + ", ";
 		}
 		else {
-			output += m_confString[i] + std::to_string(m_outboundPort) + " " 
+			output += m_confString[i] + std::to_string(m_outboundPort) + " "
 				+ std::to_string(m_ifaceToOutputPort[m_inputPortToIface[i]]) +", ";
 		}
 	}
-	
+
 	return (output.substr(0, output.size()));
 }
 
@@ -65,7 +65,7 @@ unsigned short SynthesizedNat::get_outboundPort () {
 std::string SynthesizedNat::conf_line_from_operation (Operation& op) {
 
 	std::string ipsrc, tpsrc, tpdst;
-	
+
 	FieldOperation* field_op = op.get_field_op(ip_src);
 	if(field_op) {
 		if(field_op->m_type == Write) {
@@ -78,8 +78,7 @@ std::string SynthesizedNat::conf_line_from_operation (Operation& op) {
 	else{
 		ipsrc= "-";
 	}
-	
-	
+
 	field_op = op.get_field_op(tp_srcPort);
 	if(field_op) {
 		switch (field_op->m_type) {
@@ -102,7 +101,7 @@ std::string SynthesizedNat::conf_line_from_operation (Operation& op) {
 	else{
 		tpsrc = "-";
 	}
-	
+
 	field_op = op.get_field_op(tp_dstPort);
 	if(field_op) {
 		if(field_op->m_type == Write) {
@@ -115,7 +114,7 @@ std::string SynthesizedNat::conf_line_from_operation (Operation& op) {
 	else{
 		tpdst = "-";
 	}
-	
+
 	field_op = op.get_field_op(ip_dst);
 	if(field_op) {
 		//TODO: add support for load balancing

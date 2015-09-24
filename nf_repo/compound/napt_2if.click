@@ -100,8 +100,7 @@ elementclass NAPT {
 	// Implements PNAT
 	ipRewriter :: IPRewriter( 
 		pattern $ipAddr1 1024-65535 - - 0 0,   /* Packets from Intranet change src IP and port */
-		pattern - - $ipAddr0 - 0 0,            /* Packets from Internet change dst IP and port */
-		DEC_IP_TTL false, CALC_CHECKSUM true
+		pattern - - $ipAddr0 - 0 0             /* Packets from Internet change dst IP and port */
 	);
 
 	// Process the IP options field (mandatory based on RFC 791)
@@ -137,8 +136,8 @@ elementclass NAPT {
 	classifier1[1] -> [1]arpQuerier1 -> queue1 -> out1;
 
 	// --> IP packets
-	classifier0[2] -> Paint(ANNO 47, COLOR $color0) -> strip0;
-	classifier1[2] -> Paint(ANNO 47, COLOR $color1) -> strip1;
+	classifier0[2] -> Paint($color0) -> strip0;
+	classifier1[2] -> Paint($color1) -> strip1;
 
 	// --> Drop the rest
 	classifier0[3] -> Discard;

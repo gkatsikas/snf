@@ -68,7 +68,7 @@ short Synthesizer::build_traffic_classes(void) {
 			std::cout<<"####################################################";
 			std::cout<<"####################################################"<< std::endl;
 			for (auto &it : ct.get_trafficClasses()) {
-				if (!it.is_discarded ())/**/ { 
+				if (!it.is_discarded ())/**/ {
 					tc_per_input_iface[key].push_back(it);
 				}/**/
 			}
@@ -82,7 +82,7 @@ short Synthesizer::build_traffic_classes(void) {
 }
 
 short Synthesizer::synthesize_nat(void) {
-	for (auto &it : tc_per_input_iface) {		
+	for (auto &it : tc_per_input_iface) {
 		for(auto &tc : it.second) {
 					std::string out_iface = tc.get_outputIface();
 			if (nat_per_output_iface.find(out_iface) == nat_per_output_iface.end()) {
@@ -92,7 +92,7 @@ short Synthesizer::synthesize_nat(void) {
 					nat_per_output_iface[out_iface]->add_traffic_class(tc,it.first));
 		}
 	}
-	
+
 	return SUCCESS;
 }
 
@@ -110,10 +110,10 @@ short Synthesizer::generate_equivalent_configuration(void) {
 		for(unsigned short i=0; i<nat->get_outboundPort(); i++) {
 			std::cout<<nat->get_name()<<"["<<i<<"] -> Discard ();\n";
 		}
-		
+
 		std::cout<<"\n";
 	}
-	
+
 	int i=0;
 	for (auto &it : tc_per_input_iface) {
 		std::string ipc_name = "ipc"+std::to_string(i++);
@@ -130,7 +130,7 @@ short Synthesizer::generate_equivalent_configuration(void) {
 		std::cout <<"FromDevice ("<<it.first<<") -> Strip(14) -> MarkIPHeader() -> "+ipc_name+";\n";
 		i++;
 	}
-	
+
 	return SUCCESS;
 }
 
@@ -140,7 +140,7 @@ short Synthesizer::generate_equivalent_configuration(void) {
  * this is a recursive graph composition function.
  */
 void TrafficBuilder::traffic_class_builder_dfs(Graph* graph, NF_Map<NFGraph*> nf_chain, unsigned short nf_position,
-												std::shared_ptr<ClickElement> elem, std::string nf_iface) {
+						std::shared_ptr<ClickElement> elem, std::string nf_iface) {
 
 	Logger log(__FILE__);
 	ElementVertex* nf_vertex = elem->get_ev();
@@ -211,7 +211,7 @@ void TrafficBuilder::traffic_class_builder_dfs(Graph* graph, NF_Map<NFGraph*> nf
 	for ( auto& neighbour : adjacency_list.at(nf_vertex) ) {
 
 		// A way to get an IPMapper's patterns when you encounter IPRewriter
-		ElementVertex* ev = (ElementVertex*) neighbour.second;
+		/*ElementVertex* ev = (ElementVertex*) neighbour.second;
 		if ( ev->get_name() == std::string("IPRewriter") ) {
 			log << warn << "\t\tFound: " << ev->get_name() << def << std::endl;
 			log << warn << "\t\t\t with conf: " << ev->get_configuration() << def << std::endl;
@@ -221,7 +221,7 @@ void TrafficBuilder::traffic_class_builder_dfs(Graph* graph, NF_Map<NFGraph*> nf
 					log << warn << "\t\t\t    " << pattern << def << std::endl;
 				}
 			}
-		}
+		}*/
 
 		std::shared_ptr<ClickElement> child(new ClickElement((ElementVertex*) neighbour.second, neighbour.first));
 		child->set_nfName(((ChainVertex*) graph->get_vertex_by_position(nf_position))->get_name() );

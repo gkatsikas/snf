@@ -5,53 +5,7 @@
 #######
 [NF_MODULES]
 
-### TOPO 1
-#
-#  PZ --- |NAT| --- |FW| --- Internet
-#                     |
-#                     |
-#                    DMZ
-#
-#NF_1 = nf_repo/compound/napt_2if.click
-#NF_2 = nf_repo/compound/firewall_3if.click
-
-
-### TOPO 2
-#
-#  PZ --- |NAT| --- |NAT| --- Internet
-#            \       /
-#             \     /
-#               DMZ
-#
-#NF_1 = nf_repo/compound/napt_3if.click
-#NF_2 = nf_repo/compound/napt_3if.click
-
-
-### TOPO 3
-#
-#                                        Server 1
-#                                       /
-#  Client --- |NAT| --- |FW| --- |LB| -- 
-#                                       \
-#                                        Server 2
-#
-#NF_1 = nf_repo/compound/napt_2if.click
-#NF_2 = nf_repo/compound/firewall_2if.click
-#NF_3 = nf_repo/compound/load_balancer_2if.click
-
-### TOPO 4
-#
-#  Domain 1 --- |R| --- |R| --- |R| --- |R| --- Domain 3
-#                         \      /
-#                          \    /
-#                         Domain 2
-#
-#NF_1 = nf_repo/compound/router_2if.click
-#NF_2 = nf_repo/compound/router_3if.click
-#NF_3 = nf_repo/compound/router_3if.click
-#NF_4 = nf_repo/compound/router_2if.click
-
-###TEST TOPO
+# Firewall topos for early discard - Paper
 #NF_1 = nf_repo/firewall_chain/FW_6/ns1.click
 #NF_2 = nf_repo/firewall_chain/FW_6/ns2.click
 #NF_3 = nf_repo/firewall_chain/FW_6/ns3.click
@@ -59,6 +13,7 @@
 #NF_5 = nf_repo/firewall_chain/FW_6/ns5.click
 #NF_6 = nf_repo/firewall_chain/FW_6/ns6.click
 
+# NAPT topos  - Paper
 #NF_1 = nf_repo/napt_chain/3_NATS/ns1.click
 #NF_2 = nf_repo/napt_chain/3_NATS/ns2.click
 #NF_3 = nf_repo/napt_chain/3_NATS/ns3.click
@@ -68,7 +23,7 @@
 #NF_7 = nf_repo/napt_chain/7_NATS/ns7.click
 #NF_8 = nf_repo/napt_chain/NATS_8/ns8.click
 
-### Motivating examples
+# Motivating example - Paper
 NF_1 = nf_repo/motivating_example/ns1.click
 NF_2 = nf_repo/motivating_example/ns2.click
 NF_3 = nf_repo/motivating_example/ns3.click
@@ -79,21 +34,11 @@ NF_3 = nf_repo/motivating_example/ns3.click
 #######
 [NF_TOPO]
 
-### TOPO 1
-#TOPOLOGY = NF_1[eth1] -> [eth0]NF_2;
-
-### TOPO 2
-#TOPOLOGY = NF_1[eth2] -> [eth0]NF_2;
-
-### TOPO 3
-#TOPOLOGY = NF_1[eth1] -> [eth0]NF_2;NF_2[eth1] -> [eth0]NF_3;
-
-### TOPO 4
-#TOPOLOGY = NF_1[eth1] -> [eth0]NF_2;NF_2[eth2] -> [eth0]NF_3;NF_3[eth2] -> [eth0]NF_4;
-
-### TEST TOPOS:
+# 6 NFs - Linear
 #TOPOLOGY = NF_1[netmap:ns1veth1] -> [netmap:ns2veth0]NF_2; NF_2[netmap:ns2veth1] -> [netmap:ns3veth0]NF_3; NF_3[netmap:ns3veth1] -> [netmap:ns4veth0]NF_4; NF_4[netmap:ns4veth1] -> [netmap:ns5veth0]NF_5; NF_5[netmap:ns5veth1] -> [netmap:ns6veth0]NF_6;
+# 3 NFs - Linear
 TOPOLOGY = NF_1[netmap:ns1veth1] -> [netmap:ns2veth0]NF_2; NF_2[netmap:ns2veth1] -> [netmap:ns3veth0]NF_3;
+
 #NF_3[netmap:ns3veth1] -> [netmap:ns4veth0]NF_4;
 #NF_4[netmap:ns4veth1] -> [netmap:ns5veth0]NF_5;
 #NF_5[netmap:ns5veth1] -> [netmap:ns6veth0]NF_6;
@@ -106,18 +51,7 @@ TOPOLOGY = NF_1[netmap:ns1veth1] -> [netmap:ns2veth0]NF_2; NF_2[netmap:ns2veth1]
 #######            point. See the examples below.
 #######
 [ENTRY_POINTS]
-### TOPO 1
-#DOMAINS  = [eth0]NF_1
 
-### TOPO 2
-#DOMAINS  = [eth0]NF_1, [eth1]NF_1, [eth1]NF_2
-
-### TOPO 3
-#DOMAINS  = [eth0]NF_1
-
-### TOPO 4
-#DOMAINS  = [eth0]NF_1, [eth1]NF_2, [eth1]NF_3
-
-### TEST TOPOS
+# Entry for any Linear Topo
 DOMAINS = [netmap:ns1veth0]NF_1;
 ###################################################################################################
