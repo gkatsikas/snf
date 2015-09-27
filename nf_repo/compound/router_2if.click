@@ -132,8 +132,8 @@ elementclass Router {
 	classifier1[2] -> Paint($color1) -> strip;
 
 	// --> Drop the rest
-	classifier0[3] -> Print(Dropped-If0) -> Discard;
-	classifier1[3] -> Print(Dropped-If1) -> Discard;
+	classifier0[3] -> Discard;
+	classifier1[3] -> Discard;
 
 	// Get IP address for routing
 	strip

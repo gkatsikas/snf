@@ -7,6 +7,7 @@
 
 #### Normal execution
 ./nf_synthesizer -p configuration/property_file
+#./nf_synthesizer -p configuration/test_property_file
 
 ### Execution through GDB (Press r (run) and then q (quit))
 #gdb --args nf_synthesizer -p configuration/property_file

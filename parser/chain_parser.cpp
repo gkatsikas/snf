@@ -154,9 +154,9 @@ short ChainParser::build_nf_dag(std::string nf_name, unsigned short position) {
 
 	for ( int i=0 ; i < router->nelements() ; i++ ) {
 		Element* e = Router::element(router, i);
-		
+
 		//log << "Element " << e->class_name() << " " << e->eindex() << ": " << e->configuration().c_str() << std::endl;
-		
+
 		// This is an exceptional element! It has no inputs and outputs but serves as input to IPRewriter
 		// We need to hand its configuration over the corresponding IPRewriter.
 		if( SUPPORTED_MAPPER_ELEMENTS.find(e->class_name()) != SUPPORTED_MAPPER_ELEMENTS.end() ){
@@ -166,10 +166,10 @@ short ChainParser::build_nf_dag(std::string nf_name, unsigned short position) {
 			short implicit_port = -1;
 			std::vector<std::string> implicit_conf;
 
-			// Find the IPRewriter that uses this IP Mapper, parse the Mapper's configuration and 
+			// Find the IPRewriter that uses this IP Mapper, parse the Mapper's configuration and
 			// return it along with the position of the IPRewriter.
 			int receiver_pos = this->associate_ip_mapper_to_rewriter(router, lb_variable, lb_patterns, implicit_conf, implicit_port);
-			
+
 			// Now the Mapper's configuration is available in the map where the IPRewriter's position is the key.
 			if ( receiver_pos >= 0 ) {
 				implicit_conf_mappings[receiver_pos] = implicit_conf;
@@ -182,7 +182,7 @@ short ChainParser::build_nf_dag(std::string nf_name, unsigned short position) {
 				return CLICK_PARSING_PROBLEM;
 			}
 
-			// IPMapper elements do not have any ports so there is no point to proceed! 
+			// IPMapper elements do not have any ports so there is no point to proceed!
 			continue;
 		}
 
@@ -214,7 +214,7 @@ short ChainParser::build_nf_dag(std::string nf_name, unsigned short position) {
 	}
 
 	// The generated DAG should not contain more vertices than the original one.
-	// It can contain less though because we may have AddressInfo elements that are used only 
+	// It can contain less though because we may have AddressInfo elements that are used only
 	// as configuration elements.
 	if ( nf_graph->get_vertices_no() > total_elements ) {
 		delete nf_graph;
@@ -241,13 +241,13 @@ short ChainParser::build_nf_dag(std::string nf_name, unsigned short position) {
  * Assign IPMapper element to the appropriate IPRewriter.
  * IPMapper elements are exceptional. They have no inputs and outputs but serve as inputs to IPRewriters.
  */
-int ChainParser::associate_ip_mapper_to_rewriter(Router* router, const std::string mapper_variable, const std::string mapper_conf, 
-													std::vector<std::string>& implicit_conf, short& implicit_port) {
+int ChainParser::associate_ip_mapper_to_rewriter(Router* router, const std::string mapper_variable, const std::string mapper_conf,
+						std::vector<std::string>& implicit_conf, short& implicit_port) {
 
 	std::size_t pos = mapper_variable.find_last_of("/");
 	std::string short_variable = mapper_variable.substr(pos+1);
 
-	// We want to return the posiiton of the element that uses this IPMapper, 
+	// We want to return the posiiton of the element that uses this IPMapper,
 	// along with a vector with the patterns of this IPMapper (see last argument of this function)
 	int position = -1;
 
@@ -414,7 +414,9 @@ short ChainParser::verify_and_connect_nfs(std::string nf_name, unsigned short po
 	unsigned short all_ifaces_no = this_nf->get_interfaces_no();
 
 	// This means that here is an error in the definition of the chain in the property file.
-	if ( seen_entry_ifaces+seen_chain_ifaces != all_ifaces_no ) {
+	// TO FIX !=
+	if ( seen_entry_ifaces + seen_chain_ifaces > all_ifaces_no ) {
+		log << error << "11111111111111" << def << std::endl;
 		log << error << "Click configuration for NF " << position << " is incompatible with the chain setup in the property file." << def << std::endl;
 		log << error << "Please check the interfaces." << def << std::endl;
 		return CLICK_PARSING_PROBLEM;
@@ -422,13 +424,16 @@ short ChainParser::verify_and_connect_nfs(std::string nf_name, unsigned short po
 
 	// I must be able to see all the entry interfaces of the property file in my Click configuration.
 	if ( seen_entry_ifaces != this_nf->get_entry_interfaces_no() ) {
+		log << error << "2222222222222" << def << std::endl;
 		log << error << "Click configuration for NF " << position << " is incompatible with the chain setup in the property file." << def << std::endl;
 		log << error << "Please check the entry interfaces -> [ENTRY_POINTS] in the property file." << def << std::endl;
 		return CLICK_PARSING_PROBLEM;
 	}
 
 	// If I see fewer chain interfaces than exist in the property file, there is a problem
-	if ( seen_chain_ifaces != this_nf->get_chain_interfaces_no() ) {
+	// TO FIX !=
+	if ( seen_chain_ifaces > this_nf->get_chain_interfaces_no() ) {
+		log << error << "333333333333" << def << std::endl;
 		log << error << "Click configuration for NF " << position << " is incompatible with the chain setup in the property file." << def << std::endl;
 		log << error << "Please check the chain interfaces -> [NF_TOPO] in the property file." << def << std::endl;
 		return CLICK_PARSING_PROBLEM;
