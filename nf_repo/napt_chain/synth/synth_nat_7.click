@@ -1,39 +1,39 @@
-/** NAT going to: NF_1,netmap:ns1veth0, BURST 32, METHOD NETMAP **/
+/** NAT going to: NF_1,netmap:nf1veth0, BURST 32, METHOD NETMAP **/
 iprw7::IPRewriter(pattern 11.0.0.1 1024-65535 - - 1 0, DEC_IP_TTL false, CALC_CHECKSUM true);
 iprw7[1] -> EtherEncap(0x0800, $macAddr0, $gwMACAddr0) -> Queue ($queueSize) -> ToDevice ($iface0, BURST 32, METHOD NETMAP);
 iprw7[0] -> Discard ();
 
-/** NAT going to: NF_2,netmap:ns2veth0, BURST 32, METHOD NETMAP **/
+/** NAT going to: NF_2,netmap:nf2veth0, BURST 32, METHOD NETMAP **/
 iprw6::IPRewriter(pattern 12.0.0.1 1024-65535 - - 1 0, DEC_IP_TTL false, CALC_CHECKSUM true);
 iprw6[1] -> Discard ();
 iprw6[0] -> Discard ();
 
-/** NAT going to: NF_4,netmap:ns4veth0, BURST 32, METHOD NETMAP **/
+/** NAT going to: NF_4,netmap:nf4veth0, BURST 32, METHOD NETMAP **/
 iprw4::IPRewriter(pattern 14.0.0.1 1024-65535 - - 1 0, DEC_IP_TTL false, CALC_CHECKSUM true);
 iprw4[1] -> Discard ();
 iprw4[0] -> Discard ();
 
-/** NAT going to: NF_5,netmap:ns5veth0, BURST 32, METHOD NETMAP **/
+/** NAT going to: NF_5,netmap:nf5veth0, BURST 32, METHOD NETMAP **/
 iprw3::IPRewriter(pattern 15.0.0.1 1024-65535 - - 1 0, DEC_IP_TTL false, CALC_CHECKSUM true);
 iprw3[1] -> Discard ();
 iprw3[0] -> Discard ();
 
-/** NAT going to: NF_3,netmap:ns3veth0, BURST 32, METHOD NETMAP **/
+/** NAT going to: NF_3,netmap:nf3veth0, BURST 32, METHOD NETMAP **/
 iprw5::IPRewriter(pattern 13.0.0.1 1024-65535 - - 1 0, DEC_IP_TTL false, CALC_CHECKSUM true);
 iprw5[1] -> Discard ();
 iprw5[0] -> Discard ();
 
-/** NAT going to: NF_6,netmap:ns6veth0, BURST 32, METHOD NETMAP **/
+/** NAT going to: NF_6,netmap:nf6veth0, BURST 32, METHOD NETMAP **/
 iprw2::IPRewriter(pattern 16.0.0.1 1024-65535 - - 1 0, DEC_IP_TTL false, CALC_CHECKSUM true);
 iprw2[1] -> Discard ();
 iprw2[0] -> Discard ();
 
-/** NAT going to: NF_7,netmap:ns7veth0, BURST 32, METHOD NETMAP **/
+/** NAT going to: NF_7,netmap:nf7veth0, BURST 32, METHOD NETMAP **/
 iprw1::IPRewriter(pattern 200.0.0.1 1024-65535 - - 1 0, DEC_IP_TTL false, CALC_CHECKSUM true);
 iprw1[1] -> Discard ();
 iprw1[0] -> Discard ();
 
-/** NAT going to: NF_7,netmap:ns7veth1, BURST 32, METHOD NETMAP **/
+/** NAT going to: NF_7,netmap:nf7veth1, BURST 32, METHOD NETMAP **/
 iprw0::IPRewriter(pattern 200.0.0.1 1024-65535 - - 1 0, pattern 200.0.0.1 1024-65535 - - 1 0, DEC_IP_TTL false, CALC_CHECKSUM true);
 iprw0[1] -> EtherEncap(0x0800, $macAddr1, $gwMACAddr1) -> Queue ($queueSize) -> ToDevice ($iface1, BURST 32, METHOD NETMAP);
 iprw0[0] -> Discard ();

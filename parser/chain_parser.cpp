@@ -416,7 +416,7 @@ short ChainParser::verify_and_connect_nfs(std::string nf_name, unsigned short po
 	// This means that here is an error in the definition of the chain in the property file.
 	// TO FIX !=
 	if ( seen_entry_ifaces + seen_chain_ifaces > all_ifaces_no ) {
-		log << error << "11111111111111" << def << std::endl;
+		log << error << "Number of parsed entry+chain interfaces is greater than the respective number specified in the property file" << def << std::endl;
 		log << error << "Click configuration for NF " << position << " is incompatible with the chain setup in the property file." << def << std::endl;
 		log << error << "Please check the interfaces." << def << std::endl;
 		return CLICK_PARSING_PROBLEM;
@@ -424,7 +424,7 @@ short ChainParser::verify_and_connect_nfs(std::string nf_name, unsigned short po
 
 	// I must be able to see all the entry interfaces of the property file in my Click configuration.
 	if ( seen_entry_ifaces != this_nf->get_entry_interfaces_no() ) {
-		log << error << "2222222222222" << def << std::endl;
+		log << error << "Number of parsed entry interfaces is different than the respective number specified in the property file" << def << std::endl;
 		log << error << "Click configuration for NF " << position << " is incompatible with the chain setup in the property file." << def << std::endl;
 		log << error << "Please check the entry interfaces -> [ENTRY_POINTS] in the property file." << def << std::endl;
 		return CLICK_PARSING_PROBLEM;
@@ -433,7 +433,7 @@ short ChainParser::verify_and_connect_nfs(std::string nf_name, unsigned short po
 	// If I see fewer chain interfaces than exist in the property file, there is a problem
 	// TO FIX !=
 	if ( seen_chain_ifaces > this_nf->get_chain_interfaces_no() ) {
-		log << error << "333333333333" << def << std::endl;
+		log << error << "Number of parsed chain interfaces is greater than the number of chain interfaces declated in the property file" << def << std::endl;
 		log << error << "Click configuration for NF " << position << " is incompatible with the chain setup in the property file." << def << std::endl;
 		log << error << "Please check the chain interfaces -> [NF_TOPO] in the property file." << def << std::endl;
 		return CLICK_PARSING_PROBLEM;

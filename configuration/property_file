@@ -6,22 +6,22 @@
 [NF_MODULES]
 
 # Firewall topos for early discard - Paper
-#NF_1 = nf_repo/firewall_chain/FW_6/ns1.click
-#NF_2 = nf_repo/firewall_chain/FW_6/ns2.click
-#NF_3 = nf_repo/firewall_chain/FW_6/ns3.click
-#NF_4 = nf_repo/firewall_chain/FW_6/ns4.click
-#NF_5 = nf_repo/firewall_chain/FW_6/ns5.click
-#NF_6 = nf_repo/firewall_chain/FW_6/ns6.click
+#NF_1 = nf_repo/firewall_chain/FW_6/nf1.click
+#NF_2 = nf_repo/firewall_chain/FW_6/nf2.click
+#NF_3 = nf_repo/firewall_chain/FW_6/nf3.click
+#NF_4 = nf_repo/firewall_chain/FW_6/nf4.click
+#NF_5 = nf_repo/firewall_chain/FW_6/nf5.click
+#NF_6 = nf_repo/firewall_chain/FW_6/nf6.click
 
 # NAPT topos  - Paper
-#NF_1 = nf_repo/napt_chain/3_NATS/ns1.click
-#NF_2 = nf_repo/napt_chain/3_NATS/ns2.click
-#NF_3 = nf_repo/napt_chain/3_NATS/ns3.click
-#NF_4 = nf_repo/napt_chain/4_NATS/ns4.click
-#NF_5 = nf_repo/napt_chain/5_NATS/ns5.click
-#NF_6 = nf_repo/napt_chain/6_NATS/ns6.click
-#NF_7 = nf_repo/napt_chain/7_NATS/ns7.click
-#NF_8 = nf_repo/napt_chain/NATS_8/ns8.click
+#NF_1 = nf_repo/napt_chain/3_NATS/nf1.click
+#NF_2 = nf_repo/napt_chain/3_NATS/nf2.click
+#NF_3 = nf_repo/napt_chain/3_NATS/nf3.click
+#NF_4 = nf_repo/napt_chain/4_NATS/nf4.click
+#NF_5 = nf_repo/napt_chain/5_NATS/nf5.click
+#NF_6 = nf_repo/napt_chain/6_NATS/nf6.click
+#NF_7 = nf_repo/napt_chain/7_NATS/nf7.click
+#NF_8 = nf_repo/napt_chain/NATS_8/nf8.click
 
 # Motivating example - Paper
 NF_1 = nf_repo/motivating_example/nf1.click
@@ -35,15 +35,15 @@ NF_3 = nf_repo/motivating_example/nf3.click
 [NF_TOPO]
 
 # 6 NFs - Linear
-#TOPOLOGY = NF_1[netmap:ns1veth1] -> [netmap:ns2veth0]NF_2; NF_2[netmap:ns2veth1] -> [netmap:ns3veth0]NF_3; NF_3[netmap:ns3veth1] -> [netmap:ns4veth0]NF_4; NF_4[netmap:ns4veth1] -> [netmap:ns5veth0]NF_5; NF_5[netmap:ns5veth1] -> [netmap:ns6veth0]NF_6;
+#TOPOLOGY = NF_1[netmap:nf1veth1] -> [netmap:nf2veth0]NF_2; NF_2[netmap:nf2veth1] -> [netmap:nf3veth0]NF_3; NF_3[netmap:nf3veth1] -> [netmap:nf4veth0]NF_4; NF_4[netmap:nf4veth1] -> [netmap:nf5veth0]NF_5; NF_5[netmap:nf5veth1] -> [netmap:nf6veth0]NF_6;
 # 3 NFs - Linear
-TOPOLOGY = NF_1[netmap:ns1veth1] -> [netmap:ns2veth0]NF_2; NF_2[netmap:ns2veth1] -> [netmap:ns3veth0]NF_3;
+TOPOLOGY = NF_1[netmap:nf1veth1] -> [netmap:nf2veth0]NF_2; NF_2[netmap:nf2veth1] -> [netmap:nf3veth0]NF_3;
 
-#NF_3[netmap:ns3veth1] -> [netmap:ns4veth0]NF_4;
-#NF_4[netmap:ns4veth1] -> [netmap:ns5veth0]NF_5;
-#NF_5[netmap:ns5veth1] -> [netmap:ns6veth0]NF_6;
-#NF_6[netmap:ns6veth1] -> [netmap:ns7veth0]NF_7;
-#NF_7[netmap:ns7veth1] -> [netmap:ns8veth0]NF_8;
+#NF_3[netmap:nf3veth1] -> [netmap:nf4veth0]NF_4;
+#NF_4[netmap:nf4veth1] -> [netmap:nf5veth0]NF_5;
+#NF_5[netmap:nf5veth1] -> [netmap:nf6veth0]NF_6;
+#NF_6[netmap:nf6veth1] -> [netmap:nf7veth0]NF_7;
+#NF_7[netmap:nf7veth1] -> [netmap:nf8veth0]NF_8;
 
 ####### SECTION 3: In this section you specifiy the entry/end points of the chain.
 #######            In other words, how the chain is connected to the outside world.
@@ -53,5 +53,5 @@ TOPOLOGY = NF_1[netmap:ns1veth1] -> [netmap:ns2veth0]NF_2; NF_2[netmap:ns2veth1]
 [ENTRY_POINTS]
 
 # Entry for any Linear Topo
-DOMAINS = [netmap:ns1veth0]NF_1;
+DOMAINS = [netmap:nf1veth0]NF_1;
 ###################################################################################################
