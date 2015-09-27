@@ -1,22 +1,22 @@
 define(
-		$iface0      netmap:ns1veth0,
-		$macAddr0    10:00:00:00:00:01,
-		$ipAddr0     10.0.0.1,
-		$ipNetHost0  10.0.0.0/32,
-		$ipBcast0    10.0.0.255/32,
-		$ipNet0      10.0.0.0/24,
+		$iface0      netmap:nf2veth0,
+		$macAddr0    10:00:00:00:00:02,
+		$ipAddr0     11.0.0.2,
+		$ipNetHost0  11.0.0.0/32,
+		$ipBcast0    11.0.0.255/32,
+		$ipNet0      11.0.0.0/24,
 		$color0      1,
 		
-		$iface1      netmap:ns1veth1,
-		$macAddr1    10:00:00:00:00:01,
-		$ipAddr1     11.0.0.1,
-		$ipNetHost1  11.0.0.0/32,
-		$ipBcast1    11.0.0.255/32,
-		$ipNet1      11.0.0.0/24,
+		$iface1      netmap:nf2veth1,
+		$macAddr1    20:00:00:00:00:01,
+		$ipAddr1     12.0.0.1,
+		$ipNetHost1  12.0.0.0/32,
+		$ipBcast1    12.0.0.255/32,
+		$ipNet1      12.0.0.0/24,
 		$color1      2,
 		
-		$gwIPAddr    11.0.0.2,
-		$gwMACAddr   10:00:00:00:00:02,
+		$gwIPAddr    12.0.0.2,
+		$gwMACAddr   20:00:00:00:00:02,
 		$gwPort      2,
 		
 		$queueSize   2000000,
@@ -24,18 +24,18 @@ define(
 		$burst       32,
 		$io_method   NETMAP,
 		
-		$position    1,
+		$position    2,
 		
-		$lbIPAddr0   11.0.0.2,
-		$lbIPAddr1   11.0.0.3
+		$lbIPAddr0   12.0.0.2,
+		$lbIPAddr1   12.0.0.3
 );
 
 /////////////////////////////////////////////////////////////////////////////
 // Elements
-elementclass NAPT {
+elementclass Firewall {
 	// Module's arguments
-	$iface0, $macAddr0, $ipAddr0, $ipNetHost0, $ipBcast0, $ipNet0, $color0,
-	$iface1, $macAddr1, $ipAddr1, $ipNetHost1, $ipBcast1, $ipNet1, $color1,
+	$iface0, $macAddr0,  $ipAddr0, $ipNetHost0, $ipBcast0, $ipNet0, $color0,
+	$iface1, $macAddr1,  $ipAddr1, $ipNetHost1, $ipBcast1, $ipNet1, $color1,
 	$gwIPAddr, $gwMACAddr, $gwPort, $queueSize, $mtuSize, $burst, $io_method,
 	$position |
 
@@ -43,43 +43,21 @@ elementclass NAPT {
 	queue :: Queue($queueSize);
 
 	// Module's I/O
-	in  :: FromDevice($iface0, SNAPLEN $mtuSize, METHOD $io_method, SNIFFER false);
-	out :: ToDevice  ($iface1, METHOD $io_method);
-	
-	// EtherEncap because we always send to one gw
+	in  :: FromDevice($iface0, BURST $burst, SNAPLEN $mtuSize, METHOD $io_method, SNIFFER false);
+	out :: ToDevice  ($iface1, BURST $burst, METHOD $io_method);
+
 	etherEncap :: EtherEncap(0x0800, $macAddr1, $gwMACAddr);
 
 	// Strip Ethernet header
 	strip :: Strip(14);
 
-	// Check IP header
+	// Check Ethernet header
 	markIPHeader :: MarkIPHeader;
 
-	// IPClassifier
-	ipClassifier :: IPClassifier(
-		ip proto 17,
-		ip proto 6,
-		-
-	);
-
-	// Routing table
-	lookUp :: RadixIPLookup(
-		$ipAddr0     0,
-		$ipBcast0    0,
-		$ipNetHost0  0,
-		$ipAddr1     0,
-		$ipBcast1    0,
-		$ipNetHost1  0,
-		$ipNet0      1,
-		$ipNet1      2,
-		200.0.0.2    2
-	);
-
-	// Implements PNAT
-	ipRewriter :: IPRewriter(
-		pattern $ipAddr1 - - - 0 0,   /* Outbound UDP Packets change src IP */
-		pattern $ipAddr1 - - - 0 0,   /* Outbound TCP Packets change src IP */
-		drop                          /* Drop the rest */
+	// The module that turns this router into L3 firewall
+	filter :: IPFilter(
+		allow src net $ipNet0 && ip proto 17,
+		drop all
 	);
 
 	// Decrement IP TTL field
@@ -95,52 +73,21 @@ elementclass NAPT {
 	/////////////////////////////////////////////////////////////////////
 	// Interface's pipeline
 	/////////////////////////////////////////////////////////////////////
-	// Input
+	// Input/Output
 	in -> counter_rx0 -> strip;
-
-	// Output
 	etherEncap -> counter_tx1 -> queue -> out;
 
-	// Outbound packets go to Classifier
+	// Get IP address for routing
 	strip
 		-> markIPHeader
-		-> [0]ipClassifier;
-
-	// UDP
-	ipClassifier[0]
-		//-> IPPrint(UDP)
-		-> [0]ipRewriter;
-
-	// TCP
-	ipClassifier[1]
-		//-> IPPrint(TCP)
-		-> [1]ipRewriter;
-
-	// Rest
-	ipClassifier[2]
-		//-> IPPrint(Drop)
-		-> [2]ipRewriter;
-
-	// Rewrite IP address for routing
-	ipRewriter
-		-> GetIPAddress(16)
-		-> [0]lookUp;
-
-	// Packets for this machine
-	lookUp[0]
-		-> Discard;
-
-	// Routed through local ifaces
-	lookUp[1]
-		-> Discard;
-
-	lookUp[2]
-		-> DropBroadcasts
-		-> FixIPSrc($ipAddr1)
+		-> filter
 		-> decTTL[0]
 		-> fragIP[0]
-		//-> IPPrint(SNAPT, TTL true)
+		//-> IPPrint(L3-FW, TTL true)
 		-> [0]etherEncap;
+
+	// Discarded by firewall
+	filter[1] -> Discard;
 	/////////////////////////////////////////////////////////////////////
 
 	// Save useful counters
@@ -163,7 +110,7 @@ elementclass NAPT {
 /////////////////////////////////////////////////////////////////////////////
 // Scenario
 /////////////////////////////////////////////////////////////////////////////
-napt :: NAPT(
+firewall :: Firewall(
 	$iface0, $macAddr0, $ipAddr0, $ipNetHost0, $ipBcast0, $ipNet0, $color0,
 	$iface1, $macAddr1, $ipAddr1, $ipNetHost1, $ipBcast1, $ipNet1, $color1,
 	$gwIPAddr, $gwMACAddr, $gwPort, $queueSize, $mtuSize, $burst, $io_method,

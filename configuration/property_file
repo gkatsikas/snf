@@ -24,9 +24,9 @@
 #NF_8 = nf_repo/napt_chain/NATS_8/ns8.click
 
 # Motivating example - Paper
-NF_1 = nf_repo/motivating_example/ns1.click
-NF_2 = nf_repo/motivating_example/ns2.click
-NF_3 = nf_repo/motivating_example/ns3.click
+NF_1 = nf_repo/motivating_example/nf1.click
+NF_2 = nf_repo/motivating_example/nf2.click
+NF_3 = nf_repo/motivating_example/nf3.click
 
 #######
 ####### SECTION 2: In this section you specifiy the topology of the modules.

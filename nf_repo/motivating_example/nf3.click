@@ -1,22 +1,22 @@
 define(
-		$iface0      netmap:ns2veth0,
-		$macAddr0    10:00:00:00:00:02,
-		$ipAddr0     11.0.0.2,
-		$ipNetHost0  11.0.0.0/32,
-		$ipBcast0    11.0.0.255/32,
-		$ipNet0      11.0.0.0/24,
+		$iface0      netmap:nf3veth0,
+		$macAddr0    20:00:00:00:00:02,
+		$ipAddr0     12.0.0.2,
+		$ipNetHost0  12.0.0.0/32,
+		$ipBcast0    12.0.0.255/32,
+		$ipNet0      12.0.0.0/24,
 		$color0      1,
 		
-		$iface1      netmap:ns2veth1,
-		$macAddr1    20:00:00:00:00:01,
-		$ipAddr1     12.0.0.1,
-		$ipNetHost1  12.0.0.0/32,
-		$ipBcast1    12.0.0.255/32,
-		$ipNet1      12.0.0.0/24,
+		$iface1      netmap:nf3veth1,
+		$macAddr1    90:00:00:00:00:01,
+		$ipAddr1     200.0.0.1,
+		$ipNetHost1  200.0.0.0/32,
+		$ipBcast1    200.0.0.255/32,
+		$ipNet1      200.0.0.0/24,
 		$color1      2,
 		
-		$gwIPAddr    12.0.0.2,
-		$gwMACAddr   20:00:00:00:00:02,
+		$gwIPAddr    200.0.0.2,
+		$gwMACAddr   90:00:00:00:01:00,
 		$gwPort      2,
 		
 		$queueSize   2000000,
@@ -24,41 +24,46 @@ define(
 		$burst       32,
 		$io_method   NETMAP,
 		
-		$position    2,
+		$position    3,
 		
-		$lbIPAddr0   12.0.0.2,
-		$lbIPAddr1   12.0.0.3
+		$lbIPAddr0   200.0.0.2,
+		$lbIPAddr1   200.0.0.3
 );
 
 /////////////////////////////////////////////////////////////////////////////
 // Elements
-elementclass Firewall {
+elementclass LoadBalancer {
 	// Module's arguments
 	$iface0, $macAddr0,  $ipAddr0, $ipNetHost0, $ipBcast0, $ipNet0, $color0,
 	$iface1, $macAddr1,  $ipAddr1, $ipNetHost1, $ipBcast1, $ipNet1, $color1,
 	$gwIPAddr, $gwMACAddr, $gwPort, $queueSize, $mtuSize, $burst, $io_method,
-	$position |
+	$position, $lbIPAddr0, $lbIPAddr1 |
 
 	// Queues
 	queue :: Queue($queueSize);
 
 	// Module's I/O
-	in  :: FromDevice($iface0, BURST $burst, SNAPLEN $mtuSize, METHOD $io_method, SNIFFER false);
+	in  :: FromDevice($iface0, BURST $burst, SNAPLEN $mtuSize, PROMISC true, METHOD $io_method, SNIFFER false);
 	out :: ToDevice  ($iface1, BURST $burst, METHOD $io_method);
 
 	etherEncap :: EtherEncap(0x0800, $macAddr1, $gwMACAddr);
 
+	// Implements Round Robin Load Balancing across 2 servers
+	lb :: RoundRobinIPMapper(
+		- - $gwIPAddr - 0 0,
+		- - $lbIPAddr1 - 0 0
+	);
+
+	// Implements the LB
+	ipRewriter :: IPRewriter(
+		lb
+	);
+
 	// Strip Ethernet header
 	strip :: Strip(14);
 
-	// Check Ethernet header
+	// Strip Ethernet header
 	markIPHeader :: MarkIPHeader;
-
-	// The module that turns this router into L3 firewall
-	filter :: IPFilter(
-		allow src net $ipNet0 && ip proto 17,
-		drop all
-	);
 
 	// Decrement IP TTL field
 	decTTL :: DecIPTTL;
@@ -77,17 +82,14 @@ elementclass Firewall {
 	in -> counter_rx0 -> strip;
 	etherEncap -> counter_tx1 -> queue -> out;
 
-	// Get IP address for routing
+	// Processing
 	strip
 		-> markIPHeader
-		-> filter
+		-> [0]ipRewriter[0]
 		-> decTTL[0]
 		-> fragIP[0]
-		//-> IPPrint(L3-FW, TTL true)
+		//-> IPPrint(L4-LB, TTL true)
 		-> [0]etherEncap;
-
-	// Discarded by firewall
-	filter[1] -> Discard;
 	/////////////////////////////////////////////////////////////////////
 
 	// Save useful counters
@@ -110,10 +112,10 @@ elementclass Firewall {
 /////////////////////////////////////////////////////////////////////////////
 // Scenario
 /////////////////////////////////////////////////////////////////////////////
-firewall :: Firewall(
+load_balancer :: LoadBalancer(
 	$iface0, $macAddr0, $ipAddr0, $ipNetHost0, $ipBcast0, $ipNet0, $color0,
 	$iface1, $macAddr1, $ipAddr1, $ipNetHost1, $ipBcast1, $ipNet1, $color1,
 	$gwIPAddr, $gwMACAddr, $gwPort, $queueSize, $mtuSize, $burst, $io_method,
-	$position
+	$position, $lbIPAddr0, $lbIPAddr1
 );
 /////////////////////////////////////////////////////////////////////////////

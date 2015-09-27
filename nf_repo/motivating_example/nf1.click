@@ -1,22 +1,22 @@
 define(
-		$iface0      netmap:ns3veth0,
-		$macAddr0    20:00:00:00:00:02,
-		$ipAddr0     12.0.0.2,
-		$ipNetHost0  12.0.0.0/32,
-		$ipBcast0    12.0.0.255/32,
-		$ipNet0      12.0.0.0/24,
+		$iface0      netmap:nf1veth0,
+		$macAddr0    10:00:00:00:00:01,
+		$ipAddr0     10.0.0.1,
+		$ipNetHost0  10.0.0.0/32,
+		$ipBcast0    10.0.0.255/32,
+		$ipNet0      10.0.0.0/24,
 		$color0      1,
 		
-		$iface1      netmap:ns3veth1,
-		$macAddr1    90:00:00:00:00:01,
-		$ipAddr1     200.0.0.1,
-		$ipNetHost1  200.0.0.0/32,
-		$ipBcast1    200.0.0.255/32,
-		$ipNet1      200.0.0.0/24,
+		$iface1      netmap:nf1veth1,
+		$macAddr1    10:00:00:00:00:01,
+		$ipAddr1     11.0.0.1,
+		$ipNetHost1  11.0.0.0/32,
+		$ipBcast1    11.0.0.255/32,
+		$ipNet1      11.0.0.0/24,
 		$color1      2,
 		
-		$gwIPAddr    200.0.0.2,
-		$gwMACAddr   90:00:00:00:01:00,
+		$gwIPAddr    11.0.0.2,
+		$gwMACAddr   10:00:00:00:00:02,
 		$gwPort      2,
 		
 		$queueSize   2000000,
@@ -24,46 +24,63 @@ define(
 		$burst       32,
 		$io_method   NETMAP,
 		
-		$position    3,
+		$position    1,
 		
-		$lbIPAddr0   200.0.0.2,
-		$lbIPAddr1   200.0.0.3
+		$lbIPAddr0   11.0.0.2,
+		$lbIPAddr1   11.0.0.3
 );
 
 /////////////////////////////////////////////////////////////////////////////
 // Elements
-elementclass LoadBalancer {
+elementclass NAPT {
 	// Module's arguments
-	$iface0, $macAddr0,  $ipAddr0, $ipNetHost0, $ipBcast0, $ipNet0, $color0,
-	$iface1, $macAddr1,  $ipAddr1, $ipNetHost1, $ipBcast1, $ipNet1, $color1,
+	$iface0, $macAddr0, $ipAddr0, $ipNetHost0, $ipBcast0, $ipNet0, $color0,
+	$iface1, $macAddr1, $ipAddr1, $ipNetHost1, $ipBcast1, $ipNet1, $color1,
 	$gwIPAddr, $gwMACAddr, $gwPort, $queueSize, $mtuSize, $burst, $io_method,
-	$position, $lbIPAddr0, $lbIPAddr1 |
+	$position |
 
 	// Queues
 	queue :: Queue($queueSize);
 
 	// Module's I/O
-	in  :: FromDevice($iface0, BURST $burst, SNAPLEN $mtuSize, PROMISC true, METHOD $io_method, SNIFFER false);
-	out :: ToDevice  ($iface1, BURST $burst, METHOD $io_method);
-
+	in  :: FromDevice($iface0, SNAPLEN $mtuSize, METHOD $io_method, SNIFFER false);
+	out :: ToDevice  ($iface1, METHOD $io_method);
+	
+	// EtherEncap because we always send to one gw
 	etherEncap :: EtherEncap(0x0800, $macAddr1, $gwMACAddr);
-
-	// Implements Round Robin Load Balancing across 2 servers
-	lb :: RoundRobinIPMapper(
-		- - $gwIPAddr - 0 0,
-		- - $lbIPAddr1 - 0 0
-	);
-
-	// Implements the LB
-	ipRewriter :: IPRewriter(
-		lb
-	);
 
 	// Strip Ethernet header
 	strip :: Strip(14);
 
-	// Strip Ethernet header
+	// Check IP header
 	markIPHeader :: MarkIPHeader;
+
+	// IPClassifier
+	ipClassifier :: IPClassifier(
+		ip proto 17,
+		ip proto 6,
+		-
+	);
+
+	// Routing table
+	lookUp :: RadixIPLookup(
+		$ipAddr0     0,
+		$ipBcast0    0,
+		$ipNetHost0  0,
+		$ipAddr1     0,
+		$ipBcast1    0,
+		$ipNetHost1  0,
+		$ipNet0      1,
+		$ipNet1      2,
+		200.0.0.2    2
+	);
+
+	// Implements PNAT
+	ipRewriter :: IPRewriter(
+		pattern $ipAddr1 - - - 0 0,   /* Outbound UDP Packets change src IP */
+		pattern $ipAddr1 - - - 0 0,   /* Outbound TCP Packets change src IP */
+		drop                          /* Drop the rest */
+	);
 
 	// Decrement IP TTL field
 	decTTL :: DecIPTTL;
@@ -78,17 +95,51 @@ elementclass LoadBalancer {
 	/////////////////////////////////////////////////////////////////////
 	// Interface's pipeline
 	/////////////////////////////////////////////////////////////////////
-	// Input/Output
+	// Input
 	in -> counter_rx0 -> strip;
+
+	// Output
 	etherEncap -> counter_tx1 -> queue -> out;
 
-	// Processing
+	// Outbound packets go to Classifier
 	strip
 		-> markIPHeader
-		-> [0]ipRewriter[0]
+		-> [0]ipClassifier;
+
+	// UDP
+	ipClassifier[0]
+		//-> IPPrint(UDP)
+		-> [0]ipRewriter;
+
+	// TCP
+	ipClassifier[1]
+		//-> IPPrint(TCP)
+		-> [1]ipRewriter;
+
+	// Rest
+	ipClassifier[2]
+		//-> IPPrint(Drop)
+		-> [2]ipRewriter;
+
+	// Rewrite IP address for routing
+	ipRewriter
+		-> GetIPAddress(16)
+		-> [0]lookUp;
+
+	// Packets for this machine
+	lookUp[0]
+		-> Discard;
+
+	// Routed through local ifaces
+	lookUp[1]
+		-> Discard;
+
+	lookUp[2]
+		-> DropBroadcasts
+		-> FixIPSrc($ipAddr1)
 		-> decTTL[0]
 		-> fragIP[0]
-		//-> IPPrint(L4-LB, TTL true)
+		//-> IPPrint(SNAPT, TTL true)
 		-> [0]etherEncap;
 	/////////////////////////////////////////////////////////////////////
 
@@ -112,10 +163,10 @@ elementclass LoadBalancer {
 /////////////////////////////////////////////////////////////////////////////
 // Scenario
 /////////////////////////////////////////////////////////////////////////////
-load_balancer :: LoadBalancer(
+napt :: NAPT(
 	$iface0, $macAddr0, $ipAddr0, $ipNetHost0, $ipBcast0, $ipNet0, $color0,
 	$iface1, $macAddr1, $ipAddr1, $ipNetHost1, $ipBcast1, $ipNet1, $color1,
 	$gwIPAddr, $gwMACAddr, $gwPort, $queueSize, $mtuSize, $burst, $io_method,
-	$position, $lbIPAddr0, $lbIPAddr1
+	$position
 );
 /////////////////////////////////////////////////////////////////////////////
