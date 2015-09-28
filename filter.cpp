@@ -273,11 +273,15 @@ std::string Filter::to_ip_class_pattern() const {
 			keyword = "ip vers ";
 			break;
 		case ip_src:
-			keyword = "src net ";
-			return ip_filter_to_ip_class_pattern(keyword);
+			keyword = "ip src ";
+			break;
+			/* keyword = "src net ";
+			return ip_filter_to_ip_class_pattern(keyword); */
 		case ip_dst:
-			keyword = "dst net ";
-			return ip_filter_to_ip_class_pattern(keyword);
+			keyword = "ip dst ";
+			break;
+			/*keyword = "dst net ";
+			return ip_filter_to_ip_class_pattern(keyword);*/
 		case ip_proto:
 			keyword = "ip proto ";
 			break;

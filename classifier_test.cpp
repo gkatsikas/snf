@@ -27,7 +27,7 @@ int main () {
 	
 	while (size < MAX_NUMBER_CLASSES) {
 		for(size_t i=0; i<3; i++) {
-			myfile.open("nf_repo/class/templates/class_test_"+std::to_string(size)+"_"+position[i]+".click", std::ios::out);
+			myfile.open("nf_repo/class/templates/new_class_test_"+std::to_string(size)+"_"+position[i]+".click", std::ios::out);
 		
 			myfile<<"ipclassifier :: IPClassifier(\n";
 			for(int j=0; j<size; j++) {

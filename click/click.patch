@@ -1,7 +1,7 @@
-diff --git elements/icmp/icmprewriter.cc elements/icmp/icmprewriter.cc
+diff --git a/elements/icmp/icmprewriter.cc b/elements/icmp/icmprewriter.cc
 index 28de1db..e780844 100644
---- elements/icmp/icmprewriter.cc
-+++ elements/icmp/icmprewriter.cc
+--- a/elements/icmp/icmprewriter.cc
++++ b/elements/icmp/icmprewriter.cc
 @@ -43,6 +43,7 @@ ICMPRewriter::configure(Vector<String> &conf, ErrorHandler *errh)
      if (Args(conf, this, errh)
  	.read_mp("MAPS", AnyArg(), arg)
@@ -66,10 +66,10 @@ index 28de1db..e780844 100644
  
      if (_maps[mapid]._port_offset >= 0)
  	return _maps[mapid]._port_offset + entry->output();
-diff --git elements/icmp/icmprewriter.hh elements/icmp/icmprewriter.hh
+diff --git a/elements/icmp/icmprewriter.hh b/elements/icmp/icmprewriter.hh
 index 4ae7236..598ef64 100644
---- elements/icmp/icmprewriter.hh
-+++ elements/icmp/icmprewriter.hh
+--- a/elements/icmp/icmprewriter.hh
++++ b/elements/icmp/icmprewriter.hh
 @@ -86,6 +86,9 @@ class ICMPRewriter : public Element { public:
      Vector<MapEntry> _maps;
      unsigned _annos;
@@ -80,10 +80,10 @@ index 4ae7236..598ef64 100644
      void rewrite_packet(WritablePacket *, click_ip *, click_udp *,
  			const IPFlowID &, IPRewriterEntry *);
      void rewrite_ping_packet(WritablePacket *, click_ip *, click_icmp_echo *,
-diff --git elements/ip/decipttl.cc elements/ip/decipttl.cc
+diff --git a/elements/ip/decipttl.cc b/elements/ip/decipttl.cc
 index cdc8dca..86e1a78 100644
---- elements/ip/decipttl.cc
-+++ elements/ip/decipttl.cc
+--- a/elements/ip/decipttl.cc
++++ b/elements/ip/decipttl.cc
 @@ -24,7 +24,7 @@
  CLICK_DECLS
  
@@ -136,10 +136,10 @@ index cdc8dca..86e1a78 100644
  }
  
  CLICK_ENDDECLS
-diff --git elements/ip/decipttl.hh elements/ip/decipttl.hh
+diff --git a/elements/ip/decipttl.hh b/elements/ip/decipttl.hh
 index b2ff703..7f5aa4a 100644
---- elements/ip/decipttl.hh
-+++ elements/ip/decipttl.hh
+--- a/elements/ip/decipttl.hh
++++ b/elements/ip/decipttl.hh
 @@ -62,6 +62,8 @@ class DecIPTTL : public Element { public:
      bool _active;
      bool _multicast;
@@ -149,10 +149,10 @@ index b2ff703..7f5aa4a 100644
  };
  
  CLICK_ENDDECLS
-diff --git elements/ip/ipaddrpairrewriter.cc elements/ip/ipaddrpairrewriter.cc
+diff --git a/elements/ip/ipaddrpairrewriter.cc b/elements/ip/ipaddrpairrewriter.cc
 index 05ac76f..7b43032 100644
---- elements/ip/ipaddrpairrewriter.cc
-+++ elements/ip/ipaddrpairrewriter.cc
+--- a/elements/ip/ipaddrpairrewriter.cc
++++ b/elements/ip/ipaddrpairrewriter.cc
 @@ -27,7 +27,7 @@ CLICK_DECLS
  
  void
@@ -205,10 +205,10 @@ index 05ac76f..7b43032 100644
      mf->change_expiry_by_timeout(_heap, click_jiffies(), _timeouts);
      output(m->output()).push(p);
  }
-diff --git elements/ip/ipaddrpairrewriter.hh elements/ip/ipaddrpairrewriter.hh
+diff --git a/elements/ip/ipaddrpairrewriter.hh b/elements/ip/ipaddrpairrewriter.hh
 index 27921a0..3289ed7 100644
---- elements/ip/ipaddrpairrewriter.hh
-+++ elements/ip/ipaddrpairrewriter.hh
+--- a/elements/ip/ipaddrpairrewriter.hh
++++ b/elements/ip/ipaddrpairrewriter.hh
 @@ -125,7 +125,7 @@ class IPAddrPairRewriter : public IPRewriterBase { public:
  			     0, guaranteed, expiry_j) {
  	}
@@ -218,10 +218,10 @@ index 27921a0..3289ed7 100644
  
  	void unparse(StringAccum &sa, bool direction, click_jiffies_t now) const;
  
-diff --git elements/ip/ipaddrrewriter.cc elements/ip/ipaddrrewriter.cc
+diff --git a/elements/ip/ipaddrrewriter.cc b/elements/ip/ipaddrrewriter.cc
 index 868513e..773f0b9 100644
---- elements/ip/ipaddrrewriter.cc
-+++ elements/ip/ipaddrrewriter.cc
+--- a/elements/ip/ipaddrrewriter.cc
++++ b/elements/ip/ipaddrrewriter.cc
 @@ -27,7 +27,7 @@ CLICK_DECLS
  
  void
@@ -274,10 +274,10 @@ index 868513e..773f0b9 100644
      mf->change_expiry_by_timeout(_heap, click_jiffies(), _timeouts);
      output(m->output()).push(p);
  }
-diff --git elements/ip/ipaddrrewriter.hh elements/ip/ipaddrrewriter.hh
+diff --git a/elements/ip/ipaddrrewriter.hh b/elements/ip/ipaddrrewriter.hh
 index edf6357..fe331c7 100644
---- elements/ip/ipaddrrewriter.hh
-+++ elements/ip/ipaddrrewriter.hh
+--- a/elements/ip/ipaddrrewriter.hh
++++ b/elements/ip/ipaddrrewriter.hh
 @@ -124,7 +124,7 @@ class IPAddrRewriter : public IPRewriterBase { public:
  			     0, guaranteed, expiry_j) {
  	}
@@ -287,10 +287,52 @@ index edf6357..fe331c7 100644
  
  	void unparse(StringAccum &sa, bool direction, click_jiffies_t now) const;
  
-diff --git elements/ip/iprewriterbase.cc elements/ip/iprewriterbase.cc
+diff --git a/elements/ip/ipfilter.cc b/elements/ip/ipfilter.cc
+index beafd02..fa1a584 100644
+--- a/elements/ip/ipfilter.cc
++++ b/elements/ip/ipfilter.cc
+@@ -55,7 +55,10 @@ static const StaticNameDB::Entry type_entries[] = {
+     { "type", IPFilter::FIELD_ICMP_TYPE },
+     { "unfrag", IPFilter::TYPE_IPUNFRAG },
+     { "vers", IPFilter::FIELD_VERSION },
+-    { "win", IPFilter::FIELD_TCP_WIN }
++    { "win", IPFilter::FIELD_TCP_WIN },
++    /* Fields IP_SRC and IP_DST added for HyperNF */
++    { "src", IPFilter::FIELD_IP_SRC},
++    { "dst", IPFilter::FIELD_IP_DST}
+ };
+ 
+ static const StaticNameDB::Entry tcp_opt_entries[] = {
+@@ -294,6 +297,9 @@ IPFilter::Primitive::unparse_type(int srcdst, int type)
+        case FIELD_TTL: sa << "ip ttl"; break;
+        case FIELD_TCP_WIN: sa << "tcp win"; break;
+        case FIELD_ICMP_TYPE: sa << "icmp type"; break;
++       /* Fields IP_SRC and IP_DST added for HyperNF */
++       case FIELD_IP_SRC: sa << "ip src"; break;
++       case FIELD_IP_DST: sa << "ip dst"; break;
+        default:
+ 	if (type & FIELD_PROTO_MASK)
+ 	  sa << unparse_transp_proto((type & FIELD_PROTO_MASK) >> FIELD_PROTO_SHIFT);
+diff --git a/elements/ip/ipfilter.hh b/elements/ip/ipfilter.hh
+index 25b63af..ddaffee 100644
+--- a/elements/ip/ipfilter.hh
++++ b/elements/ip/ipfilter.hh
+@@ -177,7 +177,10 @@ class IPFilter : public Element { public:
+ 	FIELD_DSCP	= (TYPE_FIELD | ((1*8) << FIELD_OFFSET_SHIFT) | 5),
+ 	FIELD_TTL	= (TYPE_FIELD | ((8*8) << FIELD_OFFSET_SHIFT) | 7),
+ 	FIELD_TCP_WIN = (TYPE_FIELD | (IP_PROTO_TCP << FIELD_PROTO_SHIFT) | ((14*8) << FIELD_OFFSET_SHIFT) | 15),
+-	FIELD_ICMP_TYPE = (TYPE_FIELD | (IP_PROTO_ICMP << FIELD_PROTO_SHIFT) | (0 << FIELD_OFFSET_SHIFT) | 7)
++	FIELD_ICMP_TYPE = (TYPE_FIELD | (IP_PROTO_ICMP << FIELD_PROTO_SHIFT) | (0 << FIELD_OFFSET_SHIFT) | 7),
++        /* Fields IP_SRC and IP_DST added for HyperNF */
++        FIELD_IP_SRC = (TYPE_FIELD | ((12*8) << FIELD_OFFSET_SHIFT) | 31),
++        FIELD_IP_DST = (TYPE_FIELD | ((16*8) << FIELD_OFFSET_SHIFT) | 31),
+     };
+ 
+     enum {
+diff --git a/elements/ip/iprewriterbase.cc b/elements/ip/iprewriterbase.cc
 index 50e3f34..f002f82 100644
---- elements/ip/iprewriterbase.cc
-+++ elements/ip/iprewriterbase.cc
+--- a/elements/ip/iprewriterbase.cc
++++ b/elements/ip/iprewriterbase.cc
 @@ -65,10 +65,11 @@ IPMapper::rewrite_flowid(IPRewriterInput *, const IPFlowID &, IPFlowID &,
  
  //
@@ -314,10 +356,10 @@ index 50e3f34..f002f82 100644
  	.consume() < 0)
  	return -1;
  
-diff --git elements/ip/iprewriterbase.hh elements/ip/iprewriterbase.hh
+diff --git a/elements/ip/iprewriterbase.hh b/elements/ip/iprewriterbase.hh
 index b7ced3a..3d68abb 100644
---- elements/ip/iprewriterbase.hh
-+++ elements/ip/iprewriterbase.hh
+--- a/elements/ip/iprewriterbase.hh
++++ b/elements/ip/iprewriterbase.hh
 @@ -140,6 +140,13 @@ class IPRewriterBase : public Element { public:
      uint32_t _gc_interval_sec;
      Timer _gc_timer;
@@ -332,20 +374,11 @@ index b7ced3a..3d68abb 100644
      enum {
  	default_timeout = 300,	   // 5 minutes
  	default_guarantee = 5,	   // 5 seconds
-diff --git elements/ip/iprwmapping.cc elements/ip/iprwmapping.cc
-index 966382c..03c755e 100644
---- elements/ip/iprwmapping.cc
-+++ elements/ip/iprwmapping.cc
-@@ -19,6 +19,8 @@
-  * legally binding.
-  */
- 
-+#include <stdio.h>
-+
- #include <click/config.h>
- #include "iprwmapping.hh"
- #include "iprewriterbase.hh"
-@@ -40,6 +42,9 @@ IPRewriterFlow::IPRewriterFlow(IPRewriterInput *owner, const IPFlowID &flowid,
+diff --git a/elements/ip/iprwmapping.cc b/elements/ip/iprwmapping.cc
+index 966382c..329036a 100644
+--- a/elements/ip/iprwmapping.cc
++++ b/elements/ip/iprwmapping.cc
+@@ -40,6 +40,9 @@ IPRewriterFlow::IPRewriterFlow(IPRewriterInput *owner, const IPFlowID &flowid,
        _guaranteed(guaranteed), _reply_anno(0),
        _owner(owner)
  {
@@ -355,7 +388,7 @@ index 966382c..03c755e 100644
      _e[0].initialize(flowid, owner->foutput, false);
      _e[1].initialize(rewritten_flowid.reverse(), owner->routput, true);
  
-@@ -55,7 +60,7 @@ IPRewriterFlow::IPRewriterFlow(IPRewriterInput *owner, const IPFlowID &flowid,
+@@ -55,7 +58,7 @@ IPRewriterFlow::IPRewriterFlow(IPRewriterInput *owner, const IPFlowID &flowid,
  }
  
  void
@@ -364,7 +397,7 @@ index 966382c..03c755e 100644
  {
      assert(p->has_network_header());
      click_ip *iph = p->ip_header();
-@@ -68,7 +73,11 @@ IPRewriterFlow::apply(WritablePacket *p, bool direction, unsigned annos)
+@@ -68,7 +71,11 @@ IPRewriterFlow::apply(WritablePacket *p, bool direction, unsigned annos)
  	p->set_dst_ip_anno(revflow.saddr());
      if (direction && (annos & 2))
  	p->set_anno_u8(annos >> 2, _reply_anno);
@@ -377,7 +410,7 @@ index 966382c..03c755e 100644
  
      // end if not first fragment
      if (!IP_FIRSTFRAG(iph))
-@@ -79,13 +88,21 @@ IPRewriterFlow::apply(WritablePacket *p, bool direction, unsigned annos)
+@@ -79,13 +86,21 @@ IPRewriterFlow::apply(WritablePacket *p, bool direction, unsigned annos)
  	click_tcp *tcph = p->tcp_header();
  	tcph->th_sport = revflow.dport();
  	tcph->th_dport = revflow.sport();
@@ -402,10 +435,10 @@ index 966382c..03c755e 100644
      }
  }
  
-diff --git elements/ip/iprwmapping.hh elements/ip/iprwmapping.hh
+diff --git a/elements/ip/iprwmapping.hh b/elements/ip/iprwmapping.hh
 index 446f95b..5ee3860 100644
---- elements/ip/iprwmapping.hh
-+++ elements/ip/iprwmapping.hh
+--- a/elements/ip/iprwmapping.hh
++++ b/elements/ip/iprwmapping.hh
 @@ -135,7 +135,7 @@ class IPRewriterFlow { public:
      static inline void update_csum(uint16_t *csum, bool direction,
  				   uint16_t csum_delta);
@@ -415,37 +448,15 @@ index 446f95b..5ee3860 100644
  
      void unparse(StringAccum &sa, bool direction, click_jiffies_t now) const;
      void unparse_ports(StringAccum &sa, bool direction, click_jiffies_t now) const;
-diff --git elements/standard/paint.cc elements/standard/paint.cc
-index 1c1545e..5a50701 100644
---- elements/standard/paint.cc
-+++ elements/standard/paint.cc
+diff --git a/elements/tcpudp/iprewriter.cc b/elements/tcpudp/iprewriter.cc
+index 0bc909b..77fee27 100644
+--- a/elements/tcpudp/iprewriter.cc
++++ b/elements/tcpudp/iprewriter.cc
 @@ -16,6 +16,8 @@
   * legally binding.
   */
  
-+#include <stdio.h>
-+
- #include <click/config.h>
- #include "paint.hh"
- #include <click/args.hh>
-@@ -43,6 +45,8 @@ Paint::configure(Vector<String> &conf, ErrorHandler *errh)
- Packet *
- Paint::simple_action(Packet *p)
- {
-+    //printf("Annotation position: %d\n", _anno);
-+    //printf("Annotation    color: %d\n", _color);
-     p->set_anno_u8(_anno, _color);
-     return p;
- }
-diff --git elements/tcpudp/iprewriter.cc elements/tcpudp/iprewriter.cc
-index 0bc909b..74f9698 100644
---- elements/tcpudp/iprewriter.cc
-+++ elements/tcpudp/iprewriter.cc
-@@ -16,6 +16,8 @@
-  * legally binding.
-  */
- 
-+#include <stdio.h>
++//#include <stdio.h>
 +
  #include <click/config.h>
  #include "iprewriter.hh"
@@ -535,7 +546,7 @@ index 0bc909b..74f9698 100644
 +	//printf("\n----> Routing annotation: %d\n", hyper_nf_label);
 +	// Check whether the given label is in the range of ports of this element
 +	if ( this->noutputs() < (hyper_nf_label+1) ) {
-+		printf("----> Invalid routing annotation: %d. Element has only %d output ports\n", hyper_nf_label, this->noutputs());
++		//printf("----> Invalid routing annotation: %d. Element has only %d output ports\n", hyper_nf_label, this->noutputs());
 +		return;
 +	}
 +    }
@@ -600,10 +611,10 @@ index 0bc909b..74f9698 100644
      output(m->output()).push(p);
  }
  
-diff --git elements/tcpudp/iprewriter.hh elements/tcpudp/iprewriter.hh
+diff --git a/elements/tcpudp/iprewriter.hh b/elements/tcpudp/iprewriter.hh
 index 50fb742..c9f2e95 100644
---- elements/tcpudp/iprewriter.hh
-+++ elements/tcpudp/iprewriter.hh
+--- a/elements/tcpudp/iprewriter.hh
++++ b/elements/tcpudp/iprewriter.hh
 @@ -237,8 +237,11 @@ class IPRewriter : public TCPRewriter { public:
  	else
  	    return 0;
@@ -617,10 +628,10 @@ index 50fb742..c9f2e95 100644
      void destroy_flow(IPRewriterFlow *flow);
      click_jiffies_t best_effort_expiry(const IPRewriterFlow *flow) {
  	if (flow->ip_p() == IP_PROTO_TCP)
-diff --git elements/tcpudp/tcprewriter.cc elements/tcpudp/tcprewriter.cc
+diff --git a/elements/tcpudp/tcprewriter.cc b/elements/tcpudp/tcprewriter.cc
 index 6e10003..242a384 100644
---- elements/tcpudp/tcprewriter.cc
-+++ elements/tcpudp/tcprewriter.cc
+--- a/elements/tcpudp/tcprewriter.cc
++++ b/elements/tcpudp/tcprewriter.cc
 @@ -84,7 +84,7 @@ TCPRewriter::TCPFlow::update_seqno_delta(bool direction,
  }
  
@@ -755,10 +766,10 @@ index 6e10003..242a384 100644
  
      click_jiffies_t now_j = click_jiffies();
      if (_timeouts[1])
-diff --git elements/tcpudp/tcprewriter.hh elements/tcpudp/tcprewriter.hh
+diff --git a/elements/tcpudp/tcprewriter.hh b/elements/tcpudp/tcprewriter.hh
 index bcae3fc..2bb8a6c 100644
---- elements/tcpudp/tcprewriter.hh
-+++ elements/tcpudp/tcprewriter.hh
+--- a/elements/tcpudp/tcprewriter.hh
++++ b/elements/tcpudp/tcprewriter.hh
 @@ -127,7 +127,7 @@ class TCPRewriter : public IPRewriterBase { public:
  	tcp_seq_t new_seq(bool direction, tcp_seq_t seqno) const;
  	tcp_seq_t new_ack(bool direction, tcp_seq_t seqno) const;
@@ -777,10 +788,10 @@ index bcae3fc..2bb8a6c 100644
  
      };
  
-diff --git elements/tcpudp/udprewriter.cc elements/tcpudp/udprewriter.cc
+diff --git a/elements/tcpudp/udprewriter.cc b/elements/tcpudp/udprewriter.cc
 index b3d0f62..5033e07 100644
---- elements/tcpudp/udprewriter.cc
-+++ elements/tcpudp/udprewriter.cc
+--- a/elements/tcpudp/udprewriter.cc
++++ b/elements/tcpudp/udprewriter.cc
 @@ -27,7 +27,7 @@
  CLICK_DECLS
  
@@ -838,10 +849,10 @@ index b3d0f62..5033e07 100644
  
      click_jiffies_t now_j = click_jiffies();
      if (_timeouts[1])
-diff --git elements/tcpudp/udprewriter.hh elements/tcpudp/udprewriter.hh
+diff --git a/elements/tcpudp/udprewriter.hh b/elements/tcpudp/udprewriter.hh
 index 4246624..6cd0caa 100644
---- elements/tcpudp/udprewriter.hh
-+++ elements/tcpudp/udprewriter.hh
+--- a/elements/tcpudp/udprewriter.hh
++++ b/elements/tcpudp/udprewriter.hh
 @@ -175,7 +175,7 @@ class UDPRewriter : public IPRewriterBase { public:
  	    return _tflags > 6;
  	}
@@ -851,10 +862,10 @@ index 4246624..6cd0caa 100644
  
      };
  
-diff --git include/click/router.hh include/click/router.hh
+diff --git a/include/click/router.hh b/include/click/router.hh
 index dc83606..87a7b68 100644
---- include/click/router.hh
-+++ include/click/router.hh
+--- a/include/click/router.hh
++++ b/include/click/router.hh
 @@ -129,7 +129,14 @@ class Router { public:
      inline Router* hotswap_router() const;
      void set_hotswap_router(Router* router);
@@ -882,10 +893,10 @@ index dc83606..87a7b68 100644
  #if CLICK_LINUXMODULE
      Vector<struct module*> _modules;
  #endif
-diff --git lib/router.cc lib/router.cc
+diff --git a/lib/router.cc b/lib/router.cc
 index d345236..cd11e0d 100644
---- lib/router.cc
-+++ lib/router.cc
+--- a/lib/router.cc
++++ b/lib/router.cc
 @@ -83,7 +83,8 @@ Router::Router(const String &configuration, Master *master)
        _configuration(configuration),
        _notifier_signals(0),
