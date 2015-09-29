@@ -37,7 +37,7 @@ int main () {
 				}
 			
 				TrafficClass tc;
-				uint32_t base_address = aton(std::to_string(size)+".0.0.0");
+				uint32_t base_address = aton(std::to_string(j)+".0.0.0");
 				Filter f= Filter::get_filter_from_v4_prefix(ip_dst, base_address, 8);
 		
 				uint16_t dice_roll;

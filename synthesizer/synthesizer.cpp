@@ -104,7 +104,7 @@ short Synthesizer::generate_equivalent_configuration(void) {
 	for (auto &it : nat_per_output_iface) {
 		std::cout <<"/** NAT going to: "<<it.first<<" **/\n";
 		auto nat = it.second;
-		std::cout<<nat->get_name()<<"::IPRewriter("<<nat->compute_conf()<<"DEC_IP_TTL false, CALC_CHECKSUM true);\n";
+		std::cout<<nat->get_name()<<"::IPRewriter("<<nat->compute_conf()<<"DEC_IP_TTL true, CALC_CHECKSUM true);\n";
 		std::cout<<nat->get_name()<<"["<<nat->get_outboundPort()<<
 					"] -> EtherEncap(0x0800, $etherEncapConf) -> Queue ($queueSize) -> ToDevice ("<<it.first<<");\n";
 		for(unsigned short i=0; i<nat->get_outboundPort(); i++) {
