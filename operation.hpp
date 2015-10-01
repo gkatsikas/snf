@@ -49,6 +49,8 @@ class Operation {
 		void compose_op(const Operation &operation);
 		
 		bool has_field_op(HeaderField field) const;
+		
+		bool operator== (const Operation& rhs);
 
 		FieldOperation* get_field_op(HeaderField field);
 

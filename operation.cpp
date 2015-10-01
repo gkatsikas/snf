@@ -129,6 +129,22 @@ std::string FieldOperation::to_str () const {
 	return output;
 }
 
+bool Operation::operator== (const Operation& rhs) {
+	FieldOperation *rfield_op;
+	for (auto &it : m_fieldOps) {
+		rfield_op = get_field_op(it.first);
+		if(!rfield_op || !(*rfield_op == it.second))
+			return false;
+	}
+	
+	for (auto &it : rhs.m_fieldOps) {
+		if(!this->has_field_op(it.first))
+			return false;
+	}
+
+	return true;
+}
+
 void Operation::add_field_op(const FieldOperation &field_op) {
 	OperationType new_op_type = field_op.m_type;
 	
