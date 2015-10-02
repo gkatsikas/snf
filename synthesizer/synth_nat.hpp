@@ -6,18 +6,20 @@
 
 #include "../filter.hpp"
 
+struct ConsolidatedTc;
+
 class SynthesizedNat {
 
 	public:
 		SynthesizedNat();
 	
 		//Returns the input port on which to connect
-		unsigned short add_traffic_class (TrafficClass& tc, const std::string& src_iface);
+		unsigned short add_traffic_class (const struct ConsolidatedTc& tc, const std::string& src_iface);
 		std::string compute_conf();
 		
-		std::string get_name ();
+		std::string get_name () const;
 		
-		unsigned short get_outboundPort ();
+		unsigned short get_outboundPort () const;
 
 	private:
 		static int count;

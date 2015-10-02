@@ -55,6 +55,8 @@ class Operation {
 		FieldOperation* get_field_op(HeaderField field);
 
 		std::string to_str() const;
+		
+		std::string to_iprw_conf () const;
 
 	private:
 		std::unordered_map<HeaderField, FieldOperation, std::hash<int> > m_fieldOps;

@@ -12,6 +12,21 @@
 #include "../filter.hpp"
 #include "synth_nat.hpp"
 
+struct ConsolidatedTc {
+	std::string m_outIface;
+	std::string m_operation;
+	std::string m_pattern;
+	std::string m_chain;
+	unsigned short m_inputPort;
+	std::string m_nat;
+	
+	ConsolidatedTc ();
+	ConsolidatedTc (const std::string& out_iface, const std::string& op, const std::string& chain);
+	void add_tc (const TrafficClass& tc);
+	void set_nat(std::shared_ptr<SynthesizedNat> nat, unsigned short input_port);
+	std::string get_chain ();
+};
+
 class Synthesizer {
 	private:
 		/*
@@ -27,7 +42,7 @@ class Synthesizer {
 		/*
 		 * Generated traffic classes
 		 */
-		std::unordered_map<std::string,std::vector<TrafficClass> > tc_per_input_iface;
+		std::unordered_map<std::string, std::unordered_map<std::string, ConsolidatedTc> > tc_per_input_iface;
 		std::unordered_map<std::string, std::shared_ptr<SynthesizedNat> > nat_per_output_iface;
 
 	public:

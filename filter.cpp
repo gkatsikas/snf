@@ -273,15 +273,15 @@ std::string Filter::to_ip_class_pattern() const {
 			keyword = "ip vers ";
 			break;
 		case ip_src:
-			keyword = "ip sip ";
-			break;
-			/* keyword = "src net ";
-			return ip_filter_to_ip_class_pattern(keyword); */
+			/*keyword = "ip sip ";
+			break;*/
+			keyword = "src net ";
+			return ip_filter_to_ip_class_pattern(keyword);/**/
 		case ip_dst:
-			keyword = "ip dip ";
-			break;
-			/*keyword = "dst net ";
-			return ip_filter_to_ip_class_pattern(keyword);*/
+			/*keyword = "ip dip ";
+			break;*/
+			/**/keyword = "dst net ";
+			return ip_filter_to_ip_class_pattern(keyword);/**/
 		case ip_proto:
 			keyword = "ip proto ";
 			break;
@@ -437,7 +437,7 @@ std::string TrafficClass::synthesize_chain () {
 		if(m_ipgwoptions) {
 			output += "IPGWOptions($ipAddr) -> ";
 		}
-		
+		/*
 		if(m_nat) {
 			output += "["+std::to_string(m_natInputPort)+"]"+m_nat->get_name()+";";
 		}

@@ -5,6 +5,8 @@
 
 #include "helpers.hpp"
 
+#define BUG(A) std::cerr<<"["<<__FILE__<<":"<<__LINE__<<"] "<<A <<std::endl; exit(1)
+
 FieldOperation::FieldOperation () : m_type(Noop), m_field(unknown) {}
 
 FieldOperation::FieldOperation (OperationType type, HeaderField field, uint32_t value) :
@@ -187,4 +189,80 @@ std::string Operation::to_str() const {
 		output += ("\t"+it.second.to_str()+"\n");
 	}
 	return output;
+}
+
+std::string Operation::to_iprw_conf () const {
+	
+	std::string ipsrc, tpsrc, tpdst;
+
+	auto field_op = m_fieldOps.find(ip_src);
+	if(field_op != m_fieldOps.end()) {
+		if(field_op->second.m_type == Write) {
+			ipsrc = ntoa(field_op->second.m_value[0]);
+		}
+		else {
+			BUG("Expected write operation");
+		}
+	}
+	else{
+		ipsrc= "-";
+	}
+
+	field_op = m_fieldOps.find(tp_srcPort);
+	if(field_op != m_fieldOps.end()) {
+		switch (field_op->second.m_type) {
+			case Write:
+				tpsrc = std::to_string(field_op->second.m_value[0]);
+				break;
+			case WriteRR:
+				tpsrc = std::to_string(field_op->second.m_value[0])+"-"+std::to_string(field_op->second.m_value[1])+"#";
+				break;
+			case WriteRa:
+				tpsrc = std::to_string(field_op->second.m_value[0])+"-"+std::to_string(field_op->second.m_value[1])+"?";
+				break;
+			case WriteSF:
+				tpsrc = std::to_string(field_op->second.m_value[0])+"-"+std::to_string(field_op->second.m_value[1]);
+				break;
+			default:
+				BUG("Expected write operation");
+		}
+	}
+	else{
+		tpsrc = "-";
+	}
+
+	field_op = m_fieldOps.find(tp_dstPort);
+	if(field_op != m_fieldOps.end()) {
+		if(field_op->second.m_type == Write) {
+			tpdst = std::to_string(field_op->second.m_value[0]);
+		}
+		else {
+			BUG("Expected write operation, got "+to_str());
+		}
+	}
+	else{
+		tpdst = "-";
+	}
+
+	field_op = m_fieldOps.find(ip_dst);
+	if(field_op != m_fieldOps.end()) {
+		//TODO: add support for load balancing
+		if(field_op->second.m_type == Write) {
+			return ipsrc+" "+tpsrc+" "+ntoa(field_op->second.m_value[0])+" "+tpdst+" ";
+		}
+		else if (field_op->second.m_type == WriteLB) {
+			std::string output = "RoundRobinIPMapper(";
+			for (auto &ip : field_op->second.m_lbValues) {
+				output += ipsrc+" "+tpsrc+" "+ntoa(ip)+" "+tpdst+", ";
+			}
+			output[output.size()-2] = ')';
+			return output.substr(0,output.size()-1);
+		}
+		else {
+			BUG("Expected write operation, got "+to_str());
+		}
+	}
+	else{
+		return "pattern "+ipsrc+" "+tpsrc+" "+"- "+tpdst+" ";
+	}
 }

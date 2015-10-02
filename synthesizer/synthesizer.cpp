@@ -12,6 +12,34 @@
 #include "../output_class.hpp"
 #include "../click_element.hpp"
 
+ConsolidatedTc::ConsolidatedTc () :
+	m_outIface (),
+	m_operation (),
+	m_pattern (),
+	m_chain (),
+	m_inputPort (256),
+	m_nat ()
+	{}
+
+ConsolidatedTc::ConsolidatedTc (const std::string& out_iface, const std::string& op, const std::string& chain) :
+	m_outIface(out_iface), m_operation(op), m_chain(chain) {}
+
+void ConsolidatedTc::add_tc (const TrafficClass& tc) {
+	if(!m_pattern.empty()) {
+		m_pattern += " || ";
+	}
+	m_pattern += "("+tc.to_ip_classifier_pattern()+")";
+}
+
+void ConsolidatedTc::set_nat (std::shared_ptr<SynthesizedNat> nat, unsigned short input_port) {
+	m_nat = nat->get_name();
+	m_inputPort = input_port;
+}
+
+std::string ConsolidatedTc::get_chain() {
+	return m_chain+"["+std::to_string(m_inputPort)+"]"+m_nat+";";
+}
+
 Synthesizer::Synthesizer(ChainParser* cp) : tc_per_input_iface(), nat_per_output_iface() {
 	this->log.set_logger_file(__FILE__);
 	if ( cp == NULL )
@@ -67,9 +95,14 @@ short Synthesizer::build_traffic_classes(void) {
 			ClickTree ct (ep);
 			std::cout<<"####################################################";
 			std::cout<<"####################################################"<< std::endl;
-			for (auto &it : ct.get_trafficClasses()) {
-				if (!it.is_discarded ())/**/ {
-					tc_per_input_iface[key].push_back(it);
+			for (auto &tc : ct.get_trafficClasses()) {
+				if (!tc.is_discarded ())/**/ {
+					std::string op_as_str = tc.get_operation().to_iprw_conf ();
+					std::string snd_key = op_as_str+"\\"+tc.get_outputIface();
+					if(tc_per_input_iface[key].find(snd_key) == tc_per_input_iface[key].end()) {
+						tc_per_input_iface[key][snd_key] = {key, op_as_str, tc.synthesize_chain ()};
+					}
+					(tc_per_input_iface[key][snd_key]).add_tc(tc);
 				}/**/
 			}
 
@@ -84,12 +117,12 @@ short Synthesizer::build_traffic_classes(void) {
 short Synthesizer::synthesize_nat(void) {
 	for (auto &it : tc_per_input_iface) {
 		for(auto &tc : it.second) {
-					std::string out_iface = tc.get_outputIface();
+			std::string out_iface = tc.second.m_outIface;
 			if (nat_per_output_iface.find(out_iface) == nat_per_output_iface.end()) {
 				nat_per_output_iface[out_iface] = std::shared_ptr<SynthesizedNat> ( new SynthesizedNat() );
 			}
-			tc.set_nat(nat_per_output_iface[out_iface],
-					nat_per_output_iface[out_iface]->add_traffic_class(tc,it.first));
+			tc.second.set_nat(nat_per_output_iface[out_iface],
+					nat_per_output_iface[out_iface]->add_traffic_class(tc.second,it.first) );
 		}
 	}
 
@@ -104,7 +137,7 @@ short Synthesizer::generate_equivalent_configuration(void) {
 	for (auto &it : nat_per_output_iface) {
 		std::cout <<"/** NAT going to: "<<it.first<<" **/\n";
 		auto nat = it.second;
-		std::cout<<nat->get_name()<<"::IPRewriter("<<nat->compute_conf()<<"DEC_IP_TTL true, CALC_CHECKSUM true);\n";
+		std::cout<<nat->get_name()<<" :: IPRewriter("<<nat->compute_conf()<<"DEC_IP_TTL true, CALC_CHECKSUM true);\n";
 		std::cout<<nat->get_name()<<"["<<nat->get_outboundPort()<<
 					"] -> EtherEncap(0x0800, $etherEncapConf) -> Queue ($queueSize) -> ToDevice ("<<it.first<<");\n";
 		for(unsigned short i=0; i<nat->get_outboundPort(); i++) {
@@ -120,8 +153,8 @@ short Synthesizer::generate_equivalent_configuration(void) {
 		std::cout<<ipc_name+" :: IPClassifier (\n";
 		std::vector<std::string> chains;
 		for (auto &tc: it.second) {
-			std::cout<<"\t"<<tc.to_ip_classifier_pattern()<<",\n";
-			chains.push_back(tc.synthesize_chain());
+			std::cout<<"\t"<<tc.second.m_pattern<<",\n";
+			chains.push_back(tc.second.get_chain());
 		}
 		std::cout<<");\n";
 		for (size_t i = 0; i<chains.size(); i++) {
