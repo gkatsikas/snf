@@ -30,7 +30,7 @@ Filter::Filter(HeaderField field) : Filter(field, 0, UINT32_MAX) {}
 Filter::Filter(HeaderField field,uint32_t value) : Filter(field, value, value) {}
 
 Filter::Filter (HeaderField field, uint32_t lower_value, uint32_t upper_value) :
-					m_filter(), m_field(field) {
+					m_filter(), m_toSubstract(), m_field(field) {
 	m_filter.add_segment(lower_value,upper_value);
 	if(lower_value > upper_value) {BUG("Weird filter: "+to_str());}
 }
@@ -213,46 +213,61 @@ Filter Filter::get_filter_from_prefix_pattern(HeaderField field, const std::stri
 }
 
 bool Filter::match(uint32_t value) const {
-	return m_filter.contains(value);
+	return (m_filter.contains(value) && !m_toSubstract.contains(value));
 }
 
 bool Filter::contains (const Filter& filter) const{
-	return m_filter.contains_seglist(filter.m_filter);
+	DisjointSegmentList is_in = filter.m_filter;
+	is_in.substract_seglist(filter.m_toSubstract);
+	DisjointSegmentList contains = m_filter;
+	contains.substract_seglist (m_toSubstract);
+	return contains.contains_seglist(is_in);
 }
 
 bool Filter::is_none() const {
-	return m_filter.empty();
+	return (m_filter.empty() || m_toSubstract.contains_seglist(m_filter));
 }
 
 Filter& Filter::translate(uint32_t value, bool forward) {
 	m_filter.translate(value,forward);
+	m_toSubstract.translate(value,forward);
 	return *this;
 }
 
 Filter& Filter::unite (const Filter &filter) {
 	DEBUG("unite "+to_str());
 	m_filter.add_seglist(filter.m_filter);
+	m_toSubstract.substract_seglist (filter.m_filter);
+	DisjointSegmentList temp = filter.m_toSubstract;
+	temp.substract_seglist (m_filter);
+	m_toSubstract.add_seglist(temp);
 	return *this;
 }
 
 Filter& Filter::intersect (const Filter &filter) {
 	DEBUG("intersect "+to_str()+" with "+filter.to_str());
 	m_filter.intersect_seglist(filter.m_filter);
+	m_toSubstract.add_seglist(filter.m_toSubstract);
 	return *this;
 }
 
 Filter& Filter::differentiate (const Filter& filter) {
 	DEBUG("Differentiate"+to_str());
-	m_filter.substract_seglist(filter.m_filter);
+	m_toSubstract.add_seglist(filter.m_filter);
 	return *this;
 }
 
 bool Filter::operator== (const Filter& rhs) const {
-	return (this->m_field == rhs.m_field && this->m_filter == rhs.m_filter);
+	DisjointSegmentList lhs_dsl = this->m_filter;
+	lhs_dsl.substract_seglist(this->m_toSubstract);
+	DisjointSegmentList rhs_dsl = rhs.m_filter;
+	rhs_dsl.substract_seglist(rhs.m_toSubstract);
+	return (this->m_field == rhs.m_field && lhs_dsl == rhs_dsl);
 }
 
 void Filter::make_none () {
 	this->m_filter = DisjointSegmentList();
+	this->m_toSubstract = DisjointSegmentList ();
 }
 
 std::string Filter::to_str () const{
@@ -346,8 +361,28 @@ std::string Filter::to_ip_class_pattern() const {
 					  "<= "+std::to_string(seg.second)+") || ";
 		}
 	}
+	
+	output = output.substr(0,output.size()-4);
+	
+	if(!m_toSubstract.empty()) {
+		output += " && !(";
+		segments = m_toSubstract.get_segments ();
+		
+		for  (auto &seg:segments) {
+			//FIXME: handle IP subnets differently
+			if(seg.first==seg.second) {
+				output+= "("+keyword+std::to_string(seg.first)+") || ";
+			}
+			else {
+				output += "("+keyword+">= "+std::to_string(seg.first)+" && "+keyword+
+						  "<= "+std::to_string(seg.second)+") || ";
+			}
+		}
+		output = output.substr(0,output.size()-4);
+		output += ")";
+	}
 
-	return output.substr(0,output.size()-4); //Removes trailing  " || "
+	return output; //Removes trailing  " || "
 }
 
 //Algorithm to decompose interval in prefixes: we take the biggest possible prefix
@@ -382,7 +417,19 @@ std::string Filter::ip_filter_to_ip_class_pattern(std::string keyword) const {
 	for (auto &seg:segments) {
 		output += ip_segment_to_ip_class_pattern(keyword, seg.first, seg.second)+" || ";
 	}
-	return output.substr(0,output.size()-4);
+	
+	output = output.substr(0,output.size()-4);
+	
+	if(!m_toSubstract.empty()) {
+		output += " && !(";
+		segments = m_toSubstract.get_segments ();
+		for (auto &seg:segments) {
+			output += ip_segment_to_ip_class_pattern(keyword, seg.first, seg.second)+" || ";
+		}
+		output = output.substr(0,output.size()-4);
+		output+=")";
+	}
+	return output;
 }
 
 HeaderField Filter::get_field() const{
