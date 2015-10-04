@@ -100,7 +100,7 @@ short Synthesizer::build_traffic_classes(void) {
 					std::string op_as_str = tc.get_operation().to_iprw_conf ();
 					std::string snd_key = op_as_str+"\\"+tc.get_outputIface();
 					if(tc_per_input_iface[key].find(snd_key) == tc_per_input_iface[key].end()) {
-						tc_per_input_iface[key][snd_key] = {key, op_as_str, tc.synthesize_chain ()};
+						tc_per_input_iface[key][snd_key] = {tc.get_outputIface(), op_as_str, tc.synthesize_chain ()};
 					}
 					(tc_per_input_iface[key][snd_key]).add_tc(tc);
 				}/**/
