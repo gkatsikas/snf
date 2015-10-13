@@ -65,10 +65,10 @@ elementclass IPClassifierBench {
 
 	
 ipclassifier :: IPClassifier(
-	((ip proto 17)) && ((dst port 1234)) && ((ip ipd 3355443202)),
-	((dst port 21511) || (dst port 23943) || (dst port 41461) || (dst port 49573) || (dst port 64950)) && ((ip ipd >= 67108864 && ip ipd <= 67111973) || (ip ipd >= 67111975 && ip ipd <= 67126063) || (ip ipd >= 67126065 && ip ipd <= 67157104) || (ip ipd >= 67157106 && ip ipd <= 67158815) || (ip ipd >= 67158817 && ip ipd <= 67168523) || (ip ipd >= 67168525 && ip ipd <= 83886079)),
-	((dst port 4763) || (dst port 17872) || (dst port 28601) || (dst port 41396) || (dst port 57981)) && ((ip ipd >= 67108864 && ip ipd <= 67125053) || (ip ipd >= 67125055 && ip ipd <= 67151562) || (ip ipd >= 67151564 && ip ipd <= 67156224) || (ip ipd >= 67156226 && ip ipd <= 67158236) || (ip ipd >= 67158238 && ip ipd <= 67173257) || (ip ipd >= 67173259 && ip ipd <= 83886079)),
-	((dst port 3969) || (dst port 10912) || (dst port 31885) || (dst port 58830) || (dst port 59587)) && ((ip ipd >= 67108864 && ip ipd <= 67124446) || (ip ipd >= 67124448 && ip ipd <= 67126879) || (ip ipd >= 67126881 && ip ipd <= 67132408) || (ip ipd >= 67132410 && ip ipd <= 67140172) || (ip ipd >= 67140174 && ip ipd <= 67159097) || (ip ipd >= 67159099 && ip ipd <= 83886079)),
+	((ip proto 17)) && ((dst port 1234)) && ((dst net 200.0.0.2/32)),
+	((dst port 21511) || (dst port 23943) || (dst port 41461) || (dst port 49573) || (dst port 64950)) && ((dst net 1.0.0.0/8) && !((dst net 1.0.12.38/32) || (dst net 1.0.67.48/32) || (dst net 1.0.188.113/32) || (dst net 1.0.195.32/32) || (dst net 1.0.233.12/32))),
+	((dst port 4763) || (dst port 17872) || (dst port 28601) || (dst port 41396) || (dst port 57981)) && ((dst net 2.0.0.0/8) && !((dst net 2.0.63.62/32) || (dst net 2.0.166.203/32) || (dst net 2.0.185.1/32) || (dst net 2.0.192.221/32) || (dst net 2.0.251.138/32))),
+	((dst port 3969) || (dst port 10912) || (dst port 31885) || (dst port 58830) || (dst port 59587)) && ((dst net 3.0.0.0/8) && !((dst net 3.0.60.223/32) || (dst net 3.0.70.96/32) || (dst net 3.0.91.249/32) || (dst net 3.0.122.77/32) || (dst net 3.0.196.58/32))),
 );
 
 // Performance Testers

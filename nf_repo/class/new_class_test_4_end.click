@@ -65,10 +65,10 @@ elementclass IPClassifierBench {
 
 	
 ipclassifier :: IPClassifier(
-	((dst port 17650) || (dst port 27006) || (dst port 27224) || (dst port 55150) || (dst port 55443)) && ((ip ipd >= 67108864 && ip ipd <= 67124146) || (ip ipd >= 67124148 && ip ipd <= 67128938) || (ip ipd >= 67128940 && ip ipd <= 67131867) || (ip ipd >= 67131869 && ip ipd <= 67142501) || (ip ipd >= 67142503 && ip ipd <= 67147603) || (ip ipd >= 67147605 && ip ipd <= 83886079)),
-	((dst port 2166) || (dst port 32669) || (dst port 35026) || (dst port 37465) || (dst port 52588)) && ((ip ipd >= 67108864 && ip ipd <= 67118937) || (ip ipd >= 67118939 && ip ipd <= 67120550) || (ip ipd >= 67120552 && ip ipd <= 67127686) || (ip ipd >= 67127688 && ip ipd <= 67139529) || (ip ipd >= 67139531 && ip ipd <= 67144076) || (ip ipd >= 67144078 && ip ipd <= 83886079)),
-	((dst port 8547) || (dst port 10470) || (dst port 13943) || (dst port 46840) || (dst port 55185)) && ((ip ipd >= 67108864 && ip ipd <= 67145209) || (ip ipd >= 67145211 && ip ipd <= 67149814) || (ip ipd >= 67149816 && ip ipd <= 67157904) || (ip ipd >= 67157906 && ip ipd <= 67167240) || (ip ipd >= 67167242 && ip ipd <= 67171475) || (ip ipd >= 67171477 && ip ipd <= 83886079)),
-	((ip proto 17)) && ((dst port 1234)) && ((ip ipd 3355443202)),
+	((dst port 17650) || (dst port 27006) || (dst port 27224) || (dst port 55150) || (dst port 55443)) && ((dst net 0.0.0.0/8) && !((dst net 0.0.59.179/32) || (dst net 0.0.78.107/32) || (dst net 0.0.89.220/32) || (dst net 0.0.131.102/32) || (dst net 0.0.151.84/32))),
+	((dst port 2166) || (dst port 32669) || (dst port 35026) || (dst port 37465) || (dst port 52588)) && ((dst net 1.0.0.0/8) && !((dst net 1.0.39.90/32) || (dst net 1.0.45.167/32) || (dst net 1.0.73.135/32) || (dst net 1.0.119.202/32) || (dst net 1.0.137.141/32))),
+	((dst port 8547) || (dst port 10470) || (dst port 13943) || (dst port 46840) || (dst port 55185)) && ((dst net 2.0.0.0/8) && !((dst net 2.0.141.250/32) || (dst net 2.0.159.247/32) || (dst net 2.0.191.145/32) || (dst net 2.0.228.9/32) || (dst net 2.0.244.148/32))),
+	((ip proto 17)) && ((dst port 1234)) && ((dst net 200.0.0.2/32)),
 );
 
 // Performance Testers
