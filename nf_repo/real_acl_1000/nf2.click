@@ -764,7 +764,6 @@ elementclass Firewall {
 		allow  ip proto 17 && src port > 33434 && src port < 33600 && dst port > 1024,
 		allow  src net 89.0.0.0/8 && ip proto 6,
 		allow  ip proto 6,
-		drop
 	);
 
 	// Strip Ethernet header

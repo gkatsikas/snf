@@ -357,8 +357,19 @@ std::string Filter::to_ip_class_pattern() const {
 			output+= "("+keyword+std::to_string(seg.first)+") || ";
 		}
 		else {
-			output += "("+keyword+">= "+std::to_string(seg.first)+" && "+keyword+
-					  "<= "+std::to_string(seg.second)+") || ";
+			if(seg.first==0) {
+				output += keyword+"<= "+std::to_string(seg.second);
+			}
+			else {
+				if(seg.second == 0xffffffff) {
+					output += keyword+">= "+std::to_string(seg.first);
+				}
+				else {
+					output += "("+keyword+">= "+std::to_string(seg.first)+" && "+keyword+
+					  "<= "+std::to_string(seg.second)+")";
+				}
+			}
+			output += " || ";
 		}
 	}
 	
