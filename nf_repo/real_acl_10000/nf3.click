@@ -32,10 +32,10 @@ define(
 
 /////////////////////////////////////////////////////////////////////////////
 // Elements
-elementclass Router {
+elementclass NAPT {
 	// Module's arguments
-	$iface0, $macAddr0,  $ipAddr0, $ipNetHost0, $ipBcast0, $ipNet0, $color0,
-	$iface1, $macAddr1,  $ipAddr1, $ipNetHost1, $ipBcast1, $ipNet1, $color1,
+	$iface0, $macAddr0, $ipAddr0, $ipNetHost0, $ipBcast0, $ipNet0, $color0,
+	$iface1, $macAddr1, $ipAddr1, $ipNetHost1, $ipBcast1, $ipNet1, $color1,
 	$gwIPAddr, $gwMACAddr, $gwPort, $queueSize, $mtuSize, $burst, $io_method,
 	$position |
 
@@ -45,21 +45,20 @@ elementclass Router {
 	// Module's I/O
 	in0     :: FromDevice($iface0, BURST $burst, SNAPLEN $mtuSize, PROMISC true, METHOD $io_method, SNIFFER false);
 	out1    :: ToDevice  ($iface1, BURST $burst, METHOD $io_method);
-
+	
 	// EtherEncap because we always send to one gw
 	// Interface 0 has a fake destination since we never go back
 	etherEncap1 :: EtherEncap(0x0800, $macAddr1, $gwMACAddr);
 
 	// Strip Ethernet header
-	strip  :: Strip(14);
+	strip0 :: Strip(14);
 
 	// Mark IP header (necessary after Strip)
-	markIPHeader :: MarkIPHeader;
+	markIPHeader0 :: MarkIPHeader;
 
-	// Routing table
-	lookUp :: RadixIPLookup(
-		204.152/16 0,
-		0.0.0.0/0  0
+	// Implements NAPT
+	ipRewriter :: IPRewriter(
+		pattern $ipAddr1 1024-65535 - - 0 0   // Outbound Packets change src IP (S-NAPT)
 	);
 
 	// Process the IP options field (mandatory based on RFC 791)
@@ -82,25 +81,24 @@ elementclass Router {
 	// Interface's pipeline
 	/////////////////////////////////////////////////////////////////////
 	// Input --> Processing
-	in0 -> counter_rx0 -> strip;
+	in0 -> counter_rx0 -> Paint($color0) -> strip0;
 
 	// --> Way out
 	etherEncap1 -> counter_tx1 -> queue1 -> out1;
 
-	// Get IP address for routing
-	strip
-		-> markIPHeader
-		-> GetIPAddress(16)
-		-> [0]lookUp;
+	// Outbound packets go to port 0 of Rewriter
+	strip0
+		-> markIPHeader0
+		-> [0]ipRewriter;
 
-	// Packets for this machine (Never mind, it's a middlebox)
-	lookUp[0]
+	// Rewrite IP address for routing
+	ipRewriter
 		-> DropBroadcasts
 		-> ipOpt1[0]
 		-> fixIP1
 		-> decTTL1[0]
 		-> fragIP1[0]
-		//-> IPPrint(Router, TTL true)
+		//-> IPPrint(NAPT, TTL true)
 		-> [0]etherEncap1;
 	/////////////////////////////////////////////////////////////////////
 
@@ -124,7 +122,7 @@ elementclass Router {
 /////////////////////////////////////////////////////////////////////////////
 // Scenario
 /////////////////////////////////////////////////////////////////////////////
-router :: Router(
+napt :: NAPT(
 	$iface0, $macAddr0, $ipAddr0, $ipNetHost0, $ipBcast0, $ipNet0, $color0,
 	$iface1, $macAddr1, $ipAddr1, $ipNetHost1, $ipBcast1, $ipNet1, $color1,
 	$gwIPAddr, $gwMACAddr, $gwPort, $queueSize, $mtuSize, $burst, $io_method,
