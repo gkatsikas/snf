@@ -8644,7 +8644,7 @@ elementclass Firewall {
 		-> fixIP1
 		-> decTTL1[0]
 		-> fragIP1[0]
-		-> IPPrint(FW, TTL true)
+		//-> IPPrint(FW, TTL true)
 		-> [0]etherEncap1;
 
 	// Discarded by firewall
