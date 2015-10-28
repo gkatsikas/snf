@@ -1,7 +1,7 @@
-Network Functions'(NFs) Chain Synthesis
+Hyper-NF: Synthesizing High-Performance NFV Chains
 ======
 
-A framework to turn a chain of Click-based network functions (NFs) into a sythesized NF.
+A framework to turn a chain of Click-based network functions (NFs) into a sythesized Hyper-NF.
 
 ## Requirements
   * C++11 (e.g. apt-get install build-essential)
