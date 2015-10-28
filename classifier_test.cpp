@@ -6,7 +6,7 @@
 #include "helpers.hpp"
 #include "filter.hpp"
 
-#define MAX_NUMBER_CLASSES 256
+#define MAX_NUMBER_CLASSES 1025
 #define REMOVED_ADDRESSES  5
 #define ALLOWED_PORTS      5
 

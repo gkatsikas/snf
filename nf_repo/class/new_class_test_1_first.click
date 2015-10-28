@@ -65,7 +65,7 @@ elementclass IPClassifierBench {
 
 	
 ipclassifier :: IPClassifier(
-	((ip proto 17)) && ((dst port 1234)) && ((ip ipd 3355443202)),
+	((ip proto 17)) && ((dst port 1234)) && ((dst net 200.0.0.2/32)),
 );
 
 // Performance Testers
