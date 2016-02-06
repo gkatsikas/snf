@@ -42,20 +42,26 @@ class GenericConfiguration
 		/*
 		 * Helper methods to read the property file
 		 */
-		Chameleon const& get_value(std::string const& section, std::string const& entry) const;
-		Chameleon const& get_value(std::string const& section, std::string const& entry, int    value);
-		Chameleon const& get_value(std::string const& section, std::string const& entry, double value);
-		Chameleon const& get_value(std::string const& section, std::string const& entry, std::string const& value);
+		Chameleon const& get_value(
+			std::string const& section, std::string const& entry
+		) const;
+		Chameleon const& get_value(
+			std::string const& section, std::string const& entry, int value
+		);
+		Chameleon const& get_value(
+			std::string const& section, std::string const& entry, bool value
+		);
+		Chameleon const& get_value(
+			std::string const& section, std::string const& entry, double value
+		);
+		Chameleon const& get_value(
+			std::string const& section, std::string const& entry, std::string const& value
+		);
 
 		/*
 		 * Count the entries of a section
 		 */
 		unsigned short int count_section_elements(std::string const& section);
-
-		/*
-		 * Convert string to boolean
-		 */
-		bool to_bool(std::string const& s);
 };
 
 #endif

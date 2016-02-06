@@ -72,7 +72,9 @@ GenericConfiguration::~GenericConfiguration() {
 		content_.clear();
 }
 
-Chameleon const& GenericConfiguration::get_value(std::string const& section, std::string const& entry) const {
+Chameleon const& GenericConfiguration::get_value(
+	std::string const& section, std::string const& entry) const {
+
 	std::map<std::string,Chameleon>::const_iterator ci = content_.find(section + '/' + entry);
 
 	if (ci == content_.end())
@@ -81,7 +83,9 @@ Chameleon const& GenericConfiguration::get_value(std::string const& section, std
 	return ci->second;
 }
 
-Chameleon const& GenericConfiguration::get_value(std::string const& section, std::string const& entry, int value) {
+Chameleon const& GenericConfiguration::get_value(
+	std::string const& section, std::string const& entry, int value) {
+
 	try {
 		return get_value(section, entry);
 	}
@@ -90,7 +94,9 @@ Chameleon const& GenericConfiguration::get_value(std::string const& section, std
 	}
 }
 
-Chameleon const& GenericConfiguration::get_value(std::string const& section, std::string const& entry, double value) {
+Chameleon const& GenericConfiguration::get_value(
+	std::string const& section, std::string const& entry, bool value) {
+
 	try {
 		return get_value(section, entry);
 	}
@@ -99,7 +105,20 @@ Chameleon const& GenericConfiguration::get_value(std::string const& section, std
 	}
 }
 
-Chameleon const& GenericConfiguration::get_value(std::string const& section, std::string const& entry, std::string const& value) {
+Chameleon const& GenericConfiguration::get_value(
+	std::string const& section, std::string const& entry, double value) {
+
+	try {
+		return get_value(section, entry);
+	}
+	catch(const char *) {
+		return content_.insert(make_pair(section+'/'+entry, Chameleon(value))).first->second;
+	}
+}
+
+Chameleon const& GenericConfiguration::get_value(
+	std::string const& section, std::string const& entry, std::string const& value) {
+
 	try {
 		return get_value(section, entry);
 	}
@@ -118,10 +137,4 @@ unsigned short int GenericConfiguration::count_section_elements(std::string cons
 	}
 
 	return counter;
-}
-
-bool GenericConfiguration::to_bool(std::string const& s) {
-	bool b;
-	std::istringstream(s) >> std::boolalpha >> b;
-	return b;
 }

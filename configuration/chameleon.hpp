@@ -1,7 +1,7 @@
 //============================================================================
 //        Name: chameleon.hpp
 //   Copyright: KTH ICT CoS Network Systems Lab
-// Description: Class that covers several types of property values
+// Description: Class that covers several types of primitives
 //============================================================================
 
 #ifndef _CHAMELEON_HPP_
@@ -17,6 +17,7 @@ class Chameleon
 	public:
 		Chameleon() {};
 		explicit Chameleon(int);
+		explicit Chameleon(bool);
 		explicit Chameleon(double);
 		explicit Chameleon(const char*);
 		explicit Chameleon(const std::string&);
@@ -25,12 +26,14 @@ class Chameleon
 		Chameleon& operator=(Chameleon const&);
 
 		Chameleon& operator=(int);
+		Chameleon& operator=(bool);
 		Chameleon& operator=(double);
 		Chameleon& operator=(std::string const&);
 
 	public:
 		operator std::string() const;
 		operator double     () const;
+		operator bool       () const;
 		operator int        () const;
 };
 

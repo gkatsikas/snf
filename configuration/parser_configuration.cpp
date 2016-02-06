@@ -14,9 +14,13 @@
 /*
  * Construct an empty parser configuration
  */
-ParserConfiguration::ParserConfiguration(const std::string& config_file) : GenericConfiguration(config_file) {
+ParserConfiguration::ParserConfiguration(const std::string& config_file)
+	: GenericConfiguration(config_file) {
 	this->nf_chain   = new Graph();
 	this->nf_domains = new Graph();
+	this->output_folder   = DEFAULT_HYPER_NF_OUT_FOLDER;
+	this->output_filename = DEFAULT_HYPER_NF_CONF_NAME;
+	this->hardware_classification = false;
 	log << debug << "ParserConfiguration constructed" << def << std::endl;
 }
 
@@ -35,9 +39,15 @@ ParserConfiguration::~ParserConfiguration() {
  * Read the topology of the NF chain and encode it into a graph structure.
  * The topology is represented as a Click configuration, e.g. NF_1[eth0] -> NF2;
  */
-short ParserConfiguration::load_property_file(void) {
+short
+ParserConfiguration::load_property_file(void) {
 	unsigned short exit_status = 0;
 	std::string nf_topo, nf_domains;
+
+	// First, parse the generic properties of the chain
+	if ( (exit_status=this->parse_generic_properties()) != SUCCESS ) {
+		return exit_status;
+	}
 
 	try {
 		// Read the topology
@@ -53,22 +63,25 @@ short ParserConfiguration::load_property_file(void) {
 
 	//log << "\tNF Topology = " << nf_topo << def << std::endl;
 	// Parse the chain of NFs form the property file
-	if ( (exit_status=this->parse_topology(nf_topo)) != SUCCESS )
+	if ( (exit_status=this->parse_topology(nf_topo)) != SUCCESS ) {
 		return exit_status;
+	}
 
 	//log << "" << def << std::endl;
 
 	//log << "\tNFV Domains = " << nf_domains << def << std::endl;
 	// Parse the connection points of the chain with the outside world (e.g. operator's domains)
-	if ( (exit_status=this->parse_domains(nf_domains)) != SUCCESS )
+	if ( (exit_status=this->parse_domains(nf_domains)) != SUCCESS ) {
 		return exit_status;
+	}
 
 	log << "\tThe property file is successfully parsed" << def << std::endl;
 	log << "" << def << std::endl;
 
 	// Check if the graph is acyclic
-	if ( (exit_status=this->check_for_loops())  != SUCCESS )
+	if ( (exit_status=this->check_for_loops())  != SUCCESS ) {
 		return exit_status;
+	}
 
 	log << "" << def << std::endl;
 
@@ -81,9 +94,77 @@ short ParserConfiguration::load_property_file(void) {
 }
 
 /*
+ * Read the generic parameters of the Chain Configurator
+ */
+short
+ParserConfiguration::parse_generic_properties(void) {
+
+	// Read the output folder
+	// If not given, use the default (constructor)
+	try {
+		this->output_folder = (std::string&) get_value("GENERIC", "OUTPUT_FOLDER");
+
+		if ( ! directory_exists(this->output_folder) ) {
+			if ( ! create_directory(this->output_folder) ) {
+				return FAILURE;
+			}
+		}
+	}
+	catch (const std::exception& e) {
+		
+	}
+
+	// Read the desired filename of the generated code
+	// If not given, use the default (constructor)
+	try {
+		this->output_filename = (std::string&) get_value("GENERIC", "OUTPUT_FILE");
+
+		// Careful, you might lose your previously synthesized chain!
+		if ( file_exists(this->output_filename) ) {
+			log << warn << "\tOutput file " << this->output_filename <<
+				" exists and will be overwritten" << def << std::endl;
+		}
+
+		// Remove the extension because we might generate files different extensions.
+		// We handle the new extensions in the synthesizer class.
+		if ( get_string_extension(this->output_filename, '.') == "click" ) {
+			this->output_filename = get_substr_before(this->output_filename, ".click");
+		}
+
+		// Place the output file into the output folder
+		if ( get_string_extension(this->output_folder, '/') != "" ) {
+			// Folder should end with /
+			this->output_folder += "/";
+		}
+		this->output_filename = this->output_folder + this->output_filename;
+	}
+	catch (const std::exception& e) {
+		
+	}
+
+	// If Hardware classification option is true, the generated code
+	// will consist of two parts. One Intel RSS file with the expressions to
+	// be given to the NIC and one .click file. The Click file will assume 
+	// that DPDK is supported and encode multiple FromDPDKDevice elements that
+	// read packets from the same NIC but different hardware queue. A thread
+	// scheduler then will assign queues to cores and output the rest Click 
+	// elements to different cores.
+	// If not given, use the default (constructor)
+	try {
+		this->hardware_classification = (bool) get_value("GENERIC", "HARDWARE_CLASSIFICATION", true);
+	}
+	catch (const std::exception& e) {
+		
+	}
+
+	return SUCCESS;
+}
+
+/*
  * Parse the internal NF chain connections
  */
-short ParserConfiguration::parse_topology(const std::string& nf_topo) {
+short
+ParserConfiguration::parse_topology(const std::string& nf_topo) {
 
 	if ( this->nf_chain == NULL ) {
 		this->usage("The graph of he chain does not exist.", "Badly instantiated ParserConfiguration.");
@@ -168,7 +249,7 @@ short ParserConfiguration::parse_topology(const std::string& nf_topo) {
 			int position = atoi(this->get_number_from_string(nf).c_str());
 
 			// Check if this NF is already inserted
-			ChainVertex* v = (ChainVertex*) this->nf_chain->get_vertex_by_position(position);
+			ChainVertex* v = static_cast<ChainVertex*> (this->nf_chain->get_vertex_by_position(position));
 
 			// Create one
 			if ( v == NULL ) {
@@ -281,7 +362,7 @@ short ParserConfiguration::parse_domains(const std::string& nf_domains) {
 		int position = atoi(this->get_number_from_string(nf).c_str());
 
 		// This NF must already exist
-		ChainVertex* v = (ChainVertex*) this->nf_chain->get_vertex_by_position(position);
+		ChainVertex* v = static_cast<ChainVertex*> (this->nf_chain->get_vertex_by_position(position));
 
 		// If not, something is wrong..
 		if ( v == NULL ) {
@@ -376,16 +457,23 @@ void ParserConfiguration::usage(const std::string& message, const std::string& u
  * Print the loaded configuration
  */
 void ParserConfiguration::print_loaded_property_status(void) {
+	log << "\t++++++++++++++ Generic Configuration ++++++++++++++" << def << std::endl;
+	log << info << "\t" << "          Output Folder: " << this->output_folder   << def << std::endl;
+	log << info << "\t" << "        Output Filename: " << this->output_filename << def << std::endl;
+	log << info << "\t" << "Hardware Classification: " << bool_to_str(this->hardware_classification)
+		<< def << std::endl;
+	log << "\t+++++++++++++++++++++++++++++++++++++++++++++++++++" << def << std::endl;
+
 	log << "\t+++++++++++++++ Chain Interface Map +++++++++++++++" << def << std::endl;
 	for (auto& pair : this->nf_chain->get_adjacency_list()) {
-		ChainVertex* v = (ChainVertex*) pair.first;
+		ChainVertex* v = static_cast<ChainVertex*> (pair.first);
 		v->print_chain_interface_map();
 	}
 	log << "\t+++++++++++++++++++++++++++++++++++++++++++++++++++" << def << std::endl;
 
 	log << "\t+++++++++++++++ Entry Interface Map +++++++++++++++" << def << std::endl;
 	for (auto& pair : this->nf_chain->get_adjacency_list()) {
-		ChainVertex* v = (ChainVertex*) pair.first;
+		ChainVertex* v = static_cast<ChainVertex*> (pair.first);
 		v->print_entry_interface_map();
 	}
 	log << "\t+++++++++++++++++++++++++++++++++++++++++++++++++++" << def << std::endl;

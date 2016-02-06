@@ -111,7 +111,7 @@ synth_nat.o: ./synthesizer/synth_nat.hpp ./synthesizer/synth_nat.cpp ./traffic_c
 	
 ### House keeping
 clean:
-	\rm -f *.o *.plist *.gch *.log
+	\rm -f *.o *.plist *.gch *.log *.click *.rss
 
 clean-dist: clean
 	\rm -f $(EXECUTABLE) $(CLASS_TEST)

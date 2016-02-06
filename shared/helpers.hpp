@@ -11,9 +11,12 @@
 #include <vector>
 #include <string>
 #include <chrono>
+#include <cstring>
 #include <sstream>
 #include <fstream>
+#include <sstream>
 #include <iostream>
+#include <sys/stat.h>
 
 /*
  * Shared variables
@@ -125,25 +128,96 @@ short allocateMemory(void** memoryBuffer, size_t size);
 short releaseMemory (void** memoryBuffer);
 
 /*
+ * Convert a boolean to string
+ */
+inline std::string bool_to_str(const bool b) {
+	std::ostringstream ss;
+    ss << std::boolalpha << b;
+    return ss.str();
+}
+
+/*
+ * Convert a string to boolean
+ */
+inline bool str_to_bool(const std::string& s) {
+	bool b;
+	std::istringstream(s) >> std::boolalpha >> b;
+	return b;
+}
+
+/*
+ * Check if directory exists
+ */
+inline bool directory_exists(const std::string& dir_path) {
+	struct stat info;
+
+	return ( (stat(dir_path.c_str(), &info) == 0) && (info.st_mode & S_IFDIR) );
+	/*if ( stat(dir_path.c_str(), &info) != 0 ) {
+		return false;
+	}
+	else if(info.st_mode & S_IFDIR) {
+		return true;
+	}
+	else {
+		return false;
+	}*/
+}
+
+/*
+ * Create a directory
+ */
+inline bool create_directory(const std::string& dir_path) {
+	mode_t mode = 0700;
+	return ( mkdir(dir_path.c_str(), mode) == 0 );
+}
+
+/*
+ * Check if file exists
+ */
+inline bool file_exists(const std::string& file_path) {
+	struct stat buffer;
+	return ( stat(file_path.c_str(), &buffer) == 0 ); 
+}
+
+/*
+ * Get file extension
+ */
+inline const std::string get_string_extension(const std::string& str, const char delim='.') {
+	if( str.find_last_of(delim) != std::string::npos )
+		return str.substr(str.find_last_of(delim) + 1);
+	return std::string("");
+}
+
+/*
+ * Get file extension
+ */
+inline const std::string get_substr_before(const std::string& str, const std::string& pattern) {
+	std::size_t found = str.find(pattern);
+	if ( found != std::string::npos ) {
+		return str.substr(0, found);
+	}
+	return str;
+}
+
+/*
  * A C++11 template that is able to receive any function with any arguments
  * and measure the time it gets to be executed.
  * Time scale can change in compile time (default: nanoseconds)
  */
 template<typename TimeT = std::chrono::microseconds>
-struct measure
-{
-    template<typename F, typename ...Args>
-    static typename TimeT::rep execution(F func, Args&&... args)
-    {
-        auto start = std::chrono::system_clock::now();
+struct measure {
+	template<typename F, typename ...Args>
+	static typename TimeT::rep execution(F func, Args&&... args)
+	{
+		auto start = std::chrono::system_clock::now();
 
-        // Now call the function with all the parameters you need
-        func(std::forward<Args>(args)...);
+		// Now call the function with all the parameters you need
+		func(std::forward<Args>(args)...);
 
-        auto duration = std::chrono::duration_cast< TimeT>(std::chrono::system_clock::now() - start);
+		auto duration = std::chrono::duration_cast< TimeT>(std::chrono::system_clock::now() - start);
 
-        return  (double) duration.count();
-    }
+		return  (double) duration.count();
+	}
 };
 
 /*

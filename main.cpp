@@ -16,7 +16,7 @@ int main(int argc, char** argv) {
 
 	// Initialize logger
 	Logger log(__FILE__);
-	log << info << "Network Functions' Chain Synthesis" << def << std::endl;
+	log << info << "Hyper-NF: Network Functions' Chain Synthesizer" << def << std::endl;
 
 	// Check input arguments validity
 	if ( (exit_status=parseArguments(argc, argv, &property_file)) != SUCCESS ) {
@@ -31,7 +31,7 @@ int main(int argc, char** argv) {
 	log << info << measure<>::execution
 	( [&]()
 	{
-		log << info << "Loading property file... " << def << std::endl;
+		log << info << "Hyper-NF Chain Loader... " << def << std::endl;
 		pcf = new ParserConfiguration(property_file);
 		log << "\tProperty file: " << property_file << def << std::endl;
 		if ( (exit_status=pcf->load_property_file()) != SUCCESS ) {
@@ -53,7 +53,7 @@ int main(int argc, char** argv) {
 	log << info << measure<>::execution
 	( [&]()
 	{
-		log << "Parsing the chain of Network Functions... " << def << std::endl;
+		log << info << "Hyper-NF Chain Parser... " << def << std::endl;
 		try {
 			parser = new ChainParser(std::move(pcf));
 		}
@@ -80,7 +80,7 @@ int main(int argc, char** argv) {
 	std::cout << std::endl;
 	///////////////////////////////////////////////////////////////////////////////////////////
 
-	/////////////////////////// Build Traffic Classes and Synthesize //////////////////////////
+	/////////////////////////////////// Build Traffic Classes /////////////////////////////////
 	Synthesizer* synthesizer = NULL;
 
 	std::cout << std::endl;
@@ -88,7 +88,7 @@ int main(int argc, char** argv) {
 	log << info << measure<>::execution
 	( [&]()
 	{
-		log << info << "NF Synthesizer... " << def << std::endl;
+		log << info << "Hyper-NF Traffic Class Builder... " << def << std::endl;
 		try {
 			synthesizer = new Synthesizer(std::move(parser));
 		}
@@ -102,8 +102,6 @@ int main(int argc, char** argv) {
 			delete synthesizer;
 			exit(exit_status);
 		}
-		synthesizer->synthesize_nat();
-		synthesizer->generate_equivalent_configuration();
 		//synthesizer->test_traffic_class_builder();
 	}
 	) << "  microseconds" << def << std::endl;
@@ -111,18 +109,32 @@ int main(int argc, char** argv) {
 	std::cout << std::endl;
 	///////////////////////////////////////////////////////////////////////////////////////////
 
-	///////////////////////////////////// Test a Click Tree ///////////////////////////////////
-	/*std::cout << std::endl;
+	///////////////////////////////////////// Synthesize //////////////////////////////////////
+	std::cout << std::endl;
 	log << info << "+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+" << def << std::endl;
 	log << info << measure<>::execution
 	( [&]()
 	{
-		log << info << "Testing Click Tree... " << def << std::endl;
-		test_click_tree();
+		log << info << "Hyper-NF Synthesizer... " << def << std::endl;
+		synthesizer->synthesize_nat();
 	}
 	) << "  microseconds" << def << std::endl;
 	log << info << "+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+" << def << std::endl;
-	std::cout << std::endl;*/
+	std::cout << std::endl;
+	///////////////////////////////////////////////////////////////////////////////////////////	
+
+	////////////////////////////// Generate Hyper-NF Configuration ////////////////////////////
+	std::cout << std::endl;
+	log << info << "+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+" << def << std::endl;
+	log << info << measure<>::execution
+	( [&]()
+	{
+		log << info << "Hyper-NF Generator... " << def << std::endl;
+		synthesizer->generate_equivalent_configuration();
+	}
+	) << "  microseconds" << def << std::endl;
+	log << info << "+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+" << def << std::endl;
+	std::cout << std::endl;
 	///////////////////////////////////////////////////////////////////////////////////////////
 
 	///////////////////////////////////////// Clean-Up ////////////////////////////////////////

@@ -4,6 +4,11 @@
 ####### Please use the bitbucket wiki to report any bugs or contact katsikas@kth.se
 ###################################################################################################
 
+[GENERIC]
+OUTPUT_FOLDER = ./results
+OUTPUT_FILE   = hyper-chain.click
+HARDWARE_CLASSIFICATION = true
+
 ###################################################################################################
 #######
 ####### SECTION 1: In this section you specifiy the modules you want to chain. 

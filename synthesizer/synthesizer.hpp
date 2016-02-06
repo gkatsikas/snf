@@ -44,8 +44,18 @@ class Synthesizer {
 		/*
 		 * Generated traffic classes
 		 */
-		std::unordered_map<std::string, std::unordered_map<std::string, ConsolidatedTc> > tc_per_input_iface;
-		std::unordered_map<std::string, std::shared_ptr<SynthesizedNat> > nat_per_output_iface;
+		std::unordered_map< std::string, std::unordered_map<std::string, ConsolidatedTc> > tc_per_input_iface;
+		std::unordered_map< std::string, std::shared_ptr<SynthesizedNat> > nat_per_output_iface;
+
+		/*
+		 * The filename where the generated Click code will be written
+		 */
+		std::string hyper_nf_configuration_name;
+
+		/*
+		 * The filename where the generated Intel-RSS code will be written
+		 */
+		std::string hyper_nf_hardware_classifer_name;
 
 	public:
 		/*
@@ -70,7 +80,7 @@ class Synthesizer {
 		 * Create a new Click configuration that implements the chain in one Click module.
 		 * The configuration must achieve equivalent functionality with the initial one.
 		 */
-		short generate_equivalent_configuration(void);
+		short generate_equivalent_configuration(bool to_file=true);
 
 		/*
 		 * Test the traffic classes's construction

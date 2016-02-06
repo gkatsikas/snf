@@ -14,38 +14,49 @@
 #include "../traffic_class_builder/click_element.hpp"
 
 ConsolidatedTc::ConsolidatedTc () :
-	m_outIface (),
+	m_outIface  (),
 	m_operation (),
-	m_pattern (),
-	m_chain (),
+	m_pattern   (),
+	m_chain     (),
 	m_inputPort (256),
-	m_nat ()
+	m_nat       ()
 	{}
 
 ConsolidatedTc::ConsolidatedTc (const std::string& out_iface, const std::string& op, const std::string& chain) :
-	m_outIface(out_iface), m_operation(op), m_chain(chain), m_inputPort(0) {}
+	m_outIface  (out_iface),
+	m_operation (op),
+	m_chain     (chain),
+	m_inputPort (256) {}
 
-void ConsolidatedTc::add_tc (const TrafficClass& tc) {
+void
+ConsolidatedTc::add_tc (const TrafficClass& tc) {
 	if(!m_pattern.empty()) {
 		m_pattern += " || ";
 	}
 	m_pattern += "("+tc.to_ip_classifier_pattern()+")";
 }
 
-void ConsolidatedTc::set_nat (std::shared_ptr<SynthesizedNat> nat, unsigned short input_port) {
+void
+ConsolidatedTc::set_nat (std::shared_ptr<SynthesizedNat> nat, unsigned short input_port) {
 	m_nat = nat->get_name();
 	m_inputPort = input_port;
 }
 
-std::string ConsolidatedTc::get_chain() {
+std::string
+ConsolidatedTc::get_chain() {
 	return m_chain+"["+std::to_string(m_inputPort)+"]"+m_nat+";";
 }
 
 Synthesizer::Synthesizer(ChainParser* cp) : tc_per_input_iface(), nat_per_output_iface() {
 	this->log.set_logger_file(__FILE__);
-	if ( cp == NULL )
+	if ( cp == NULL ) {
 		throw std::runtime_error("Synthesizer: Invalid Parser object");
+	}
 	this->parser = cp;
+	this->hyper_nf_configuration_name = 
+		this->parser->get_chain_graph()->get_output_filename() + ".click";
+	this->hyper_nf_hardware_classifer_name = 
+		this->parser->get_chain_graph()->get_output_filename() + ".rss";
 	log << debug << "Synthesizer constructed" << def << std::endl;
 }
 
@@ -59,7 +70,8 @@ Synthesizer::~Synthesizer() {
  * endpoint. Along the way build the traffic classes required for
  * the synthesis.
  */
-short Synthesizer::build_traffic_classes(void) {
+short
+Synthesizer::build_traffic_classes(void) {
 
 	log << "" << std::endl;
 	log << info << "==============================================================================" << def << std::endl;
@@ -68,7 +80,7 @@ short Synthesizer::build_traffic_classes(void) {
 	// Get all NFs, one-by-one
 	for ( Vertex* v : this->get_chain_parser()->get_chain_graph()->get_chain()->get_vertex_order() ) {
 		// The node of this NF in the chain graph
-		ChainVertex* cv = (ChainVertex*) v;
+		ChainVertex* cv = static_cast<ChainVertex*>(v);
 		unsigned short nf_position = cv->get_position();
 
 		// The Click DAG of this NF
@@ -89,22 +101,28 @@ short Synthesizer::build_traffic_classes(void) {
 
 			// Go DFS until the end of life
 			std::shared_ptr<ClickElement> ep(new ClickElement(endpoint));
-			TrafficBuilder::traffic_class_builder_dfs(this->get_chain_parser()->get_chain_graph()->get_chain(),
-									this->get_chain_parser()->get_nf_graphs(), nf_position, ep, interface);
+			TrafficBuilder::traffic_class_builder_dfs(
+				this->get_chain_parser()->get_chain_graph()->get_chain(),
+				this->get_chain_parser()->get_nf_graphs(),
+				nf_position,
+				ep,
+				interface
+			);
 
 			std::string key = cv->get_name()+","+interface;
 			ClickTree ct (ep);
-			std::cout<<"####################################################";
-			std::cout<<"####################################################"<< std::endl;
+
+			// 
 			for (auto &tc : ct.get_trafficClasses()) {
-				if (!tc.is_discarded ())/**/ {
+				// A valid traffic class
+				if (!tc.is_discarded ()) {
 					std::string op_as_str = tc.get_operation().to_iprw_conf ();
 					std::string snd_key = op_as_str+"\\"+tc.get_outputIface();
 					if(tc_per_input_iface[key].find(snd_key) == tc_per_input_iface[key].end()) {
 						tc_per_input_iface[key][snd_key] = {tc.get_outputIface(), op_as_str, tc.synthesize_chain ()};
 					}
 					(tc_per_input_iface[key][snd_key]).add_tc(tc);
-				}/**/
+				}
 			}
 
 			log << "" << def << std::endl;
@@ -115,17 +133,25 @@ short Synthesizer::build_traffic_classes(void) {
 	return SUCCESS;
 }
 
-short Synthesizer::synthesize_nat(void) {
+/*
+ * Builds a path of elements per input-output interface pair
+ */
+short
+Synthesizer::synthesize_nat(void) {
 	for (auto &it : tc_per_input_iface) {
 		for(auto &tc : it.second) {
 			std::string out_iface = tc.second.m_outIface;
 			if (nat_per_output_iface.find(out_iface) == nat_per_output_iface.end()) {
 				nat_per_output_iface[out_iface] = std::shared_ptr<SynthesizedNat> ( new SynthesizedNat() );
 			}
-			tc.second.set_nat(nat_per_output_iface[out_iface],
-					nat_per_output_iface[out_iface]->add_traffic_class(tc.second,it.first) );
+			tc.second.set_nat(
+				nat_per_output_iface[out_iface],
+				nat_per_output_iface[out_iface]->add_traffic_class(tc.second,it.first)
+			);
 		}
 	}
+
+	log << "Hyper-NF successfully synthesized the NF chain" << def << std::endl;
 
 	return SUCCESS;
 }
@@ -134,13 +160,36 @@ short Synthesizer::synthesize_nat(void) {
  * Create a new Click configuration that implements the chain in one Click module.
  * The configuration must achieve equivalent functionality with the initial one.
  */
-short Synthesizer::generate_equivalent_configuration(void) {
+short
+Synthesizer::generate_equivalent_configuration(bool to_file) {
+
+	std::string    message;
+	std::ofstream  *out = NULL;
+	std::streambuf *cout_file = NULL;
+
+	//log << "" << std::endl;
+	//log << info << "==============================================================================" << def << std::endl;
+	//log << info << "Hyper-NF Generator ..." << def << std::endl;
+
+	// The generated Click configuration will be written to a file
+	if ( to_file ) {
+		// Open the output file to host our synthesized chain
+		out = new std::ofstream(this->hyper_nf_configuration_name);
+		// Save old cout buffer and redirect cout to the file above.
+		cout_file = std::cout.rdbuf(out->rdbuf());
+	}
+
+	// Costruct the path of Click elements that will lead this modified
+	// (i.e., rewritten by Click IPRewriter already) traffic class out of Click.
+	// This set of elements follows IPRewriter.
 	for (auto &it : nat_per_output_iface) {
 		std::cout <<"/** NAT going to: "<<it.first<<" **/\n";
 		auto nat = it.second;
-		std::cout<<nat->get_name()<<" :: IPRewriter("<<nat->compute_conf()<<"DEC_IP_TTL true, CALC_CHECKSUM true);\n";
-		std::cout<<nat->get_name()<<"["<<nat->get_outboundPort()<<
-					"] -> EtherEncap(0x0800, $etherEncapConf) -> Queue ($queueSize) -> ToDevice ("<<it.first<<");\n";
+		std::cout 	<< nat->get_name() << " :: IPRewriter(" << nat->compute_conf() 
+					<< "DEC_IP_TTL true, CALC_CHECKSUM true);\n";
+		std::cout 	<< nat->get_name() << "[" << nat->get_outboundPort()
+					<< "] -> EtherEncap(0x0800, $etherEncapConf) -> Queue ($queueSize) -> ToDevice ("
+					<< it.first << ");\n";
 		for(unsigned short i=0; i<nat->get_outboundPort(); i++) {
 			std::cout<<nat->get_name()<<"["<<i<<"] -> Discard ();\n";
 		}
@@ -148,22 +197,36 @@ short Synthesizer::generate_equivalent_configuration(void) {
 		std::cout<<"\n";
 	}
 
-	int i=0;
+	int i = 0;
+
+	// Construct the IPClassifier(s) and the path of Click elements
+	// that lead to all its/their traffic classes.
 	for (auto &it : tc_per_input_iface) {
 		std::string ipc_name = "ipc"+std::to_string(i++);
 		std::cout<<ipc_name+" :: IPClassifier (\n";
 		std::vector<std::string> chains;
 		for (auto &tc: it.second) {
-			std::cout<<"\t"<<tc.second.m_pattern<<",\n";
+			std::cout << "\t" << tc.second.m_pattern << ",\n";
 			chains.push_back(tc.second.get_chain());
 		}
 		std::cout<<");\n";
 		for (size_t i = 0; i<chains.size(); i++) {
-			std::cout<<ipc_name+"["<<i<<"] -> "<<chains[i]<<"\n";
+			std::cout << ipc_name + "[" << i << "] -> " << chains[i] << "\n";
 		}
-		std::cout <<"FromDevice ("<<it.first<<") -> Strip(14) -> MarkIPHeader() -> "+ipc_name+";\n";
+		std::cout << "FromDevice (" << it.first << ") -> Strip(14) -> MarkIPHeader() -> " + ipc_name + ";\n";
 		i++;
 	}
+
+	if ( to_file ) {
+		std::cout.rdbuf(cout_file);   // Reset to standard output again
+		out->close();
+		delete out;
+
+		message = " to " + this->hyper_nf_configuration_name;
+	}
+
+	log << "Hyper-NF successfully generated the NF chain synthesis" << message << def << std::endl;
+	//log << info << "==============================================================================" << def << std::endl;
 
 	return SUCCESS;
 }
@@ -173,8 +236,13 @@ short Synthesizer::generate_equivalent_configuration(void) {
  * The vertices can also belong to different graph, so in reality,
  * this is a recursive graph composition function.
  */
-void TrafficBuilder::traffic_class_builder_dfs(Graph* graph, NF_Map<NFGraph*> nf_chain, unsigned short nf_position,
-						std::shared_ptr<ClickElement> elem, std::string nf_iface) {
+void
+TrafficBuilder::traffic_class_builder_dfs(
+	Graph* graph,
+	NF_Map<NFGraph*> nf_chain,
+	unsigned short nf_position,
+	std::shared_ptr<ClickElement> elem,
+	std::string nf_iface) {
 
 	Logger log(__FILE__);
 	ElementVertex* nf_vertex = elem->get_ev();
@@ -182,7 +250,7 @@ void TrafficBuilder::traffic_class_builder_dfs(Graph* graph, NF_Map<NFGraph*> nf
 	// Retrieve the appropriate adjacency list
 	Graph::AdjacencyList adjacency_list = nf_chain[nf_position]->get_adjacency_list();
 
-	// We reached an Output vertex and need to find for a conneciton with a following NF
+	// We reached an Output vertex and need to find for a connection with a following NF
 	if ( adjacency_list.at(nf_vertex).size() == 0 ) {
 		// We are looking for an endpoint Outpout element with different configuration (aka interface)
 		// Otherwise a loop will be created
@@ -257,8 +325,10 @@ void TrafficBuilder::traffic_class_builder_dfs(Graph* graph, NF_Map<NFGraph*> nf
 			}
 		}*/
 
-		std::shared_ptr<ClickElement> child(new ClickElement((ElementVertex*) neighbour.second, neighbour.first));
-		child->set_nfName(((ChainVertex*) graph->get_vertex_by_position(nf_position))->get_name() );
+		std::shared_ptr<ClickElement> child(
+			new ClickElement( static_cast<ElementVertex*> (neighbour.second), neighbour.first )
+		);
+		child->set_nfName( static_cast<ChainVertex*> (graph->get_vertex_by_position(nf_position))->get_name() );
 		elem->set_child(child, count++);
 		//log<< "\t\tCreated: "+child->to_str()<<std::endl;
 		//log << "\t\t Child: " << ev->get_name() << def << std::endl;

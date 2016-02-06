@@ -24,9 +24,9 @@ std::vector<std::string> &split(const std::string &s, char delim, std::vector<st
 std::vector<std::string> split(const std::string &s, const std::string& delim) {
 	std::vector<std::string> elems;
 	size_t start=s.find_first_not_of(delim);
-	size_t end=0;
+
 	while(start != std::string::npos) {
-		end = s.find_first_of(delim,start);
+		size_t end = s.find_first_of(delim,start);
 		std::string temp = s.substr(start,end-start);
 		elems.push_back(temp);
 		start = s.find_first_not_of(delim,end);
