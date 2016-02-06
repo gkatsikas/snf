@@ -53,10 +53,12 @@ Synthesizer::Synthesizer(ChainParser* cp) : tc_per_input_iface(), nat_per_output
 		throw std::runtime_error("Synthesizer: Invalid Parser object");
 	}
 	this->parser = cp;
-	this->hyper_nf_configuration_name = 
+	this->hyper_nf_soft_configuration_name = 
 		this->parser->get_chain_graph()->get_output_filename() + ".click";
-	this->hyper_nf_hardware_classifer_name = 
+	this->hyper_nf_hrdw_configuration_name = 
 		this->parser->get_chain_graph()->get_output_filename() + ".rss";
+	this->generate_hardware_classification = 
+		this->parser->get_chain_graph()->has_hardware_classification();
 	log << debug << "Synthesizer constructed" << def << std::endl;
 }
 
@@ -112,16 +114,17 @@ Synthesizer::build_traffic_classes(void) {
 			std::string key = cv->get_name()+","+interface;
 			ClickTree ct (ep);
 
-			// 
-			for (auto &tc : ct.get_trafficClasses()) {
+			// Create an array with all the traffic classes
+			for (auto &tc : ct.get_traffic_classes()) {
 				// A valid traffic class
-				if (!tc.is_discarded ()) {
+				if ( !tc.is_discarded() ) {
 					std::string op_as_str = tc.get_operation().to_iprw_conf ();
 					std::string snd_key = op_as_str+"\\"+tc.get_outputIface();
-					if(tc_per_input_iface[key].find(snd_key) == tc_per_input_iface[key].end()) {
-						tc_per_input_iface[key][snd_key] = {tc.get_outputIface(), op_as_str, tc.synthesize_chain ()};
+					if( this->tc_per_input_iface[key].find(snd_key) == this->tc_per_input_iface[key].end() ) {
+						this->tc_per_input_iface[key][snd_key] = 
+							{tc.get_outputIface(), op_as_str, tc.synthesize_chain ()};
 					}
-					(tc_per_input_iface[key][snd_key]).add_tc(tc);
+					(this->tc_per_input_iface[key][snd_key]).add_tc(tc);
 				}
 			}
 
@@ -138,51 +141,74 @@ Synthesizer::build_traffic_classes(void) {
  */
 short
 Synthesizer::synthesize_nat(void) {
-	for (auto &it : tc_per_input_iface) {
+	for (auto &it : this->tc_per_input_iface) {
 		for(auto &tc : it.second) {
 			std::string out_iface = tc.second.m_outIface;
-			if (nat_per_output_iface.find(out_iface) == nat_per_output_iface.end()) {
-				nat_per_output_iface[out_iface] = std::shared_ptr<SynthesizedNat> ( new SynthesizedNat() );
+			if ( this->nat_per_output_iface.find(out_iface) == this->nat_per_output_iface.end()) {
+				this->nat_per_output_iface[out_iface] = std::shared_ptr<SynthesizedNat> ( new SynthesizedNat() );
 			}
 			tc.second.set_nat(
-				nat_per_output_iface[out_iface],
-				nat_per_output_iface[out_iface]->add_traffic_class(tc.second,it.first)
+				this->nat_per_output_iface[out_iface],
+				this->nat_per_output_iface[out_iface]->add_traffic_class(tc.second,it.first)
 			);
 		}
 	}
 
-	log << "Hyper-NF successfully synthesized the NF chain" << def << std::endl;
+	log << "Successfully synthesized the NF chain" << def << std::endl;
 
 	return SUCCESS;
 }
 
 /*
- * Create a new Click configuration that implements the chain in one Click module.
- * The configuration must achieve equivalent functionality with the initial one.
+ * Generate a new configuration that depends on the user input.
+ * (A) Hardware-assisted, multi-core Hyper-NF
+ * If hardware classification is requested, generate two files: (a) an implementation of 
+ * the traffic classification in the NIC's language (Intel-RSS), and (b) a Click-DPDK configuration
+ * that schedules a multitude of threads (one per core) that handle different pieces of the header space.
+ * (B) All-in-Software Hyper-NF
+ * If hardware classification is not requested, generate a Click equivalent of the entire chain.
  */
 short
 Synthesizer::generate_equivalent_configuration(bool to_file) {
-
-	std::string    message;
-	std::ofstream  *out = NULL;
-	std::streambuf *cout_file = NULL;
 
 	//log << "" << std::endl;
 	//log << info << "==============================================================================" << def << std::endl;
 	//log << info << "Hyper-NF Generator ..." << def << std::endl;
 
+	if ( this->generate_hardware_classification ) {
+		return this->generate_hw_assisted_soft_configuration(to_file);
+	}
+	else {
+		return this->generate_all_soft_configuration(to_file);
+	}
+
+	//log << info << "==============================================================================" << def << std::endl;
+}
+
+/*
+ * Generate a new Click configuration that implements the chain in one Click module.
+ * The configuration must achieve equivalent functionality with the initial one.
+ */
+short
+Synthesizer::generate_all_soft_configuration(bool to_file) {
+
+	std::ofstream  *out_file = NULL;
+	std::streambuf *def_cout = NULL;
+
+	log << "\tAll-in-Software Hyper-NF Generator..." << def << std::endl;
+
 	// The generated Click configuration will be written to a file
 	if ( to_file ) {
 		// Open the output file to host our synthesized chain
-		out = new std::ofstream(this->hyper_nf_configuration_name);
+		out_file = new std::ofstream(this->hyper_nf_soft_configuration_name);
 		// Save old cout buffer and redirect cout to the file above.
-		cout_file = std::cout.rdbuf(out->rdbuf());
+		def_cout = std::cout.rdbuf(out_file->rdbuf());
 	}
 
 	// Costruct the path of Click elements that will lead this modified
 	// (i.e., rewritten by Click IPRewriter already) traffic class out of Click.
 	// This set of elements follows IPRewriter.
-	for (auto &it : nat_per_output_iface) {
+	for (auto &it : this->nat_per_output_iface) {
 		std::cout <<"/** NAT going to: "<<it.first<<" **/\n";
 		auto nat = it.second;
 		std::cout 	<< nat->get_name() << " :: IPRewriter(" << nat->compute_conf() 
@@ -201,9 +227,9 @@ Synthesizer::generate_equivalent_configuration(bool to_file) {
 
 	// Construct the IPClassifier(s) and the path of Click elements
 	// that lead to all its/their traffic classes.
-	for (auto &it : tc_per_input_iface) {
+	for (auto &it : this->tc_per_input_iface) {
 		std::string ipc_name = "ipc"+std::to_string(i++);
-		std::cout<<ipc_name+" :: IPClassifier (\n";
+		std::cout << ipc_name + " :: IPClassifier (\n";
 		std::vector<std::string> chains;
 		for (auto &tc: it.second) {
 			std::cout << "\t" << tc.second.m_pattern << ",\n";
@@ -217,16 +243,56 @@ Synthesizer::generate_equivalent_configuration(bool to_file) {
 		i++;
 	}
 
+	// Reset to standard output again
 	if ( to_file ) {
-		std::cout.rdbuf(cout_file);   // Reset to standard output again
-		out->close();
-		delete out;
-
-		message = " to " + this->hyper_nf_configuration_name;
+		std::cout.rdbuf(def_cout);
+		out_file->close();
+		delete out_file;
 	}
 
-	log << "Hyper-NF successfully generated the NF chain synthesis" << message << def << std::endl;
-	//log << info << "==============================================================================" << def << std::endl;
+	log << "\tSuccessfully generated the NF chain synthesis to \n" << 
+		"\t\t\t\t\t\t|--> " << this->hyper_nf_soft_configuration_name << def << std::endl;
+
+	return SUCCESS;
+}
+
+/*
+ * (A) Hardware-assisted, multi-core Hyper-NF
+ * If hardware classification is requested, generate two files: (a) an implementation of 
+ * the traffic classification in the NIC's language (Intel-RSS), and (b) a Click-DPDK configuration
+ * that schedules a multitude of threads (one per core) that handle different pieces of the header space.
+ */
+short Synthesizer::generate_hw_assisted_soft_configuration(bool to_file) {
+
+	std::ofstream  *soft_out_file, *hard_out_file = NULL;
+	std::streambuf *def_cout = NULL;
+
+	log << "\tHardware-assisted, multi-core Hyper-NF Generator..." << def << std::endl;
+
+	// The generated Click configuration will be written to a file
+	if ( to_file ) {
+		// Open the output files to host our synthesized chain
+		soft_out_file = new std::ofstream(this->hyper_nf_soft_configuration_name);
+		hard_out_file = new std::ofstream(this->hyper_nf_hrdw_configuration_name);
+
+		// Save old cout buffer and redirect cout to the file above.
+		def_cout = std::cout.rdbuf(hard_out_file->rdbuf());
+	}
+
+	// ...
+
+	// Reset to standard output again
+	if ( to_file ) {
+		std::cout.rdbuf(def_cout);
+		soft_out_file->close();
+		hard_out_file->close();
+		delete soft_out_file;
+		delete hard_out_file;
+	}
+
+	log << "\tSuccessfully generated the NF chain synthesis to: \n" << 
+		"\t\t\t\t\t\t|--> a)" << this->hyper_nf_soft_configuration_name << "\n" <<
+		"\t\t\t\t\t\t|--> b)" << this->hyper_nf_hrdw_configuration_name << def << std::endl;
 
 	return SUCCESS;
 }
@@ -366,7 +432,7 @@ void Synthesizer::test_traffic_class_builder(void) {
 	ttl->set_child(discard,0);
 	ClickTree tree(fixip);
 
-	for (auto &it : tree.get_trafficClasses()) {
+	for (auto &it : tree.get_traffic_classes()) {
 		std::cout<<it.to_str();
 	}
 }

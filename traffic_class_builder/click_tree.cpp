@@ -18,19 +18,19 @@
 #define DEBUG(a) printf("[%s:%d] %s\n",__FILE__,__LINE__,a)
 
 ClickTree::ClickTree (std::shared_ptr<ClickElement> root) : m_root( {root, TrafficClass()}),
-								m_inputNF(-1), m_inputIface(),	m_trafficClasses() {
+						m_input_nf(-1), m_input_iface(), m_traffic_classes() {
 	this->find_classes();
 }
 
 ClickTree::ClickTree (int input_nf, std::string input_interface,
 						std::shared_ptr<ClickElement> root) : m_root( {root, TrafficClass()}),
-								m_inputNF(input_nf), m_inputIface(input_interface),
-								m_trafficClasses() {
+						m_input_nf(input_nf), m_input_iface(input_interface),
+						m_traffic_classes() {
 	this->find_classes();
 }
 
-std::vector<TrafficClass> ClickTree::get_trafficClasses() const {
-	return m_trafficClasses;
+std::vector<TrafficClass> ClickTree::get_traffic_classes() const {
+	return m_traffic_classes;
 }
 
 void ClickTree::find_classes (void) {
@@ -76,7 +76,7 @@ void ClickTree::find_classes (void) {
 		} else { //It's a leaf
 			//std::cout<<"Found leaf of type "<<elementNames[curr_element->get_type()]<<std::endl;
 			curr_tc.addElement(curr_element); //Pass as pointer instead?
-			this->m_trafficClasses.push_back(curr_tc);
+			this->m_traffic_classes.push_back(curr_tc);
 		}
 	}
 }

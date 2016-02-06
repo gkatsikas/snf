@@ -23,13 +23,13 @@ class ClickTree {
 	public:
 		ClickTree (std::shared_ptr<ClickElement> root) ;
 		ClickTree(int input_nf, std::string input_interface, std::shared_ptr<ClickElement> root);
-		std::vector<TrafficClass> get_trafficClasses() const;
+		std::vector<TrafficClass> get_traffic_classes() const;
 
 	private:
 		ClickNode m_root;
-		int m_inputNF;
-		std::string m_inputIface;
-		std::vector<TrafficClass> m_trafficClasses;
+		int m_input_nf;
+		std::string m_input_iface;
+		std::vector<TrafficClass> m_traffic_classes;
 
 		void find_classes(void); //Graph search from m_root
 };

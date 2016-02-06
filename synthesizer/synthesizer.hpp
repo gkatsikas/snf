@@ -48,14 +48,20 @@ class Synthesizer {
 		std::unordered_map< std::string, std::shared_ptr<SynthesizedNat> > nat_per_output_iface;
 
 		/*
+		 * Genrate the synthesis as a combination of Intel-RSS rules for the NIC
+		 * and Click code that runs per hardware queue.
+		 */
+		bool generate_hardware_classification;
+
+		/*
 		 * The filename where the generated Click code will be written
 		 */
-		std::string hyper_nf_configuration_name;
+		std::string hyper_nf_soft_configuration_name;
 
 		/*
 		 * The filename where the generated Intel-RSS code will be written
 		 */
-		std::string hyper_nf_hardware_classifer_name;
+		std::string hyper_nf_hrdw_configuration_name;
 
 	public:
 		/*
@@ -77,10 +83,24 @@ class Synthesizer {
 		short synthesize_nat(void);
 
 		/*
-		 * Create a new Click configuration that implements the chain in one Click module.
-		 * The configuration must achieve equivalent functionality with the initial one.
+		 * Generate a new configuration that depends on the user input.
+		 * (A) Hardware-assisted, multi-core Hyper-NF
+		 * If hardware classification is requested, generate two files: (a) an implementation of 
+		 * the traffic classification in the NIC's language (Intel-RSS), and (b) a Click-DPDK configuration
+		 * that schedules a multitude of threads (one per core) that handle different pieces of the header space.
+		 * (B) All-in-Software Hyper-NF
+		 * If hardware classification is not requested, generate a Click equivalent of the entire chain.
 		 */
 		short generate_equivalent_configuration(bool to_file=true);
+
+		/*
+		 * Generate a new Click configuration that implements the chain in one Click module.
+		 * The configuration must achieve equivalent functionality with the initial one.
+		 */
+		short generate_all_soft_configuration(bool to_file=true);
+
+
+		short generate_hw_assisted_soft_configuration(bool to_file=true);
 
 		/*
 		 * Test the traffic classes's construction
