@@ -1,3 +1,10 @@
+//============================================================================
+//        Name: ip_filter_parser.cpp
+//   Copyright: KTH ICT CoS Network Systems Lab
+// Description: Implementation of the methods that parse the filters of 
+//              Hyper-NF's traffic classes.
+//============================================================================
+
 #include <string>
 #include <cstdint>
 #include <iostream>
@@ -9,14 +16,11 @@
 				<<std::endl; \
 				exit(1)
 
-//#define DEBUGGING
-//#define test
 #ifdef DEBUGGING
 #define DEBUG(A) printf("[%s:%d] DEBUG: %s\n",__FILE__,__LINE__,((std::string) A).c_str())
 #else
 #define DEBUG(A) do {} while(0)
 #endif
-
 
 #define insert_last(container,containee) container.insert(container.end(), \
 														containee.begin(), \

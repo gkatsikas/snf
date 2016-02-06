@@ -7,23 +7,25 @@
 #ifndef _SYNTHESIZER_HPP_
 #define _SYNTHESIZER_HPP_
 
-#include "../parser/chain_parser.hpp"
-#include "../click_element.hpp"
-#include "../filter.hpp"
 #include "synth_nat.hpp"
 
+#include "../parser/chain_parser.hpp"
+#include "../traffic_class_builder/filter.hpp"
+#include "../traffic_class_builder/click_element.hpp"
+
 struct ConsolidatedTc {
-	std::string m_outIface;
-	std::string m_operation;
-	std::string m_pattern;
-	std::string m_chain;
+	std::string    m_outIface;
+	std::string    m_operation;
+	std::string    m_pattern;
+	std::string    m_chain;
 	unsigned short m_inputPort;
-	std::string m_nat;
+	std::string    m_nat;
 	
 	ConsolidatedTc ();
 	ConsolidatedTc (const std::string& out_iface, const std::string& op, const std::string& chain);
-	void add_tc (const TrafficClass& tc);
-	void set_nat(std::shared_ptr<SynthesizedNat> nat, unsigned short input_port);
+
+	void        add_tc (const TrafficClass& tc);
+	void        set_nat(std::shared_ptr<SynthesizedNat> nat, unsigned short input_port);
 	std::string get_chain ();
 };
 

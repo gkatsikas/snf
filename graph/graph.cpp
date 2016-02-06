@@ -6,7 +6,7 @@
 //============================================================================
 
 #include "graph.hpp"
-#include "../helpers.hpp"
+#include "../shared/helpers.hpp"
 
 Graph::Graph() {
 	this->log.set_logger_file(__FILE__);

@@ -1,9 +1,16 @@
+//============================================================================
+//        Name: output_class.cpp
+//   Copyright: KTH ICT CoS Network Systems Lab
+// Description: Implementation of the class that maps traffic class filters 
+//              to packet operations.
+//============================================================================
+
+#include <cstdlib>
+#include <iostream> 
+
 #include "output_class.hpp"
 
-#include <iostream> //cerr 
-#include <cstdlib> //atoi
-
-#include "helpers.hpp"
+#include "../shared/helpers.hpp"
 
 #define DEBUG(A) std::cerr<<"["<<__FILE__<<":"<<__LINE__<<"] DEBUG: "<<A <<std::endl
 
@@ -57,7 +64,7 @@ OutputClass OutputClass::port_from_lookup_rule(std::string& rule, Filter& parsed
 }
 
 std::pair<OutputClass,OutputClass> OutputClass::output_class_from_pattern(
-							std::vector<std::string>& pattern) {
+	std::vector<std::string>& pattern) {
 
 	if(pattern.size() != 7) {
 		std::cerr<<"["<<__FILE__<<":"<<__LINE__<<"] Incorrect pattern size\n";

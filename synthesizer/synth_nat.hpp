@@ -1,10 +1,16 @@
+//============================================================================
+//        Name: synth_nat.hpp
+//   Copyright: KTH ICT CoS Network Systems Lab
+// Description: Definition of the NAT operations' synthesis.
+//============================================================================
+
 #ifndef _SYNTH_NAT_HPP_
 #define _SYNTH_NAT_HPP_
 
 #include <map>
 #include <unordered_map>
 
-#include "../filter.hpp"
+#include "../traffic_class_builder/filter.hpp"
 
 struct ConsolidatedTc;
 
@@ -15,10 +21,9 @@ class SynthesizedNat {
 	
 		//Returns the input port on which to connect
 		unsigned short add_traffic_class (const struct ConsolidatedTc& tc, const std::string& src_iface);
-		std::string compute_conf();
-		
-		std::string get_name () const;
-		
+		std::string    compute_conf();
+
+		std::string    get_name () const;
 		unsigned short get_outboundPort () const;
 
 	private:

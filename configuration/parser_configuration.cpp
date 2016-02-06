@@ -7,7 +7,7 @@
 //              external NFV domains.
 //============================================================================
 
-#include "../helpers.hpp"
+#include "../shared/helpers.hpp"
 #include <boost/tokenizer.hpp>
 #include "parser_configuration.hpp"
 

@@ -1,13 +1,21 @@
-#include "synth_nat.hpp"
-#include "../helpers.hpp"
-#include "synthesizer.hpp"
+//============================================================================
+//        Name: synth_nat.cpp
+//   Copyright: KTH ICT CoS Network Systems Lab
+// Description: Implementation of the NAT operations' synthesis.
+//============================================================================
+
 #include <set>
+
+#include "synth_nat.hpp"
+#include "synthesizer.hpp"
+
+#include "../shared/helpers.hpp"
 
 #define BUG(A) std::cerr<<"["<<__FILE__<<":"<<__LINE__<<"] "<<A <<std::endl; exit(1)
 
 int SynthesizedNat::count = 0;
 
-SynthesizedNat::SynthesizedNat() : m_name("iprw"+std::to_string(count++)) {}
+SynthesizedNat::SynthesizedNat() : m_name("iprw"+std::to_string(count++)), m_outboundPort(0) {}
 
 unsigned short SynthesizedNat::add_traffic_class (const struct ConsolidatedTc& tc, const std::string& src_iface) {
 	std::string confLine = tc.m_operation;

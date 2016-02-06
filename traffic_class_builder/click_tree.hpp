@@ -1,3 +1,9 @@
+//============================================================================
+//        Name: click_tree.hpp
+//   Copyright: KTH ICT CoS Network Systems Lab
+// Description: Definition of Hyper-NF's traffic class tree.
+//============================================================================
+
 #ifndef _CLICK_TREE_HPP_
 #define _CLICK_TREE_HPP_
 
@@ -27,4 +33,5 @@ class ClickTree {
 
 		void find_classes(void); //Graph search from m_root
 };
+
 #endif

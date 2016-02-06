@@ -1,3 +1,9 @@
+//============================================================================
+//        Name: click_element.hpp
+//   Copyright: KTH ICT CoS Network Systems Lab
+// Description: Definition of Hyper-NF's traffic class node.
+//============================================================================
+
 #ifndef _CLICK_ELEMENT_HPP_
 #define _CLICK_ELEMENT_HPP_
 
@@ -7,7 +13,7 @@
 #include <unordered_map>
 
 #include "element_type.hpp"
-#include "graph/nf_graph.hpp"
+#include "../graph/nf_graph.hpp"
 
 class OutputClass;
 
@@ -26,12 +32,15 @@ class ClickElement {
 		//Getters & Setters
 		static std::shared_ptr<ClickElement> get_discard_elem ();
 		std::string get_configuration() const;
-		int get_nbPorts() const;
+
+		int  get_nbPorts() const;
 		void set_nbPorts(int nbPorts);
+
 		std::vector<OutputClass> get_outputClasses() const;
-		ElementType get_type() const;
+		ElementType    get_type() const;
 		ElementVertex* get_ev () const;
-		void set_nfName (const std::string& name);
+
+		void        set_nfName (const std::string& name);
 		std::string get_nfName () const;
 
 		std::string to_str() const;

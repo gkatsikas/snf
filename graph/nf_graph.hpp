@@ -11,7 +11,7 @@
 #include <memory>
 
 #include "graph.hpp"
-#include "../helpers.hpp"
+#include "../shared/helpers.hpp"
 #include "../click/click_parse_configuration.hpp"
 
 /*

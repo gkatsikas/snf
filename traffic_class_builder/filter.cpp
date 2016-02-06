@@ -1,14 +1,21 @@
-#include <algorithm>  //std::set_intersection std::sort
-#include <iostream> //std::cerr
-#include <climits> //UINT_MAX
+//============================================================================
+//        Name: filter.cpp
+//   Copyright: KTH ICT CoS Network Systems Lab
+// Description: Implementation of the Hyper-NF traffic class filter.
+//============================================================================
+
 #include <cstdio>
+#include <climits>
+#include <iostream>
+#include <algorithm>
 #include <functional>
 
 #include "filter.hpp"
-#include "helpers.hpp"
-#include "click_element.hpp"
 #include "output_class.hpp"
-#include "synthesizer/synth_nat.hpp"
+#include "click_element.hpp"
+
+#include "../shared/helpers.hpp"
+#include "../synthesizer/synth_nat.hpp"
 
 #define BUG(A) std::cerr<<"["<<__FILE__<<":"<<__LINE__<<"] "<<A <<std::endl; exit(1)
 
@@ -567,17 +574,18 @@ std::string TrafficClass::synthesize_chain () {
 			output += ");";
 		}
 
-		/*field_op = m_operation.get_field_op(mtu);
-		if(field_op) {
-			synthesized_chain.push_back(std::shared_ptr<ClickElement>(new ClickElement(DropBroadcasts,
-											std::to_string(field_op->m_value[0]) )));
-		}
+		//field_op = m_operation.get_field_op(mtu);
+		//if(field_op) {
+		//	synthesized_chain.push_back(std::shared_ptr<ClickElement>(new ClickElement(DropBroadcasts,
+		//									std::to_string(field_op->m_value[0]) )));
+		//}
 
-		if(m_etherEncapConf.empty()) {
-			BUG("Empty EtherEncap configuration");
-		}
-		synthesized_chain.push_back(std::shared_ptr<ClickElement>(new ClickElement(EtherEncap,m_etherEncapConf)));
-		synthesized_chain.push_back(m_elementPath.back());*/
+		//if(m_etherEncapConf.empty()) {
+		//	BUG("Empty EtherEncap configuration");
+		//}
+		//synthesized_chain.push_back(std::shared_ptr<ClickElement>(new ClickElement(EtherEncap,m_etherEncapConf)));
+		//synthesized_chain.push_back(m_elementPath.back());
+		*/
 	}
 
 	return output;

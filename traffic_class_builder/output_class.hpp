@@ -1,3 +1,10 @@
+//============================================================================
+//        Name: output_class.hpp
+//   Copyright: KTH ICT CoS Network Systems Lab
+// Description: Definition of the class that maps traffic class filters 
+//              to packet operations.
+//============================================================================
+
 #ifndef OUTPUT_PORT_HPP
 #define OUTPUT_PORT_HPP
 
@@ -39,7 +46,7 @@ class OutputClass {
 		int m_portNumber;
 		int m_nextInputPort;
 		std::shared_ptr<ClickElement> m_child;
-		Operation m_operation;
+		Operation    m_operation;
 		PacketFilter m_filter;
 };
 

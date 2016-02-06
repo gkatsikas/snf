@@ -30,7 +30,7 @@
 //              instantiate the router is intentionally removed.
 //============================================================================
 
-#include "../helpers.hpp"
+#include "../shared/helpers.hpp"
 #include "../logger/logger.hpp"
 #include "click_parse_configuration.hpp"
 

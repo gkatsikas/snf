@@ -1,11 +1,18 @@
+//============================================================================
+//        Name: segment_list.cpp
+//   Copyright: KTH ICT CoS Network Systems Lab
+// Description: Definition of a disjoint list of segments to be used for
+//              the construction of complex traffic class filters.
+//============================================================================
+
 #ifndef SEGMENT_LIST_HPP
 #define SEGMENT_LIST_HPP
 
-#include <utility>
 #include <memory>
 #include <string>
-#include <cstdint>
 #include <vector>
+#include <utility>
+#include <cstdint>
 
 //Stores a segment as a node of a list
 struct SegmentNode;

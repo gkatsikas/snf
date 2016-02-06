@@ -1,3 +1,9 @@
+//============================================================================
+//        Name: element_type.hpp
+//   Copyright: KTH ICT CoS Network Systems Lab
+// Description: List of Click processing elements.
+//============================================================================
+
 #ifndef _ELEMENT_TYPE_HPP_
 #define _ELEMENT_TYPE_HPP_
 

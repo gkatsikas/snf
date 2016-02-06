@@ -13,26 +13,30 @@ OBJS =  helpers.o chameleon.o vertex.o segment_list.o operation.o \
 		output_class.o click_tree.o parser_configuration.o chain_parser.o \
 		synthesizer.o synth_nat.o
 
+EXECUTABLE = hyper-nf
+
+CLASS_TEST = class_test
+
 ### Object files of Click
 ### -----> Give a variable with the Click home path instead of a fixed path
 CLICK_ELEMENT_OBJS = $(shell find /opt/click/userlevel/ ! -name "click.o" ! -name "exportstub.o" -name "*.o")
 
 ### Final compilation rule
-NFSynthesizer: $(OBJS) main.o
-	$(CC) $(LFLAGS) $(OBJS) main.o  $(CLICK_ELEMENT_OBJS) -o nf_synthesizer $(LIBS)
+hyper_nf: $(OBJS) main.o
+	$(CC) $(LFLAGS) $(OBJS) main.o  $(CLICK_ELEMENT_OBJS) -o $(EXECUTABLE) $(LIBS)
 	
 class_test: $(OBJS) classifier_test.o
-	$(CC) $(LFLAGS) $(OBJS) $(CLICK_ELEMENT_OBJS) classifier_test.o -o class_test $(LIBS)
+	$(CC) $(LFLAGS) $(OBJS) $(CLICK_ELEMENT_OBJS) classifier_test.o -o $(CLASS_TEST) $(LIBS)
 
 ### Individual modules' rules
-classifier_test.o: classifier_test.cpp filter.o helpers.o
-	$(CC) $(CFLAGS) classifier_test.cpp
+classifier_test.o: ./tests/classifier_test.cpp filter.o helpers.o
+	$(CC) $(CFLAGS) ./tests/classifier_test.cpp
 	
 main.o: main.cpp ./synthesizer/synthesizer.hpp ./logger/logger.hpp
 	$(CC) $(CFLAGS) main.cpp
 
-helpers.o: helpers.cpp helpers.hpp
-	$(CC) $(CFLAGS) helpers.cpp
+helpers.o: ./shared/helpers.cpp ./shared/helpers.hpp
+	$(CC) $(CFLAGS) ./shared/helpers.cpp
 
 chameleon.o: ./configuration/chameleon.cpp ./configuration/chameleon.hpp
 	$(CC) $(CFLAGS) ./configuration/chameleon.cpp
@@ -40,11 +44,12 @@ chameleon.o: ./configuration/chameleon.cpp ./configuration/chameleon.hpp
 vertex.o: ./graph/vertex.cpp ./graph/vertex.hpp
 	$(CC) $(CFLAGS) ./graph/vertex.cpp
 
-segment_list.o: segment_list.cpp segment_list.hpp
-	$(CC) $(CFLAGS) segment_list.cpp
+segment_list.o: ./traffic_class_builder/segment_list.cpp ./traffic_class_builder/segment_list.hpp
+	$(CC) $(CFLAGS) ./traffic_class_builder/segment_list.cpp
 
-operation.o: operation.cpp operation.hpp header_fields.hpp
-	$(CC) $(CFLAGS) operation.cpp
+operation.o: ./traffic_class_builder/operation.cpp ./traffic_class_builder/operation.hpp \
+				./traffic_class_builder/header_fields.hpp
+	$(CC) $(CFLAGS) ./traffic_class_builder/operation.cpp
 
 generic_configuration.o: ./configuration/generic_configuration.cpp ./configuration/generic_configuration.hpp \
 						 ./configuration/chameleon.hpp ./logger/logger.hpp
@@ -53,41 +58,55 @@ generic_configuration.o: ./configuration/generic_configuration.cpp ./configurati
 graph.o: ./graph/graph.cpp ./graph/graph.hpp ./graph/vertex.hpp ./logger/logger.hpp
 	$(CC) $(CFLAGS) ./graph/graph.cpp
 
-filter.o: filter.cpp filter.hpp header_fields.hpp element_type.hpp output_class.hpp operation.hpp
-	$(CC) $(CFLAGS) filter.cpp
+filter.o: ./traffic_class_builder/filter.cpp ./traffic_class_builder/filter.hpp \
+			./traffic_class_builder/header_fields.hpp ./traffic_class_builder/element_type.hpp \
+			./traffic_class_builder/output_class.hpp ./traffic_class_builder/operation.hpp
+	$(CC) $(CFLAGS) ./traffic_class_builder/filter.cpp
 
-ip_filter_parser.o: ip_filter_parser.cpp ip_filter_parser.hpp filter.hpp
-	$(CC) $(CFLAGS) ip_filter_parser.cpp
+ip_filter_parser.o: ./traffic_class_builder/ip_filter_parser.cpp ./traffic_class_builder/ip_filter_parser.hpp \
+					./traffic_class_builder/filter.hpp
+	$(CC) $(CFLAGS) ./traffic_class_builder/ip_filter_parser.cpp
 
 click_parse_configuration.o: ./click/click_parse_configuration.cpp ./click/click_parse_configuration.hpp \
-							 ./logger/logger.hpp helpers.hpp
+							 ./logger/logger.hpp ./shared/helpers.hpp
 	$(CC) $(CFLAGS) ./click/click_parse_configuration.cpp
 
-nf_graph.o: ./graph/nf_graph.cpp ./graph/nf_graph.hpp ./graph/graph.hpp ./click/click_parse_configuration.hpp helpers.hpp
+nf_graph.o: ./graph/nf_graph.cpp ./graph/nf_graph.hpp ./graph/graph.hpp ./click/click_parse_configuration.hpp \
+			./shared/helpers.hpp
 	$(CC) $(CFLAGS) ./graph/nf_graph.cpp
 
-click_element.o: click_element.cpp click_element.hpp header_fields.hpp operation.hpp filter.hpp \
-	element_type.hpp helpers.hpp ip_filter_parser.hpp
-	$(CC) $(CFLAGS) click_element.cpp
+click_element.o: ./traffic_class_builder/click_element.cpp ./traffic_class_builder/click_element.hpp \
+					./traffic_class_builder/header_fields.hpp ./traffic_class_builder/operation.hpp \
+					./traffic_class_builder/filter.hpp ./traffic_class_builder/element_type.hpp \
+					./shared/helpers.hpp ./traffic_class_builder/ip_filter_parser.hpp
+	$(CC) $(CFLAGS) ./traffic_class_builder/click_element.cpp
 
-output_class.o: output_class.cpp output_class.hpp filter.hpp click_element.hpp helpers.hpp
-	$(CC) $(CFLAGS) output_class.cpp
+output_class.o: ./traffic_class_builder/output_class.cpp ./traffic_class_builder/output_class.hpp \
+				./traffic_class_builder/filter.hpp ./traffic_class_builder/click_element.hpp \
+				./shared/helpers.hpp
+	$(CC) $(CFLAGS) ./traffic_class_builder/output_class.cpp
 
-click_tree.o: click_tree.cpp click_tree.hpp output_class.hpp operation.hpp element_type.hpp filter.hpp
-	$(CC) $(CFLAGS) click_tree.cpp
+click_tree.o: ./traffic_class_builder/click_tree.cpp ./traffic_class_builder/click_tree.hpp \
+				./traffic_class_builder/output_class.hpp ./traffic_class_builder/operation.hpp \
+				./traffic_class_builder/element_type.hpp ./traffic_class_builder/filter.hpp
+	$(CC) $(CFLAGS) ./traffic_class_builder/click_tree.cpp
 
 parser_configuration.o: ./configuration/parser_configuration.cpp ./configuration/parser_configuration.hpp \
-			./configuration/generic_configuration.hpp ./graph/graph.hpp
+						./configuration/generic_configuration.hpp ./graph/graph.hpp
 	$(CC) $(CFLAGS) ./configuration/parser_configuration.cpp
 
-chain_parser.o: ./parser/chain_parser.cpp ./parser/chain_parser.hpp ./configuration/parser_configuration.hpp ./graph/nf_graph.hpp
+chain_parser.o: ./parser/chain_parser.cpp ./parser/chain_parser.hpp ./configuration/parser_configuration.hpp \
+				./graph/nf_graph.hpp
 	$(CC) $(CFLAGS) ./parser/chain_parser.cpp
 
-synthesizer.o: ./synthesizer/synthesizer.cpp ./synthesizer/synthesizer.hpp ./parser/chain_parser.hpp click_tree.cpp click_tree.hpp \
-				output_class.hpp operation.hpp element_type.hpp filter.hpp ./synthesizer/synth_nat.hpp
+synthesizer.o: ./synthesizer/synthesizer.cpp ./synthesizer/synthesizer.hpp ./parser/chain_parser.hpp \
+				./traffic_class_builder/click_tree.cpp ./traffic_class_builder/click_tree.hpp \
+				./traffic_class_builder/output_class.hpp ./traffic_class_builder/operation.hpp \
+				./traffic_class_builder/element_type.hpp ./traffic_class_builder/filter.hpp \
+				./synthesizer/synth_nat.hpp
 	$(CC) $(CFLAGS) ./synthesizer/synthesizer.cpp
 	
-synth_nat.o: ./synthesizer/synth_nat.hpp ./synthesizer/synth_nat.cpp filter.hpp
+synth_nat.o: ./synthesizer/synth_nat.hpp ./synthesizer/synth_nat.cpp ./traffic_class_builder/filter.hpp
 	$(CC) $(CFLAGS) ./synthesizer/synth_nat.cpp
 	
 ### House keeping
@@ -95,4 +114,4 @@ clean:
 	\rm -f *.o *.plist *.gch *.log
 
 clean-dist: clean
-	\rm -f nf_synthesizer class_test
+	\rm -f $(EXECUTABLE) $(CLASS_TEST)

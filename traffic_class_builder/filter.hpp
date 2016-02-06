@@ -1,3 +1,10 @@
+//============================================================================
+//        Name: filter.hpp
+//   Copyright: KTH ICT CoS Network Systems Lab
+// Description: Definition of the Hyper-NF traffic class filter on a packet's
+//              header space.
+//============================================================================
+
 #ifndef _FILTER_HPP_
 #define _FILTER_HPP_
 
@@ -7,6 +14,7 @@
 #include <memory>
 #include <cstdint>
 #include <unordered_map>
+
 #include "operation.hpp"
 #include "element_type.hpp"
 #include "segment_list.hpp"

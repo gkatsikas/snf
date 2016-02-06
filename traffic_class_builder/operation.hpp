@@ -1,9 +1,16 @@
+//============================================================================
+//        Name: operation.hpp
+//   Copyright: KTH ICT CoS Network Systems Lab
+// Description: Definition of the class that encodes the packet operations
+//              to be applied to Hyper-NF's traffic classes.
+//============================================================================
+
 #ifndef OPERATION_HPP
 #define OPERATION_HPP
 
-#include <unordered_map>
 #include <vector>
 #include <string>
+#include <unordered_map>
 
 #include "header_fields.hpp"
 

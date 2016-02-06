@@ -1,12 +1,19 @@
+//============================================================================
+//        Name: click_tree.cpp
+//   Copyright: KTH ICT CoS Network Systems Lab
+// Description: Implementation of Hyper-NF's traffic class tree.
+//============================================================================
+
 #include <stack>
 #include <string>
-#include <iostream>
 #include <cstdio>
+#include <iostream>
 
 #include "click_tree.hpp"
 #include "click_element.hpp"
 #include "output_class.hpp"
-#include "logger/logger.hpp"
+
+#include "../logger/logger.hpp"
 
 #define DEBUG(a) printf("[%s:%d] %s\n",__FILE__,__LINE__,a)
 
@@ -34,7 +41,6 @@ void ClickTree::find_classes (void) {
 	std::shared_ptr<ClickElement> curr_element;
 	TrafficClass curr_tc;
 
-	int nb_ports=0;
 	int add_elem_failure=0;
 
 	//DFS starting from m_root
@@ -44,7 +50,7 @@ void ClickTree::find_classes (void) {
 		nodes_to_visit.pop();
 
 		curr_element = curr_node.element;
-		nb_ports = curr_element->get_nbPorts();
+		int nb_ports = curr_element->get_nbPorts();
 		curr_tc = curr_node.traffic_class;
 
 		if(nb_ports) {

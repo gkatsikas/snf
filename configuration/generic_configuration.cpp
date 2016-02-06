@@ -6,7 +6,7 @@
 
 #include <sys/stat.h>
 
-#include "../helpers.hpp"
+#include "../shared/helpers.hpp"
 #include "generic_configuration.hpp"
 
 std::string trim(std::string const& source, char const* delims = " \t\r\n") {

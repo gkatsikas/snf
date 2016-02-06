@@ -5,7 +5,7 @@
 //              Then compose multiple graphs to form chains.
 //============================================================================
 
-#include "../helpers.hpp"
+#include "../shared/helpers.hpp"
 #include "chain_parser.hpp"
 
 #include <click/routervisitor.hh>

@@ -1,3 +1,9 @@
+//============================================================================
+//        Name: header_fields.hpp
+//   Copyright: KTH ICT CoS Network Systems Lab
+// Description: A collection of important header fields.
+//============================================================================
+
 #ifndef _HEADER_FIELDS_HPP_
 #define _HEADER_FIELDS_HPP_
 

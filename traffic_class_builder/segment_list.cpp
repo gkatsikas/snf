@@ -1,8 +1,16 @@
-#include "segment_list.hpp"
+//============================================================================
+//        Name: segment_list.cpp
+//   Copyright: KTH ICT CoS Network Systems Lab
+// Description: Implementation of a disjoint list of segments to be used for
+//              the construction of complex traffic class filters.
+//============================================================================
+
 #include <vector>
 #include <iostream>
 
-#include "helpers.hpp"
+#include "segment_list.hpp"
+
+#include "../shared/helpers.hpp"
 
 #define MIN(a,b) (a>b) ? b : a
 #define MAX(a,b) (a>b) ? a : b

@@ -1,9 +1,17 @@
-#include "operation.hpp"
+//============================================================================
+//        Name: operation.cpp
+//   Copyright: KTH ICT CoS Network Systems Lab
+// Description: Implementation of the class that encodes the packet operations
+//              to be applied to Hyper-NF's traffic classes.
+//============================================================================
+
 #include <iostream>
 #include <cstring>
 #include <functional>
 
-#include "helpers.hpp"
+#include "operation.hpp"
+
+#include "../shared/helpers.hpp"
 
 #define BUG(A) std::cerr<<"["<<__FILE__<<":"<<__LINE__<<"] "<<A <<std::endl; exit(1)
 

@@ -1,3 +1,9 @@
+//============================================================================
+//        Name: click_element.cpp
+//   Copyright: KTH ICT CoS Network Systems Lab
+// Description: Implementation of Hyper-NF's traffic class node.
+//============================================================================
+
 #include <iostream>
 #include <sstream>
 #include <vector>
@@ -5,16 +11,15 @@
 #include <climits>
 #include <utility> //std::pair
 
-#include "click_element.hpp"
-
-#include "header_fields.hpp"
 #include "operation.hpp"
-#include "helpers.hpp"
 #include "output_class.hpp"
+#include "click_element.hpp"
+#include "header_fields.hpp"
 #include "ip_filter_parser.hpp"
 
+#include "../shared/helpers.hpp"
+
 #define BUG(A) std::cerr<<"["<<__FILE__<<":"<<__LINE__<<"] ERROR: "<<A <<std::endl; exit(1)
-//#define DEBUGGING
 #ifdef DEBUGGING
 #define DEBUG(A) std::cerr<<"["<<__FILE__<<":"<<__LINE__<<"] DEBUG: "<<A <<std::endl
 #else
@@ -39,17 +44,17 @@ ClickElement::ClickElement (ElementType type, const std::string& configuration) 
 
 ClickElement::ClickElement (ElementType type, const std::string& configuration, ElementVertex* ev,
 							short input_port, std::unordered_map<short, std::vector<std::string> >* extra_conf) :
-					m_type(type), m_configuration(configuration), m_nbPorts(0), m_ev(ev)
-{
+					m_type(type), m_configuration(configuration), m_nbPorts(0), m_ev(ev) {
 	DEBUG("Creating element "+to_str());
 	switch (type) {
-		/*case DecIPTTL:
+		/*
+		case DecIPTTL:
 			parse_dec_ttl_conf (configuration);
 			break;
-		/*
 		case FixIPSrc:
 			parse_fix_ip_src (configuration);
-			break;*/
+			break;
+		*/
 		case IPFilter:
 			parse_ip_filter (configuration);
 			break;
@@ -319,7 +324,7 @@ void ClickElement::parse_lookup_filter(const std::string& configuration) {
 }
 
 void ClickElement::parse_ip_rewriter (const std::string& configuration, short input_port, 
-					std::unordered_map<short,std::vector<std::string> >* extra_conf) {
+										std::unordered_map<short,std::vector<std::string> >* extra_conf) {
 				
 	DEBUG("Entering IPRewriter at port "+std::to_string(input_port));
 	

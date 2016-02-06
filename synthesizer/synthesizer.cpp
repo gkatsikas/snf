@@ -5,12 +5,13 @@
 //              Click configurations.
 //============================================================================
 
-#include "../helpers.hpp"
 #include "synthesizer.hpp"
 
-#include "../click_tree.hpp"
-#include "../output_class.hpp"
-#include "../click_element.hpp"
+#include "../shared/helpers.hpp"
+
+#include "../traffic_class_builder/click_tree.hpp"
+#include "../traffic_class_builder/output_class.hpp"
+#include "../traffic_class_builder/click_element.hpp"
 
 ConsolidatedTc::ConsolidatedTc () :
 	m_outIface (),
@@ -22,7 +23,7 @@ ConsolidatedTc::ConsolidatedTc () :
 	{}
 
 ConsolidatedTc::ConsolidatedTc (const std::string& out_iface, const std::string& op, const std::string& chain) :
-	m_outIface(out_iface), m_operation(op), m_chain(chain) {}
+	m_outIface(out_iface), m_operation(op), m_chain(chain), m_inputPort(0) {}
 
 void ConsolidatedTc::add_tc (const TrafficClass& tc) {
 	if(!m_pattern.empty()) {

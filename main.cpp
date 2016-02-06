@@ -19,8 +19,9 @@ int main(int argc, char** argv) {
 	log << info << "Network Functions' Chain Synthesis" << def << std::endl;
 
 	// Check input arguments validity
-	if ( (exit_status=parseArguments(argc, argv, &property_file)) != SUCCESS )
+	if ( (exit_status=parseArguments(argc, argv, &property_file)) != SUCCESS ) {
 		exit(exit_status);
+	}
 
 	//////////////////////////////////// Load property file ///////////////////////////////////
 	ParserConfiguration* pcf = NULL;
@@ -137,30 +138,26 @@ int main(int argc, char** argv) {
 
 short int parseArguments(int cmd_args_no, char** cmd_args, std::string* property_file) {
 	// Check number of arguments
-	if ( cmd_args_no != 3 )
-	{
+	if ( cmd_args_no != 3 ) {
 		std::cerr << "Usage: " << cmd_args[0] << " -p [propertyFile]" << std::endl;
 		return WRONG_INPUT_ARGS;
 	}
 
 	// Parse arguments
-	while ( *cmd_args != NULL )
-	{
-		if ( strcmp(*cmd_args, "-p") == 0 )
-		{
-			//*(cmd_args++);
-			cmd_args = cmd_args + 1;
-			if ( *cmd_args != NULL )
-			{
+	while ( *cmd_args != NULL )	{
+		if ( strcmp(*cmd_args, "-p") == 0 )	{
+			cmd_args++;
+			if ( *cmd_args != NULL ) {
 				*property_file = (std::string) *cmd_args;
 				continue;
 			}
-			else
+			else {
 				break;
+			}
 		}
-		else
-			//*(cmd_args++);
-			cmd_args = cmd_args + 1;
+		else {
+			cmd_args++;
+		}
 	}
 
 	*cmd_args = NULL;
