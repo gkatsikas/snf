@@ -1,4 +1,5 @@
 *.o
 *.plist
-nf_synthesizer
+results/*
+hyper-nf
 class_test
