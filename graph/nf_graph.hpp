@@ -56,20 +56,25 @@ class ElementVertex : public Vertex
 		/*
 		 * Setters & Getters
 		 */
-		bool is_endpoint (void);
-		void set_endpoint(bool ep);
+		bool is_endpoint   (void);
+		void set_endpoint  (bool ep);
+		void set_glue_info (unsigned short next_nf_pos, std::string next_nf_iface);
 
-		void                  set_glue_info       (unsigned short next_nf_pos, std::string next_nf_iface);
 		inline std::string    get_glue_iface      (void) { return this->glue.second; };
 		inline unsigned short get_glue_nf_position(void) { return this->glue.first;  };
-
-		std::string                     get_interface    (void) const;
-		inline std::string              get_class        (void) const { return this->click_element->class_name(); };
-		inline std::string              get_configuration(void) const { return this->click_element->router()->econfiguration(this->get_position()).c_str(); };
-		inline std::shared_ptr<Element> get_click_element(void) const { return this->click_element; };
+		std::string           get_interface       (void) const;
+		inline std::string    get_class           (void) const {
+			return this->click_element->class_name();
+		};
+		inline std::string    get_configuration(void) const { 
+			return this->click_element->router()->econfiguration(this->get_position()).c_str();
+		};
+		inline std::shared_ptr<Element> get_click_element(void) const {
+			return this->click_element;
+		};
 
 		std::unordered_map<short, std::vector<std::string>>* get_implicit_configuration(void);
-		void set_implicit_configuration(const short port, const std::vector<std::string> implicit_conf);
+		void set_implicit_configuration(const short port, const std::vector<std::string>& implicit_conf);
 
 		/*
 		 * Debugging

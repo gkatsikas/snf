@@ -53,19 +53,19 @@ class Graph
 		/*
 		 * Setters & Getters
 		 */
-		bool                   is_leaf(Vertex* u);
-		bool                   is_empty(void);
-		bool                   contains(unsigned short pos);
+		bool                   is_leaf      (Vertex* u);
+		bool                   is_empty     (void);
+		bool                   contains     (unsigned short pos);
 		bool                   vertex_exists(Vertex* u);
 
 		void                   add_vertex(Vertex* u);
 		void                   add_edge  (Vertex* u, Vertex* v, unsigned short input_port_v);
 
 		void                   find_in_degrees(void);
-		int                    get_in_degree(Vertex* u);
-		VertexMap<int>         get_in_degrees(void);
+		int                    get_in_degree  (Vertex* u);
+		VertexMap<int>         get_in_degrees (void);
 
-		unsigned short         get_vertices_no(void);
+		unsigned short         get_vertices_no   (void);
 		const AdjacencyList    get_adjacency_list(void) const;
 
 

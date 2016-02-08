@@ -21,9 +21,16 @@ CLASS_TEST = class_test
 ### -----> Give a variable with the Click home path instead of a fixed path
 CLICK_ELEMENT_OBJS = $(shell find /opt/click/userlevel/ ! -name "click.o" ! -name "exportstub.o" -name "*.o")
 
+### Object files of DPDK
+### -----> Give a variable with the DPDK home path instead of a fixed path
+DPDK_OBJS = $(shell find /opt/dpdk/x86_64-native-linuxapp-gcc/lib/ -name "*.a")
+
 ### Final compilation rule
 hyper_nf: $(OBJS) main.o
 	$(CC) $(LFLAGS) $(OBJS) main.o  $(CLICK_ELEMENT_OBJS) -o $(EXECUTABLE) $(LIBS)
+
+dpdk: $(OBJS) main.o
+	$(CC) $(LFLAGS) $(OBJS) main.o  $(CLICK_ELEMENT_OBJS) $(DPDK_OBJS) -o $(EXECUTABLE) $(LIBS)
 	
 class_test: $(OBJS) classifier_test.o
 	$(CC) $(LFLAGS) $(OBJS) $(CLICK_ELEMENT_OBJS) classifier_test.o -o $(CLASS_TEST) $(LIBS)
@@ -92,7 +99,8 @@ click_tree.o: ./traffic_class_builder/click_tree.cpp ./traffic_class_builder/cli
 	$(CC) $(CFLAGS) ./traffic_class_builder/click_tree.cpp
 
 parser_configuration.o: ./configuration/parser_configuration.cpp ./configuration/parser_configuration.hpp \
-						./configuration/generic_configuration.hpp ./graph/graph.hpp
+						./configuration/properties.hpp ./configuration/generic_configuration.hpp \
+						./graph/graph.hpp
 	$(CC) $(CFLAGS) ./configuration/parser_configuration.cpp
 
 chain_parser.o: ./parser/chain_parser.cpp ./parser/chain_parser.hpp ./configuration/parser_configuration.hpp \

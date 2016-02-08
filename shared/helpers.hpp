@@ -15,6 +15,7 @@
 #include <sstream>
 #include <fstream>
 #include <sstream>
+#include <iterator>
 #include <iostream>
 #include <sys/stat.h>
 
@@ -113,12 +114,13 @@ const std::set<std::string> SUPPORTED_MAPPER_ELEMENTS = {"RoundRobinIPMapper"};
  */
 std::vector<std::string> split(const std::string &s, const std::string& delim);
 std::vector<std::string> separate_args(const std::string &s);
+std::string vector_to_str(const std::vector<std::string>& vec, const std::string& delim);
 
 /*
  * IP helpers
  */
-bool is_ip4_prefix (const std::string &address, bool full=true);
-uint32_t aton (const std::string &address);
+bool        is_ip4_prefix (const std::string &address, bool full=true);
+uint32_t    aton (const std::string &address);
 std::string ntoa (uint32_t address);
 
 /*
@@ -128,76 +130,43 @@ short allocateMemory(void** memoryBuffer, size_t size);
 short releaseMemory (void** memoryBuffer);
 
 /*
+ * Extract numbers from strings
+ */
+const std::string get_number_from_string(std::string const& str);
+
+/*
  * Convert a boolean to string
  */
-inline std::string bool_to_str(const bool b) {
-	std::ostringstream ss;
-    ss << std::boolalpha << b;
-    return ss.str();
-}
+const std::string bool_to_str(const bool b);
 
 /*
  * Convert a string to boolean
  */
-inline bool str_to_bool(const std::string& s) {
-	bool b;
-	std::istringstream(s) >> std::boolalpha >> b;
-	return b;
-}
+bool str_to_bool(const std::string& s);
 
 /*
  * Check if directory exists
  */
-inline bool directory_exists(const std::string& dir_path) {
-	struct stat info;
-
-	return ( (stat(dir_path.c_str(), &info) == 0) && (info.st_mode & S_IFDIR) );
-	/*if ( stat(dir_path.c_str(), &info) != 0 ) {
-		return false;
-	}
-	else if(info.st_mode & S_IFDIR) {
-		return true;
-	}
-	else {
-		return false;
-	}*/
-}
+bool directory_exists(const std::string& dir_path);
 
 /*
  * Create a directory
  */
-inline bool create_directory(const std::string& dir_path) {
-	mode_t mode = 0700;
-	return ( mkdir(dir_path.c_str(), mode) == 0 );
-}
-
+bool create_directory(const std::string& dir_path);
 /*
  * Check if file exists
  */
-inline bool file_exists(const std::string& file_path) {
-	struct stat buffer;
-	return ( stat(file_path.c_str(), &buffer) == 0 ); 
-}
+bool file_exists(const std::string& file_path);
 
 /*
  * Get file extension
  */
-inline const std::string get_string_extension(const std::string& str, const char delim='.') {
-	if( str.find_last_of(delim) != std::string::npos )
-		return str.substr(str.find_last_of(delim) + 1);
-	return std::string("");
-}
+const std::string get_string_extension(const std::string& str, const char delim='.');
 
 /*
- * Get file extension
+ * Get the substring before a pattern
  */
-inline const std::string get_substr_before(const std::string& str, const std::string& pattern) {
-	std::size_t found = str.find(pattern);
-	if ( found != std::string::npos ) {
-		return str.substr(0, found);
-	}
-	return str;
-}
+const std::string get_substr_before(const std::string& str, const std::string& pattern);
 
 /*
  * A C++11 template that is able to receive any function with any arguments
@@ -216,7 +185,7 @@ struct measure {
 
 		auto duration = std::chrono::duration_cast< TimeT>(std::chrono::system_clock::now() - start);
 
-		return  (double) duration.count();
+		return (double) duration.count();
 	}
 };
 

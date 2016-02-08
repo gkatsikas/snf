@@ -30,6 +30,10 @@
 #define DEBUG(A) 
 #endif
 
+//////////////////////////////////////////////////////////////////////////////////////////////////////
+// Filter
+//////////////////////////////////////////////////////////////////////////////////////////////////////
+
 Filter::Filter() : Filter(unknown, 0, UINT32_MAX) {}
 
 Filter::Filter(HeaderField field) : Filter(field, 0, UINT32_MAX) {}
@@ -37,7 +41,7 @@ Filter::Filter(HeaderField field) : Filter(field, 0, UINT32_MAX) {}
 Filter::Filter(HeaderField field,uint32_t value) : Filter(field, value, value) {}
 
 Filter::Filter (HeaderField field, uint32_t lower_value, uint32_t upper_value) :
-					m_filter(), m_toSubstract(), m_field(field) {
+					m_field(field), m_filter(), m_to_subtract() {
 	m_filter.add_segment(lower_value,upper_value);
 	if(lower_value > upper_value) {BUG("Weird filter: "+to_str());}
 }
@@ -220,61 +224,61 @@ Filter Filter::get_filter_from_prefix_pattern(HeaderField field, const std::stri
 }
 
 bool Filter::match(uint32_t value) const {
-	return (m_filter.contains(value) && !m_toSubstract.contains(value));
+	return (m_filter.contains(value) && !m_to_subtract.contains(value));
 }
 
 bool Filter::contains (const Filter& filter) const{
 	DisjointSegmentList is_in = filter.m_filter;
-	is_in.substract_seglist(filter.m_toSubstract);
+	is_in.substract_seglist(filter.m_to_subtract);
 	DisjointSegmentList contains = m_filter;
-	contains.substract_seglist (m_toSubstract);
+	contains.substract_seglist (m_to_subtract);
 	return contains.contains_seglist(is_in);
 }
 
 bool Filter::is_none() const {
-	return (m_filter.empty() || m_toSubstract.contains_seglist(m_filter));
+	return (m_filter.empty() || m_to_subtract.contains_seglist(m_filter));
 }
 
 Filter& Filter::translate(uint32_t value, bool forward) {
 	m_filter.translate(value,forward);
-	m_toSubstract.translate(value,forward);
+	m_to_subtract.translate(value,forward);
 	return *this;
 }
 
 Filter& Filter::unite (const Filter &filter) {
 	DEBUG("unite "+to_str());
 	m_filter.add_seglist(filter.m_filter);
-	m_toSubstract.substract_seglist (filter.m_filter);
-	DisjointSegmentList temp = filter.m_toSubstract;
+	m_to_subtract.substract_seglist (filter.m_filter);
+	DisjointSegmentList temp = filter.m_to_subtract;
 	temp.substract_seglist (m_filter);
-	m_toSubstract.add_seglist(temp);
+	m_to_subtract.add_seglist(temp);
 	return *this;
 }
 
 Filter& Filter::intersect (const Filter &filter) {
 	DEBUG("intersect "+to_str()+" with "+filter.to_str());
 	m_filter.intersect_seglist(filter.m_filter);
-	m_toSubstract.add_seglist(filter.m_toSubstract);
+	m_to_subtract.add_seglist(filter.m_to_subtract);
 	return *this;
 }
 
 Filter& Filter::differentiate (const Filter& filter) {
 	DEBUG("Differentiate"+to_str());
-	m_toSubstract.add_seglist(filter.m_filter);
+	m_to_subtract.add_seglist(filter.m_filter);
 	return *this;
 }
 
 bool Filter::operator== (const Filter& rhs) const {
 	DisjointSegmentList lhs_dsl = this->m_filter;
-	lhs_dsl.substract_seglist(this->m_toSubstract);
+	lhs_dsl.substract_seglist(this->m_to_subtract);
 	DisjointSegmentList rhs_dsl = rhs.m_filter;
-	rhs_dsl.substract_seglist(rhs.m_toSubstract);
+	rhs_dsl.substract_seglist(rhs.m_to_subtract);
 	return (this->m_field == rhs.m_field && lhs_dsl == rhs_dsl);
 }
 
 void Filter::make_none () {
 	this->m_filter = DisjointSegmentList();
-	this->m_toSubstract = DisjointSegmentList ();
+	this->m_to_subtract = DisjointSegmentList ();
 }
 
 std::string Filter::to_str () const{
@@ -287,23 +291,24 @@ std::string Filter::to_str () const{
 	}
 }
 
-std::string Filter::to_ip_class_pattern() const {
+/*
+ * Translate all the segments of a filter into
+ * a format understandable by Click's IPClassifier.
+ */
+std::string Filter::to_ip_classifier_pattern() const {
 	std::string keyword;
 	std::string output;
+
 	switch (m_field) {
 		case ip_ver:
 			keyword = "ip vers ";
 			break;
 		case ip_src:
-			/*keyword = "ip sip ";
-			break;*/
 			keyword = "src net ";
-			return ip_filter_to_ip_class_pattern(keyword);/**/
+			return ip_filter_to_ip_classifier_pattern(keyword);
 		case ip_dst:
-			/*keyword = "ip dip ";
-			break;*/
-			/**/keyword = "dst net ";
-			return ip_filter_to_ip_class_pattern(keyword);/**/
+			keyword = "dst net ";
+			return ip_filter_to_ip_classifier_pattern(keyword);
 		case ip_proto:
 			keyword = "ip proto ";
 			break;
@@ -317,10 +322,10 @@ std::string Filter::to_ip_class_pattern() const {
 			keyword = "ip dscp ";
 			break;
 		case ip_ect:
-			if(match(1)) { return "ip ect"; }
+			if ( match(1) ) { return "ip ect"; }
 			else { return "!(ip ect)"; }
 		case ip_ce:
-			if(match(1)) { return "ip ce"; }
+			if ( match(1) ) { return "ip ce"; }
 			else { return "!(ip ce)"; }
 		case ip_TTL:
 			keyword = "ip ttl ";
@@ -332,48 +337,48 @@ std::string Filter::to_ip_class_pattern() const {
 			keyword = "dst port ";
 			break;
 		case tcp_syn:
-			if(match(1)) { return "syn"; }
-			else {return "!(syn)"; }
+			if ( match(1) ) { return "syn"; }
+			else { return "!(syn)"; }
 		case tcp_ack:
-			if(match(1)) { return "ack"; }
-			else {return "!(ack)"; }
+			if ( match(1) ) { return "ack"; }
+			else { return "!(ack)"; }
 		case tcp_psh:
-			if(match(1)) { return "tcp opt psh"; }
-			else {return "!(tcp opt psh)"; }
+			if ( match(1) ) { return "tcp opt psh"; }
+			else { return "!(tcp opt psh)"; }
 		case tcp_rst:
-			if(match(1)) { return "tcp opt rst"; }
-			else {return "!(tcp opt rst)"; }
+			if ( match(1) ) { return "tcp opt rst"; }
+			else { return "!(tcp opt rst)"; }
 		case tcp_fin:
-			if(match(1)) { return "tcp opt fin"; }
-			else {return "!(tcp opt fin)"; }
+			if ( match(1) ) { return "tcp opt fin"; }
+			else { return "!(tcp opt fin)"; }
 		case tcp_urg:
-			if(match(1)) { return "tcp opt urg"; }
-			else {return "!(tcp opt urg)"; }
+			if ( match(1) ) { return "tcp opt urg"; }
+			else { return "!(tcp opt urg)"; }
 		case tcp_win:
 			keyword = "tcp win ";
 			break;
 		default:
-			BUG("Cannot convert filter to classifier "+to_str());
+			BUG("Cannot convert filter to IPClassifier "+to_str());
 	}
 
 	std::vector<std::pair<uint32_t,uint32_t> > segments = m_filter.get_segments();
 
 	for  (auto &seg:segments) {
 		//FIXME: handle IP subnets differently
-		if(seg.first==seg.second) {
-			output+= "("+keyword+std::to_string(seg.first)+") || ";
+		if ( seg.first == seg.second ) {
+			output+= "("+keyword + std::to_string(seg.first) + ") || ";
 		}
 		else {
-			if(seg.first==0) {
-				output += keyword+"<= "+std::to_string(seg.second);
+			if ( seg.first == 0 ) {
+				output += keyword + "<= " + std::to_string(seg.second);
 			}
 			else {
-				if(seg.second == 0xffffffff) {
-					output += keyword+">= "+std::to_string(seg.first);
+				if ( seg.second == 0xffffffff ) {
+					output += keyword + ">= " + std::to_string(seg.first);
 				}
 				else {
-					output += "("+keyword+">= "+std::to_string(seg.first)+" && "+keyword+
-					  "<= "+std::to_string(seg.second)+")";
+					output += "(" + keyword + ">= " + std::to_string(seg.first) + " && "
+							+ keyword + "<= " + std::to_string(seg.second) + ")";
 				}
 			}
 			output += " || ";
@@ -381,54 +386,124 @@ std::string Filter::to_ip_class_pattern() const {
 	}
 	
 	output = output.substr(0,output.size()-4);
-	
-	if(!m_toSubstract.empty()) {
-		output += " && !(";
-		segments = m_toSubstract.get_segments ();
+
+	// Lazy subtraction
+	if ( !m_to_subtract.empty() ) {
+		output  += " && !(";
+		segments = m_to_subtract.get_segments ();
 		
 		for  (auto &seg:segments) {
 			//FIXME: handle IP subnets differently
-			if(seg.first==seg.second) {
-				output+= "("+keyword+std::to_string(seg.first)+") || ";
+			if ( seg.first == seg.second ) {
+				output+= "(" + keyword + std::to_string(seg.first) + ") || ";
 			}
 			else {
-				output += "("+keyword+">= "+std::to_string(seg.first)+" && "+keyword+
-						  "<= "+std::to_string(seg.second)+") || ";
+				output += "(" + keyword + ">= " + std::to_string(seg.first) + " && "
+						+ keyword + "<= " + std::to_string(seg.second) + ") || ";
 			}
 		}
 		output = output.substr(0,output.size()-4);
 		output += ")";
 	}
 
-	return output; //Removes trailing  " || "
+	return output; // Removes trailing  " || "
 }
 
-//Algorithm to decompose interval in prefixes: we take the biggest possible prefix
-//containing lower and whose bounds are <= upper, then we keep going on the rest
-//This would go quicker if we could detect !() patterns
+/*
+ * Translate all the segments of a filter into
+ * a format understandable by Flow Director.
+ */
+std::string Filter::to_flow_director_pattern() const {
+	std::string keyword;
+	std::string output;
+
+	switch (m_field) {
+		case ip_ver:
+			keyword = "flow-type ip";
+			break;
+		case ip_src:
+			keyword = "src-ip ";
+			return ip_filter_to_ip_classifier_pattern(keyword);
+		case ip_dst:
+			keyword = "dst-ip ";
+			return ip_filter_to_ip_classifier_pattern(keyword);
+		case ip_proto:
+			keyword = "proto ";
+			break;
+		case ip_ihl:
+		case ip_id:
+		case ip_dscp:
+		case ip_ect:
+		case ip_ce:
+		case ip_TTL:
+			throw std::runtime_error("IP field " + to_str() + " is not supported by Flow Director");
+		case tp_srcPort:
+			keyword = "src-port ";
+			break;
+		case tp_dstPort:
+			keyword = "dst-port ";
+			break;
+		case tcp_syn:
+		case tcp_ack:
+		case tcp_psh:
+		case tcp_rst:
+		case tcp_fin:
+		case tcp_urg:
+		case tcp_win:
+			throw std::runtime_error("TCP field " + to_str() + " is not supported by Flow Director");
+		default:
+			throw std::runtime_error("Cannot convert filter " + to_str() + " to Flow Director");
+	}
+
+	output = keyword;
+	throw std::runtime_error("Flow-Director traffic classification is not implemented");
+
+	return output;
+}
+
+/*
+ * Algorithm to decompose interval in prefixes: we take the biggest possible prefix
+ * containing lower and whose bounds are <= upper, then we keep going on the rest.
+ * This would go quicker if we could detect !() patterns.
+ */ 
 std::string ip_segment_to_ip_class_pattern(std::string keyword, uint32_t lower, uint32_t upper) {
 
 	std::string output;
 	uint32_t current_low = lower;
-	while(current_low <= upper) {
+
+	while ( current_low <= upper ) {
 		int prefix_size = 32;
-		while(prefix_size > 0 && (current_low>>(32-prefix_size))%2 == 0
-				&& current_low + (0xffffffff>>(prefix_size-1)) <= upper) {
+		while ( prefix_size > 0 && (current_low>>(32-prefix_size))%2 == 0 &&
+				current_low + (0xffffffff>>(prefix_size-1)) <= upper) {
 				prefix_size--;
 		}
-		output += "("+keyword+ntoa(current_low)+"/"+std::to_string(prefix_size)+") || ";
-		if(prefix_size==32) current_low++;
-		else current_low += (0xffffffff >> prefix_size) + 1;
-		if(current_low==0){break;}
+
+		output += "(" + keyword + ntoa(current_low) + "/" + std::to_string(prefix_size) + ") || ";
+
+		if ( prefix_size == 32 ) {
+			current_low++;
+		}
+		else {
+			current_low += (0xffffffff >> prefix_size) + 1;
+		}
+
+		if ( current_low == 0 ) {
+			break;
+		}
 	}
 
-	return output.substr(0,output.size()-4);
+	return output.substr(0, output.size()-4);
 }
 
-std::string Filter::ip_filter_to_ip_class_pattern(std::string keyword) const {
+/*
+ * Translates a (complex) condition on IP src/dst address fields to
+ * a format understandable by Click's IPClassfier element.
+ */
+std::string Filter::ip_filter_to_ip_classifier_pattern(const std::string& keyword) const {
 	std::string output;
-	std::vector<std::pair<uint32_t,uint32_t> > segments = m_filter.get_segments();
-	if(segments.empty()) {
+	std::vector<std::pair<uint32_t,uint32_t> > segments = this->m_filter.get_segments();
+
+	if ( segments.empty() ) {
 		return "none";
 	}
 
@@ -438,9 +513,9 @@ std::string Filter::ip_filter_to_ip_class_pattern(std::string keyword) const {
 	
 	output = output.substr(0,output.size()-4);
 	
-	if(!m_toSubstract.empty()) {
+	if( ! this->m_to_subtract.empty() ) {
 		output += " && !(";
-		segments = m_toSubstract.get_segments ();
+		segments = this->m_to_subtract.get_segments ();
 		for (auto &seg:segments) {
 			output += ip_segment_to_ip_class_pattern(keyword, seg.first, seg.second)+" || ";
 		}
@@ -450,21 +525,40 @@ std::string Filter::ip_filter_to_ip_class_pattern(std::string keyword) const {
 	return output;
 }
 
+std::string Filter::ip_filter_to_flow_director_pattern(const std::string& keyword) const {
+	std::string output;
+
+	// Get all the segments of the filter
+	std::vector<std::pair<uint32_t,uint32_t> > segments = this->m_filter.get_segments();
+	if ( segments.empty() ) {
+		return "none";
+	}
+
+	for (auto &seg:segments) {
+		output += ip_segment_to_ip_class_pattern(keyword, seg.first, seg.second)+" || ";
+	}
+
+	return output;
+}
+
 HeaderField Filter::get_field() const{
 	return this->m_field;
 }
 
-Condition::Condition (HeaderField field, std::shared_ptr<ClickElement> elem,
-		Filter filter, FieldOperation op) : m_field(field), m_element(elem),
-		m_filter(filter), m_currentWrite(op) {}
+//////////////////////////////////////////////////////////////////////////////////////////////////////
+// Condition
+//////////////////////////////////////////////////////////////////////////////////////////////////////
+
+Condition::Condition (HeaderField field, std::shared_ptr<ClickElement> elem, Filter filter, FieldOperation op) : 
+						m_field(field), m_filter(filter), m_current_write(op), m_element(elem) {}
 
 bool Condition::is_same_write (const FieldOperation& op) const {
-	return op==m_currentWrite;
+	return op == this->m_current_write;
 }
 
 bool Condition::intersect(const Filter& filter) {
-	m_filter.intersect(filter);
-	return m_filter.is_none();
+	this->m_filter.intersect(filter);
+	return this->m_filter.is_none();
 }
 
 bool Condition::is_none() const {
@@ -472,39 +566,44 @@ bool Condition::is_none() const {
 }
 
 std::string Condition::to_str() const {
-	return "Condition on "+m_element->to_str()+": "+m_filter.to_str();
+	return "Condition on " + this->m_element->to_str() + ": " + this->m_filter.to_str();
 }
 
-bool TrafficClass::is_discarded() const {
-	return (this->m_elementPath.back()->get_type() == Discard ||
-			this->m_elementPath.back()->get_type() == Discard_def);
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////
+// TrafficClass
+//////////////////////////////////////////////////////////////////////////////////////////////////////
+TrafficClass::TrafficClass () : m_output_iface(), m_nf_of_output_iface(), m_filters(),
+								m_write_conditions(), m_drop_broadcasts(false),
+								m_ip_gw_options(false), m_ether_encap_conf(),
+								m_element_path(), m_operation(), m_nat_input_port(0) {}
+
+bool TrafficClass::is_discarded(void) const {
+	return (this->m_element_path.back()->get_type() == Discard ||
+			this->m_element_path.back()->get_type() == Discard_def);
 }
 
-bool TrafficClass::is_SNATed(){
+bool TrafficClass::is_SNATed(void){
 	FieldOperation* src_port = m_operation.get_field_op(tp_srcPort);
 	return (src_port && src_port->m_type==WriteSF);
 }
 
-TrafficClass::TrafficClass () : m_filters(), m_writeConditions(), m_dropBroadcasts(false),
-								m_ipgwoptions(false), m_etherEncapConf(), m_elementPath(),
-								m_operation() {}
-
-std::string TrafficClass::synthesize_chain () {
+std::string TrafficClass::synthesize_chain (void) {
 	std::string output;
-	if(this->is_discarded()) {
+	if ( this->is_discarded() ) {
 		output = "Discard();";
 	}
 	else {
-		if(m_dropBroadcasts) {
+		if(m_drop_broadcasts) {
 			output += "DropBroadcasts() -> ";
 		}
 
-		if(m_ipgwoptions) {
+		if(m_ip_gw_options) {
 			output += "IPGWOptions($ipAddr) -> ";
 		}
 		/*
 		if(m_nat) {
-			output += "["+std::to_string(m_natInputPort)+"]"+m_nat->get_name()+";";
+			output += "["+std::to_string(m_nat_input_port)+"]"+m_nat->get_name()+";";
 		}
 		else {
 			output += "[0]IPRewriter(";
@@ -580,29 +679,41 @@ std::string TrafficClass::synthesize_chain () {
 		//									std::to_string(field_op->m_value[0]) )));
 		//}
 
-		//if(m_etherEncapConf.empty()) {
+		//if(m_ether_encap_conf.empty()) {
 		//	BUG("Empty EtherEncap configuration");
 		//}
-		//synthesized_chain.push_back(std::shared_ptr<ClickElement>(new ClickElement(EtherEncap,m_etherEncapConf)));
-		//synthesized_chain.push_back(m_elementPath.back());
+		//synthesized_chain.push_back(std::shared_ptr<ClickElement>(new ClickElement(EtherEncap,m_ether_encap_conf)));
+		//synthesized_chain.push_back(m_element_path.back());
 		*/
 	}
 
 	return output;
 }
 
-std::string TrafficClass::to_ip_classifier_pattern() const {
+std::string TrafficClass::to_ip_classifier_pattern(void) const {
 	std::string output;
-	for (auto &it : m_filters) {
-		output += "("+it.second.to_ip_class_pattern() + ") && ";
+	for (auto &it : this->m_filters) {
+		output += "("+it.second.to_ip_classifier_pattern() + ") && ";
+		//std::cout << output << std::endl;
 	}
 	return output.substr(0, output.size()-4); //Removes trailing " && "
 }
 
+std::string TrafficClass::to_flow_director_pattern(void) const {
+	std::string output;
+	for (auto &it : this->m_filters) {
+		//output += "("+it.second.to_ip_classifier_pattern() + ") && ";
+		output += it.second.to_flow_director_pattern() + " ";
+		//std::cout << output << std::endl;
+	}
+	return output;
+}
+
 int TrafficClass::intersect_filter(const Filter& filter) {
 	HeaderField field = filter.get_field();
-	auto got=this->m_filters.find(field);
-	if(got == this->m_filters.end()) {
+	auto got = this->m_filters.find(field);
+
+	if ( got == this->m_filters.end() ) {
 		this->m_filters[field]=filter;
 	}
 	else {
@@ -614,34 +725,34 @@ int TrafficClass::intersect_filter(const Filter& filter) {
 
 int TrafficClass::intersect_condition(const Filter& condition, const FieldOperation& operation) {
 	HeaderField field = condition.get_field();
-	auto got=this->m_writeConditions.find(field);
-	if(got == this->m_writeConditions.end() ||  !this->m_writeConditions[field].back().is_same_write(operation)) {
-		this->m_writeConditions[field].push_back(
-				Condition(field,this->m_elementPath.back(),condition,operation));
+	auto got=this->m_write_conditions.find(field);
+	if(got == this->m_write_conditions.end() ||  !this->m_write_conditions[field].back().is_same_write(operation)) {
+		this->m_write_conditions[field].push_back(
+				Condition(field,this->m_element_path.back(),condition,operation));
 	}
 	else {
-		this->m_writeConditions[field].back().intersect(condition);
+		this->m_write_conditions[field].back().intersect(condition);
 	}
 
-	return (int) this->m_writeConditions[field].back().is_none();
+	return (int) this->m_write_conditions[field].back().is_none();
 }
 
 int TrafficClass::addElement (std::shared_ptr<ClickElement> element, int port) {
 
 	int nb_none_filters=0;
-	(this->m_elementPath).push_back(element);
+	(this->m_element_path).push_back(element);
 
 	if(element->get_type() == IPGWOptions) {
-		this->m_ipgwoptions = true;
+		this->m_ip_gw_options = true;
 	}
 	else if(element->get_type() == DropBroadcasts) {
-		this->m_dropBroadcasts = true;
+		this->m_drop_broadcasts = true;
 	}
 	else if(element->get_type() == EtherEncap) {
-		this->m_etherEncapConf = element->get_configuration();
+		this->m_ether_encap_conf = element->get_configuration();
 	}
 
-	if (port==-1) { //Last element of the chain -> no children
+	if ( port == -1 ) { //Last element of the chain -> no children
 		return 0;
 	}
 	PacketFilter pf = (element->get_outputClasses()[port]).get_filter();
@@ -712,43 +823,99 @@ int TrafficClass::addElement (std::shared_ptr<ClickElement> element, int port) {
 	return nb_none_filters;
 }
 
-std::string TrafficClass::get_outputIface () const {
-	if(!is_discarded()) {
-		if(m_elementPath.size()>1) {
-			std::shared_ptr<ClickElement> todev = m_elementPath.back();
-			if(todev->get_type() == ToDevice) {
-				return (todev->get_nfName()+","+todev->get_configuration());
+std::string TrafficClass::get_output_iface_conf (void) {
+	if ( ! this->is_discarded() ) {
+		if ( this->m_element_path.size() > 1 ) {
+			std::shared_ptr<ClickElement> todev = this->m_element_path.back();
+			if ( todev->get_type() == ToDevice ) {
+				// Configuration contains interface name and other parameters
+				std::vector<std::string> conf = split( todev->get_configuration(), "," );
+				// We discard the interface name
+				conf.erase(conf.begin());
+				this->set_output_iface_conf( vector_to_str(conf, ",") );
+				return ( this->m_output_iface_conf );
 			}
-			else if(todev->get_type() == No_elem) {
-				todev = m_elementPath[m_elementPath.size()-2];
-				if(todev->get_type() == ToDevice) {
-					return (todev->get_nfName()+","+todev->get_configuration());
+			else if ( todev->get_type() == No_elem ) {
+				todev = this->m_element_path[this->m_element_path.size()-2];
+				if ( todev->get_type() == ToDevice ) {
+					// Configuration contains interface name and other parameters
+					std::vector<std::string> conf = split( todev->get_configuration(), "," );
+					// We discard the interface name
+					conf.erase(conf.begin());
+					this->set_output_iface_conf( vector_to_str(conf, ",") );
+					return ( this->m_output_iface_conf );
+				}
+			}
+		}
+	}
+	return "";
+}
+
+std::string TrafficClass::get_output_iface (void) {
+	std::string iface;
+
+	if ( ! this->is_discarded() ) {
+		if ( this->m_element_path.size() > 1 ) {
+			std::shared_ptr<ClickElement> todev = this->m_element_path.back();
+			if ( todev->get_type() == ToDevice ) {
+				iface = split( todev->get_configuration(), "," )[0];
+				this->set_output_iface(iface);
+				this->set_nf_of_output_iface(todev->get_nfName());
+				return iface;
+			}
+			else if ( todev->get_type() == No_elem ) {
+				todev = this->m_element_path[this->m_element_path.size()-2];
+				if ( todev->get_type() == ToDevice ) {
+					iface = split( todev->get_configuration(), "," )[0];
+					this->set_output_iface(iface);
+					this->set_nf_of_output_iface(todev->get_nfName());
+					return iface;
 				}
 			}
 		}
 	}
 	return "None";
-	BUG("Could not provide output interface for traffic class "+to_str());
 }
 
-Operation TrafficClass::get_operation () {
-	return m_operation;
+std::string TrafficClass::get_nf_of_output_iface(void) {
+	return this->m_nf_of_output_iface;
 }
 
-void TrafficClass::set_nat (std::shared_ptr<SynthesizedNat> nat, unsigned short port) {
+Operation TrafficClass::get_operation (void) {
+	return this->m_operation;
+}
+
+void TrafficClass::set_nat (std::shared_ptr<SynthesizedNat> nat, const unsigned short& port) {
 	this->m_nat = nat;
-	this->m_natInputPort = port;
+	this->m_nat_input_port = port;
 }
 
-std::shared_ptr<SynthesizedNat> TrafficClass::get_nat () { return m_nat; }
+void TrafficClass::set_output_iface(const std::string& iface) {
+	this->m_output_iface = iface;
+}
 
-unsigned short TrafficClass::get_natInputPort () { return m_natInputPort; }
+void TrafficClass::set_output_iface_conf(const std::string& iface_conf) {
+	this->m_output_iface_conf = iface_conf;
+}
+
+void TrafficClass::set_nf_of_output_iface(const std::string& nf) {
+	this->m_nf_of_output_iface = nf;
+}
+
+std::shared_ptr<SynthesizedNat> TrafficClass::get_nat (void) {
+	return this->m_nat;
+}
+
+unsigned short TrafficClass::get_nat_input_port (void) {
+	return this->m_nat_input_port;
+}
 
 std::string TrafficClass::to_str() const {
 	std::string output = "\n================= Begin Traffic Class =================\nFilters:";
-	output += to_ip_classifier_pattern();
+	output += this->to_ip_classifier_pattern();
 	output += "\nConditions on Write operations:\n";
-	for_fields_in_pf(it,m_writeConditions) {
+
+	for_fields_in_pf(it, m_write_conditions) {
 		for(auto &condition : it->second) {
 			output += ("\t"+condition.to_str()+"\n");
 		}
@@ -756,7 +923,7 @@ std::string TrafficClass::to_str() const {
 	output += m_operation.to_str();
 
 	output += "Passed elements: \n\t";
-	for (auto it : m_elementPath) {
+	for (auto it : m_element_path) {
 		output += elementNames[it->get_type()];
 		if (it->is_leaf()) {
 			output+="\n";

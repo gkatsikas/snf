@@ -16,7 +16,7 @@ class GenericConfiguration
 {
 	protected:
 		std::string filename;
-		std::map<std::string,Chameleon> content_;
+		std::map<std::string, Chameleon> content_;
 
 		/*
 		 * Logger instance
@@ -47,6 +47,9 @@ class GenericConfiguration
 		) const;
 		Chameleon const& get_value(
 			std::string const& section, std::string const& entry, int value
+		);
+		Chameleon const& get_value(
+			std::string const& section, std::string const& entry, unsigned short value
 		);
 		Chameleon const& get_value(
 			std::string const& section, std::string const& entry, bool value

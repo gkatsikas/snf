@@ -63,7 +63,8 @@ std::unordered_map<short, std::vector<std::string>>* ElementVertex::get_implicit
 	return &(this->implicit_configuration);
 }
 
-void ElementVertex::set_implicit_configuration(const short port, const std::vector<std::string> implicit_conf) {
+void ElementVertex::set_implicit_configuration(const short port, 
+												const std::vector<std::string>& implicit_conf) {
 	this->implicit_configuration[port] = implicit_conf;
 }
 

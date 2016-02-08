@@ -14,7 +14,7 @@
 OUTPUT_FOLDER           = ./results
 OUTPUT_FILE             = hyper-chain.click
 
-HARDWARE_CLASSIFICATION = false
+HARDWARE_CLASSIFICATION = true
 # Options: RSS-Hashing, Flow-Director, OpenFlow
 HARDWARE_CLASSIFICATION_FORMAT = RSS-Hashing
 
@@ -33,49 +33,10 @@ NIC_HW_QUEUES           = 16
 
 ### TOPO 1
 #
-#  PZ --- |NAT| --- |FW| --- Internet
-#                     |
-#                     |
-#                    DMZ
-#
-NF_1 = nf_repo/compound/napt_2if.click
-NF_2 = nf_repo/compound/firewall_3if.click
-
-
-### TOPO 2
-#
 #  PZ --- |NAT| --- |NAT| --- Internet
-#            \       /
-#             \     /
-#               DMZ
 #
-#NF_1 = nf_repo/compound/napt_3if.click
-#NF_2 = nf_repo/compound/napt_3if.click
-
-
-### TOPO 3
-#
-#                                        Server 1
-#                                       /
-#  Client --- |NAT| --- |FW| --- |LB| -- 
-#                                       \
-#                                        Server 2
-#
-#NF_1 = nf_repo/compound/napt_2if.click
-#NF_2 = nf_repo/compound/firewall_2if.click
-#NF_3 = nf_repo/compound/load_balancer_2if.click
-
-### TOPO 4
-#
-#  Domain 1 --- |R| --- |R| --- |R| --- |R| --- Domain 3
-#                         \      /
-#                          \    /
-#                         Domain 2
-#
-#NF_1 = nf_repo/compound/router_2if.click
-#NF_2 = nf_repo/compound/router_3if.click
-#NF_3 = nf_repo/compound/router_3if.click
-#NF_4 = nf_repo/compound/router_2if.click
+NF_1 = nf_repo/dpdk/nf1.click
+NF_2 = nf_repo/dpdk/nf2.click
 
 
 #######
@@ -85,16 +46,7 @@ NF_2 = nf_repo/compound/firewall_3if.click
 [NF_TOPO]
 
 ### TOPO 1
-TOPOLOGY = NF_1[eth1] -> [eth0]NF_2;
-
-### TOPO 2
-#TOPOLOGY = NF_1[eth2] -> [eth0]NF_2;
-
-### TOPO 3
-#TOPOLOGY = NF_1[eth1] -> [eth0]NF_2;NF_2[eth1] -> [eth0]NF_3;
-
-### TOPO 4
-#TOPOLOGY = NF_1[eth1] -> [eth0]NF_2;NF_2[eth2] -> [eth0]NF_3;NF_3[eth2] -> [eth0]NF_4;
+TOPOLOGY = NF_1[nf1veth1] -> [nf2veth0]NF_2;
 
 
 #######
@@ -105,14 +57,5 @@ TOPOLOGY = NF_1[eth1] -> [eth0]NF_2;
 #######
 [ENTRY_POINTS]
 ### TOPO 1
-DOMAINS  = [eth0]NF_1
-
-### TOPO 2
-#DOMAINS  = [eth0]NF_1, [eth1]NF_1, [eth1]NF_2
-
-### TOPO 3
-#DOMAINS  = [eth0]NF_1
-
-### TOPO 4
-#DOMAINS  = [eth0]NF_1, [eth1]NF_2, [eth1]NF_3
+DOMAINS  = [nf1veth0]NF_1
 ###################################################################################################

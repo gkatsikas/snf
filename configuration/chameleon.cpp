@@ -7,25 +7,27 @@
 #include "chameleon.hpp"
 #include "../shared/helpers.hpp"
 
-Chameleon::Chameleon(int i)         : value_(std::to_string(i)) {}
+Chameleon::Chameleon(int i)                    : value_(std::to_string(i)) {}
 
-Chameleon::Chameleon(bool b)        : value_(std::to_string(b)) {}
+Chameleon::Chameleon(unsigned short u)         : value_(std::to_string(u)) {}
 
-Chameleon::Chameleon(double d)      : value_(std::to_string(d)) {}
+Chameleon::Chameleon(bool b)                   : value_(std::to_string(b)) {}
 
-Chameleon::Chameleon(const char* c) : value_(c){}
+Chameleon::Chameleon(double d)                 : value_(std::to_string(d)) {}
 
-Chameleon::Chameleon(Chameleon const& other)   : value_(other.value_) {}
+Chameleon::Chameleon(const char* c)            : value_(c){}
 
 Chameleon::Chameleon(std::string const& value) : value_(value) {}
 
-Chameleon& Chameleon::operator=(Chameleon const& other) {
-	value_ = other.value_;
-	return *this;
-}
+Chameleon::Chameleon(Chameleon const& other)   : value_(other.value_) {}
 
 Chameleon& Chameleon::operator=(int i) {
 	value_ = std::to_string(i);
+	return *this;
+}
+
+Chameleon& Chameleon::operator=(unsigned short u) {
+	value_ = std::to_string(u);
 	return *this;
 }
 
@@ -44,18 +46,27 @@ Chameleon& Chameleon::operator=(std::string const& s) {
 	return *this;
 }
 
-Chameleon::operator std::string() const {
-	return value_;
+Chameleon& Chameleon::operator=(Chameleon const& other) {
+	value_ = other.value_;
+	return *this;
 }
 
-Chameleon::operator double() const {
-	return atof(value_.c_str());
+Chameleon::operator int() const {
+	return atoi(value_.c_str());
+}
+
+Chameleon::operator unsigned short() const {
+	return static_cast<unsigned short> ( atoi(value_.c_str()) );
 }
 
 Chameleon::operator bool() const {
 	return str_to_bool(value_);
 }
 
-Chameleon::operator int() const {
-	return atoi(value_.c_str());
+Chameleon::operator double() const {
+	return atof(value_.c_str());
+}
+
+Chameleon::operator std::string() const {
+	return value_;
 }

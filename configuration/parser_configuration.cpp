@@ -7,9 +7,9 @@
 //              external NFV domains.
 //============================================================================
 
-#include "../shared/helpers.hpp"
 #include <boost/tokenizer.hpp>
 #include "parser_configuration.hpp"
+#include "../shared/helpers.hpp"
 
 /*
  * Construct an empty parser configuration
@@ -18,9 +18,7 @@ ParserConfiguration::ParserConfiguration(const std::string& config_file)
 	: GenericConfiguration(config_file) {
 	this->nf_chain   = new Graph();
 	this->nf_domains = new Graph();
-	this->output_folder   = DEFAULT_HYPER_NF_OUT_FOLDER;
-	this->output_filename = DEFAULT_HYPER_NF_CONF_NAME;
-	this->hardware_classification = false;
+	this->properties = NULL;
 	log << debug << "ParserConfiguration constructed" << def << std::endl;
 }
 
@@ -28,10 +26,15 @@ ParserConfiguration::ParserConfiguration(const std::string& config_file)
  * Destruct a parser configuration
  */
 ParserConfiguration::~ParserConfiguration() {
-	if ( this->nf_chain != NULL )
+	if ( this->nf_chain != NULL ) {
 		delete this->nf_chain;
-	if ( this->nf_domains != NULL )
+	}
+	if ( this->nf_domains != NULL ) {
 		delete this->nf_domains;
+	}
+	if ( this->properties != NULL ) {
+		delete this->properties;
+	}
 	log << debug << "ParserConfiguration deleted" << def << std::endl;
 }
 
@@ -99,47 +102,60 @@ ParserConfiguration::load_property_file(void) {
 short
 ParserConfiguration::parse_generic_properties(void) {
 
-	// Read the output folder
-	// If not given, use the default (constructor)
-	try {
-		this->output_folder = (std::string&) get_value("GENERIC", "OUTPUT_FOLDER");
+	// Apply the default configuration in case something goes wrong.
+	std::string output_folder(DEFAULT_HYPER_NF_OUT_FOLDER);
+	std::string output_filename(output_folder + DEFAULT_HYPER_NF_CONF_NAME);
+	bool hw_classification = false;
+	std::string hardware_classification_label;
+	TrafficClassFormat traffic_class_format = DEFAULT_TC_FORMAT;
+	bool numa = true;
+	unsigned short cpu_cores_no   = DEFAULT_CPU_CORES_NO;
+	unsigned short cpu_sockets_no = DEFAULT_CPU_SOCKETS_NO;
+	// Modern NICs have a lot of queues but it makes sence
+	// to adapt this number to the available CPU cores.
+	unsigned short nic_hw_queues_no = cpu_cores_no;
 
-		if ( ! directory_exists(this->output_folder) ) {
-			if ( ! create_directory(this->output_folder) ) {
+	// Read the output folder
+	// If not given, use the default
+	try {
+		output_folder = (std::string&) get_value("GENERIC", "OUTPUT_FOLDER");
+
+		if ( ! directory_exists(output_folder) ) {
+			if ( ! create_directory(output_folder) ) {
 				return FAILURE;
 			}
 		}
 	}
 	catch (const std::exception& e) {
-		
+
 	}
 
 	// Read the desired filename of the generated code
 	// If not given, use the default (constructor)
 	try {
-		this->output_filename = (std::string&) get_value("GENERIC", "OUTPUT_FILE");
+		output_filename = (std::string&) get_value("GENERIC", "OUTPUT_FILE");
 
 		// Careful, you might lose your previously synthesized chain!
-		if ( file_exists(this->output_filename) ) {
-			log << warn << "\tOutput file " << this->output_filename <<
+		if ( file_exists(output_filename) ) {
+			log << warn << "\tOutput file " << output_filename <<
 				" exists and will be overwritten" << def << std::endl;
 		}
 
 		// Remove the extension because we might generate files different extensions.
 		// We handle the new extensions in the synthesizer class.
-		if ( get_string_extension(this->output_filename, '.') == "click" ) {
-			this->output_filename = get_substr_before(this->output_filename, ".click");
+		if ( get_string_extension(output_filename, '.') == "click" ) {
+			output_filename = get_substr_before(output_filename, ".click");
 		}
 
 		// Place the output file into the output folder
-		if ( get_string_extension(this->output_folder, '/') != "" ) {
+		if ( get_string_extension(output_folder, '/') != "" ) {
 			// Folder should end with /
-			this->output_folder += "/";
+			output_folder += "/";
 		}
-		this->output_filename = this->output_folder + this->output_filename;
+		output_filename = output_folder + output_filename;
 	}
 	catch (const std::exception& e) {
-		
+		output_filename = output_folder + DEFAULT_HYPER_NF_CONF_NAME;
 	}
 
 	// If Hardware classification option is true, the generated code
@@ -151,11 +167,86 @@ ParserConfiguration::parse_generic_properties(void) {
 	// elements to different cores.
 	// If not given, use the default (constructor)
 	try {
-		this->hardware_classification = (bool) get_value("GENERIC", "HARDWARE_CLASSIFICATION", true);
+		hw_classification = (bool) get_value("GENERIC", "HARDWARE_CLASSIFICATION", true);
 	}
 	catch (const std::exception& e) {
-		
+
 	}
+
+	// If Hardware classification option is true, we want to know certain properties
+	// of the targte system.
+	if ( hw_classification ) {
+
+		// A. Method to classify traffic in hardware.
+		try {
+			hardware_classification_label = (std::string&) get_value(
+				"GENERIC", "HARDWARE_CLASSIFICATION_FORMAT"
+			);
+		}
+		catch (const std::exception& e) {
+			hardware_classification_label = static_cast<std::string>("Unknown");
+		}
+
+		// Check the given method against a dictionary of supported methods.
+		try {
+			traffic_class_format = TCLabelToFormat.at(hardware_classification_label);
+
+			if ( traffic_class_format == Click ) {
+				throw std::runtime_error(
+					"Click is not hardware based traffic class format. Choose [RSS-Hashing, Flow-Director, OpenFlow]"
+				);
+			}
+		}
+		catch (const std::exception& e) {
+			throw std::runtime_error(
+				"Unknown Traffic Class format. Choose [RSS-Hashing, Flow-Director, OpenFlow]"
+			);
+		}
+
+		// B. Non-Uniform Memory Access
+		try {
+			numa = (bool) get_value("GENERIC", "NUMA", true);
+		}
+		catch (const std::exception& e) {
+
+		}
+
+		// C. # of CPU sockets
+		try {
+			cpu_sockets_no = (unsigned short) get_value("GENERIC", "CPU_SOCKETS");
+		}
+		catch (const std::exception& e) {
+
+		}
+
+		// D. # of CPU cores
+		try {
+			cpu_cores_no = (unsigned short) get_value("GENERIC", "CPU_CORES");
+		}
+		catch (const std::exception& e) {
+			
+		}
+
+		// You cannot have more sockets than cores, be serious
+		assert (cpu_sockets_no <= cpu_cores_no);
+		// Each socket contains an even number of cores and number of sockets is even too.
+		assert (cpu_cores_no % cpu_sockets_no == 0);
+
+		// E. # of hardware queues in the NIC
+		try {
+			nic_hw_queues_no = (unsigned short) get_value("GENERIC", "NIC_HW_QUEUES");
+		}
+		catch (const std::exception& e) {
+			
+		}
+	}
+
+	// Allocate the properties object after all the configuration is applied.
+	this->properties = new Properties(
+		output_folder, output_filename, hw_classification,
+		traffic_class_format, numa, cpu_sockets_no,
+		cpu_cores_no, nic_hw_queues_no
+	);
 
 	return SUCCESS;
 }
@@ -246,7 +337,7 @@ ParserConfiguration::parse_topology(const std::string& nf_topo) {
 				return CHAIN_PARSING_PROBLEM;
 			}
 
-			int position = atoi(this->get_number_from_string(nf).c_str());
+			int position = atoi(get_number_from_string(nf).c_str());
 
 			// Check if this NF is already inserted
 			ChainVertex* v = static_cast<ChainVertex*> (this->nf_chain->get_vertex_by_position(position));
@@ -359,7 +450,7 @@ short ParserConfiguration::parse_domains(const std::string& nf_domains) {
 
 		nf = point->substr(right_bracket+1);
 		interface = point->substr (left_bracket+1, right_bracket-left_bracket-1);
-		int position = atoi(this->get_number_from_string(nf).c_str());
+		int position = atoi(get_number_from_string(nf).c_str());
 
 		// This NF must already exist
 		ChainVertex* v = static_cast<ChainVertex*> (this->nf_chain->get_vertex_by_position(position));
@@ -434,18 +525,6 @@ short ParserConfiguration::check_for_loops(void) {
 }
 
 /*
- * Extract numbers from strings
- */
-std::string ParserConfiguration::get_number_from_string(std::string const& str) {
-	std::size_t const n = str.find_first_of("0123456789");
-	if ( n != std::string::npos ) {
-		std::size_t const m = str.find_first_not_of("0123456789", n);
-		return str.substr(n, m != std::string::npos ? m-n : m);
-	}
-	return std::string();
-}
-
-/*
  * Print error messages regarding the property file
  */
 void ParserConfiguration::usage(const std::string& message, const std::string& usage) {
@@ -458,10 +537,26 @@ void ParserConfiguration::usage(const std::string& message, const std::string& u
  */
 void ParserConfiguration::print_loaded_property_status(void) {
 	log << "\t++++++++++++++ Generic Configuration ++++++++++++++" << def << std::endl;
-	log << info << "\t" << "          Output Folder: " << this->output_folder   << def << std::endl;
-	log << info << "\t" << "        Output Filename: " << this->output_filename << def << std::endl;
-	log << info << "\t" << "Hardware Classification: " << bool_to_str(this->hardware_classification)
-		<< def << std::endl;
+	log << info << "\t" << "                Output Folder: " <<
+		this->get_properties()->get_output_folder()   << def << std::endl;
+	log << info << "\t" << "              Output Filename: " <<
+		this->get_properties()->get_output_filename() << def << std::endl;
+	log << info << "\t" << "      Hardware Classification: " <<
+		bool_to_str(this->get_properties()->has_hardware_classification()) << def << std::endl;
+
+	// Only if HW Classification is requested
+	if ( this->get_properties()->has_hardware_classification() ) {
+		log << info << "\t" << "Traffic Classification Format: " <<
+			tc_to_label(this->get_properties()->get_traffic_classification_format()) << def << std::endl;
+		log << info << "\t" << "    Non-Uniform Memory Access: " <<
+			bool_to_str(this->get_properties()->has_numa()) << def << std::endl;
+		log << info << "\t" << "             # of CPU Sockets: " <<
+			this->get_properties()->get_cpu_sockets_no()   << def << std::endl;
+		log << info << "\t" << "             # of CPU   Cores: " <<
+			this->get_properties()->get_cpu_cores_no()     << def << std::endl;
+		log << info << "\t" << "             # of NIC  Queues: " <<
+			this->get_properties()->get_nic_hw_queues_no() << def << std::endl;
+	}
 	log << "\t+++++++++++++++++++++++++++++++++++++++++++++++++++" << def << std::endl;
 
 	log << "\t+++++++++++++++ Chain Interface Map +++++++++++++++" << def << std::endl;

@@ -35,6 +35,19 @@ std::vector<std::string> split(const std::string &s, const std::string& delim) {
 	
 }
 
+std::string vector_to_str(const std::vector<std::string>& vec, const std::string& delim) {
+	std::string res;
+	unsigned short i = 0;
+	for (const auto &piece : vec) {
+		res += piece;
+		if ( i < vec.size()-1 ) {
+			res += delim;
+		}
+		i++;
+	}
+    return res;
+}
+
 std::vector<std::string> separate_args(const std::string &s) {
 	std::vector<std::string> args;
 	std::string current_arg;
@@ -149,4 +162,78 @@ short int releaseMemory(void** memoryBuffer) {
 	}
 	else
 		return MEMORY_ALREADY_RELEASED;
+}
+
+/*
+ * Extract numbers from strings
+ */
+const std::string get_number_from_string(std::string const& str) {
+	std::size_t const n = str.find_first_of("0123456789");
+	if ( n != std::string::npos ) {
+		std::size_t const m = str.find_first_not_of("0123456789", n);
+		return str.substr(n, m != std::string::npos ? m-n : m);
+	}
+	return std::string();
+}
+
+/*
+ * Convert a boolean to string
+ */
+const std::string bool_to_str(const bool b) {
+	std::ostringstream ss;
+    ss << std::boolalpha << b;
+    return ss.str();
+}
+
+/*
+ * Convert a string to boolean
+ */
+bool str_to_bool(const std::string& s) {
+	bool b;
+	std::istringstream(s) >> std::boolalpha >> b;
+	return b;
+}
+
+/*
+ * Check if directory exists
+ */
+bool directory_exists(const std::string& dir_path) {
+	struct stat info;
+	return ( (stat(dir_path.c_str(), &info) == 0) && (info.st_mode & S_IFDIR) );
+}
+
+/*
+ * Create a directory
+ */
+bool create_directory(const std::string& dir_path) {
+	mode_t mode = 0700;
+	return ( mkdir(dir_path.c_str(), mode) == 0 );
+}
+
+/*
+ * Check if file exists
+ */
+bool file_exists(const std::string& file_path) {
+	struct stat buffer;
+	return ( stat(file_path.c_str(), &buffer) == 0 ); 
+}
+
+/*
+ * Get file extension
+ */
+const std::string get_string_extension(const std::string& str, const char delim) {
+	if( str.find_last_of(delim) != std::string::npos )
+		return str.substr(str.find_last_of(delim) + 1);
+	return std::string("");
+}
+
+/*
+ * Get the substring before a pattern
+ */
+const std::string get_substr_before(const std::string& str, const std::string& pattern) {
+	std::size_t found = str.find(pattern);
+	if ( found != std::string::npos ) {
+		return str.substr(0, found);
+	}
+	return str;
 }

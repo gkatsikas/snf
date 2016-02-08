@@ -24,20 +24,20 @@ class SynthesizedNat {
 		std::string    compute_conf();
 
 		std::string    get_name () const;
-		unsigned short get_outboundPort () const;
+		unsigned short get_outbound_port () const;
 
 	private:
 		static int count;
-		
-		std::vector<std::string> m_outputPortToIface;
-		std::unordered_map<std::string,unsigned short> m_ifaceToOutputPort;
-		std::vector<std::string> m_inputPortToIface;
+
+		std::string              m_name;
+		std::vector<std::string> m_conf_string;
+
+		unsigned short           m_outbound_port;
+
 		//One entry = one line = one input port
-		std::vector<std::string> m_confString;
-		
-		std::string m_name;
-		
-		unsigned short m_outboundPort;
+		std::vector<std::string> m_input_port_to_iface;
+		std::vector<std::string> m_output_port_to_iface;
+		std::unordered_map<std::string,unsigned short> m_iface_to_output_port;
 
 		//Returns the part of the pattern that sets the rewriting up
 		std::string conf_line_from_operation (Operation& op);

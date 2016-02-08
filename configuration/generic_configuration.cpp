@@ -25,7 +25,7 @@ std::string trim(std::string const& source, char const* delims = " \t\r\n") {
 }
 
 GenericConfiguration::GenericConfiguration(const std::string& config_file) {
-	log.set_logger_file(__FILE__);
+	this->log.set_logger_file(__FILE__);
 
 	struct stat buffer;
 	if ( stat (config_file.c_str(), &buffer) == 0 )
@@ -85,6 +85,17 @@ Chameleon const& GenericConfiguration::get_value(
 
 Chameleon const& GenericConfiguration::get_value(
 	std::string const& section, std::string const& entry, int value) {
+
+	try {
+		return get_value(section, entry);
+	}
+	catch(const char *) {
+		return content_.insert(make_pair(section+'/'+entry, Chameleon(value))).first->second;
+	}
+}
+
+Chameleon const& GenericConfiguration::get_value(
+	std::string const& section, std::string const& entry, unsigned short value) {
 
 	try {
 		return get_value(section, entry);
