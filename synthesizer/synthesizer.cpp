@@ -350,8 +350,8 @@ short Synthesizer::generate_all_in_soft_configuration(bool to_file) {
  */
 short Synthesizer::generate_rss_cloned_pipelines(bool to_file) {
 
-	unsigned short nic_classifiers_no = this->get_hyper_nf_ifaces_no();
-	std::ofstream  *soft_out_file = NULL, **hard_out_file = NULL;
+	std::ofstream *soft_out_file = NULL;
+	//std::ofstream **hard_out_file = NULL;
 	std::streambuf *def_cout = NULL;
 	std::string all_out_files;
 
@@ -367,7 +367,7 @@ short Synthesizer::generate_rss_cloned_pipelines(bool to_file) {
 		all_out_files = "\t\t\t\t\t\t|--> " + this->soft_configuration_filename + "\n";
 
 		// Output files (one per interface) to host the RSS commands of each Hyper-NF interface.
-		hard_out_file = new std::ofstream*[nic_classifiers_no];
+		/*hard_out_file = new std::ofstream*[nic_classifiers_no];
 		unsigned short i = 0;
 		for (auto &it : this->hyper_nf_ifaces) {
 			std::string nf = it.first;
@@ -381,7 +381,7 @@ short Synthesizer::generate_rss_cloned_pipelines(bool to_file) {
 			hard_out_file[i] = new std::ofstream(this->hrdw_configuration_per_nic[comb_key]);
 			all_out_files += "\t\t\t\t\t\t|--> " + this->hrdw_configuration_per_nic[comb_key] + "\n";
 			i++;
-		}
+		}*/
 
 		// Save old cout buffer and redirect cout to the file above.
 		def_cout = std::cout.rdbuf(soft_out_file->rdbuf());
@@ -473,9 +473,9 @@ short Synthesizer::generate_rss_cloned_pipelines(bool to_file) {
 	}
 
 	// 
-	if ( !this->generate_rss_configuration(hard_out_file, nic_classifiers_no, def_cout) ) {
-		return FAILURE;
-	}
+	//if ( !this->generate_rss_configuration(hard_out_file, nic_classifiers_no, def_cout) ) {
+	//	return FAILURE;
+	//}
 
 	// Reset to standard output again
 	if ( to_file ) {
@@ -484,12 +484,12 @@ short Synthesizer::generate_rss_cloned_pipelines(bool to_file) {
 		delete soft_out_file;
 		soft_out_file = NULL;
 
-		for (unsigned short i = 0 ; i < this->get_hyper_nf_ifaces_no() ; i++) {
-			hard_out_file[i]->close();
-			delete hard_out_file[i];
-		}
-		delete[] hard_out_file;
-		hard_out_file = NULL;
+		//for (unsigned short i = 0 ; i < this->get_hyper_nf_ifaces_no() ; i++) {
+		//	hard_out_file[i]->close();
+		//	delete hard_out_file[i];
+		//}
+		//delete[] hard_out_file;
+		//hard_out_file = NULL;
 	}
 
 	log << "\tSuccessfully generated the NF chain synthesis to: \n" << all_out_files << def << std::endl;
@@ -633,7 +633,7 @@ bool Synthesizer::generate_rss_configuration(std::ofstream **hw_out_file, unsign
 	for (unsigned short i = 0 ; i < nics_no ; i++) {
 		// Move cout to the files where we write the hardware configuration
 		def_cout = std::cout.rdbuf(hw_out_file[i]->rdbuf());
-		std::cout << "OOOOOOOOOOOOOO" << std::endl;
+		//std::cout << "OOOOOOOOOOOOOO" << std::endl;
 	}
 
 	return true;

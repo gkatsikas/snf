@@ -35,8 +35,14 @@ NIC_HW_QUEUES           = 16
 #
 #  PZ --- |NAT| --- |NAT| --- Internet
 #
-NF_1 = nf_repo/dpdk/nf1.click
-NF_2 = nf_repo/dpdk/nf2.click
+NF_1 = nf_repo/dpdk/napt_chain_8/nf1.click
+NF_2 = nf_repo/dpdk/napt_chain_8/nf2.click
+NF_3 = nf_repo/dpdk/napt_chain_8/nf3.click
+NF_4 = nf_repo/dpdk/napt_chain_8/nf4.click
+NF_5 = nf_repo/dpdk/napt_chain_8/nf5.click
+NF_6 = nf_repo/dpdk/napt_chain_8/nf6.click
+NF_7 = nf_repo/dpdk/napt_chain_8/nf7.click
+NF_8 = nf_repo/dpdk/napt_chain_8/nf8.click
 
 
 #######
@@ -46,7 +52,8 @@ NF_2 = nf_repo/dpdk/nf2.click
 [NF_TOPO]
 
 ### TOPO 1
-TOPOLOGY = NF_1[nf1veth1] -> [nf2veth0]NF_2;
+#TOPOLOGY = NF_1[nf1veth1] -> [nf2veth0]NF_2;
+TOPOLOGY = NF_1[nf1veth1] -> [nf2veth0]NF_2; NF_2[nf2veth1] -> [nf3veth0]NF_3; NF_3[nf3veth1] -> [nf4veth0]NF_4; NF_4[nf4veth1] -> [nf5veth0]NF_5; NF_5[nf5veth1] -> [nf6veth0]NF_6; NF_6[nf6veth1] -> [nf7veth0]NF_7; NF_7[nf7veth1]  -> [nf8veth0]NF_8;
 
 
 #######
