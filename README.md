@@ -59,6 +59,13 @@ A framework to turn a chain of Click-based network functions (NFs) into a sythes
     * You can use our test Click implementations
   * ./run.sh <your property file> will load the property file and generate the synthesized chain in the specified folder ().
 
+#### Test the Hyper-NF chain:
+  * Machine 1: pkt-gen -i netmap:em1 -f rx -a 0 -n 100000000
+  * Machine 2:
+    * Normal: click <path-to-hyper-nf.click>
+    * DPDK: click -c ff -n 1 --proc-type=primary -v -- <path-to-dpdk-hyper-nf.click>
+  * Machine 3: pkt-gen -i netmap:em1 -f tx -c 0 -S ec:f4:bb:d5:fe:d0 -D ec:f4:bb:d5:fe:d0 -n 100000000 -R 9000000 -l 64
+
 #### Multi-core Hyper-NF
 There are various ways to deploy Hyper-NF across multiple cores. We currently support Click-DPDK using RSS as follows:
   * Build Hyper-NF with DPDK support following the steps above.
