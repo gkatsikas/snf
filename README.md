@@ -89,7 +89,7 @@ This configuration means that the IP address field is used in the hash function 
 To explore other possibilities in DPDK, refer to ${DPDK_DIR}/lib/librte_ether/rte_ethdev.h and search for keyword ETH_RSS_.
 An important property we might want to explore is how to run RSS in symmetric mode.
 
-##### Symmetric RSS (Source is http://galsagie.github.io/dpdk%20design%20tips/dpdk/nfv/2015/02/26/dpdk-tips-1/)
+##### Symmetric RSS (Source is http://galsagie.github.io/2015/02/26/dpdk-tips-1/)
 It is very important in networking applications to have the same CPU handle two sides of the connection, what is called symmetrical flow.
 Many networking applications need to save information about the connection, and you dont want this information shared between two CPU’s.
 This introduces locking which is bad performance wise.
