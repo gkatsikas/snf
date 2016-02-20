@@ -1,0 +1,126 @@
+### System
+CC     = g++
+CFLAGS = -O3 -Wall -c -std=c++1y -pedantic -Wextra -g
+LFLAGS = -Wall -std=c++1y -pedantic -g
+
+### The Click library
+LIBS = -L/usr/local/lib/ -lclick -ldl -lpthread -lpcap
+
+### Object files of NF Synthesizer
+OBJS =  helpers.o chameleon.o vertex.o segment_list.o operation.o \
+		generic_configuration.o graph.o filter.o ip_filter_parser.o \
+		click_parse_configuration.o nf_graph.o click_element.o \
+		output_class.o click_tree.o parser_configuration.o chain_parser.o \
+		synthesizer.o synth_nat.o
+
+EXECUTABLE = hyper-nf
+
+CLASS_TEST = class_test
+
+### Object files of Click
+### -----> Give a variable with the Click home path instead of a fixed path
+CLICK_ELEMENT_OBJS = $(shell find /opt/click/userlevel/ ! -name "click.o" ! -name "exportstub.o" -name "*.o")
+#CLICK_ELEMENT_OBJS = $(shell find /opt/nfv/click-dpdk/lib/ -name "*.a")
+
+### Object files of DPDK
+### -----> Give a variable with the DPDK home path instead of a fixed path
+DPDK_OBJS = $(shell find /opt/dpdk/x86_64-native-linuxapp-gcc/lib/ -name "*.a")
+
+### Final compilation rule
+hyper_nf: $(OBJS) main.o
+	$(CC) $(LFLAGS) $(OBJS) main.o  $(CLICK_ELEMENT_OBJS) -o $(EXECUTABLE) $(LIBS)
+
+dpdk: $(OBJS) main.o
+	$(CC) $(LFLAGS) $(OBJS) main.o  $(CLICK_ELEMENT_OBJS) $(DPDK_OBJS) -o $(EXECUTABLE) $(LIBS)
+	
+class_test: $(OBJS) classifier_test.o
+	$(CC) $(LFLAGS) $(OBJS) $(CLICK_ELEMENT_OBJS) classifier_test.o -o $(CLASS_TEST) $(LIBS)
+
+### Individual modules' rules
+classifier_test.o: ./tests/classifier_test.cpp filter.o helpers.o
+	$(CC) $(CFLAGS) ./tests/classifier_test.cpp
+	
+main.o: ./src/main.cpp ./src/synthesizer/synthesizer.hpp ./src/logger/logger.hpp
+	$(CC) $(CFLAGS) ./src/main.cpp
+
+helpers.o: ./src/shared/helpers.cpp ./src/shared/helpers.hpp
+	$(CC) $(CFLAGS) ./src/shared/helpers.cpp
+
+chameleon.o: ./src/configuration/chameleon.cpp ./src/configuration/chameleon.hpp
+	$(CC) $(CFLAGS) ./src/configuration/chameleon.cpp
+
+vertex.o: ./src/graph/vertex.cpp ./src/graph/vertex.hpp
+	$(CC) $(CFLAGS) ./src/graph/vertex.cpp
+
+segment_list.o: ./src/traffic_class_builder/segment_list.cpp ./src/traffic_class_builder/segment_list.hpp
+	$(CC) $(CFLAGS) ./src/traffic_class_builder/segment_list.cpp
+
+operation.o: ./src/traffic_class_builder/operation.cpp ./src/traffic_class_builder/operation.hpp \
+				./src/traffic_class_builder/header_fields.hpp
+	$(CC) $(CFLAGS) ./src/traffic_class_builder/operation.cpp
+
+generic_configuration.o: ./src/configuration/generic_configuration.cpp ./src/configuration/generic_configuration.hpp \
+						 ./src/configuration/chameleon.hpp ./src/logger/logger.hpp
+	$(CC) $(CFLAGS) ./src/configuration/generic_configuration.cpp
+
+graph.o: ./src/graph/graph.cpp ./src/graph/graph.hpp ./src/graph/vertex.hpp ./src/logger/logger.hpp
+	$(CC) $(CFLAGS) ./src/graph/graph.cpp
+
+filter.o: ./src/traffic_class_builder/filter.cpp ./src/traffic_class_builder/filter.hpp \
+			./src/traffic_class_builder/header_fields.hpp ./src/traffic_class_builder/element_type.hpp \
+			./src/traffic_class_builder/output_class.hpp ./src/traffic_class_builder/operation.hpp
+	$(CC) $(CFLAGS) ./src/traffic_class_builder/filter.cpp
+
+ip_filter_parser.o: ./src/traffic_class_builder/ip_filter_parser.cpp ./src/traffic_class_builder/ip_filter_parser.hpp \
+					./src/traffic_class_builder/filter.hpp
+	$(CC) $(CFLAGS) ./src/traffic_class_builder/ip_filter_parser.cpp
+
+click_parse_configuration.o: ./src/click/click_parse_configuration.cpp ./src/click/click_parse_configuration.hpp \
+							 ./src/logger/logger.hpp ./src/shared/helpers.hpp
+	$(CC) $(CFLAGS) ./src/click/click_parse_configuration.cpp
+
+nf_graph.o: ./src/graph/nf_graph.cpp ./src/graph/nf_graph.hpp ./src/graph/graph.hpp ./src/click/click_parse_configuration.hpp \
+			./src/shared/helpers.hpp
+	$(CC) $(CFLAGS) ./src/graph/nf_graph.cpp
+
+click_element.o: ./src/traffic_class_builder/click_element.cpp ./src/traffic_class_builder/click_element.hpp \
+					./src/traffic_class_builder/header_fields.hpp ./src/traffic_class_builder/operation.hpp \
+					./src/traffic_class_builder/filter.hpp ./src/traffic_class_builder/element_type.hpp \
+					./src/shared/helpers.hpp ./src/traffic_class_builder/ip_filter_parser.hpp
+	$(CC) $(CFLAGS) ./src/traffic_class_builder/click_element.cpp
+
+output_class.o: ./src/traffic_class_builder/output_class.cpp ./src/traffic_class_builder/output_class.hpp \
+				./src/traffic_class_builder/filter.hpp ./src/traffic_class_builder/click_element.hpp \
+				./src/shared/helpers.hpp
+	$(CC) $(CFLAGS) ./src/traffic_class_builder/output_class.cpp
+
+click_tree.o: ./src/traffic_class_builder/click_tree.cpp ./src/traffic_class_builder/click_tree.hpp \
+				./src/traffic_class_builder/output_class.hpp ./src/traffic_class_builder/operation.hpp \
+				./src/traffic_class_builder/element_type.hpp ./src/traffic_class_builder/filter.hpp
+	$(CC) $(CFLAGS) ./src/traffic_class_builder/click_tree.cpp
+
+parser_configuration.o: ./src/configuration/parser_configuration.cpp ./src/configuration/parser_configuration.hpp \
+						./src/configuration/properties.hpp ./src/configuration/generic_configuration.hpp \
+						./src/graph/graph.hpp
+	$(CC) $(CFLAGS) ./src/configuration/parser_configuration.cpp
+
+chain_parser.o: ./src/parser/chain_parser.cpp ./src/parser/chain_parser.hpp ./src/configuration/parser_configuration.hpp \
+				./src/graph/nf_graph.hpp
+	$(CC) $(CFLAGS) ./src/parser/chain_parser.cpp
+
+synthesizer.o: ./src/synthesizer/synthesizer.cpp ./src/synthesizer/synthesizer.hpp ./src/parser/chain_parser.hpp \
+				./src/traffic_class_builder/click_tree.cpp ./src/traffic_class_builder/click_tree.hpp \
+				./src/traffic_class_builder/output_class.hpp ./src/traffic_class_builder/operation.hpp \
+				./src/traffic_class_builder/element_type.hpp ./src/traffic_class_builder/filter.hpp \
+				./src/synthesizer/synth_nat.hpp
+	$(CC) $(CFLAGS) ./src/synthesizer/synthesizer.cpp
+	
+synth_nat.o: ./src/synthesizer/synth_nat.hpp ./src/synthesizer/synth_nat.cpp ./src/traffic_class_builder/filter.hpp
+	$(CC) $(CFLAGS) ./src/synthesizer/synth_nat.cpp
+	
+### House keeping
+clean:
+	\rm -f *.o *.plist *.gch *.log *.click *.rss
+
+clean-dist: clean
+	\rm -f $(EXECUTABLE) $(CLASS_TEST)

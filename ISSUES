@@ -1,5 +1,4 @@
- * Change exit(1) either to exit(EXIT_FAILURE) or to thrown exceptions to get
- 	the stack trace
+ * Change exit(1) either to exit(EXIT_FAILURE) or to thrown exceptions to get the stack trace
  * Check function class that returns Object to see whether we can use references
  * Change enums to static class members
  * Replace direct access to FieldOperation members by getters & setters
@@ -14,10 +13,13 @@ TODO:
 	* add ID to all elements
 	* add pointer->element in Write operations
 	* Check inport assignemnts for non-active ports
+	* Fix warnings of bootstrap
+	* Compile tests with autotools
+	* Use m4/hypernf.m4 to apply system checks (e.g., CXX compiler, CLICK, DPDK) and alleviate configure.ac
+	* Include config.h and apply checks
  
 ###################
 # Element support #
 ###################
-
- * DecIPTTL -> MULTICAST keyword
- * IPRewriter options 
+	* DecIPTTL -> MULTICAST keyword
+	* IPRewriter options 

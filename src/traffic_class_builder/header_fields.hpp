@@ -1,0 +1,53 @@
+//============================================================================
+//        Name: header_fields.hpp
+//   Copyright: KTH ICT CoS Network Systems Lab
+// Description: A collection of important header fields.
+//============================================================================
+
+#ifndef _HEADER_FIELDS_HPP_
+#define _HEADER_FIELDS_HPP_
+
+#include <string>
+
+static const int start = __LINE__;
+#define HEADER(FOO) \
+	FOO(unknown) \
+	FOO(mtu) \
+	FOO(vlan_pcp) \
+	FOO(vlan_vid) \
+	FOO(vlan_dei) \
+	FOO(ip_src) \
+	FOO(ip_dst) \
+	FOO(ip_ihl) \
+	FOO(ip_proto) \
+	FOO(ip_ver) \
+	FOO(ip_id) \
+	FOO(ip_dscp) \
+	FOO(ip_ect) \
+	FOO(ip_ce) \
+	FOO(ip_chksum) \
+	FOO(ip_TTL) \
+	FOO(tp_srcPort) \
+	FOO(tp_dstPort) \
+	FOO(tcp_syn) \
+	FOO(tcp_fin) \
+	FOO(tcp_ack) \
+	FOO(tcp_rst) \
+	FOO(tcp_psh) \
+	FOO(tcp_urg) \
+	FOO(tcp_win)
+static const int end = __LINE__;
+
+#define DO_DESCRIPTION(e) #e,
+#define DO_ENUM(e) e,
+
+const std::string
+header_field_names[end - start - 2] = {
+	HEADER(DO_DESCRIPTION)
+};
+
+enum HeaderField {
+	HEADER(DO_ENUM)
+};
+
+#endif

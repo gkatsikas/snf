@@ -25,34 +25,34 @@ NIC_HW_QUEUES           = 16
 [NF_MODULES]
 
 # Firewall topos for early discard - Paper
-#NF_1 = nf_repo/firewall_chain/FW_6/nf1.click
-#NF_2 = nf_repo/firewall_chain/FW_6/nf2.click
-#NF_3 = nf_repo/firewall_chain/FW_6/nf3.click
-#NF_4 = nf_repo/firewall_chain/FW_6/nf4.click
-#NF_5 = nf_repo/firewall_chain/FW_6/nf5.click
-#NF_6 = nf_repo/firewall_chain/FW_6/nf6.click
+#NF_1 = input/nf_repo/firewall_chain/FW_6/nf1.click
+#NF_2 = input/nf_repo/firewall_chain/FW_6/nf2.click
+#NF_3 = input/nf_repo/firewall_chain/FW_6/nf3.click
+#NF_4 = input/nf_repo/firewall_chain/FW_6/nf4.click
+#NF_5 = input/nf_repo/firewall_chain/FW_6/nf5.click
+#NF_6 = input/nf_repo/firewall_chain/FW_6/nf6.click
 
 # NAPT topos  - Paper
-#NF_1 = nf_repo/napt_chain/1_NAT/nf1.click
-#NF_2 = nf_repo/napt_chain/2_NAT/nf2.click
-NF_1 = nf_repo/napt_chain/3_NAT/nf1.click
-NF_2 = nf_repo/napt_chain/3_NAT/nf2.click
-NF_3 = nf_repo/napt_chain/3_NAT/nf3.click
-#NF_4 = nf_repo/napt_chain/4_NAT/nf4.click
-#NF_5 = nf_repo/napt_chain/5_NAT/nf5.click
-#NF_6 = nf_repo/napt_chain/6_NAT/nf6.click
-#NF_7 = nf_repo/napt_chain/7_NAT/nf7.click
-#NF_8 = nf_repo/napt_chain/8_NAT/nf8.click
+#NF_1 = input/nf_repo/napt_chain/1_NAT/nf1.click
+#NF_2 = input/nf_repo/napt_chain/2_NAT/nf2.click
+NF_1 = input/nf_repo/napt_chain/3_NAT/nf1.click
+NF_2 = input/nf_repo/napt_chain/3_NAT/nf2.click
+NF_3 = input/nf_repo/napt_chain/3_NAT/nf3.click
+#NF_4 = input/nf_repo/napt_chain/4_NAT/nf4.click
+#NF_5 = input/nf_repo/napt_chain/5_NAT/nf5.click
+#NF_6 = input/nf_repo/napt_chain/6_NAT/nf6.click
+#NF_7 = input/nf_repo/napt_chain/7_NAT/nf7.click
+#NF_8 = input/nf_repo/napt_chain/8_NAT/nf8.click
 
 # Motivating example - Paper
-#NF_1 = nf_repo/motivating_example/nf1.click
-#NF_2 = nf_repo/motivating_example/nf2.click
-#NF_3 = nf_repo/motivating_example/nf3.click
+#NF_1 = input/nf_repo/motivating_example/nf1.click
+#NF_2 = input/nf_repo/motivating_example/nf2.click
+#NF_3 = input/nf_repo/motivating_example/nf3.click
 
 # ACLs - Paper
-#NF_1 = nf_repo/real_acl_1000/nf1.click
-#NF_2 = nf_repo/real_acl_1000/nf2.click
-#NF_3 = nf_repo/real_acl_1000/nf3.click
+#NF_1 = input/nf_repo/real_acl_1000/nf1.click
+#NF_2 = input/nf_repo/real_acl_1000/nf2.click
+#NF_3 = input/nf_repo/real_acl_1000/nf3.click
 
 #######
 ####### SECTION 2: In this section you specifiy the topology of the modules.

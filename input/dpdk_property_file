@@ -1,10 +1,10 @@
-###################################################################################################
+##############################################################################################
 ####### This is a test property file to try your first synthesis examples.
 ####### Follow the guidelines and you should be able to successfully synthesize the examples below.
 ####### Please use the bitbucket wiki to report any bugs or contact katsikas@kth.se
-###################################################################################################
+##############################################################################################
 
-###################################################################################################
+##############################################################################################
 #######
 ####### SECTION 1: In this section you specifiy the generic properties such as system properties
 #######            or paths where the results will be stored. If you do not specify some of these
@@ -24,7 +24,7 @@ CPU_CORES               = 16
 NIC_HW_QUEUES           = 16
 
 
-###################################################################################################
+##############################################################################################
 #######
 ####### SECTION 2: In this section you specifiy the modules you want to chain. 
 ####### Use NF_number to specify the placement of the module in the chain. See the example below.
@@ -35,14 +35,14 @@ NIC_HW_QUEUES           = 16
 #
 #  PZ --- |NAT| --- |NAT| --- Internet
 #
-NF_1 = nf_repo/dpdk/napt_chain_8/nf1.click
-NF_2 = nf_repo/dpdk/napt_chain_8/nf2.click
-NF_3 = nf_repo/dpdk/napt_chain_8/nf3.click
-NF_4 = nf_repo/dpdk/napt_chain_8/nf4.click
-NF_5 = nf_repo/dpdk/napt_chain_8/nf5.click
-NF_6 = nf_repo/dpdk/napt_chain_8/nf6.click
-NF_7 = nf_repo/dpdk/napt_chain_8/nf7.click
-NF_8 = nf_repo/dpdk/napt_chain_8/nf8.click
+NF_1 = input/nf_repo/dpdk/napt_chain_8/nf1.click
+NF_2 = input/nf_repo/dpdk/napt_chain_8/nf2.click
+NF_3 = input/nf_repo/dpdk/napt_chain_8/nf3.click
+NF_4 = input/nf_repo/dpdk/napt_chain_8/nf4.click
+NF_5 = input/nf_repo/dpdk/napt_chain_8/nf5.click
+NF_6 = input/nf_repo/dpdk/napt_chain_8/nf6.click
+NF_7 = input/nf_repo/dpdk/napt_chain_8/nf7.click
+NF_8 = input/nf_repo/dpdk/napt_chain_8/nf8.click
 
 
 #######
@@ -65,4 +65,4 @@ TOPOLOGY = NF_1[nf1veth1] -> [nf2veth0]NF_2; NF_2[nf2veth1] -> [nf3veth0]NF_3; N
 [ENTRY_POINTS]
 ### TOPO 1
 DOMAINS  = [nf1veth0]NF_1
-###################################################################################################
+##############################################################################################
