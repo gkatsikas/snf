@@ -59,14 +59,14 @@ ClickCleaner::cleanup(Clp_Parser *clp, const bool &clean_all) {
 		Clp_DeleteParser(clp);
 
 	if ( clean_all ) {
-		note_chatter(logger, "\tCleaning up Click...");
+		def_chatter(logger, "\tCleaning up Click...");
 		click_static_cleanup();
-		note_chatter(logger, "\t|-> Static clean up");
+		def_chatter(logger, "\t|-> Static clean up");
 		if ( (click_router != NULL) && (click_master != NULL) )
 			delete click_master;
-		note_chatter(logger, "\t|-> Click Master is deleted");
+		def_chatter(logger, "\t|-> Click Master is deleted");
 		errh = NULL;
-		note_chatter(logger, "\t|-> Click Error Handler is deleted");
+		def_chatter(logger, "\t|-> Click Error Handler is deleted");
 	}
 }
 

@@ -19,7 +19,7 @@ ParserConfiguration::ParserConfiguration(const std::string &config_file)
 	this->nf_chain   = new Graph();
 	this->nf_domains = new Graph();
 	this->properties = NULL;
-	note_chatter(this->log, "\tParserConfiguration constructed");
+	def_chatter(this->log, "\tParserConfiguration constructed");
 }
 
 /*
@@ -35,7 +35,7 @@ ParserConfiguration::~ParserConfiguration() {
 	if ( this->properties != NULL ) {
 		delete this->properties;
 	}
-	note_chatter(this->log, "\tParserConfiguration deleted");
+	def_chatter(this->log, "\tParserConfiguration deleted");
 }
 
 /*

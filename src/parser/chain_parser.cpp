@@ -20,7 +20,7 @@ ChainParser::ChainParser(ParserConfiguration *pc) : chain_graph(pc) {
 		error_chatter(this->log, "ChainParser: Invalid chain length");
 		exit(CHAIN_PARSING_PROBLEM);
 	}
-	note_chatter(this->log, "\tChain Parser constructed");
+	def_chatter(this->log, "\tChain Parser constructed");
 }
 
 ChainParser::~ChainParser() {
@@ -35,7 +35,7 @@ ChainParser::~ChainParser() {
 	this->nf_configuration.clear();
 	this->nf_dag.clear();
 
-	note_chatter(this->log, "\tChain Parser deleted");
+	def_chatter(this->log, "\tChain Parser deleted");
 }
 
 /*

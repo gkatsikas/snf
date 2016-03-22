@@ -14,7 +14,9 @@ int
 main(int argc, char** argv) {
 	setvbuf(stdout, NULL, _IONBF, 0);
 	std::string property_file;
-	short exit_status = 0;
+	short exit_status   = 0;
+	int task_exec_time  = 0;
+	int total_exec_time = 0;
 
 	// Initialize logger
 	Logger main_log(__FILE__);
@@ -30,9 +32,7 @@ main(int argc, char** argv) {
 
 	std::cout << std::endl;
 	info_chatter(main_log, "+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+");
-	info_chatter(main_log, measure<>::execution
-	( [&]()
-	{
+	task_exec_time = measure<>::execution( [&]() {
 		info_chatter(main_log, "Hyper-NF Chain Loader... ");
 		pcf = new ParserConfiguration(property_file);
 		def_chatter(main_log, "\tProperty file: " << property_file);
@@ -41,20 +41,20 @@ main(int argc, char** argv) {
 			exit(exit_status);
 		}
 		pcf->get_chain()->print_vertex_order();
-	}
-	) << "  microseconds");
+	});
+	info_chatter(main_log, task_exec_time << "  microseconds");
 	info_chatter(main_log, "+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+");
 	std::cout << std::endl;
 	///////////////////////////////////////////////////////////////////////////////////////////
+
+	total_exec_time += task_exec_time;
 
 	////////////////////////////////////// Parse Input NFs ////////////////////////////////////
 	ChainParser* parser = NULL;
 
 	std::cout << std::endl;
 	info_chatter(main_log, "+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+");
-	info_chatter(main_log, measure<>::execution
-	( [&]()
-	{
+	task_exec_time = measure<>::execution( [&]() {
 		info_chatter(main_log, "Hyper-NF Chain Parser... ");
 		try {
 			parser = new ChainParser(std::move(pcf));
@@ -76,20 +76,20 @@ main(int argc, char** argv) {
 			delete parser;
 			exit(exit_status);
 		}
-	}
-	) << "  microseconds");
+	});
+	info_chatter(main_log, task_exec_time << "  microseconds");
 	info_chatter(main_log, "+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+");
 	std::cout << std::endl;
 	///////////////////////////////////////////////////////////////////////////////////////////
+
+	total_exec_time += task_exec_time;
 
 	/////////////////////////////////// Build Traffic Classes /////////////////////////////////
 	Synthesizer* synthesizer = NULL;
 
 	std::cout << std::endl;
 	info_chatter(main_log, "+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+");
-	info_chatter(main_log, measure<>::execution
-	( [&]()
-	{
+	task_exec_time = measure<>::execution( [&]() {
 		info_chatter(main_log, "Hyper-NF Traffic Class Builder... ");
 		try {
 			synthesizer = new Synthesizer(std::move(parser));
@@ -105,39 +105,41 @@ main(int argc, char** argv) {
 			exit(exit_status);
 		}
 		//synthesizer->test_traffic_class_builder();
-	}
-	) << "  microseconds");
+	});
+	info_chatter(main_log, task_exec_time << "  microseconds");
 	info_chatter(main_log, "+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+");
 	std::cout << std::endl;
 	///////////////////////////////////////////////////////////////////////////////////////////
+
+	total_exec_time += task_exec_time;
 
 	///////////////////////////////////////// Synthesize //////////////////////////////////////
 	std::cout << std::endl;
 	info_chatter(main_log, "+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+");
-	info_chatter(main_log, measure<>::execution
-	( [&]()
-	{
+	task_exec_time = measure<>::execution( [&]() {
 		info_chatter(main_log, "Hyper-NF Synthesizer... ");
 		synthesizer->synthesize_nat();
-	}
-	) << "  microseconds");
+	});
+	info_chatter(main_log, task_exec_time << "  microseconds");
 	info_chatter(main_log, "+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+");
 	std::cout << std::endl;
 	///////////////////////////////////////////////////////////////////////////////////////////	
 
+	total_exec_time += task_exec_time;
+
 	////////////////////////////// Generate Hyper-NF Configuration ////////////////////////////
 	std::cout << std::endl;
 	info_chatter(main_log, "+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+");
-	info_chatter(main_log, measure<>::execution
-	( [&]()
-	{
+	task_exec_time = measure<>::execution( [&]() {
 		info_chatter(main_log, "Hyper-NF Generator... ");
 		synthesizer->generate_equivalent_configuration();
-	}
-	) << "  microseconds");
+	});
+	info_chatter(main_log, task_exec_time << "  microseconds");
 	info_chatter(main_log, "+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+");
 	std::cout << std::endl;
 	///////////////////////////////////////////////////////////////////////////////////////////
+
+	total_exec_time += task_exec_time;
 
 	///////////////////////////////////////// Clean-Up ////////////////////////////////////////
 	// Domino destruction starts from Synthesizer's destructor destroying the nested objects
@@ -148,16 +150,21 @@ main(int argc, char** argv) {
 	//
 	std::cout << std::endl;
 	info_chatter(main_log, "+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+");
-	info_chatter(main_log, measure<>::execution
-	( [&]()
-	{
+	task_exec_time = measure<>::execution( [&]()	{
 		info_chatter(main_log, "Hyper-NF Harvester... ");
 		delete synthesizer;
-	}
-	) << "  microseconds");
+	});
+	info_chatter(main_log, task_exec_time << "  microseconds");
 	info_chatter(main_log, "+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+");
 	std::cout << std::endl;
 	///////////////////////////////////////////////////////////////////////////////////////////
+
+	total_exec_time += task_exec_time;
+
+	std::cout << std::endl;
+	note_chatter(main_log, "=================================================================================");
+	note_chatter(main_log, "=== Total Execution Time: " + std::to_string(float(total_exec_time)/1000) + " milliseconds");
+	note_chatter(main_log, "=================================================================================");
 }
 
 short int

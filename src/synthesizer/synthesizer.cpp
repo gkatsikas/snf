@@ -85,12 +85,12 @@ Synthesizer::Synthesizer(ChainParser *cp) : tc_per_input_iface(), nat_per_output
 		this->parser->get_chain_graph()->get_properties()->has_hardware_classification();
 	this->traffic_classification_format = 
 		 this->parser->get_chain_graph()->get_properties()->get_traffic_classification_format();
-	note_chatter(this->log, "\tSynthesizer constructed");
+	def_chatter(this->log, "\tSynthesizer constructed");
 }
 
 Synthesizer::~Synthesizer() {
 	delete this->parser;
-	note_chatter(this->log, "\tSynthesizer deleted");
+	def_chatter(this->log, "\tSynthesizer deleted");
 }
 
 /*
