@@ -17,3 +17,4 @@ depcomp
 man
 stamp-*
 results/*
+**/*/.deps/
