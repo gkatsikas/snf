@@ -9,7 +9,7 @@
 
 #include <string>
 
-//List of allowed Click elements
+// List of allowed Click elements
 static const uint32_t elem_start = __LINE__;
 #define _Element(FOO) \
 	FOO(DecIPTTL) \

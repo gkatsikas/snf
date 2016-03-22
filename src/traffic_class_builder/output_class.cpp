@@ -9,33 +9,22 @@
 #include <iostream> 
 
 #include "output_class.hpp"
-
 #include "../shared/helpers.hpp"
 
-#define DEBUG(A) std::cerr<<"["<<__FILE__<<":"<<__LINE__<<"] DEBUG: "<<A <<std::endl
+// The logger of this module
+Logger oc_log(__FILE__);
 
-OutputClass::OutputClass (int port_nb) : m_portNumber(port_nb), m_nextInputPort(0), 
+OutputClass::OutputClass (int port_nb) : m_port_number(port_nb), m_next_input_port(0), 
 	m_child(new ClickElement(No_elem, "")) {}
 
-void
-OutputClass::add_filter (HeaderField field, Filter& filter) {
-	if ( m_filter.find(field) != m_filter.end() ) {
-		std::cerr << "[" << __FILE__ << ":" << __LINE__ <<"] Trying to add filter "
-				"on already filtered field in OutputPort"<<std::endl;
-		exit(1);
-	}
-	m_filter[field] = filter;
-}
-
 OutputClass
-OutputClass::port_from_lookup_rule(std::string& rule, Filter& parsed_rules) {
+OutputClass::port_from_lookup_rule(std::string &rule, Filter &parsed_rules) {
 
 	std::vector<std::string> decomposed_rule = split(rule," \t\n");
 	int nb_arg = decomposed_rule.size();
-	if (nb_arg>3 || nb_arg<2) {
-		std::cerr << "[" << __FILE__ << ":" << __LINE__ <<"] Wrong lookup format: "
-			<<rule<<std::endl;
-		exit(1);
+
+	if ( nb_arg>3 || nb_arg<2 ) {
+		FANCY_BUG(oc_log, "Wrong lookup format: " << rule);
 	}
 	
 	uint32_t port_nb = atoi(decomposed_rule[nb_arg-1].c_str());
@@ -50,12 +39,10 @@ OutputClass::port_from_lookup_rule(std::string& rule, Filter& parsed_rules) {
 									atoi(address_and_mask[1].c_str()));
 			break;
 		default:
-			std::cerr << "[" << __FILE__ << ":" << __LINE__ <<"] Wrong lookup format: "
-				<<rule<<std::endl;
-			exit(1);
+			FANCY_BUG(oc_log, "Wrong lookup format: " << rule);
 	}
- 
- 	//DEBUG("From lookup rule \""+rule+"\" we created: "+f.to_str());
+
+ 	debug_chatter(oc_log, "From lookup rule \""+rule+"\" we created: "+f.to_str());
  
 	f.differentiate(parsed_rules);
 	parsed_rules.unite(f);
@@ -66,24 +53,24 @@ OutputClass::port_from_lookup_rule(std::string& rule, Filter& parsed_rules) {
 }
 
 std::pair<OutputClass,OutputClass>
-OutputClass::output_class_from_pattern(
-	std::vector<std::string>& pattern) {
+OutputClass::output_class_from_pattern(std::vector<std::string> &pattern) {
 
 	if(pattern.size() != 7) {
-		std::cerr<<"["<<__FILE__<<":"<<__LINE__<<"] Incorrect pattern size\n";
-		exit(1);
+		FANCY_BUG(oc_log, "Incorrect pattern size");
 	}
+
 	uint32_t unmodified_port_nb = atoi(pattern[6].c_str());
 	uint32_t modified_port_nb = atoi(pattern[5].c_str());
 
 	OutputClass foutput (modified_port_nb);
 	if (pattern[1].compare("-")) {
 		if(!aton(pattern[1])) {
-			std::cerr<<"["<<__FILE__<<":"<<__LINE__<<"] IP pattern null?: "<<pattern[1]<<"\n";
-			exit(1);
+			FANCY_BUG(oc_log, "IP pattern null?: " << pattern[1]);
 		}
+
 		foutput.add_field_op({Write,ip_src,aton(pattern[1])});
 	}
+
 	if (pattern[2].compare("-")) {
 		std::vector<std::string> split_pattern = split(pattern[2],"-");
 		if (split_pattern.size() == 1){
@@ -113,13 +100,14 @@ OutputClass::output_class_from_pattern(
 			foutput.add_field_op(field_op);
 		}
 		else {
-			std::cerr<<"["<<__FILE__<<":"<<__LINE__<<"] Incorrect port pattern: "<<pattern[1]<<"\n";
-			exit(1);
+			FANCY_BUG(oc_log, "Incorrect port pattern: " << pattern[1]);
 		}
 	}
+
 	if (pattern[3].compare("-")) {
 		foutput.add_field_op({Write,ip_dst,aton(pattern[3])});
 	}
+
 	if (pattern[4].compare("-")) {
 		std::vector<std::string> split_pattern = split(pattern[4],"-");
 		if (split_pattern.size() == 1){
@@ -148,68 +136,77 @@ OutputClass::output_class_from_pattern(
 			foutput.add_field_op(field_op);
 		}
 		else {
-			std::cerr<<"["<<__FILE__<<":"<<__LINE__<<"] Incorrect port pattern: "<<pattern[3]<<"\n";
-			exit(1);
+			FANCY_BUG(oc_log, "Incorrect port pattern: " << pattern[3]);
 		}
 	}
-	//DEBUG("Created output class: "+foutput.to_str());
+
+	debug_chatter(oc_log, "Created output class: "+foutput.to_str());
+
 	return std::pair<OutputClass,OutputClass>(foutput,OutputClass(unmodified_port_nb));
 }
 
-std::string
-OutputClass::to_str() const {
-	std::string output = "======== Begin Output Class ========\nFilters:\n";
-	for(auto &it : m_filter) {
-		output += ("\t"+it.second.to_str()+"\n");
+void
+OutputClass::add_filter (const HeaderField &field, const Filter &filter) {
+	if ( this->m_filter.find(field) != m_filter.end() ) {
+		FANCY_BUG(oc_log, "Trying to add filter on already filtered field in OutputPort");
 	}
-	output += m_operation.to_str();
-
-	output += "========= End Output Class =========\n";
-	return output;
-}
-
-std::shared_ptr<ClickElement>
-OutputClass::get_child() const {
-	return m_child;
-}
-
-PacketFilter
-OutputClass::get_filter() const {
-	return m_filter;
+	this->m_filter[field] = filter;
 }
 
 void
-OutputClass::set_filter(PacketFilter filter) {
-	m_filter = filter;
-}
-
-const Operation&
-OutputClass::get_operation() const {
-	return m_operation;
-}
-
-int
-OutputClass::get_portNumber() const {
-	return m_portNumber;
-}
-
-void
-OutputClass::set_portNumber(int portNumber) {
-	m_portNumber = portNumber;
-}
-
-void
-OutputClass::add_field_op(const FieldOperation & field_op) {
+OutputClass::add_field_op(const FieldOperation &field_op) {
 	(this->m_operation).add_field_op(field_op);
 }
 
+std::string
+OutputClass::to_str(void) const {
+	std::string output = "======== Begin Output Class ========\nFilters:\n";
+	for(auto &it : this->m_filter) {
+		output += ("\t"+it.second.to_str()+"\n");
+	}
+	output += m_operation.to_str();
+	output += "========= End Output Class =========\n";
+
+	return output;
+}
+
 void
-OutputClass::set_operation (const Operation & op) {
+OutputClass::set_filter (const PacketFilter &filter) {
+	this->m_filter = filter;
+}
+
+void
+OutputClass::set_port_number (const int &port_number) {
+	this->m_port_number = port_number;
+}
+
+void
+OutputClass::set_operation (const Operation &op) {
 	this->m_operation = op;
 }
 
 void
-OutputClass::set_child (std::shared_ptr<ClickElement> child, int next_input_port /*=0*/) {
+OutputClass::set_child (std::shared_ptr<ClickElement> &child, int next_input_port) {
 	this->m_child = child;
-	this->m_nextInputPort = next_input_port;
+	this->m_next_input_port = next_input_port;
+}
+
+const Operation&
+OutputClass::get_operation (void) const {
+	return this->m_operation;
+}
+
+int
+OutputClass::get_port_number (void) const {
+	return this->m_port_number;
+}
+
+std::shared_ptr<ClickElement>
+OutputClass::get_child (void) const {
+	return this->m_child;
+}
+
+PacketFilter
+OutputClass::get_filter (void) const {
+	return this->m_filter;
 }

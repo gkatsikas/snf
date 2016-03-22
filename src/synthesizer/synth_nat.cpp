@@ -11,14 +11,14 @@
 
 #include "../shared/helpers.hpp"
 
-#define BUG(A) std::cerr<<"["<<__FILE__<<":"<<__LINE__<<"] "<<A <<std::endl; exit(1)
+int SynthesizedNAT::count = 0;
 
-int SynthesizedNat::count = 0;
-
-SynthesizedNat::SynthesizedNat() : m_name("iprw"+std::to_string(count++)), m_outbound_port(0) {}
+SynthesizedNAT::SynthesizedNAT() : m_name("iprw" + std::to_string(count++)), m_outbound_port(0) {
+	this->log.set_logger_file(__FILE__);
+}
 
 unsigned short
-SynthesizedNat::add_traffic_class (const struct ConsolidatedTc& tc, const std::string& src_iface) {
+SynthesizedNAT::add_traffic_class (const struct ConsolidatedTc &tc, const std::string &src_iface) {
 	std::string confLine = tc.m_operation;
 
 	unsigned short idx = this->m_input_port_to_iface.size();
@@ -29,7 +29,7 @@ SynthesizedNat::add_traffic_class (const struct ConsolidatedTc& tc, const std::s
 }
 
 std::string
-SynthesizedNat::compute_conf () {
+SynthesizedNAT::compute_conf (void) {
 
 	std::string output;
 
@@ -65,11 +65,11 @@ SynthesizedNat::compute_conf () {
 }
 
 std::string
-SynthesizedNat::get_name () const{
+SynthesizedNAT::get_name (void) const {
 	return this->m_name;
 }
 
 unsigned short
-SynthesizedNat::get_outbound_port () const {
+SynthesizedNAT::get_outbound_port (void) const {
 	return this->m_outbound_port;
 }

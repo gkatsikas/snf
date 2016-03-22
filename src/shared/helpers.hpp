@@ -7,6 +7,14 @@
 #ifndef _HELPERS_HPP_
 #define _HELPERS_HPP_
 
+/* 
+ * The auto-generated header contains useful flags that
+ * guide the bindings of Hyper-NF.
+ */
+#ifdef HAVE_CONFIG_H
+#include "../../config.h"
+#endif
+
 #include <set>
 #include <vector>
 #include <string>
@@ -19,27 +27,32 @@
 #include <iostream>
 #include <sys/stat.h>
 
+#include "boost/format.hpp"
+
 /*
  * Shared variables
  */
-// Ethernet header is 14 bytes
-#define ETHERNET_SIZE        14
+// Ethernet constants (in bytes)
+#define ETHERNET_INTER_FRAME_GAP_LEN 12
+#define ETHERNET_MAC_PREAMBLE_LEN     8 
+#define ETHERNET_HEADER_LEN          14
+#define ETHERNET_CRC_LEN              4
 
 // IP header is 20-60 bytes
-#define MIN_IP4_HEADER_SIZE  20
-#define MAX_IP4_HEADER_SIZE  60
+#define MIN_IP4_HEADER_LEN  20
+#define MAX_IP4_HEADER_LEN  60
 
 // UDP header size is 8 bytes
-#define UDP_HEADER_SIZE     8
+#define UDP_HEADER_LEN      8
 
 // ICMP header size
-#define ICMP_HEADER_SIZE    8
+#define ICMP_HEADER_LEN     8
 
 // TCP header size is 20-60 bytes
-#define MIN_TCP_HEADER_SIZE 20
-#define MAX_TCP_HEADER_SIZE 60
+#define MIN_TCP_HEADER_LEN  20
+#define MAX_TCP_HEADER_LEN  60
 
-// Maximum Transfer Unit (IP Packet size)
+// Standard Maximum Transfer Unit (IP Packet size)
 #define MTU                 1500
 
 // ICMP TTL expired value
@@ -106,15 +119,53 @@ const short CHAIN_SYNTHESIS_PROBLEM  = -39;
 const short INVALID_PROTOCOL         = -40;
 
 // List of IPMapper elements
-const std::set<std::string> MAPPER_ELEMENTS = {"SourceIPHashMapper", "RoundRobinIPMapper", "FTPPortMapper"};
-const std::set<std::string> SUPPORTED_MAPPER_ELEMENTS = {"RoundRobinIPMapper"};
+const std::set<std::string> MAPPER_ELEMENTS = {
+	"SourceIPHashMapper", "RoundRobinIPMapper", "FTPPortMapper"
+};
+const std::set<std::string> SUPPORTED_MAPPER_ELEMENTS = {
+	"RoundRobinIPMapper"
+};
+
+/*
+ * Debugging macros
+ */
+#define   def_chatter(LOG, MSG) LOG 	<< boost::format("[%4d] >> ") % __LINE__ \
+										<< def   << MSG << def << std::endl
+#define  info_chatter(LOG, MSG) LOG 	<< boost::format("[%4d] >> ") % __LINE__ \
+										<< info  << MSG << def << std::endl
+#define  note_chatter(LOG, MSG) LOG 	<< boost::format("[%4d] >> ") % __LINE__ \
+										<< note  << MSG << def << std::endl
+#define  warn_chatter(LOG, MSG) LOG 	<< boost::format("[%4d] >> ") % __LINE__ \
+										<< warn  << MSG << def << std::endl
+#define error_chatter(LOG, MSG) LOG 	<< boost::format("[%4d] >> ") % __LINE__ \
+										<< error << MSG << def << std::endl
+
+#ifdef  DEBUG_MODE
+#define debug_chatter(LOG, MSG)	LOG 	<< boost::format("[%4d] >> ") % __LINE__ \
+										<< debug << MSG << def << std::endl
+#define         DEBUG(MSG) std::cout 	<< boost::format("[%30s][%4d] >> ") %  __FILE__ % __LINE__ << " DEBUG: " \
+										<< MSG   << std::endl
+#else
+#define debug_chatter(LOG, MSG) 
+#define         DEBUG(MSG) 
+#endif
+
+/*
+ * Error handling macros
+ */
+#define                  BUG(MSG) std::cerr << boost::format("[%30s][%4d] >> ") %  __FILE__ % __LINE__ << " ERROR: " \
+											<< MSG   << std::endl; exit(FAILURE)
+#define MISSING_FEATURE(LOG, MSG) LOG		<< boost::format("[%4d] >> ") % __LINE__ \
+											<< warn  << MSG << def << std::endl; exit(FAILURE)
+#define       FANCY_BUG(LOG, MSG) LOG		<< boost::format("[%4d] >> ") % __LINE__ \
+											<< error << MSG << def << std::endl; exit(FAILURE)
 
 /*
  * String helpers
  */
-std::vector<std::string> split(const std::string &s, const std::string& delim);
+std::vector<std::string> split        (const std::string &s, const std::string& delim);
 std::vector<std::string> separate_args(const std::string &s);
-std::string vector_to_str(const std::vector<std::string>& vec, const std::string& delim);
+std::string              vector_to_str(const std::vector<std::string> &vec, const std::string &delim);
 
 /*
  * IP helpers
@@ -126,13 +177,13 @@ std::string ntoa (uint32_t address);
 /*
  * Memory helpers
  */
-short allocateMemory(void** memoryBuffer, size_t size);
-short releaseMemory (void** memoryBuffer);
+short allocateMemory(void **memoryBuffer, size_t size);
+short releaseMemory (void **memoryBuffer);
 
 /*
  * Extract numbers from strings
  */
-const std::string get_number_from_string(std::string const& str);
+const std::string get_number_from_string(std::string const &str);
 
 /*
  * Convert a boolean to string
@@ -142,31 +193,31 @@ const std::string bool_to_str(const bool b);
 /*
  * Convert a string to boolean
  */
-bool str_to_bool(const std::string& s);
+bool str_to_bool(const std::string &s);
 
 /*
  * Check if directory exists
  */
-bool directory_exists(const std::string& dir_path);
+bool directory_exists(const std::string &dir_path);
 
 /*
  * Create a directory
  */
-bool create_directory(const std::string& dir_path);
+bool create_directory(const std::string &dir_path);
 /*
  * Check if file exists
  */
-bool file_exists(const std::string& file_path);
+bool file_exists(const std::string &file_path);
 
 /*
  * Get file extension
  */
-const std::string get_string_extension(const std::string& str, const char delim='.');
+const std::string get_string_extension(const std::string &str, const char delim='.');
 
 /*
  * Get the substring before a pattern
  */
-const std::string get_substr_before(const std::string& str, const std::string& pattern);
+const std::string get_substr_before(const std::string &str, const std::string &pattern);
 
 /*
  * A C++11 template that is able to receive any function with any arguments
@@ -194,7 +245,7 @@ struct measure {
  * Concatenate vectors v1 and v2.
  */ 
 template<typename T>
-std::vector<T> concatenate_two_vectors(std::vector<T>& v1, const std::vector<T>& v2) {
+std::vector<T> concatenate_two_vectors(std::vector<T> &v1, const std::vector<T> &v2) {
 	std::vector<T> outcome(v1);
 
 	for (auto& e : v2)

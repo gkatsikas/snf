@@ -12,7 +12,7 @@
 #######
 [GENERIC]
 OUTPUT_FOLDER           = ./results
-OUTPUT_FILE             = hyper-chain.click
+OUTPUT_FILE             = synth_router_10.click
 
 HARDWARE_CLASSIFICATION = true
 # Options: RSS-Hashing, Flow-Director, OpenFlow
@@ -22,7 +22,6 @@ NUMA                    = true
 CPU_SOCKETS             = 2
 CPU_CORES               = 16
 NIC_HW_QUEUES           = 16
-
 
 ##############################################################################################
 #######
@@ -35,14 +34,25 @@ NIC_HW_QUEUES           = 16
 #
 #  PZ --- |NAT| --- |NAT| --- Internet
 #
-NF_1 = input/nf_repo/dpdk/napt_chain_8/nf1.click
-NF_2 = input/nf_repo/dpdk/napt_chain_8/nf2.click
-NF_3 = input/nf_repo/dpdk/napt_chain_8/nf3.click
-NF_4 = input/nf_repo/dpdk/napt_chain_8/nf4.click
-NF_5 = input/nf_repo/dpdk/napt_chain_8/nf5.click
-NF_6 = input/nf_repo/dpdk/napt_chain_8/nf6.click
-NF_7 = input/nf_repo/dpdk/napt_chain_8/nf7.click
-NF_8 = input/nf_repo/dpdk/napt_chain_8/nf8.click
+#NF_1 = input/nf_repo/dpdk/napt_chain_8/nf1.click
+#NF_2 = input/nf_repo/dpdk/napt_chain_8/nf2.click
+#NF_3 = input/nf_repo/dpdk/napt_chain_8/nf3.click
+#NF_4 = input/nf_repo/dpdk/napt_chain_8/nf4.click
+#NF_5 = input/nf_repo/dpdk/napt_chain_8/nf5.click
+#NF_6 = input/nf_repo/dpdk/napt_chain_8/nf6.click
+#NF_7 = input/nf_repo/dpdk/napt_chain_8/nf7.click
+#NF_8 = input/nf_repo/dpdk/napt_chain_8/nf8.click
+
+NF_1  = input/nf_repo/dpdk/router_chain_10/nf1.click
+NF_2  = input/nf_repo/dpdk/router_chain_10/nf2.click
+NF_3  = input/nf_repo/dpdk/router_chain_10/nf3.click
+NF_4  = input/nf_repo/dpdk/router_chain_10/nf4.click
+NF_5  = input/nf_repo/dpdk/router_chain_10/nf5.click
+NF_6  = input/nf_repo/dpdk/router_chain_10/nf6.click
+NF_7  = input/nf_repo/dpdk/router_chain_10/nf7.click
+NF_8  = input/nf_repo/dpdk/router_chain_10/nf8.click
+NF_9  = input/nf_repo/dpdk/router_chain_10/nf9.click
+NF_10 = input/nf_repo/dpdk/router_chain_10/nf10.click
 
 
 #######
@@ -52,8 +62,8 @@ NF_8 = input/nf_repo/dpdk/napt_chain_8/nf8.click
 [NF_TOPO]
 
 ### TOPO 1
-#TOPOLOGY = NF_1[nf1veth1] -> [nf2veth0]NF_2;
-TOPOLOGY = NF_1[nf1veth1] -> [nf2veth0]NF_2; NF_2[nf2veth1] -> [nf3veth0]NF_3; NF_3[nf3veth1] -> [nf4veth0]NF_4; NF_4[nf4veth1] -> [nf5veth0]NF_5; NF_5[nf5veth1] -> [nf6veth0]NF_6; NF_6[nf6veth1] -> [nf7veth0]NF_7; NF_7[nf7veth1]  -> [nf8veth0]NF_8;
+#TOPOLOGY = NF_1[nf1vif1] -> [nf2vif0]NF_2;
+TOPOLOGY = NF_1[nf1vif1] -> [nf2vif0]NF_2; NF_2[nf2vif1] -> [nf3vif0]NF_3; NF_3[nf3vif1] -> [nf4vif0]NF_4; NF_4[nf4vif1] -> [nf5vif0]NF_5; NF_5[nf5vif1] -> [nf6vif0]NF_6; NF_6[nf6vif1] -> [nf7vif0]NF_7; NF_7[nf7vif1] -> [nf8vif0]NF_8; NF_8[nf8vif1] -> [nf9vif0]NF_9; NF_9[nf9vif1] -> [nf10vif0]NF_10;
 
 
 #######
@@ -64,5 +74,5 @@ TOPOLOGY = NF_1[nf1veth1] -> [nf2veth0]NF_2; NF_2[nf2veth1] -> [nf3veth0]NF_3; N
 #######
 [ENTRY_POINTS]
 ### TOPO 1
-DOMAINS  = [nf1veth0]NF_1
+DOMAINS  = [nf1vif0]NF_1
 ##############################################################################################

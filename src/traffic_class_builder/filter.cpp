@@ -17,18 +17,13 @@
 #include "../shared/helpers.hpp"
 #include "../synthesizer/synth_nat.hpp"
 
-#define BUG(A) std::cerr<<"["<<__FILE__<<":"<<__LINE__<<"] "<<A <<std::endl; exit(1)
+// The logger of traffic class-related classes
+Logger tc_log(__FILE__);
 
 #define MIN(a,b) (a>b) ? b : a
 #define MAX(a,b) (a>b) ? a : b
 
-#define in_range(x,lower,upper) (x>=lower && x<=upper)
-//#define DEBUGGING
-#ifdef DEBUGGING
-#define DEBUG(A) std::cerr<<"["<<__FILE__<<":"<<__LINE__<<"] DEBUG: "<<A <<std::endl
-#else
-#define DEBUG(A) 
-#endif
+#define IN_RANGE(x,lower,upper) (x>=lower && x<=upper)
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////
 // Filter
@@ -43,14 +38,16 @@ Filter::Filter(HeaderField field,uint32_t value) : Filter(field, value, value) {
 Filter::Filter (HeaderField field, uint32_t lower_value, uint32_t upper_value) :
 				m_field(field), m_filter(), m_to_subtract() {
 	m_filter.add_segment(lower_value,upper_value);
-	if(lower_value > upper_value) {BUG("Weird filter: "+to_str());}
+	if(lower_value > upper_value) {
+		FANCY_BUG(tc_log, "Weird filter: ");
+	}
 }
 
 Filter
 Filter::get_filter_from_v4_prefix(HeaderField field, uint32_t value, uint32_t prefix) {
 
 	if(prefix > 32) {
-		BUG("Prefix higher than 32");
+		FANCY_BUG(tc_log, "Prefix higher than 32");
 	}
 	else if(prefix==32) {
 		return Filter(field,value);
@@ -58,14 +55,16 @@ Filter::get_filter_from_v4_prefix(HeaderField field, uint32_t value, uint32_t pr
 	uint32_t translation = 32 - prefix;
 	uint32_t lowerLimit = value & (0xffffffff << translation);
 	uint32_t upperLimit = value | (0xffffffff >> prefix);
-	if(lowerLimit > upperLimit) {BUG("Weird filter");}
+	if(lowerLimit > upperLimit) {
+		FANCY_BUG(tc_log, "Weird filter");
+	}
 	
 	return Filter(field, lowerLimit, upperLimit);
 }
 
 Filter
-Filter::get_filter_from_v4_prefix_str(HeaderField field, const std::string& prefix_as_str) {
-	DEBUG("Parsing: "+prefix_as_str);
+Filter::get_filter_from_v4_prefix_str(HeaderField field, const std::string &prefix_as_str) {
+	debug_chatter(tc_log, "Parsing: "+prefix_as_str);
 
 	size_t prefix_pos = prefix_as_str.find("/");
 	uint32_t addr = aton(prefix_as_str.substr(0,prefix_pos));
@@ -76,7 +75,7 @@ Filter::get_filter_from_v4_prefix_str(HeaderField field, const std::string& pref
 }
 
 Filter
-Filter::get_filter_from_ipclass_pattern(HeaderField field, const std::string& args) {
+Filter::get_filter_from_ipclass_pattern(HeaderField field, const std::string &args) {
 
 	//Cases:
 	//1234
@@ -101,12 +100,12 @@ Filter::get_filter_from_ipclass_pattern(HeaderField field, const std::string& ar
 			return Filter(field,to_uint(args));
 		case 0: //either [=<>!]= 1234 or [<>] 1234
 			if(args.size() < 3) {
-				BUG("Wrong argument in IPFilter: "+args);
+				FANCY_BUG(tc_log, "Wrong argument in IPFilter: "+args);
 			}
 			switch (args[0]) {
 				case '=':
 					if (args.size() < 2 || args[1]!='=') {
-						BUG("Wrong argument in IPFilter: "+args+"\n\tExpected '='");
+						FANCY_BUG(tc_log, "Wrong argument in IPFilter: "+args+"\n\tExpected '='");
 					}
 					else {
 						f = Filter(field,to_uint(args.substr(2,args.size()-2)));
@@ -121,7 +120,7 @@ Filter::get_filter_from_ipclass_pattern(HeaderField field, const std::string& ar
 							f = Filter(field,0,to_uint(args.substr(2,args.size()-2))-1);
 							break;
 						default:
-							BUG("Wrong argument in IPFilter: "+args+"\n\tExpected one of ' ' or '='");
+							FANCY_BUG(tc_log, "Wrong argument in IPFilter: "+args+"\n\tExpected one of ' ' or '='");
 					}
 					break;
 				case '>':
@@ -133,12 +132,12 @@ Filter::get_filter_from_ipclass_pattern(HeaderField field, const std::string& ar
 							f = Filter(field,to_uint(args.substr(2,args.size()-2))+1, UINT32_MAX);
 							break;
 						default:
-							BUG("Wrong argument in IPFilter: "+args+"\n\tExpected one of ' ' or '='");
+							FANCY_BUG(tc_log, "Wrong argument in IPFilter: "+args+"\n\tExpected one of ' ' or '='");
 					}
 					break;
 				case '!':
 					if (args[1]!='=') {
-						BUG("Wrong argument in IPFilter: "+args+"\n\tExpected '='");
+						FANCY_BUG(tc_log, "Wrong argument in IPFilter: "+args+"\n\tExpected '='");
 					}
 					else {
 						f = Filter(field);
@@ -190,7 +189,7 @@ Filter::get_filter_from_ipclass_pattern(HeaderField field, const std::string& ar
 }
 
 Filter
-Filter::get_filter_from_prefix_pattern(HeaderField field, const std::string& args) {
+Filter::get_filter_from_prefix_pattern(HeaderField field, const std::string &args) {
 	std::string prefix_chars = "0123456789./";
 	size_t pos = args.find_first_not_of(prefix_chars);
 	Filter f;
@@ -202,13 +201,13 @@ Filter::get_filter_from_prefix_pattern(HeaderField field, const std::string& arg
 			switch (args[0]) {
 				case '=':
 					if (args.size() < 2 || args[1] != '=') {
-						BUG("Unknown comparator: "+args);
+						FANCY_BUG(tc_log, "Unknown comparator: "+args);
 					}
 					f = get_filter_from_v4_prefix_str(field,args.substr(2,args.size()-2));
 					break;
 				case '!':
 					if (args.size() < 2 || args[1] != '=') {
-						BUG("Unknown comparator: "+args);
+						FANCY_BUG(tc_log, "Unknown comparator: "+args);
 					}
 					f = get_filter_from_v4_prefix_str(field,args.substr(2,args.size()-2));
 					f = (Filter(field)).differentiate(f);
@@ -234,7 +233,7 @@ Filter::match(uint32_t value) const {
 }
 
 bool
-Filter::contains (const Filter& filter) const{
+Filter::contains (const Filter &filter) const{
 	DisjointSegmentList is_in = filter.m_filter;
 	is_in.substract_seglist(filter.m_to_subtract);
 	DisjointSegmentList contains = m_filter;
@@ -243,7 +242,7 @@ Filter::contains (const Filter& filter) const{
 }
 
 bool
-Filter::is_none() const {
+Filter::is_none(void) const {
 	return (m_filter.empty() || m_to_subtract.contains_seglist(m_filter));
 }
 
@@ -256,7 +255,7 @@ Filter::translate(uint32_t value, bool forward) {
 
 Filter&
 Filter::unite (const Filter &filter) {
-	DEBUG("unite "+to_str());
+	debug_chatter(tc_log, "unite "+to_str());
 	m_filter.add_seglist(filter.m_filter);
 	m_to_subtract.substract_seglist (filter.m_filter);
 	DisjointSegmentList temp = filter.m_to_subtract;
@@ -267,15 +266,15 @@ Filter::unite (const Filter &filter) {
 
 Filter&
 Filter::intersect (const Filter &filter) {
-	DEBUG("intersect "+to_str()+" with "+filter.to_str());
+	debug_chatter(tc_log, "intersect "+to_str()+" with "+filter.to_str());
 	m_filter.intersect_seglist(filter.m_filter);
 	m_to_subtract.add_seglist(filter.m_to_subtract);
 	return *this;
 }
 
 Filter&
-Filter::differentiate (const Filter& filter) {
-	DEBUG("Differentiate"+to_str());
+Filter::differentiate (const Filter &filter) {
+	debug_chatter(tc_log, "Differentiate"+to_str());
 	m_to_subtract.add_seglist(filter.m_filter);
 	return *this;
 }
@@ -290,13 +289,13 @@ Filter::operator== (const Filter& rhs) const {
 }
 
 void
-Filter::make_none () {
+Filter::make_none (void) {
 	this->m_filter = DisjointSegmentList();
 	this->m_to_subtract = DisjointSegmentList ();
 }
 
 std::string
-Filter::to_str () const{
+Filter::to_str (void) const{
 	switch (m_field) {
 		case ip_src:
 		case ip_dst:
@@ -311,7 +310,7 @@ Filter::to_str () const{
  * a format understandable by Click's IPClassifier.
  */
 std::string
-Filter::to_ip_classifier_pattern() const {
+Filter::to_ip_classifier_pattern(void) const {
 	std::string keyword;
 	std::string output;
 
@@ -374,7 +373,7 @@ Filter::to_ip_classifier_pattern() const {
 			keyword = "tcp win ";
 			break;
 		default:
-			BUG("Cannot convert filter to IPClassifier "+to_str());
+			FANCY_BUG(tc_log, "Cannot convert filter to IPClassifier ");
 	}
 
 	std::vector<std::pair<uint32_t,uint32_t> > segments = m_filter.get_segments();
@@ -430,7 +429,7 @@ Filter::to_ip_classifier_pattern() const {
  * a format understandable by Flow Director.
  */
 std::string
-Filter::to_flow_director_pattern() const {
+Filter::to_flow_director_pattern(void) const {
 	std::string keyword;
 	std::string output;
 
@@ -518,7 +517,7 @@ ip_segment_to_ip_class_pattern(std::string keyword, uint32_t lower, uint32_t upp
  * a format understandable by Click's IPClassfier element.
  */
 std::string
-Filter::ip_filter_to_ip_classifier_pattern(const std::string& keyword) const {
+Filter::ip_filter_to_ip_classifier_pattern(const std::string &keyword) const {
 	std::string output;
 	std::vector<std::pair<uint32_t,uint32_t> > segments = this->m_filter.get_segments();
 
@@ -545,7 +544,7 @@ Filter::ip_filter_to_ip_classifier_pattern(const std::string& keyword) const {
 }
 
 std::string
-Filter::ip_filter_to_flow_director_pattern(const std::string& keyword) const {
+Filter::ip_filter_to_flow_director_pattern(const std::string &keyword) const {
 	std::string output;
 
 	// Get all the segments of the filter
@@ -574,12 +573,12 @@ Condition::Condition (HeaderField field, std::shared_ptr<ClickElement> elem, Fil
 						m_field(field), m_filter(filter), m_current_write(op), m_element(elem) {}
 
 bool
-Condition::is_same_write (const FieldOperation& op) const {
+Condition::is_same_write (const FieldOperation &op) const {
 	return op == this->m_current_write;
 }
 
 bool
-Condition::intersect(const Filter& filter) {
+Condition::intersect(const Filter &filter) {
 	this->m_filter.intersect(filter);
 	return this->m_filter.is_none();
 }
@@ -610,13 +609,13 @@ TrafficClass::is_discarded(void) const {
 }
 
 bool
-TrafficClass::is_SNATed(void){
+TrafficClass::is_source_nated(void) {
 	FieldOperation* src_port = m_operation.get_field_op(tp_srcPort);
 	return (src_port && src_port->m_type==WriteSF);
 }
 
 std::string
-TrafficClass::synthesize_chain (void) {
+TrafficClass::synthesize_chain (unsigned short &direction) {
 	std::string output;
 	if ( this->is_discarded() ) {
 		output = "Discard();";
@@ -627,7 +626,7 @@ TrafficClass::synthesize_chain (void) {
 		}
 
 		if(m_ip_gw_options) {
-			output += "IPGWOptions($ipAddr) -> ";
+			output += "IPGWOptions($ipAddr" + std::to_string(direction) + ") -> ";
 		}
 		/*
 		if(m_nat) {
@@ -644,7 +643,7 @@ TrafficClass::synthesize_chain (void) {
 					ipsrc = ntoa(field_op->m_value[0]);
 				}
 				else {
-					BUG("Expected write operation");
+					FANCY_BUG(tc_log, "Expected write operation");
 				}
 			}
 			else{
@@ -657,7 +656,7 @@ TrafficClass::synthesize_chain (void) {
 					tpsrc = std::to_string(field_op->m_value[0]);
 				}
 				else {
-					BUG("Expected write operation, got "+m_operation.to_str());
+					FANCY_BUG(tc_log, "Expected write operation, got "+m_operation.to_str());
 				}
 			}
 			else{
@@ -670,7 +669,7 @@ TrafficClass::synthesize_chain (void) {
 					tpdst = std::to_string(field_op->m_value[0]);
 				}
 				else {
-					BUG("Expected write operation, got "+m_operation.to_str());
+					FANCY_BUG(tc_log, "Expected write operation, got "+m_operation.to_str());
 				}
 			}
 			else{
@@ -685,14 +684,14 @@ TrafficClass::synthesize_chain (void) {
 				}
 				else if (field_op->m_type == WriteLB) {
 					std::string rr_output = "RoundRobinIPMapper(";
-					for (auto &ip : field_op->m_lbValues) {
+					for (auto &ip : field_op->m_lb_values) {
 						rr_output += ipsrc+" "+tpsrc+" "+ntoa(ip)+" "+tpdst+", ";
 					}
 					rr_output[rr_output.size()-2] = ')';
 					output += rr_output;
 				}
 				else {
-					BUG("Expected write operation, got "+m_operation.to_str());
+					FANCY_BUG(tc_log, "Expected write operation, got "+m_operation.to_str());
 				}
 			}
 			else{
@@ -708,7 +707,7 @@ TrafficClass::synthesize_chain (void) {
 		//}
 
 		//if(m_ether_encap_conf.empty()) {
-		//	BUG("Empty EtherEncap configuration");
+		//	FANCY_BUG(tc_log, "Empty EtherEncap configuration");
 		//}
 		//synthesized_chain.push_back(std::shared_ptr<ClickElement>(new ClickElement(EtherEncap,m_ether_encap_conf)));
 		//synthesized_chain.push_back(m_element_path.back());
@@ -723,7 +722,6 @@ TrafficClass::to_ip_classifier_pattern(void) const {
 	std::string output;
 	for (auto &it : this->m_filters) {
 		output += "("+it.second.to_ip_classifier_pattern() + ") && ";
-		//std::cout << output << std::endl;
 	}
 	return output.substr(0, output.size()-4); //Removes trailing " && "
 }
@@ -732,15 +730,13 @@ std::string
 TrafficClass::to_flow_director_pattern(void) const {
 	std::string output;
 	for (auto &it : this->m_filters) {
-		//output += "("+it.second.to_ip_classifier_pattern() + ") && ";
 		output += it.second.to_flow_director_pattern() + " ";
-		//std::cout << output << std::endl;
 	}
 	return output;
 }
 
 int
-TrafficClass::intersect_filter(const Filter& filter) {
+TrafficClass::intersect_filter(const Filter &filter) {
 	HeaderField field = filter.get_field();
 	auto got = this->m_filters.find(field);
 
@@ -755,7 +751,7 @@ TrafficClass::intersect_filter(const Filter& filter) {
 }
 
 int
-TrafficClass::intersect_condition(const Filter& condition, const FieldOperation& operation) {
+TrafficClass::intersect_condition(const Filter &condition, const FieldOperation &operation) {
 	HeaderField field = condition.get_field();
 	auto got=this->m_write_conditions.find(field);
 	if(got == this->m_write_conditions.end() ||  !this->m_write_conditions[field].back().is_same_write(operation)) {
@@ -770,7 +766,7 @@ TrafficClass::intersect_condition(const Filter& condition, const FieldOperation&
 }
 
 int
-TrafficClass::addElement (std::shared_ptr<ClickElement> element, int port) {
+TrafficClass::add_element (std::shared_ptr<ClickElement> element, int port) {
 
 	int nb_none_filters=0;
 	(this->m_element_path).push_back(element);
@@ -788,7 +784,7 @@ TrafficClass::addElement (std::shared_ptr<ClickElement> element, int port) {
 	if ( port == -1 ) { //Last element of the chain -> no children
 		return 0;
 	}
-	PacketFilter pf = (element->get_outputClasses()[port]).get_filter();
+	PacketFilter pf = (element->get_output_classes()[port]).get_filter();
 
 	for_fields_in_pf(it,pf) {
 		HeaderField field = it->first;
@@ -831,7 +827,7 @@ TrafficClass::addElement (std::shared_ptr<ClickElement> element, int port) {
 				case WriteLB: {
 					Filter write_condition(field);
 					write_condition.make_none();
-					for (auto &value : field_op->m_lbValues) {
+					for (auto &value : field_op->m_lb_values) {
 						write_condition.unite(Filter(field,value));
 					}
 					if (! filter.contains(write_condition)) {
@@ -842,9 +838,7 @@ TrafficClass::addElement (std::shared_ptr<ClickElement> element, int port) {
 					break;
 				}
 				default:
-					std::cerr<<"["<<__FILE__<<":"<<__LINE__<<"] Found non "
-							"modifying operation"<<std::endl;
-					exit(1);
+					FANCY_BUG(tc_log, "Found non modifying operation");
 			}
 		}
 		else {
@@ -852,7 +846,7 @@ TrafficClass::addElement (std::shared_ptr<ClickElement> element, int port) {
 		}
 	}
 
-	this->m_operation.compose_op((element->get_outputClasses()[port]).get_operation());
+	this->m_operation.compose_op((element->get_output_classes()[port]).get_operation());
 	return nb_none_filters;
 }
 
@@ -895,7 +889,7 @@ TrafficClass::get_output_iface (void) {
 			if ( todev->get_type() == ToDevice ) {
 				iface = split( todev->get_configuration(), "," )[0];
 				this->set_output_iface(iface);
-				this->set_nf_of_output_iface(todev->get_nfName());
+				this->set_nf_of_output_iface(todev->get_nf_name());
 				return iface;
 			}
 			else if ( todev->get_type() == No_elem ) {
@@ -903,7 +897,7 @@ TrafficClass::get_output_iface (void) {
 				if ( todev->get_type() == ToDevice ) {
 					iface = split( todev->get_configuration(), "," )[0];
 					this->set_output_iface(iface);
-					this->set_nf_of_output_iface(todev->get_nfName());
+					this->set_nf_of_output_iface(todev->get_nf_name());
 					return iface;
 				}
 			}
@@ -923,7 +917,7 @@ TrafficClass::get_operation (void) {
 }
 
 void
-TrafficClass::set_nat (std::shared_ptr<SynthesizedNat> nat, const unsigned short& port) {
+TrafficClass::set_nat (std::shared_ptr<SynthesizedNAT> nat, const unsigned short& port) {
 	this->m_nat = nat;
 	this->m_nat_input_port = port;
 }
@@ -943,7 +937,7 @@ TrafficClass::set_nf_of_output_iface(const std::string& nf) {
 	this->m_nf_of_output_iface = nf;
 }
 
-std::shared_ptr<SynthesizedNat>
+std::shared_ptr<SynthesizedNAT>
 TrafficClass::get_nat (void) {
 	return this->m_nat;
 }

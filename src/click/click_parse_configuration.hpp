@@ -31,6 +31,7 @@
 #ifndef _CLICK_PARSE_CONFIGURATION_HPP_
 #define _CLICK_PARSE_CONFIGURATION_HPP_
 
+#ifdef HAVE_CLICK
 #include <click/config.h>
 #include <click/pathvars.h>
 #include <click/lexer.hh>
@@ -47,20 +48,24 @@
 #include <click/userutils.hh>
 #include <click/args.hh>
 #include <click/handlercall.hh>
+#else
+BUG("Click is not installed");
+#endif
 
 /*
  * A little bit of house keeping after loading and parsing a Click configuration
  */
 namespace ClickCleaner {
-	void cleanup(Clp_Parser *clp, bool clean_all);
+	void cleanup(Clp_Parser *clp, const bool &clean_all);
 }
 
 /*
  * Generate an equivalent Click configuration with flattened statements
  */
-short generate_flat_configuration(
-	const char** output_file,
-	short position = -1
+short
+generate_flat_configuration(
+	const char **output_file,
+	const short position = -1
 );
 
 /*
@@ -68,9 +73,10 @@ short generate_flat_configuration(
  * We focus on the actual parsing thus the code that is relevant to the router
  * instantiation is commented
  */
-Router* parse_configuration(
+Router*
+parse_configuration(
 	const String &text,
-	bool text_is_expr,
+	const bool   &text_is_expr,
 	ErrorHandler *errh
 );
 
@@ -78,8 +84,9 @@ Router* parse_configuration(
  * Original click/userlevel/click.cc is a main file that calls the parse_configuration
  * function. We wrote this funciton to integrate the parser into our framework.
  */
-Router* input_a_click_configuration(
-	const char* click_source_configuration
+Router*
+input_a_click_configuration(
+	const char *click_source_configuration
 );
 
 #endif

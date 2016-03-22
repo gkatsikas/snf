@@ -11,15 +11,16 @@
 
 #include <click/routervisitor.hh>
 
-ChainParser::ChainParser(ParserConfiguration* pc) : chain_graph(pc) {
+ChainParser::ChainParser(ParserConfiguration *pc) : chain_graph(pc) {
 	this->log.set_logger_file(__FILE__);
 	this->chain_length = this->chain_graph->get_chain()->get_vertices_no();
 
 	if ( this->chain_length <= 0 ) {
 		this->chain_graph = NULL;
-		throw std::runtime_error("ChainParser: Invalid chain length");
+		error_chatter(this->log, "ChainParser: Invalid chain length");
+		exit(CHAIN_PARSING_PROBLEM);
 	}
-	log << debug << "Chain Parser constructed" << def << std::endl;
+	note_chatter(this->log, "\tChain Parser constructed");
 }
 
 ChainParser::~ChainParser() {
@@ -34,7 +35,7 @@ ChainParser::~ChainParser() {
 	this->nf_configuration.clear();
 	this->nf_dag.clear();
 
-	log << debug << "Chain Parser deleted" << def << std::endl;
+	note_chatter(this->log, "\tChain Parser deleted");
 }
 
 /*
@@ -54,8 +55,8 @@ ChainParser::load_nf_configurations(void) {
 	for ( Vertex* v : this->chain_graph->get_chain()->get_vertex_order() ) {
 		ChainVertex* cv = static_cast<ChainVertex*> (v);
 
-		log << info << "==============================================================================" << def << std::endl;
-		log << info << "Network Function: " << cv->get_name() << def << std::endl;
+		info_chatter(this->log, "==============================================================================");
+		info_chatter(this->log, "Network Function: " << cv->get_name());
 
 		// 1. Load its elements into a Click Router object
 		short exit_status = this->load_nf(cv->get_name(), cv->get_source_code_path(), cv->get_position());
@@ -67,7 +68,7 @@ ChainParser::load_nf_configurations(void) {
 		if ( exit_status != SUCCESS )
 			return exit_status;
 
-		log << info << "==============================================================================" << def << std::endl;
+		info_chatter(this->log, "==============================================================================");
 	}
 
 	log << "" << std::endl;
@@ -86,23 +87,23 @@ short
 ChainParser::chain_nf_configurations(void) {
 
 	log << "" << std::endl;
-	log << info << "==============================================================================" << def << std::endl;
-	log << info << "Chaining all Click Configurations..." << def << std::endl;
+	info_chatter(this->log, "==============================================================================");
+	info_chatter(this->log, "Chaining all Click Configurations...");
 
 	// For each NF
-	for ( Vertex* v : this->chain_graph->get_chain()->get_vertex_order() ) {
-		ChainVertex* cv = static_cast<ChainVertex*> (v);
+	for ( Vertex *v : this->chain_graph->get_chain()->get_vertex_order() ) {
+		ChainVertex *cv = static_cast<ChainVertex*> (v);
 
-		log << "Network Function: " << cv->get_name() << def << std::endl;
+		def_chatter(this->log, "Network Function: " << cv->get_name());
 
-		// 3. Verify the NF chain against the property file and create connections between NFs
+		// Verify the NF chain against the property file and create connections between NFs
 		short exit_status = this->verify_and_connect_nfs(cv->get_name(), cv->get_position());
 		if ( exit_status != SUCCESS )
 			return exit_status;
 
 		log << "" << std::endl;
 	}
-	log << info << "==============================================================================" << def << std::endl;
+	info_chatter(this->log, "==============================================================================");
 
 	return SUCCESS;
 }
@@ -112,17 +113,17 @@ ChainParser::chain_nf_configurations(void) {
  * It uses built-in Click methods and data structures linked with this file.
  */
 short
-ChainParser::load_nf(std::string nf_name, std::string nf_source, unsigned short position) {
+ChainParser::load_nf(const std::string &nf_name, const std::string &nf_source, const unsigned short &position) {
 
-	log << info << "Loading Click Configuration for " << nf_name << ": " << nf_source << def << std::endl;
+	info_chatter(this->log, "Loading Click Configuration for " << nf_name << ": " << nf_source);
 
 	Router* router = input_a_click_configuration(nf_source.c_str());
 	if ( router == NULL ) {
-		log << error << "\tProblem while parsing Network Function " << position << def << std::endl;
+		error_chatter(this->log, "\tProblem while parsing Network Function " << position);
 		return CLICK_PARSING_PROBLEM;
 	}
-	log << "\tNetwork Function " << position << " has " << router->nelements() 
-		<< " elements: Status --> Parsed successfully" << def << std::endl;
+	def_chatter(this->log, "\tNetwork Function " << position << " has " << router->nelements() 
+		<< " elements: Status --> Parsed successfully");
 
 	// Insert this Router object into parser's memory
 	this->nf_configuration[position] = std::move(router);
@@ -135,31 +136,31 @@ ChainParser::load_nf(std::string nf_name, std::string nf_source, unsigned short 
  * to build the NF Synthesizer's graph.
  */
 short
-ChainParser::build_nf_dag(std::string nf_name, unsigned short position) {
+ChainParser::build_nf_dag(const std::string &nf_name, const unsigned short &position) {
 
-	Router* router = this->nf_configuration[position];
+	Router *router = this->nf_configuration[position];
 
 	if ( router == NULL ) {
-		log << error << "Network Function object is invalid" << def << std::endl;
+		error_chatter(this->log, "Network Function object is invalid");
 		return NO_MEM_AVAILABLE;
 	}
 
 	// Create an empty Graph if does not exist
 	if ( this->nf_dag[position] == NULL )
 		this->nf_dag[position] = new NFGraph();
-	NFGraph* nf_graph = this->nf_dag[position];
+	NFGraph *nf_graph = this->nf_dag[position];
 
 	log << "" << std::endl;
-	log << info << "Building Click Graph for " << nf_name << def << std::endl;
+	info_chatter(this->log, "Building Click Graph for " << nf_name);
 
 	unsigned short total_elements = router->nelements();
 	std::unordered_map< short, std::vector<std::string> > implicit_conf_mappings;
 	std::unordered_map< short, short > implicit_port_mappings;
 
 	for ( int i=0 ; i < router->nelements() ; i++ ) {
-		Element* e = Router::element(router, i);
+		Element *e = Router::element(router, i);
 
-		//log << "Element " << e->class_name() << " " << e->eindex() << ": " << e->configuration().c_str() << std::endl;
+		//def_chatter(this->log, "Element " << e->class_name() << " " << e->eindex() << ": " << e->configuration().c_str());
 
 		// This is an exceptional element! It has no inputs and outputs but serves as input to IPRewriter
 		// We need to hand its configuration over the corresponding IPRewriter.
@@ -181,7 +182,7 @@ ChainParser::build_nf_dag(std::string nf_name, unsigned short position) {
 			}
 			// This is definitely a bug!
 			else {
-				log << error << "\tERROR while retrieving IPMapper's patterns" << def << std::endl;
+				error_chatter(this->log, "\tERROR while retrieving IPMapper's patterns");
 				delete nf_graph;
 				return CLICK_PARSING_PROBLEM;
 			}
@@ -206,14 +207,14 @@ ChainParser::build_nf_dag(std::string nf_name, unsigned short position) {
 		}
 
 		//u->print_info();
-		//log << "Element " << u->get_name() << " " << u->get_position() << ": " << u->get_configuration() << std::endl;
+		//def_chatter(this->log, "Element " << u->get_name() << " " << u->get_position() << ": " << u->get_configuration());
 
 		// Add this vertex to the NF DAG along with its neighbouring connections (vertices)
 		try {
 			nf_graph->add_vertex_and_neighbours(std::move(u));
 		}
 		catch (const std::exception& e) {
-			log << error << "|--> " << e.what() << def << std::endl;
+			error_chatter(this->log, "|--> " << e.what());
 			exit(CLICK_PARSING_PROBLEM);
 		}
 	}
@@ -234,7 +235,7 @@ ChainParser::build_nf_dag(std::string nf_name, unsigned short position) {
 		log << error << "\t|--> " << e.what() << def << std::endl;
 		return NF_CHAIN_NOT_ACYCLIC;
 	}
-	log << "\tClick Graph is acyclic" << def << std::endl;
+	def_chatter(this->log, "\tClick Graph is acyclic");
 
 	// If acyclic, print the adjacency list
 	nf_graph->print_adjacency_list();
@@ -248,8 +249,8 @@ ChainParser::build_nf_dag(std::string nf_name, unsigned short position) {
  */
 int
 ChainParser::associate_ip_mapper_to_rewriter(
-	Router* router, const std::string& mapper_variable, const std::string& mapper_conf,
-	std::vector<std::string>& implicit_conf, short& implicit_port) {
+		Router *router, const std::string &mapper_variable, const std::string &mapper_conf,
+		std::vector<std::string> &implicit_conf, short &implicit_port) {
 
 	std::size_t pos = mapper_variable.find_last_of("/");
 	std::string short_variable = mapper_variable.substr(pos+1);
@@ -282,9 +283,8 @@ ChainParser::associate_ip_mapper_to_rewriter(
 			}
 
 			if ( !found ) {
-				log << error << "\tCannot map IPMapper " << mapper_variable 
-					<< " to any port of element IPRewriter:" << e->eindex()
-					<< def << std::endl;
+				error_chatter(this->log, "\tCannot map IPMapper " << mapper_variable 
+					<< " to any port of element IPRewriter:" << e->eindex());
 				return CHAIN_PARSING_PROBLEM;
 			}
 
@@ -307,11 +307,11 @@ ChainParser::associate_ip_mapper_to_rewriter(
  * Click configuration, otherwise the synthesizer cannot assess the connectivity between two NFs.
  */
 short
-ChainParser::verify_and_connect_nfs(std::string nf_name, unsigned short position) {
-	Router* router = this->nf_configuration[position];
+ChainParser::verify_and_connect_nfs(const std::string &nf_name, const unsigned short &position) {
+	Router *router = this->nf_configuration[position];
 
 	if ( router == NULL ) {
-		log << error << "Network Function object is invalid" << def << std::endl;
+		error_chatter(this->log, "Network Function object is invalid");
 		return NO_MEM_AVAILABLE;
 	}
 
@@ -361,15 +361,15 @@ ChainParser::verify_and_connect_nfs(std::string nf_name, unsigned short position
 			 (el_class == "FromNetFront")   || (el_class == "ToNetFront") ) {
 
 			//log << "" << def << std::endl;
-			//log << "\tElement  Name: " << el_name       << def << std::endl;
-			//log << "\tElement Class: " << el_class      << def << std::endl;
-			//log << "\tElement  Type: " << type_str      << def << std::endl;
-			//log << "\tConfiguration: " << configuration << def << std::endl;
-			//log << "\t    Interface: " << interface     << def << std::endl;
+			//def_chatter(this->log, "\tElement  Name: " << el_name);
+			//def_chatter(this->log, "\tElement Class: " << el_class);
+			//def_chatter(this->log, "\tElement  Type: " << type_str);
+			//def_chatter(this->log, "\tConfiguration: " << configuration);
+			//def_chatter(this->log, "\t    Interface: " << interface);
 
 			// This is an entry interface that connects the chain to a domain
 			if ( this_nf->has_entry_interface(interface) ) {
-				//log << "\tInterface Type: ENTRY" << def << std::endl;
+				//def_chatter(this->log, "\tInterface Type: ENTRY");
 				element->set_endpoint(true);
 
 				// Count only this side of the interface (not the ToDevice counterpart).
@@ -378,7 +378,7 @@ ChainParser::verify_and_connect_nfs(std::string nf_name, unsigned short position
 			}
 			// This is an internal interface that connects the NF with a subsequent NF
 			else if ( this_nf->has_chain_interface(interface) ) {
-				//log << "\tInterface Type: CHAIN" << def << std::endl;
+				//def_chatter(this->log, "\tInterface Type: CHAIN");
 
 				// Count only this side of the interface (not the ToDevice counterpart).
 				if ( type == VertexType::Input )
@@ -389,25 +389,25 @@ ChainParser::verify_and_connect_nfs(std::string nf_name, unsigned short position
 				// set a pointer to the first input element of the next NF.
 				if ( type == VertexType::Output ) {
 
-					log << "\t" << nf_name << " --> " << el_name << "(" << interface << ")" << def << std::endl;
+					def_chatter(this->log, "\t" << nf_name << " --> " << el_name << "(" << interface << ")");
 
 					std::string next_nf_name = this_nf->get_nf_from_chain_interface(interface);
 					ChainVertex* next_nf = static_cast<ChainVertex*> (chain_graph->get_vertex_by_name(next_nf_name));
 					unsigned short next_nf_position = next_nf->get_position();
 					std::string next_nf_iface = next_nf->get_iface_from_chain_nf(nf_name);
-					//log << "\tNext NF is " << next_nf_name << " at position: " << next_nf_position 
-					//		<< " and iface: " << next_nf_iface << def << std::endl;
+					//def_chatter(this->log, "\tNext NF is " << next_nf_name << " at position: " << next_nf_position 
+					//		<< " and iface: " << next_nf_iface);
 
 					NFGraph* next_nf_graph = this->nf_dag[next_nf_position];
 
 					ElementVertex* next_jump = this->find_input_element_of_nf(next_nf_graph, next_nf_iface);
 					if ( next_jump == NULL ) {
-						log << error << "There is no connection between " << nf_name << " and " 
-							<< next_nf_name << ". Element not found" << std::endl;
+						error_chatter(this->log, "There is no connection between " << nf_name << " and " 
+							<< next_nf_name << ". Element not found");
 						return NO_MEM_AVAILABLE;
 					}
-					log << "\t\t Goes to " << next_nf_name << " --> " << next_jump->get_class() 
-						<< "(" << next_nf_iface << ")" << def << std::endl;
+					def_chatter(this->log, "\t\t Goes to " << next_nf_name << " --> " << next_jump->get_class() 
+						<< "(" << next_nf_iface << ")");
 
 					// Create the link between the Output vertex of this NF and the Input vertex of the next one
 					element->set_glue_info(next_nf_position, next_nf_iface);
@@ -417,7 +417,7 @@ ChainParser::verify_and_connect_nfs(std::string nf_name, unsigned short position
 			// If you check property file, section [NF_TOPO], you will see that we do not specify
 			// the input interfaces if these are not entry interfaces.
 			else {
-				//log << error << "\tUndeclared interface " << interface << def << std::endl;
+				debug_chatter(this->log, "\tUndeclared interface " << interface);
 				element->set_endpoint(true);
 				//return CLICK_PARSING_PROBLEM;
 			}
@@ -429,44 +429,38 @@ ChainParser::verify_and_connect_nfs(std::string nf_name, unsigned short position
 	// This means that here is an error in the definition of the chain in the property file.
 	// TO FIX !=
 	if ( seen_entry_ifaces + seen_chain_ifaces > all_ifaces_no ) {
-		log << error << 
-			"Number of parsed entry+chain interfaces is greater than the respective number specified in the property file" 
-			<< def << std::endl;
-		log << error <<
-			"Click configuration for NF " << position << " is incompatible with the chain setup in the property file." 
-			<< def << std::endl;
-		log << error << "Please check the interfaces." << def << std::endl;
+		error_chatter(this->log,  
+			"Number of parsed entry+chain interfaces is greater than the respective number specified in the property file");
+		error_chatter(this->log, 
+			"Click configuration for NF " << position << " is incompatible with the chain setup in the property file.");
+		error_chatter(this->log, "Please check the interfaces.");
 		return CLICK_PARSING_PROBLEM;
 	}
 
 	// I must be able to see all the entry interfaces of the property file in my Click configuration.
 	if ( seen_entry_ifaces != this_nf->get_entry_interfaces_no() ) {
-		log << error <<
-			"Number of parsed entry interfaces is different than the respective number specified in the property file"
-			<< def << std::endl;
-		log << error <<
-			"Click configuration for NF " << position << " is incompatible with the chain setup in the property file."
-			<< def << std::endl;
-		log << error <<
-			"Please check the entry interfaces -> [ENTRY_POINTS] in the property file." << def << std::endl;
+		error_chatter(this->log, 
+			"Number of parsed entry interfaces is different than the respective number specified in the property file");
+		error_chatter(this->log, 
+			"Click configuration for NF " << position << " is incompatible with the chain setup in the property file.");
+		error_chatter(this->log, 
+			"Please check the entry interfaces -> [ENTRY_POINTS] in the property file.");
 		return CLICK_PARSING_PROBLEM;
 	}
 
 	// If I see fewer chain interfaces than exist in the property file, there is a problem
 	// TO FIX !=
 	if ( seen_chain_ifaces > this_nf->get_chain_interfaces_no() ) {
-		log << error <<
-			"Number of parsed chain interfaces is greater than the number of chain interfaces declated in the property file" 
-			<< def << std::endl;
-		log << error <<
-			"Click configuration for NF " << position << " is incompatible with the chain setup in the property file."
-			<< def << std::endl;
-		log << error << 
-			"Please check the chain interfaces -> [NF_TOPO] in the property file." << def << std::endl;
+		error_chatter(this->log, 
+			"Number of parsed chain interfaces is greater than the number of chain interfaces declated in the property file");
+		error_chatter(this->log, 
+			"Click configuration for NF " << position << " is incompatible with the chain setup in the property file.");
+		error_chatter(this->log, 
+			"Please check the chain interfaces -> [NF_TOPO] in the property file.");
 		return CLICK_PARSING_PROBLEM;
 	}
 
-	log << "\tNetwork Function " << nf_name << " is successfully verified against the property file" << def << std::endl;
+	def_chatter(this->log, "\tNetwork Function " << nf_name << " is successfully verified against the property file");
 
 	return SUCCESS;
 }
@@ -476,7 +470,7 @@ ChainParser::verify_and_connect_nfs(std::string nf_name, unsigned short position
  * the chain. Essentially this function is a glue between two connected NFs.
  */
 ElementVertex*
-ChainParser::find_input_element_of_nf(NFGraph* next_nf_graph, std::string target_interface) {
+ChainParser::find_input_element_of_nf(NFGraph *next_nf_graph, const std::string &target_interface) {
 
 	if ( next_nf_graph == NULL )
 		return NULL;
@@ -503,7 +497,7 @@ ChainParser::find_input_element_of_nf(NFGraph* next_nf_graph, std::string target
 
 /*
 Vector<Element*>
-ChainParser::visit_dag(unsigned short position) {
+ChainParser::visit_dag(const unsigned short &position) {
 
 	// Storage to put the visited elements
 	Vector<Element*> path_elements;
@@ -523,18 +517,18 @@ ChainParser::visit_dag(unsigned short position) {
 		return path_elements;
 	}
 	path_elements.push_back(first);
-	//log << info << "\tFirst element is " << std::string(first->class_name()) << def << std::endl;
+	//info_chatter(this->log, "\tFirst element is " << std::string(first->class_name()));
 
 	// DEPRECATED but the only operational one
 	if ( router->downstream_elements(first, port, NULL, path_elements) != SUCCESS ) {
-		log << error << "\tError while traversing NF no " << position << " configuration" << def << std::endl;
+		error_chatter(this->log, "\tError while traversing NF no " << position << " configuration");
 		return path_elements;
 	}
-	log << info << "\tNetwork Function is successfully traversed" << def << std::endl;
-	log << info << "\tFound " << path_elements.size() << " elements" << def << std::endl;
+	info_chatter(this->log, "\tNetwork Function is successfully traversed");
+	info_chatter(this->log, "\tFound " << path_elements.size() << " elements");
 
 	//for ( Vector<Element*>::const_iterator i=path_elements.begin(); i!=path_elements.end(); ++i)
-	//	log << info << "\t\tElement Found: " << (*i)->class_name() << def << std::endl;
+	//	info_chatter(this->log, "\t\tElement Found: " << (*i)->class_name());
 
 	return path_elements;
 }

@@ -7,6 +7,10 @@
 #ifndef _SYNTHESIZER_HPP_
 #define _SYNTHESIZER_HPP_
 
+#ifdef HAVE_CONFIG_H
+#include "../../config.h"
+#endif
+
 #include "synth_nat.hpp"
 
 #include "../parser/chain_parser.hpp"
@@ -21,16 +25,16 @@ struct ConsolidatedTc {
 	std::string    m_operation;
 	std::string    m_pattern;
 	std::string    m_chain;
-	unsigned short m_inputPort;
+	unsigned short m_input_port;
 	std::string    m_nat;
 	
 	ConsolidatedTc();
-	ConsolidatedTc(const std::string& nf_of_out_iface, const std::string& out_iface,
-					const std::string& out_iface_conf, const std::string& op,
-					const std::string& chain);
+	ConsolidatedTc(const std::string  &nf_of_out_iface, const std::string &out_iface,
+					const std::string &out_iface_conf,  const std::string &op,
+					const std::string &chain);
 
-	void        add_tc (const TrafficClass& tc, const TrafficClassFormat& tc_format);
-	void        set_nat(std::shared_ptr<SynthesizedNat> nat, unsigned short input_port);
+	void        add_tc (const TrafficClass &tc, const TrafficClassFormat &tc_format);
+	void        set_nat(std::shared_ptr<SynthesizedNAT> nat, unsigned short input_port);
 	std::string get_chain ();
 };
 
@@ -39,7 +43,7 @@ class Synthesizer {
 		/*
 		 * The object that provides the individual NF data structures
 		 */
-		ChainParser* parser;
+		ChainParser *parser;
 
 		/*
 		 * Logger instance
@@ -57,7 +61,7 @@ class Synthesizer {
 		 * A map of output interfaces associated with stateful rewrite operations.
 		 * |--> {IPRewriter --> ToDevice} paths.
 		 */
-		std::unordered_map< std::string, std::shared_ptr<SynthesizedNat> > nat_per_output_iface;
+		std::unordered_map< std::string, std::shared_ptr<SynthesizedNAT> > nat_per_output_iface;
 		/*
 		 * The configuration of these interfaces
 		 */
@@ -103,7 +107,7 @@ class Synthesizer {
 		/*
 		 * Public API for the Parser
 		 */
-		Synthesizer (ChainParser* cp);
+		Synthesizer (ChainParser *cp);
 		~Synthesizer();
 
 		inline ChainParser* get_chain_parser(void) { return this->parser; };
@@ -166,12 +170,11 @@ class Synthesizer {
 		 * Click-DPDK Input element (FromDPDKDevice) to each queue.
 		 */
 		bool allocate_queues_to_cores(
-			std::map <std::string, unsigned short>& nic_desc_to_core,
-			std::map < std::string, std::vector<std::string> >& nic_desc_to_ip_class,
-			std::string& code_buffer,
-			const std::string& nf_and_iface_name,
+			std::map < std::string, unsigned short > &nic_desc_to_core,
+			std::map < std::string, std::vector<std::string> > &nic_desc_to_ip_class,
+			std::string &code_buffer,
 			const unsigned short nic_no,
-			const std::string& ipcl_name
+			const std::string &ipcl_name
 		);
 
 		/*
@@ -179,23 +182,24 @@ class Synthesizer {
 		 * These arguments are maps of nic descriptors to CPU cores.
 		 */
 		bool schedule_core_threads_on_queues(
-			std::map <std::string, unsigned short>& nic_desc_to_core,
-			std::string& code_buffer
+			std::map <std::string, unsigned short> &nic_desc_to_core,
+			std::string &code_buffer
 		);
 
 		/*
 		 * Dump ethtool configuration for the NICs involved in a Hyper-NF.
 		 */
 		bool generate_rss_configuration(
-			std::ofstream **hw_out_file,
+			std::ofstream  **hw_out_file,
 			unsigned short nics_no,
-			std::streambuf* def_cout
+			std::streambuf *def_cout
 		);
 
 		/*
 		 * Interface-specific methods of the final Hyper-NF chain.
 		 */
 		short get_hyper_nf_ifaces_no(void);
+		short is_hyper_nf_iface     (std::string &nf, std::string &iface);
 		void  print_hyper_nf_ifaces (void);
 };
 
@@ -206,11 +210,11 @@ class Synthesizer {
  */
 namespace TrafficBuilder {
 	void traffic_class_builder_dfs(
-		Graph* graph,
-		NF_Map<NFGraph*> nf_chain,
-		unsigned short nf_position,
-		std::shared_ptr<ClickElement>,
-		std::string nf_conf
+		Graph                         *graph,
+		NF_Map<NFGraph*>              nf_chain,
+		unsigned short                nf_position,
+		std::shared_ptr<ClickElement> elem,
+		std::string                   nf_conf
 	);
 }
 

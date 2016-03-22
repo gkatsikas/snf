@@ -91,18 +91,23 @@ AC_MSG_CHECKING([whether to build with debug information])
 # Use --enable-debug=yes to put more verbosity in g++
 AC_ARG_ENABLE(
 	[debug],
-	[AS_HELP_STRING([--enable-debug], [enable debug data generation (def=no)])],
-	[debugit="$enableval"],
-	[debugit=no]
+	AS_HELP_STRING([--enable-debug], [enable debugging (def=no)]),
+	[case "${enableval}" in
+		yes) debug=true ;;
+		no)  debug=false ;;
+		*)   AC_MSG_ERROR([bad value ${enableval} for --enable-debug]) ;;
+	esac],
+	[debug=false]
 )
-AC_MSG_RESULT([$debugit])
+AC_MSG_RESULT([$enableval])
+#AM_CONDITIONAL(DEBUG, test x"$debug" = x"true")
 
-if test x"$debugit" = x"yes"; then
-	AC_DEFINE([DEBUG],[],[Debug Mode])
-	AM_CXXFLAGS="-O0 -g -Wall -std=c++11 -Werror -Wno-uninitialized"
+if test x"$debug" = x"true"; then
+	AC_DEFINE([DEBUG_MODE],[],[Debug Mode])
+	AM_CXXFLAGS="-g -O3 -std=c++11 -pedantic -Wall -Werror -Wno-uninitialized -Wextra"
 else
-	AC_DEFINE([NDEBUG],[],[No-debug Mode])
-	AM_CXXFLAGS="-O3 -Wall -std=c++11 -pedantic -Wextra"
+	#AC_DEFINE([NON_DEBUG_MODE],[],[No-debug Mode])
+	AM_CXXFLAGS="   -O3 -std=c++11 -pedantic -Wall -Werror -Wextra"
 fi
 ################################################################################
 
@@ -172,7 +177,7 @@ fi
 
 CPPFLAGS="$saveflags"
 if test x"$have_click" = x"yes"; then
-	AC_DEFINE([HAVE_CLICK], [], [Define if you have the <click/element.hh> header file.])
+	AC_DEFINE([HAVE_CLICK], [1], [Define if you have the <click/element.hh> header file.])
 else
 	AC_MSG_ERROR([
 ===============================================
@@ -181,6 +186,7 @@ Can't find Click and/or <click/element.hh>
 fi
 
 AC_SUBST(CLICK_PATH)
+AC_DEFINE_UNQUOTED([CLICK_PATH],["${CLICK_PATH}/bin/click"],[Click path])
 AC_SUBST(CLICK_INCLUDES)
 ################################################################################
 
@@ -188,13 +194,16 @@ AC_SUBST(CLICK_INCLUDES)
 ################################################################################
 # DPDK Support
 ################################################################################
-# Use --enable-dpdk=yes to build Hyper-NF with DPDK support
-AC_ARG_ENABLE([dpdk],
-	[AS_HELP_STRING([--enable-dpdk], [use DPDK (def=no)])],
-	[:], [enable_dpdk=no]
-)
 
 AC_MSG_CHECKING([whether to enable DPDK])
+
+# Use --enable-dpdk=yes to build Hyper-NF with DPDK support
+AC_ARG_ENABLE(
+	[dpdk],
+	[AS_HELP_STRING([--enable-dpdk], [use DPDK (def=no)])],
+	[enable_dpdk="$enableval"],
+	[enable_dpdk=no]
+)
 
 # User selected this option, let's check if she gave the correct DPDK paths
 if test x"$enable_dpdk" = x"yes"; then
@@ -224,14 +233,16 @@ Define \$RTE_SDK and \$RTE_TARGET as per DPDK documentation.
 
 	AC_MSG_RESULT([$enable_dpdk])
 
-	[FULL_DPDK_PATH=$RTE_SDK/$RTE_TARGET]
+	[FULL_DPDK_PATH=${RTE_SDK}/${RTE_TARGET}]
 
 	AC_SUBST(RTE_SDK)
 	AC_SUBST(RTE_TARGET)
 	AC_SUBST(RTE_VER_MAJOR, $rte_ver_major)
 	AC_SUBST(RTE_VER_MINOR, $rte_ver_minor)
 	AC_SUBST(FULL_DPDK_PATH)
-	AC_DEFINE([HAVE_DPDK], [], [DPDK is installed])
+	AC_DEFINE([HAVE_DPDK], [1], [DPDK is installed])
+	AC_DEFINE_UNQUOTED([DPDK_HOME_PATH],["$RTE_SDK"],[DPDK Home Path])
+	AC_DEFINE_UNQUOTED([DPDK_SDK_PATH],["$FULL_DPDK_PATH"],[DPDK SDK Path])
 	AC_SUBST(USE_DPDK, yes)
 else
 	AC_MSG_RESULT([no])

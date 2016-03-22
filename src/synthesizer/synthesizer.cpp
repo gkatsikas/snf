@@ -8,7 +8,6 @@
 #include "synthesizer.hpp"
 
 #include "../shared/helpers.hpp"
-
 #include "../traffic_class_builder/click_tree.hpp"
 #include "../traffic_class_builder/output_class.hpp"
 #include "../traffic_class_builder/click_element.hpp"
@@ -20,22 +19,21 @@ ConsolidatedTc::ConsolidatedTc () :
 	m_operation      (),
 	m_pattern        (),
 	m_chain          (),
-	m_inputPort      (256),
-	m_nat            ()
-	{}
+	m_input_port     (256),
+	m_nat            () {}
 
-ConsolidatedTc::ConsolidatedTc (const std::string& nf_of_out_iface, const std::string& out_iface,
-								const std::string& out_iface_conf, const std::string& op,
-								const std::string& chain) :
+ConsolidatedTc::ConsolidatedTc (const std::string &nf_of_out_iface, const std::string &out_iface,
+								const std::string &out_iface_conf,  const std::string &op,
+								const std::string &chain) :
 	m_nf_of_out_iface(nf_of_out_iface),
 	m_out_iface      (out_iface),
 	m_out_iface_conf (out_iface_conf),
 	m_operation      (op),
 	m_chain          (chain),
-	m_inputPort      (256) {}
+	m_input_port     (256) {}
 
 void
-ConsolidatedTc::add_tc (const TrafficClass& tc, const TrafficClassFormat& tc_format) {
+ConsolidatedTc::add_tc (const TrafficClass &tc, const TrafficClassFormat &tc_format) {
 
 	switch (tc_format) {
 
@@ -63,20 +61,20 @@ ConsolidatedTc::add_tc (const TrafficClass& tc, const TrafficClassFormat& tc_for
 }
 
 void
-ConsolidatedTc::set_nat (std::shared_ptr<SynthesizedNat> nat, unsigned short input_port) {
+ConsolidatedTc::set_nat (std::shared_ptr<SynthesizedNAT> nat, unsigned short input_port) {
 	this->m_nat = nat->get_name();
-	this->m_inputPort = input_port;
+	this->m_input_port = input_port;
 }
 
 std::string
 ConsolidatedTc::get_chain() {
-	return this->m_chain + "[" + std::to_string(this->m_inputPort) + "]" + this->m_nat + ";";
+	return this->m_chain + "[" + std::to_string(this->m_input_port) + "]" + this->m_nat + ";";
 }
 
-Synthesizer::Synthesizer(ChainParser* cp) : tc_per_input_iface(), nat_per_output_iface() {
+Synthesizer::Synthesizer(ChainParser *cp) : tc_per_input_iface(), nat_per_output_iface() {
 	this->log.set_logger_file(__FILE__);
 	if ( cp == NULL ) {
-		throw std::runtime_error("Synthesizer: Invalid Parser object");
+		FANCY_BUG(this->log, "Synthesizer: Invalid Parser object");
 	}
 
 	this->parser = cp;
@@ -87,12 +85,12 @@ Synthesizer::Synthesizer(ChainParser* cp) : tc_per_input_iface(), nat_per_output
 		this->parser->get_chain_graph()->get_properties()->has_hardware_classification();
 	this->traffic_classification_format = 
 		 this->parser->get_chain_graph()->get_properties()->get_traffic_classification_format();
-	log << debug << "Synthesizer constructed" << def << std::endl;
+	note_chatter(this->log, "\tSynthesizer constructed");
 }
 
 Synthesizer::~Synthesizer() {
 	delete this->parser;
-	log << debug << "Synthesizer deleted" << def << std::endl;
+	note_chatter(this->log, "\tSynthesizer deleted");
 }
 
 /*
@@ -104,8 +102,8 @@ short
 Synthesizer::build_traffic_classes(void) {
 
 	log << "" << std::endl;
-	log << info << "==============================================================================" << def << std::endl;
-	log << info << "Build Traffic Classes ..." << def << std::endl;
+	info_chatter(this->log, "==============================================================================");
+	info_chatter(this->log, "Build Traffic Classes ...");
 
 	// The output format of a traffic class must 
 	TrafficClassFormat tc_format = this->traffic_classification_format;
@@ -121,7 +119,7 @@ Synthesizer::build_traffic_classes(void) {
 		if ( nf_graph == NULL )
 			return NO_MEM_AVAILABLE;
 
-		log << info << "Network Function: " << cv->get_name() << def << std::endl;
+		info_chatter(this->log, "Network Function: " << cv->get_name());
 
 		// Get all the input entry points of this NF (if any)
 		// From these points, we start building the traffic classes
@@ -130,7 +128,7 @@ Synthesizer::build_traffic_classes(void) {
 			std::string elem_conf = endpoint->get_configuration();
 			std::string interface = elem_conf.substr(0, elem_conf.find(","));
 
-			log << "\t" << elem_name << "(" << interface << ")" << def << std::endl;
+			def_chatter(this->log, "\t" << elem_name << "(" << interface << ")");
 
 			// Go DFS until the end of life
 			std::shared_ptr<ClickElement> ep(new ClickElement(endpoint));
@@ -160,21 +158,34 @@ Synthesizer::build_traffic_classes(void) {
 					std::string snd_key = op_as_str+"\\"+tc.get_output_iface();
 					//std::cout << snd_key << std::endl;
 					if( this->tc_per_input_iface[key].find(snd_key) == this->tc_per_input_iface[key].end() ) {
+
+						std::string nf_of_tc_out_iface = tc.get_nf_of_output_iface();
+						std::string tc_out_iface = tc.get_output_iface();
+
+						unsigned short direction;
+						if ( is_hyper_nf_iface( nf_of_tc_out_iface, tc_out_iface) && (nf_of_tc_out_iface == "NF_1") ) {
+							direction = 0;
+						}
+						else {
+							direction = 1;
+						}
+
 						this->tc_per_input_iface[key][snd_key] = {
-							tc.get_nf_of_output_iface(),
-							tc.get_output_iface(),
+							nf_of_tc_out_iface,
+							tc_out_iface,
 							tc.get_output_iface_conf(),
 							op_as_str,
-							tc.synthesize_chain()};
+							tc.synthesize_chain(direction)
+						};
 					}
 					(this->tc_per_input_iface[key][snd_key]).add_tc(tc, tc_format);
 				}
 			}
 
-			log << "" << def << std::endl;
+			def_chatter(this->log, "");
 		}
 	}
-	log << info << "==============================================================================" << def << std::endl;
+	info_chatter(this->log, "==============================================================================");
 
 	return SUCCESS;
 }
@@ -191,7 +202,7 @@ Synthesizer::synthesize_nat(void) {
 
 			// Create space for the path of elements and the interface's configuration
 			if ( this->nat_per_output_iface.find(out_nf_and_iface) == this->nat_per_output_iface.end()) {
-				this->nat_per_output_iface[out_nf_and_iface] = std::shared_ptr<SynthesizedNat> ( new SynthesizedNat() );
+				this->nat_per_output_iface[out_nf_and_iface] = std::shared_ptr<SynthesizedNAT> ( new SynthesizedNAT() );
 				this->nat_per_output_iface_conf[out_nf_and_iface] = tc.second.m_out_iface_conf;
 			}
 
@@ -202,7 +213,7 @@ Synthesizer::synthesize_nat(void) {
 		}
 	}
 
-	log << "\tSuccessfully synthesized the NF chain" << def << std::endl;
+	def_chatter(this->log, "\tSuccessfully synthesized the NF chain");
 
 	return SUCCESS;
 }
@@ -215,10 +226,20 @@ Synthesizer::get_hyper_nf_ifaces_no(void) {
 	return this->hyper_nf_ifaces.size();
 }
 
+short
+Synthesizer::is_hyper_nf_iface(std::string& nf, std::string& iface) {
+	for (auto& it : this->hyper_nf_ifaces )
+		if ( (it.first == nf) && (it.second == iface) )
+			return true;
+
+	return false;
+}
+
 void
 Synthesizer::print_hyper_nf_ifaces(void) {
-	for (auto& iface : this->hyper_nf_ifaces ) {
-		log << debug << "[Network Function: " << iface.first << ", Iface: " << iface.second << "]" << def << std::endl;
+	for (auto& it : this->hyper_nf_ifaces ) {
+		debug_chatter(this->log, "\t[Network Function: " << it.first << ", Iface: " << it.second << "]");
+		warn_chatter (this->log, "\t[Network Function: " << it.first << ", Iface: " << it.second << "]");
 	}
 }
 
@@ -235,29 +256,33 @@ short
 Synthesizer::generate_equivalent_configuration(bool to_file) {
 
 	//log << "" << std::endl;
-	//log << info << "==============================================================================" << def << std::endl;
-	//log << info << "Hyper-NF Generator ..." << def << std::endl;
-
-	TrafficClassFormat tc_format = this->traffic_classification_format;
+	//info_chatter(this->log, "==============================================================================");
+	//info_chatter(this->log, "Hyper-NF Generator ...");
 
 	if ( this->hw_classification ) {
-		switch (tc_format) {
-			case RSS_Hashing:
-				return this->generate_rss_cloned_pipelines(to_file);
-			case Flow_Director:
-				// return this->generate_flow_director_split_pipelines(to_file);
-			case OpenFlow:
-				// return this->generate_openflow_split_pipelines(to_file);
-			default:
-				throw std::runtime_error("Unimplemented Traffic Class Format: " + tc_to_label(tc_format));
-		}
+		#ifdef HAVE_DPDK
+			TrafficClassFormat tc_format = this->traffic_classification_format;
+
+			switch (tc_format) {
+				case RSS_Hashing:
+					return this->generate_rss_cloned_pipelines(to_file);
+				case Flow_Director:
+					// return this->generate_flow_director_split_pipelines(to_file);
+				case OpenFlow:
+					// return this->generate_openflow_split_pipelines(to_file);
+				default:
+					MISSING_FEATURE(this->log, "Unimplemented Traffic Class Format: " + tc_to_label(tc_format));
+			}
+		#else
+			FANCY_BUG(this->log, "Hardware classification requires DPDK support!");
+		#endif
 	}
 	// Pure software based implementation in Click.
 	else {
 		return this->generate_all_in_soft_configuration(to_file);
 	}
 
-	//log << info << "==============================================================================" << def << std::endl;
+	//info_chatter(this->log, "==============================================================================");
 }
 
 /*
@@ -270,7 +295,7 @@ Synthesizer::generate_all_in_soft_configuration(bool to_file) {
 	std::ofstream  *out_file = NULL;
 	std::streambuf *def_cout = NULL;
 
-	log << "\tAll-in-Software Hyper-NF Generator..." << def << std::endl;
+	def_chatter(this->log, "\tAll-in-Software Hyper-NF Generator...");
 
 	//this->print_hyper_nf_ifaces();
 
@@ -288,17 +313,48 @@ Synthesizer::generate_all_in_soft_configuration(bool to_file) {
 	for (auto &it : this->nat_per_output_iface) {
 
 		std::string out_nf_and_iface = it.first;
+
+		// Extract the NF name and its' interface
+		std::vector<std::string> token = split(out_nf_and_iface, "-");
+		std::string nf    = token[0];
+		std::string iface = token[1];
+
+		// The NAT of this path
 		auto nat = it.second;
+
+		// The configuration parameters of the ToDevice element
 		std::string iface_config = out_nf_and_iface + ", " +
 									this->nat_per_output_iface_conf[out_nf_and_iface];
+
+		// If we meet the interface of the first NF, it means that we go backward
+		// The MAC addresses are set accordingly
+		std::string encap_addresses;
+		if ( nf == "NF_1" ) {
+			encap_addresses = "$macAddr0, $gwMACAddr0";
+		}
+		// If we meet the interface of the last NF, it means that we go forward
+		else {
+			encap_addresses = "$macAddr1, $gwMACAddr1";
+		}
 
 		std::cout 	<< "/** NAT going to: " << out_nf_and_iface << " **/\n";	
 		std::cout 	<< nat->get_name() << " :: IPRewriter(" << nat->compute_conf() 
 					<< "DEC_IP_TTL true, CALC_CHECKSUM true);\n";
-		
-		std::cout 	<< nat->get_name() << "[" << nat->get_outbound_port()
-					<< "] -> EtherEncap(0x0800, $srcMAC, $dstMAC) -> Queue ($queueSize) -> ToDevice ("
-					<< iface_config << ");\n";
+
+		// Be careful, some interfaces that appear here are internal.
+		// These need to be discarded.
+		if ( is_hyper_nf_iface(nf, iface) ) {
+			std::cout 	<< nat->get_name() << "[" << nat->get_outbound_port()
+						<< "] -> EtherEncap(0x0800, " + encap_addresses + ") -> Queue ($queueSize) -> ToDevice ("
+						<< iface_config << ");\n";
+			//std::cout 	<< nat->get_name() << "[" << nat->get_outbound_port()
+			//			<< "] -> StoreEtherAddress($gwMACAddr1, dst) -> ToDPDKDevice ("
+			//			<< dpdk_iface << ", BURST $burst, NDESC $txNdesc, IQUEUE $queueSize, TIMEOUT 0);\n";
+		}
+		else {
+			std::cout 	<< nat->get_name() << "[" << nat->get_outbound_port()
+						<< "] -> Discard ();\n";
+		}
 		
 		// Discarded paths
 		for(unsigned short i=0; i<nat->get_outbound_port(); i++) {
@@ -325,6 +381,10 @@ Synthesizer::generate_all_in_soft_configuration(bool to_file) {
 		for (size_t i = 0; i<chains.size(); i++) {
 			std::cout << ipc_name + "[" << i << "] -> " << chains[i] << "\n";
 		}
+
+		//std::cout << "FromDevice (" << it.first << ") -> MarkIPHeader(OFFSET 14) -> " + ipc_name + ";\n";	
+		//std::cout << "FromDevice (" << it.first << ") -> Strip(14) -> MarkIPHeader() -> IPPrint(LENGTH true, TTL true) -> " + ipc_name + ";\n";
+		//std::cout << "FromDevice (" << it.first << ") -> MarkIPHeader(OFFSET 14) -> " + ipc_name + ";\n";
 		std::cout << "FromDevice (" << it.first << ") -> Strip(14) -> MarkIPHeader() -> " + ipc_name + ";\n";
 		i++;
 	}
@@ -336,8 +396,8 @@ Synthesizer::generate_all_in_soft_configuration(bool to_file) {
 		delete out_file;
 	}
 
-	log << "\tSuccessfully generated the NF chain synthesis to: \n" << 
-		"\t\t\t\t\t\t\t|--> " << this->soft_configuration_filename << def << std::endl;
+	def_chatter(this->log,	"\tSuccessfully generated the NF chain synthesis to: \n" << 
+							"\t\t\t\t\t\t\t|--> " << this->soft_configuration_filename);
 
 	return SUCCESS;
 }
@@ -365,16 +425,16 @@ Synthesizer::generate_rss_cloned_pipelines(bool to_file) {
 	std::streambuf *def_cout = NULL;
 	std::string all_out_files;
 
-	log << "\tHardware-assisted, multi-core Hyper-NF Generator..." << def << std::endl;
+	def_chatter(this->log, "\tHardware-assisted, multi-core Hyper-NF Generator...");
 
-	//this->print_hyper_nf_ifaces();
+	this->print_hyper_nf_ifaces();
 
 	// The generated Click configuration will be written to a file
 	if ( to_file ) {
 
 		// Output file to host our synthesized Click-DPDK chain
 		soft_out_file = new std::ofstream(this->soft_configuration_filename);
-		all_out_files = "\t\t\t\t\t\t\t|--> " + this->soft_configuration_filename + "\n";
+		all_out_files = "\t\t\t\t\t\t\t\t|--> " + this->soft_configuration_filename + "\n";
 
 		// Output files (one per interface) to host the RSS commands of each Hyper-NF interface.
 		/*hard_out_file = new std::ofstream*[nic_classifiers_no];
@@ -389,7 +449,7 @@ Synthesizer::generate_rss_cloned_pipelines(bool to_file) {
 			//std::cout << this->hrdw_configuration_per_nic[comb_key] << std::endl;
 
 			hard_out_file[i] = new std::ofstream(this->hrdw_configuration_per_nic[comb_key]);
-			all_out_files += "\t\t\t\t\t\t\t|--> " + this->hrdw_configuration_per_nic[comb_key] + "\n";
+			all_out_files += "\t\t\t\t\t\t\t\t|--> " + this->hrdw_configuration_per_nic[comb_key] + "\n";
 			i++;
 		}*/
 
@@ -410,17 +470,47 @@ Synthesizer::generate_rss_cloned_pipelines(bool to_file) {
 	for (auto &it : this->nat_per_output_iface) {
 
 		std::string out_nf_and_iface = it.first;
+
+		// Extract the NF name and its' interface
+		std::vector<std::string> token = split(out_nf_and_iface, "-");
+		std::string nf    = token[0];
+		std::string iface = token[1];
+
+		// The NAT of this path
 		auto nat = it.second;
 
-		// Be careful, some interfaces that appear here are internal.
-		// These need to be discarded.
+		// If we meet the interface of the first NF, it means that we go backward
+		// The MAC addresses are set accordingly
+		unsigned short dpdk_iface;
+		std::string encap_addresses;
+		if ( nf == "NF_1" ) {
+			dpdk_iface = 0;
+			encap_addresses = "$macAddr0, $gwMACAddr0";
+		}
+		// If we meet the interface of the last NF, it means that we go forward
+		else {
+			dpdk_iface = 1;
+			encap_addresses = "$macAddr1, $gwMACAddr1";
+		}
 
 		std::cout 	<< "/** NAT going to: " << out_nf_and_iface << " **/\n";
 		std::cout 	<< nat->get_name() << " :: IPRewriter(" << nat->compute_conf() 
 					<< "DEC_IP_TTL true, CALC_CHECKSUM true);\n";
-		std::cout 	<< nat->get_name() << "[" << nat->get_outbound_port()
-					<< "] -> EtherEncap(0x0800, $srcMAC, $dstMAC) -> ToDPDKDevice ("
-					<< out_nf_and_iface << ");\n";
+
+		// Be careful, some interfaces that appear here are internal.
+		// These need to be discarded.
+		if ( is_hyper_nf_iface(nf, iface) ) {
+			std::cout 	<< nat->get_name() << "[" << nat->get_outbound_port()
+						<< "] -> EtherEncap(0x0800, " + encap_addresses + ") -> ToDPDKDevice ("
+						<< dpdk_iface << ", BURST $burst, NDESC $txNdesc, IQUEUE $queueSize, TIMEOUT 0);\n";
+			//std::cout 	<< nat->get_name() << "[" << nat->get_outbound_port()
+			//			<< "] -> StoreEtherAddress($gwMACAddr1, dst) -> ToDPDKDevice ("
+			//			<< dpdk_iface << ", BURST $burst, NDESC $txNdesc, IQUEUE $queueSize, TIMEOUT 0);\n";
+		}
+		else {
+			std::cout 	<< nat->get_name() << "[" << nat->get_outbound_port()
+						<< "] -> Discard ();\n";
+		}
 
 		// Discarded paths
 		for(unsigned short i=0; i<nat->get_outbound_port(); i++) {
@@ -431,6 +521,7 @@ Synthesizer::generate_rss_cloned_pipelines(bool to_file) {
 	}
 
 	unsigned short i = 0;
+
 	// A map between a nic queue's descriptor and a CPU core to handle its packets.
 	std::map <std::string, unsigned short> nic_desc_to_core;
 	std::map < std::string, std::vector<std::string> > nic_desc_to_ip_class;
@@ -456,7 +547,7 @@ Synthesizer::generate_rss_cloned_pipelines(bool to_file) {
 		// Multiple FromDPDKDevice
 		if ( !this->allocate_queues_to_cores(
 				nic_desc_to_core, nic_desc_to_ip_class,
-				code_buffer, it.first, i, ipc_name) ) {
+				code_buffer, i, ipc_name) ) {
 			return FAILURE;
 		}
 		i++;
@@ -477,7 +568,10 @@ Synthesizer::generate_rss_cloned_pipelines(bool to_file) {
 	for (auto& it : nic_desc_to_ip_class) {
 		// Implode the vector into a large string
 		for (auto fd : it.second) {
-			std::cout << fd << " -> Strip(14) -> MarkIPHeader() -> " << it.first << ";\n";	
+			//std::cout << fd << " -> MarkIPHeader(OFFSET 14) -> " << it.first << ";\n";	
+			//std::cout << fd << " -> Strip(14) -> MarkIPHeader() -> IPPrint(" + fd + ") -> " << it.first << ";\n";
+			std::cout << fd << " -> Strip(14) -> MarkIPHeader() -> PushNull() -> " << it.first << ";\n";
+			//std::cout << fd << " -> Strip(14) -> MarkIPHeader() -> " << it.first << ";\n";
 		}
 		std::cout << std::endl;	
 	}
@@ -502,7 +596,7 @@ Synthesizer::generate_rss_cloned_pipelines(bool to_file) {
 		//hard_out_file = NULL;
 	}
 
-	log << "\tSuccessfully generated the NF chain synthesis to: \n" << all_out_files << def << std::endl;
+	def_chatter(this->log, "\tSuccessfully generated the NF chain synthesis to: \n" << all_out_files);
 
 	return SUCCESS;
 }
@@ -531,7 +625,7 @@ Synthesizer::generate_flow_director_split_pipelines(bool to_file) {
 		//delete hard_out_file;
 	}
 
-	log << error << "Flow Director traffic class generator not implemented" << def << std::endl;
+	MISSING_FEATURE(this->log, "Flow Director traffic class generator not implemented");
 	return SUCCESS;
 }
 
@@ -559,7 +653,7 @@ Synthesizer::generate_openflow_split_pipelines (bool to_file) {
 		//delete hard_out_file;
 	}
 
-	log << error << "OpenFlow traffic class generator not implemented" << def << std::endl;
+	MISSING_FEATURE(this->log, "OpenFlow traffic class generator not implemented");
 	return SUCCESS;
 }
 
@@ -574,9 +668,8 @@ Synthesizer::generate_openflow_split_pipelines (bool to_file) {
 bool
 Synthesizer::allocate_queues_to_cores(
 		std::map <std::string, unsigned short> &nic_desc_to_core,
-		std::map < std::string, std::vector<std::string>>& nic_desc_to_ip_class,
-		std::string& code_buffer, const std::string& nf_and_iface_name,
-		const unsigned short nic_no, const std::string& ipcl_name) {
+		std::map < std::string, std::vector<std::string>> &nic_desc_to_ip_class,
+		std::string &code_buffer, const unsigned short nic_no, const std::string &ipcl_name) {
 
 	unsigned short i = 0, core_no = 0;
 	unsigned short rss_queues   = this->parser->get_chain_graph()->get_properties()->get_nic_hw_queues_no();
@@ -586,18 +679,22 @@ Synthesizer::allocate_queues_to_cores(
 	// NIC 0 -> Socket 0, NIC 1 -> Socket 1, NIC 2 -> Socket 0, ...
 	bool even_cores = ( nic_no%2 == 0 )? true:false;
 
-	std::string input_nic_desc = "fd_nic_" + std::to_string(nic_no) +"q_";
-
 	// We start from the appropriate core (and socket)
 	core_no = (even_cores) ? 0:1;
+	// FIXME
+	core_no = 0;
+
+	// Each FromDPDKDevice has a name that indicates the interface and queue number.
+	std::string input_nic_desc = "fd_nic_" + std::to_string(nic_no) +"q_";
 
 	std::vector<std::string> nic_descs;
 
 	// For each queue of this NIC
 	for (i=0 ; i<rss_queues ; i++) {
 		// Define a Click-DPDK input element per queue per NIC
-		code_buffer += input_nic_desc + std::to_string(i) + " :: FromDPDKDevice ("
-					+ nf_and_iface_name + ", " + std::to_string(i) + ");\n";
+		code_buffer += input_nic_desc + std::to_string(i) + 
+					" :: FromDPDKDevice (" + std::to_string(nic_no) + ", QUEUE " + std::to_string(i) + 
+					", BURST $burst, NDESC $rxNdesc);\n";
 
 		// Append the vector of descriptors that will be assigned to this IPClassifier
 		nic_descs.push_back(input_nic_desc + std::to_string(i));
@@ -618,18 +715,18 @@ Synthesizer::allocate_queues_to_cores(
  * These arguments are maps of nic descriptors to CPU cores.
  */
 bool
-Synthesizer::schedule_core_threads_on_queues(std::map <std::string, unsigned short>& nic_desc_to_core, 
-		std::string& code_buffer) {
+Synthesizer::schedule_core_threads_on_queues(std::map <std::string, unsigned short> &nic_desc_to_core, 
+												std::string &code_buffer) {
 
 	unsigned short i = 0;
 
-	std::cout << "StaticThreadSched(";
+	std::cout << "StaticThreadSched(\n";
 	for (auto& it : nic_desc_to_core) {
 		if ( i == nic_desc_to_core.size()-1 ) {
-			code_buffer += it.first + " " + std::to_string(it.second) + ");";	
+			code_buffer += "\t" + it.first + " " + std::to_string(it.second) + "\n);";
 		}
 		else {
-			code_buffer += it.first + " " + std::to_string(it.second) + ", ";
+			code_buffer += "\t" + it.first + " " + std::to_string(it.second) + ", \n";
 		}
 		i++;
 	}
@@ -644,7 +741,7 @@ Synthesizer::schedule_core_threads_on_queues(std::map <std::string, unsigned sho
 bool
 Synthesizer::generate_rss_configuration(std::ofstream **hw_out_file,
 										unsigned short nics_no,
-										std::streambuf* def_cout) {
+										std::streambuf *def_cout) {
 
 	for (unsigned short i = 0 ; i < nics_no ; i++) {
 		// Move cout to the files where we write the hardware configuration
@@ -654,113 +751,6 @@ Synthesizer::generate_rss_configuration(std::ofstream **hw_out_file,
 
 	(void)def_cout;
 	return true;
-}
-
-/*
- * Recursive DFS function to visit all vertices from 'vertex'.
- * The vertices can also belong to different graph, so in reality,
- * this is a recursive graph composition function.
- */
-void
-TrafficBuilder::traffic_class_builder_dfs(
-	Graph* graph,
-	NF_Map<NFGraph*> nf_chain,
-	unsigned short nf_position,
-	std::shared_ptr<ClickElement> elem,
-	std::string nf_iface) {
-
-	Logger log(__FILE__);
-	ElementVertex* nf_vertex = elem->get_ev();
-
-	// Retrieve the appropriate adjacency list
-	Graph::AdjacencyList adjacency_list = nf_chain[nf_position]->get_adjacency_list();
-
-	// We reached an Output vertex and need to find for a connection with a following NF
-	if ( adjacency_list.at(nf_vertex).size() == 0 ) {
-		// We are looking for an endpoint Outpout element with different configuration (aka interface)
-		// Otherwise a loop will be created
-		if ( (nf_vertex->is_endpoint()) && (nf_vertex->get_interface() != nf_iface) ) {
-			log << "\t\t ----->  ENDPOINT " << nf_vertex->get_name() << "(" << nf_vertex->get_interface() << ")" << def << std::endl;
-			return;
-		}
-		// A way to continue in the chain
-		else if ( (!nf_vertex->is_endpoint()) && (nf_vertex->get_interface() != nf_iface) ) {
-			// Give me the 'good' paths
-			if ( (nf_vertex->get_class() != "Discard") ) {
-				unsigned short next_nf_position = nf_vertex->get_glue_nf_position();
-				std::string next_nf_iface = nf_vertex->get_glue_iface();
-
-				log << "\t\t -----> JUMP FROM " << nf_vertex->get_name() << "(" << nf_vertex->get_interface() << ")" << def << std::endl;
-				//log << "\t\t -----> Next Pos: " << next_nf_position << " at iface " << next_nf_iface << def << std::endl;
-
-				// Change context, move to next graph
-				// 1. Change adjacency list
-				adjacency_list = nf_chain[next_nf_position]->get_adjacency_list();
-
-				// 2. Change vertex pointer to the first element of the next NF
-				bool found = false;
-				for ( ElementVertex* input_elem : nf_chain[next_nf_position]->get_vertices_by_stage(VertexType::Input) ) {
-					if ( input_elem->get_interface() == next_nf_iface ) {
-						nf_vertex = input_elem;
-						found = true;
-						log << "\t\t ----->        TO " << nf_vertex->get_class() <<  "(" << nf_vertex->get_interface() << ")" << def << std::endl;
-						break;
-					}
-				}
-
-				if ( !found ) {
-					log << error << "\t\t Unable to find next jump " << def << std::endl;
-				}
-
-				// 3. Change origin interface using the interface of the new vertex
-				nf_iface = next_nf_iface;
-
-				// 4. Change NF postion in the Chain DAG
-				nf_position = next_nf_position;
-			}
-			// A path that leads to the cliff
-			else {
-				log << "\t\t ----->      DROP " << nf_vertex->get_name() << "(" << nf_vertex->get_interface() << ")" << def << std::endl;
-			}
-		}
-		// Do not chain because a loop will be created
-		else if ( nf_vertex->get_interface() == nf_iface ) {
-			log << "\t\t ----->      LOOP " << nf_vertex->get_name() << "(" << nf_vertex->get_interface() << ")" << def << std::endl;
-			return;
-		}
-		else {
-			log << "\t\t ----->       BUG " << nf_vertex->get_name() << "(" << nf_vertex->get_interface() << ")" << def << std::endl;
-			return;
-		}
-	}
-
-	int count = 0;
-	for ( auto& neighbour : adjacency_list.at(nf_vertex) ) {
-
-		// A way to get an IPMapper's patterns when you encounter IPRewriter
-		/*ElementVertex* ev = (ElementVertex*) neighbour.second;
-		if ( ev->get_name() == std::string("IPRewriter") ) {
-			log << warn << "\t\tFound: " << ev->get_name() << def << std::endl;
-			log << warn << "\t\t\t with conf: " << ev->get_configuration() << def << std::endl;
-			for (auto& pair : *(ev->get_implicit_configuration()) ) {
-				log << warn << "\t\t\t Port: " << pair.first << " maps to patterns: " << def << std::endl;
-				for (auto& pattern : pair.second ) {
-					log << warn << "\t\t\t    " << pattern << def << std::endl;
-				}
-			}
-		}*/
-
-		std::shared_ptr<ClickElement> child(
-			new ClickElement( static_cast<ElementVertex*> (neighbour.second), neighbour.first )
-		);
-		child->set_nfName( static_cast<ChainVertex*> (graph->get_vertex_by_position(nf_position))->get_name() );
-		elem->set_child(child, count++);
-		//log<< "\t\tCreated: "+child->to_str()<<std::endl;
-		//log << "\t\t Child: " << ev->get_name() << def << std::endl;
-
-		// Unvisited node --> recursion
-		traffic_class_builder_dfs(graph, nf_chain, nf_position, child, nf_iface);
-	}
 }
 
 void
@@ -794,5 +784,110 @@ Synthesizer::test_traffic_class_builder(void) {
 
 	for (auto &it : tree.get_traffic_classes()) {
 		std::cout<<it.to_str();
+	}
+}
+
+/*
+ * Recursive DFS function to visit all vertices from 'vertex'.
+ * The vertices can also belong to different graph, so in reality,
+ * this is a recursive graph composition function.
+ */
+void
+TrafficBuilder::traffic_class_builder_dfs(
+	Graph                         *graph,
+	NF_Map<NFGraph*>              nf_chain,
+	unsigned short                nf_position,
+	std::shared_ptr<ClickElement> elem,
+	std::string                   nf_iface) {
+
+	Logger log(__FILE__);
+	ElementVertex *nf_vertex = elem->get_ev();
+
+	// Retrieve the appropriate adjacency list
+	Graph::AdjacencyList adjacency_list = nf_chain[nf_position]->get_adjacency_list();
+
+	// We reached an Output vertex and need to find for a connection with a following NF
+	if ( adjacency_list.at(nf_vertex).size() == 0 ) {
+		// We are looking for an endpoint Outpout element with different configuration (aka interface)
+		// Otherwise a loop will be created
+		if ( (nf_vertex->is_endpoint()) && (nf_vertex->get_interface() != nf_iface) ) {
+			def_chatter(log, "\t\t ----->  ENDPOINT " << nf_vertex->get_name() << "(" << nf_vertex->get_interface() << ")");
+			return;
+		}
+		// A way to continue in the chain
+		else if ( (!nf_vertex->is_endpoint()) && (nf_vertex->get_interface() != nf_iface) ) {
+			// Give me the 'good' paths
+			if ( (nf_vertex->get_class() != "Discard") ) {
+				unsigned short next_nf_position = nf_vertex->get_glue_nf_position();
+				std::string next_nf_iface = nf_vertex->get_glue_iface();
+
+				def_chatter(log, "\t\t -----> JUMP FROM " << nf_vertex->get_name() << "(" << nf_vertex->get_interface() << ")");
+				//log << "\t\t -----> Next Pos: " << next_nf_position << " at iface " << next_nf_iface << def << std::endl;
+
+				// Change context, move to next graph
+				// 1. Change adjacency list
+				adjacency_list = nf_chain[next_nf_position]->get_adjacency_list();
+
+				// 2. Change vertex pointer to the first element of the next NF
+				bool found = false;
+				for ( ElementVertex* input_elem : nf_chain[next_nf_position]->get_vertices_by_stage(VertexType::Input) ) {
+					if ( input_elem->get_interface() == next_nf_iface ) {
+						nf_vertex = input_elem;
+						found = true;
+						def_chatter(log, "\t\t ----->        TO " << nf_vertex->get_class() <<  "(" << nf_vertex->get_interface() << ")");
+						break;
+					}
+				}
+
+				if ( !found ) {
+					error_chatter(log, "\t\t Unable to find next jump ");
+				}
+
+				// 3. Change origin interface using the interface of the new vertex
+				nf_iface = next_nf_iface;
+
+				// 4. Change NF postion in the Chain DAG
+				nf_position = next_nf_position;
+			}
+			// A path that leads to the cliff
+			else {
+				def_chatter(log, "\t\t ----->      DROP " << nf_vertex->get_name() << "(" << nf_vertex->get_interface() << ")");
+			}
+		}
+		// Do not chain because a loop will be created
+		else if ( nf_vertex->get_interface() == nf_iface ) {
+			def_chatter(log, "\t\t ----->      LOOP " << nf_vertex->get_name() << "(" << nf_vertex->get_interface() << ")");
+			return;
+		}
+		else {
+			def_chatter(log, "\t\t ----->       BUG " << nf_vertex->get_name() << "(" << nf_vertex->get_interface() << ")");
+			return;
+		}
+	}
+
+	int count = 0;
+	for ( auto& neighbour : adjacency_list.at(nf_vertex) ) {
+
+		// A way to get an IPMapper's patterns when you encounter IPRewriter
+		/*ElementVertex* ev = (ElementVertex*) neighbour.second;
+		if ( ev->get_name() == std::string("IPRewriter") ) {
+			log << warn << "\t\tFound: " << ev->get_name() << def << std::endl;
+			log << warn << "\t\t\t with conf: " << ev->get_configuration() << def << std::endl;
+			for (auto& pair : *(ev->get_implicit_configuration()) ) {
+				log << warn << "\t\t\t Port: " << pair.first << " maps to patterns: " << def << std::endl;
+				for (auto& pattern : pair.second ) {
+					log << warn << "\t\t\t    " << pattern << def << std::endl;
+				}
+			}
+		}*/
+
+		std::shared_ptr<ClickElement> child(
+			new ClickElement( static_cast<ElementVertex*> (neighbour.second), neighbour.first )
+		);
+		child->set_nf_name( static_cast<ChainVertex*> (graph->get_vertex_by_position(nf_position))->get_name() );
+		elem->set_child(child, count++);
+
+		// Unvisited node --> recursion
+		traffic_class_builder_dfs(graph, nf_chain, nf_position, child, nf_iface);
 	}
 }

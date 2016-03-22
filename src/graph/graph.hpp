@@ -53,26 +53,26 @@ class Graph
 		/*
 		 * Setters & Getters
 		 */
-		bool                   is_leaf      (Vertex* u);
-		bool                   is_empty     (void);
-		bool                   contains     (unsigned short pos);
-		bool                   vertex_exists(Vertex* u);
+		bool                   is_leaf           (Vertex *u)                 const;
+		bool                   is_empty          (void)                      const;
+		bool                   contains          (const unsigned short &pos) const;
+		bool                   vertex_exists     (Vertex *u)                 const;
 
-		void                   add_vertex(Vertex* u);
-		void                   add_edge  (Vertex* u, Vertex* v, unsigned short input_port_v);
+		void                   add_vertex        (Vertex *u);
+		void                   add_edge          (Vertex *u, Vertex *v, const unsigned short &input_port_v);
 
-		void                   find_in_degrees(void);
-		int                    get_in_degree  (Vertex* u);
-		VertexMap<int>         get_in_degrees (void);
+		void                   find_in_degrees   (void);
+		int                    get_in_degree     (Vertex *u);
+		const VertexMap<int>   get_in_degrees    (void);
 
-		unsigned short         get_vertices_no   (void);
-		const AdjacencyList    get_adjacency_list(void) const;
+		unsigned short         get_vertices_no   (void)   const;
+		const AdjacencyList    get_adjacency_list(void)   const;
 
 
-		Vertex* get_vertex_by_name(std::string& name);
-		Vertex* get_vertex_by_position(unsigned short pos);
-		std::vector<Vertex*> get_vertex_children(Vertex* u);
-		std::vector<std::pair<unsigned short, Vertex*>> get_vertex_children_and_ports(Vertex* u);
+		Vertex*                get_vertex_by_name    (const std::string   &name) const;
+		Vertex*                get_vertex_by_position(const unsigned short &pos) const;
+		std::vector<Vertex*>   get_vertex_children   (Vertex *u)                 const;
+		std::vector<std::pair<unsigned short, Vertex*>> get_vertex_children_and_ports(Vertex *u) const ;
 
 		/*
 		 * Printouts
@@ -90,14 +90,14 @@ class Graph
 };
 
 /*
- * Recursive DFS function to visit all vertices.
+ * Recursive DFS function to visit all vertices from 'vertex'.
  */
 void dfs(
-	Vertex* vertex,
-	Colour& colour,
-	const Graph::AdjacencyList& adjacency_list,
-	Graph::VertexMap<Colour>& visited,
-	std::vector<Vertex*>& sorted
+	Vertex                    *vertex,
+	Colour                     &colour,
+	const Graph::AdjacencyList &adjacency_list,
+	Graph::VertexMap<Colour>   &visited,
+	std::vector<Vertex*>       &sorted
 );
 
 #endif

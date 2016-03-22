@@ -38,7 +38,7 @@ split(const std::string &s, const std::string& delim) {
 }
 
 std::string
-vector_to_str(const std::vector<std::string>& vec, const std::string& delim) {
+vector_to_str(const std::vector<std::string> &vec, const std::string &delim) {
 	std::string res;
 	unsigned short i = 0;
 	for (const auto &piece : vec) {
@@ -144,7 +144,7 @@ ntoa (uint32_t address) {
  * Initialize and return(by ref) the allocated buffer or return NULL.
  */
 short int
-allocateMemory(void** memoryBuffer, size_t size) {
+allocateMemory(void **memoryBuffer, size_t size) {
 	if ( *memoryBuffer != NULL )
 		free(*memoryBuffer);
 
@@ -162,7 +162,7 @@ allocateMemory(void** memoryBuffer, size_t size) {
  * Free the space of a buffer if not already done
  */
 short int
-releaseMemory(void** memoryBuffer) {
+releaseMemory(void **memoryBuffer) {
 	if ( *memoryBuffer != NULL )
 	{
 		free(*memoryBuffer);
@@ -177,7 +177,7 @@ releaseMemory(void** memoryBuffer) {
  * Extract numbers from strings
  */
 const std::string
-get_number_from_string(std::string const& str) {
+get_number_from_string(std::string const &str) {
 	std::size_t const n = str.find_first_of("0123456789");
 	if ( n != std::string::npos ) {
 		std::size_t const m = str.find_first_not_of("0123456789", n);
@@ -200,7 +200,7 @@ bool_to_str(const bool b) {
  * Convert a string to boolean
  */
 bool
-str_to_bool(const std::string& s) {
+str_to_bool(const std::string &s) {
 	bool b;
 	std::istringstream(s) >> std::boolalpha >> b;
 	return b;
@@ -210,7 +210,7 @@ str_to_bool(const std::string& s) {
  * Check if directory exists
  */
 bool
-directory_exists(const std::string& dir_path) {
+directory_exists(const std::string &dir_path) {
 	struct stat info;
 	return ( (stat(dir_path.c_str(), &info) == 0) && (info.st_mode & S_IFDIR) );
 }
@@ -219,7 +219,7 @@ directory_exists(const std::string& dir_path) {
  * Create a directory
  */
 bool
-create_directory(const std::string& dir_path) {
+create_directory(const std::string &dir_path) {
 	mode_t mode = 0700;
 	return ( mkdir(dir_path.c_str(), mode) == 0 );
 }
@@ -228,7 +228,7 @@ create_directory(const std::string& dir_path) {
  * Check if file exists
  */
 bool
-file_exists(const std::string& file_path) {
+file_exists(const std::string &file_path) {
 	struct stat buffer;
 	return ( stat(file_path.c_str(), &buffer) == 0 ); 
 }
@@ -237,7 +237,7 @@ file_exists(const std::string& file_path) {
  * Get file extension
  */
 const std::string
-get_string_extension(const std::string& str, const char delim) {
+get_string_extension(const std::string &str, const char delim) {
 	if( str.find_last_of(delim) != std::string::npos )
 		return str.substr(str.find_last_of(delim) + 1);
 	return std::string("");
@@ -247,7 +247,7 @@ get_string_extension(const std::string& str, const char delim) {
  * Get the substring before a pattern
  */
 const std::string
-get_substr_before(const std::string& str, const std::string& pattern) {
+get_substr_before(const std::string &str, const std::string &pattern) {
 	std::size_t found = str.find(pattern);
 	if ( found != std::string::npos ) {
 		return str.substr(0, found);

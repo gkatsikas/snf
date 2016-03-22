@@ -23,24 +23,24 @@ class ParserConfiguration : public GenericConfiguration {
 		/*
 		 * A Directed Acyclic Graph of chained NFs
 		 */
-		Graph* nf_chain;
+		Graph *nf_chain;
 
 		/*
 		 * Another DAG that shows how the NF chain is connected to several domains
 		 */
-		Graph* nf_domains;
+		Graph *nf_domains;
 
 
 		/*
 		 * A set of useful properties that will define and drive the synthesis outcome.
 		 */
-		Properties* properties;
+		Properties *properties;
 
 	public:
 		/*
 		 * Constructor that loads the property file by calling the super class
 		 */
-		ParserConfiguration(const std::string& config_file);
+		ParserConfiguration (const std::string &config_file);
 		~ParserConfiguration();
 
 		/*
@@ -53,7 +53,7 @@ class ParserConfiguration : public GenericConfiguration {
 		/*
 		 * Implements load_property_file (abstract method in the super class)
 		 */
-		short load_property_file(void);
+		short load_property_file (void);
 
 	private:
 		/*
@@ -64,12 +64,12 @@ class ParserConfiguration : public GenericConfiguration {
 		/*
 		 * Parse the internal NF chain connections
 		 */
-		short parse_topology(const std::string& nf_topo);
+		short parse_topology(const std::string &nf_topo);
 
 		/*
 		 * Parse the external NF chain connections with various domains
 		 */
-		short parse_domains(const std::string& nf_domains);
+		short parse_domains(const std::string &nf_domains);
 
 		/*
 		 * Check whether the formulated graph of the chain is acyclic
@@ -79,7 +79,7 @@ class ParserConfiguration : public GenericConfiguration {
 		/*
 		 * Print error messages regarding the property file
 		 */
-		void usage(const std::string& message, const std::string& usage);
+		void usage(const std::string &message, const std::string &usage);
 
 		/*
 		 * Print the loaded configuration

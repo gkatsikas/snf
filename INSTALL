@@ -33,18 +33,17 @@ Example:
 			RTE_SDK=/opt/dpdk/ \
 			RTE_TARGET=x86_64-native-linuxapp-gcc \
 			--with-click=/opt/click-dpdk/ \
-			--enable-dpdk=yes
+			--enable-dpdk=yes --enable-debug=yes
 
 INSTALLING
 ---------
 After `configure` stay at the Hyper-NF source directory and run
 	out_bin=<your preferred destination for the Hyper-NF binaries, libraries, headers>
-	DESTDIR="$out_bin" make install
+	DESTDIR="$out_bin" make install -j <cpu-cores-no>
 	find "$out_bin"
 
 Example:
-	out_bin="$(pwd)/bin"
-	DESTDIR="$out_bin" make install
+	out_bin="$(pwd)/bin" && DESTDIR="$out_bin" make install -j 16
 	find "$out_bin"
 
 UN-INSTALLING
@@ -55,8 +54,7 @@ To un-install Hyper-NF change to the Hyper-NF source directory and run
 	find "$out_bin"
 
 Example:
-	out_bin="$(pwd)/bin"
-	DESTDIR="$out_bin" make uninstall
+	out_bin="$(pwd)/bin" && DESTDIR="$out_bin" make uninstall
 	find "$out_bin"
 
 CLEANING

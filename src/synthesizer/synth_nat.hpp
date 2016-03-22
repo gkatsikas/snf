@@ -14,19 +14,24 @@
 
 struct ConsolidatedTc;
 
-class SynthesizedNat {
+class SynthesizedNAT {
 
 	public:
-		SynthesizedNat();
+		SynthesizedNAT();
 	
 		//Returns the input port on which to connect
-		unsigned short add_traffic_class (const struct ConsolidatedTc& tc, const std::string& src_iface);
-		std::string    compute_conf();
+		unsigned short add_traffic_class (const struct ConsolidatedTc &tc, const std::string &src_iface);
+		std::string    compute_conf      (void);
 
-		std::string    get_name () const;
-		unsigned short get_outbound_port () const;
+		std::string    get_name          (void) const;
+		unsigned short get_outbound_port (void) const;
 
 	private:
+		/*
+		 * Logger instance
+		 */
+		Logger log;
+		
 		static int count;
 
 		std::string              m_name;
@@ -34,13 +39,13 @@ class SynthesizedNat {
 
 		unsigned short           m_outbound_port;
 
-		//One entry = one line = one input port
+		// One entry = one line = one input port
 		std::vector<std::string> m_input_port_to_iface;
 		std::vector<std::string> m_output_port_to_iface;
 		std::unordered_map<std::string,unsigned short> m_iface_to_output_port;
 
-		//Returns the part of the pattern that sets the rewriting up
-		std::string conf_line_from_operation (Operation& op);
+		// Returns the part of the pattern that sets the rewriting up
+		std::string conf_line_from_operation (Operation &op);
 };
 
 #endif

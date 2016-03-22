@@ -49,35 +49,35 @@ class ElementVertex : public Vertex
 		std::unordered_map<short, std::vector<std::string>> implicit_configuration;
 
 	public:
-		ElementVertex(Element* element, std::string name, unsigned short pos);
+		ElementVertex (Element *element, const std::string &name, const unsigned short &pos);
 		~ElementVertex() {};
-		ElementVertex& operator=(ElementVertex& ev);
+		ElementVertex& operator=(ElementVertex &ev);
 
 		/*
 		 * Setters
 		 */
-		void set_endpoint  (bool ep);
-		void set_glue_info (unsigned short next_nf_pos, std::string next_nf_iface);
-		void set_implicit_configuration(const short port, const std::vector<std::string>& implicit_conf);
+		void set_endpoint              (const bool &ep);
+		void set_glue_info             (const unsigned short &next_nf_pos, const std::string &next_nf_iface);
+		void set_implicit_configuration(const short &port, const std::vector<std::string> &implicit_conf);
 
 		/*
 		 * Getters
 		 */
-		bool is_endpoint (void);
+		bool is_endpoint (void) const;
 
-		const std::string get_class (void);
-		const std::string get_interface (void);
-		const std::string get_configuration(void);
-		const std::shared_ptr<Element> get_click_element(void);
+		const std::string              get_class         (void) const;
+		const std::string              get_interface     (void) const;
+		const std::string              get_configuration (void) const;
+		const std::shared_ptr<Element> get_click_element (void) const;
 		std::unordered_map<short, std::vector<std::string>>* get_implicit_configuration(void);
 
-		inline std::string    get_glue_iface      (void) { return this->glue.second; };
-		inline unsigned short get_glue_nf_position(void) { return this->glue.first;  };
+		inline std::string    get_glue_iface      (void) const { return this->glue.second; };
+		inline unsigned short get_glue_nf_position(void) const { return this->glue.first;  };
 
 		/*
 		 * Debugging
 		 */
-		void print_info(void);
+		void print_info (void);
 };
 
 class NFGraph : public Graph
@@ -86,21 +86,21 @@ class NFGraph : public Graph
 		// Nothing really different from a normal graph
 
 	public:
-		NFGraph()  {};
+		NFGraph () {};
 		~NFGraph() {};
 
 		/*
 		 * Add u into graph along with all its discovered neighbours
 		 */
-		void add_vertex_and_neighbours(ElementVertex* u);
+		void add_vertex_and_neighbours(ElementVertex *u);
 
 		/*
 		 * Get subset of vertices based on several characteristics.
 		 */
-		Vector<ElementVertex*> get_vertices_by_stage(VertexType t);
-		ElementVertex*         get_vertex_by_click_element(Element* e);
-		Vector<ElementVertex*> get_all_endpoint_vertices(void);
-		Vector<ElementVertex*> get_endpoint_vertices(VertexType t);
+		Vector<ElementVertex*> get_vertices_by_stage      (const VertexType &t) const;
+		ElementVertex*         get_vertex_by_click_element(const Element    *e) const;
+		Vector<ElementVertex*> get_all_endpoint_vertices  (void)                const;
+		Vector<ElementVertex*> get_endpoint_vertices      (const VertexType &t) const;
 };
 
 #endif

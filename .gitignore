@@ -3,6 +3,8 @@
 *.o
 *.plist
 .*.cmd
+*.Po
+**/.deps/
 Makefile
 autom4te*
 build-aux
@@ -17,4 +19,4 @@ depcomp
 man
 stamp-*
 results/*
-**/*/.deps/
+

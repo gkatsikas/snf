@@ -24,7 +24,7 @@
 #define TRAFFIC_CLASS_FORMAT
 
 class ClickElement;
-class SynthesizedNat;
+class SynthesizedNAT;
 
 /*
  * Contains one field-specific filter
@@ -44,14 +44,14 @@ class Filter {
 		bool operator== (const Filter& rhs) const;
 
 		static Filter get_filter_from_v4_prefix      (HeaderField field, uint32_t value, uint32_t prefix);
-		static Filter get_filter_from_v4_prefix_str  (HeaderField field, const std::string& prefix_as_str);
-		static Filter get_filter_from_ipclass_pattern(HeaderField field, const std::string& args);
-		static Filter get_filter_from_prefix_pattern (HeaderField field, const std::string& args);
+		static Filter get_filter_from_v4_prefix_str  (HeaderField field, const std::string &prefix_as_str);
+		static Filter get_filter_from_ipclass_pattern(HeaderField field, const std::string &args);
+		static Filter get_filter_from_prefix_pattern (HeaderField field, const std::string &args);
 
 		void make_none ();       // Make this filter refuse all packets
 		bool is_none   () const; // Returns true if the filter refuses all packets
 		bool match     (uint32_t value) const;
-		bool contains  (const Filter& filter) const;
+		bool contains  (const Filter &filter) const;
 
 		HeaderField get_field() const;
 		std::string to_str()    const;
@@ -75,18 +75,18 @@ class Filter {
 		 * Translates a (complex) condition on IP src/dst address fields to
 		 * a format understandable by Click's IPClassfier element.
 		 */
-		std::string ip_filter_to_ip_classifier_pattern(const std::string& keyword) const;
+		std::string ip_filter_to_ip_classifier_pattern(const std::string &keyword) const;
 
 		/*
 		 * Translates a (complex) condition on IP header fields to
 		 * a format understandable by the NIC (Intel Flow Director or ntuple filters).
 		 */
-		std::string ip_filter_to_flow_director_pattern(const std::string& keyword) const;
+		std::string ip_filter_to_flow_director_pattern(const std::string &keyword) const;
 
 		/*
 		 * Translates a (complex) condition on IP header fields to OpenFlow rules.
 		 */
-		std::string ip_filter_to_openflow_pattern(const std::string& keyword) const;
+		std::string ip_filter_to_openflow_pattern(const std::string &keyword) const;
 };
 
 /*
@@ -121,39 +121,40 @@ class TrafficClass {
 	public:
 		TrafficClass();
 
-		bool is_SNATed    (void);
-		bool is_discarded (void) const;
-		std::string to_str(void) const;
+		bool is_source_nated(void);
+		bool is_discarded   (void) const;
+		std::string to_str  (void) const;
 
 		/*
 		 * Adds the element with output port port
 		 * |-> -1 indicates no output port (end of chain)
 		 * Returns the number of updated filters that are equals to None
 		 */
-		int  addElement (std::shared_ptr<ClickElement> element, int port=-1);
+		int  add_element (std::shared_ptr<ClickElement> element, int port=-1);
 
-		void set_nat               (std::shared_ptr<SynthesizedNat>, const unsigned short&);
-		void set_output_iface      (const std::string& iface);
-		void set_output_iface_conf (const std::string& iface_conf);
-		void set_nf_of_output_iface(const std::string& nf);
+		void set_nat               (std::shared_ptr<SynthesizedNAT>, const unsigned short&);
+		void set_output_iface      (const std::string &iface);
+		void set_output_iface_conf (const std::string &iface_conf);
+		void set_nf_of_output_iface(const std::string &nf);
 		
 		std::string    get_output_iface        (void);
 		std::string    get_output_iface_conf   (void);
 		std::string    get_nf_of_output_iface  (void);
 		Operation      get_operation           (void);
 		unsigned short get_nat_input_port      (void);
-		std::shared_ptr<SynthesizedNat> get_nat(void);
+		std::shared_ptr<SynthesizedNAT> get_nat(void);
 
 		/*
 		 * Core method that extends a filter by applying intersection with another.
 		 */
-		int intersect_filter(const Filter& filter);
+		int intersect_filter(const Filter &filter);
 
 		/*
 		 * Append a set of trailing Click elements after a traffic class's operation.
 		 * These elements lead the traffic class out of Click without redundancy.
+		 * The direction of the traffic is given in order to generate the proper elements' configuration.
 		 */
-		std::string synthesize_chain();
+		std::string synthesize_chain(unsigned short &direction);
 
 		/*
 		 * Public API to convert a traffic class into a format understandable by:
@@ -215,15 +216,15 @@ class TrafficClass {
 		/*
 		 * 
 		 */
-		std::shared_ptr<SynthesizedNat> m_nat;
+		std::shared_ptr<SynthesizedNAT> m_nat;
 
 		/*
 		 * The input port of the IPRewriter that performs NAT.
 		 */
 		unsigned short m_nat_input_port;
 
-		void add_filter         (Filter filter,HeaderField field);
-		int  intersect_condition(const Filter& condition, const FieldOperation& operation);
+		void add_filter         (Filter filter, HeaderField field);
+		int  intersect_condition(const Filter &condition, const FieldOperation &operation);
 };
 
 #endif

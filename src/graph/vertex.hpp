@@ -9,7 +9,9 @@
 
 #include <memory>
 #include <unordered_map>
+
 #include "../logger/logger.hpp"
+#include "../shared/helpers.hpp"
 
 #define MAX_POSITION_IN_DAG 10000
 
@@ -59,18 +61,18 @@ class Vertex {
 		Logger log;
 
 	public:
-		Vertex(std::string name, unsigned short pos, VertexType type);
+		Vertex(const std::string &name, const unsigned short &pos, const VertexType &type);
 		virtual ~Vertex();
 
 		/*
 		 * Copy constructor
 		 */
-		Vertex(const Vertex& v);
+		Vertex(const Vertex &v);
 
 		/*
 		 * Overload = for vertex operations
 		 */
-		Vertex& operator=(Vertex& v);
+		Vertex& operator=(Vertex &v);
 
 		/*
 		 * Getters
@@ -83,7 +85,7 @@ class Vertex {
 		/*
 		 * Print status
 		 */
-		void print_info(void);
+		void print_info (void);
 };
 
 /*
@@ -113,41 +115,41 @@ class ChainVertex : public Vertex
 		InterfaceMap chain_interfaces;
 
 	public:
-		ChainVertex(std::string path, std::string name, unsigned short pos, VertexType type) :
+		ChainVertex(const std::string &path, const std::string &name, 
+					const unsigned short &pos, const VertexType &type) :
 					Vertex(std::move(name), pos, type), source_code_path(std::move(path)) {};
 		~ChainVertex() {};
-		ChainVertex(const ChainVertex& cv);
-		ChainVertex& operator=(ChainVertex& cv);
+		ChainVertex(const ChainVertex &cv);
+		ChainVertex& operator=(ChainVertex &cv);
 
 		/*
 		 * Setters & Getters
 		 */
-		unsigned short get_interfaces_no(void);
-		unsigned short get_entry_interfaces_no(void);
-		unsigned short get_chain_interfaces_no(void);
+		bool has_entry_interface     (const std::string &iface) const;
+		bool has_chain_interface     (const std::string &iface) const;
 
-		bool has_entry_interface(std::string iface);
-		bool has_chain_interface(std::string iface);
+		void add_entry_interface_key (const std::string &iface);
+		void add_entry_interface_pair(const std::string &iface, const std::string &mac, const std::string &domain);
+		void add_chain_interface_key (const std::string &iface);
+		void add_chain_interface_pair(const std::string &iface, const std::string &mac, const std::string &nf);
 
-		void add_entry_interface_key(std::string iface);
-		void add_entry_interface_pair(std::string iface, std::string mac, std::string domain);
-		void add_chain_interface_key(std::string iface);
-		void add_chain_interface_pair(std::string iface, std::string mac, std::string nf);
+		std::string    get_mac_from_entry_interface   (const std::string &iface)  const;
+		std::string    get_domain_from_entry_interface(const std::string &iface)  const;
+		std::string    get_iface_from_entry_domain    (const std::string &domain) const;
 
-		std::string get_mac_from_entry_interface(std::string iface);
-		std::string get_domain_from_entry_interface(std::string iface);
-		std::string get_iface_from_entry_domain(std::string domain);
+		std::string    get_mac_from_chain_interface   (const std::string &iface)  const;
+		std::string    get_nf_from_chain_interface    (const std::string &iface)  const;
+		std::string    get_iface_from_chain_nf        (const std::string &nf)     const;
 
-		std::string get_mac_from_chain_interface(std::string iface);
-		std::string get_nf_from_chain_interface(std::string iface);
-		std::string get_iface_from_chain_nf(std::string nf);
-
-		std::string get_source_code_path(void) const;
+		unsigned short get_interfaces_no              (void) const;
+		unsigned short get_entry_interfaces_no        (void) const;
+		unsigned short get_chain_interfaces_no        (void) const;
+		std::string    get_source_code_path           (void) const;
 
 		/*
 		 * Debugging
 		 */
-		void print_info(void);
+		void print_info               (void);
 		void print_chain_interface_map(void);
 		void print_entry_interface_map(void);
 };

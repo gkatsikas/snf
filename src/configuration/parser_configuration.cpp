@@ -14,12 +14,12 @@
 /*
  * Construct an empty parser configuration
  */
-ParserConfiguration::ParserConfiguration(const std::string& config_file)
-	: GenericConfiguration(config_file) {
+ParserConfiguration::ParserConfiguration(const std::string &config_file)
+										: GenericConfiguration(config_file) {
 	this->nf_chain   = new Graph();
 	this->nf_domains = new Graph();
 	this->properties = NULL;
-	log << debug << "ParserConfiguration constructed" << def << std::endl;
+	note_chatter(this->log, "\tParserConfiguration constructed");
 }
 
 /*
@@ -35,7 +35,7 @@ ParserConfiguration::~ParserConfiguration() {
 	if ( this->properties != NULL ) {
 		delete this->properties;
 	}
-	log << debug << "ParserConfiguration deleted" << def << std::endl;
+	note_chatter(this->log, "\tParserConfiguration deleted");
 }
 
 /*
@@ -60,25 +60,23 @@ ParserConfiguration::load_property_file(void) {
 		nf_domains = (std::string&) get_value("ENTRY_POINTS", "DOMAINS");
 	}
 	catch (const std::exception& e) {
-		log << error << "|--> " << e.what() << def << std::endl;
+		error_chatter(this->log, "|--> " << e.what());
 		return NF_CHAIN_NOT_ACYCLIC;
 	}
 
-	//log << "\tNF Topology = " << nf_topo << def << std::endl;
+	debug_chatter(this->log, "\tNF Topology = " << nf_topo);
 	// Parse the chain of NFs form the property file
 	if ( (exit_status=this->parse_topology(nf_topo)) != SUCCESS ) {
 		return exit_status;
 	}
 
-	//log << "" << def << std::endl;
-
-	//log << "\tNFV Domains = " << nf_domains << def << std::endl;
+	debug_chatter(this->log, "\tNFV Domains = " << nf_domains);
 	// Parse the connection points of the chain with the outside world (e.g. operator's domains)
 	if ( (exit_status=this->parse_domains(nf_domains)) != SUCCESS ) {
 		return exit_status;
 	}
 
-	log << "\tThe property file is successfully parsed" << def << std::endl;
+	def_chatter(this->log, "\tThe property file is successfully parsed");
 	log << "" << def << std::endl;
 
 	// Check if the graph is acyclic
@@ -137,8 +135,7 @@ ParserConfiguration::parse_generic_properties(void) {
 
 		// Careful, you might lose your previously synthesized chain!
 		if ( file_exists(output_filename) ) {
-			log << warn << "\tOutput file " << output_filename <<
-				" exists and will be overwritten" << def << std::endl;
+			warn_chatter(this->log, "\tOutput file " << output_filename << " exists and will be overwritten");
 		}
 
 		// Remove the extension because we might generate files different extensions.
@@ -192,15 +189,17 @@ ParserConfiguration::parse_generic_properties(void) {
 			traffic_class_format = TCLabelToFormat.at(hardware_classification_label);
 
 			if ( traffic_class_format == Click ) {
-				throw std::runtime_error(
+				error_chatter(this->log, 
 					"Click is not hardware based traffic class format. Choose [RSS-Hashing, Flow-Director, OpenFlow]"
 				);
+				exit(WRONG_INPUT_ARGS);
 			}
 		}
 		catch (const std::exception& e) {
-			throw std::runtime_error(
+			error_chatter(this->log, 
 				"Unknown Traffic Class format. Choose [RSS-Hashing, Flow-Director, OpenFlow]"
 			);
+			exit(WRONG_INPUT_ARGS);
 		}
 
 		// B. Non-Uniform Memory Access
@@ -255,7 +254,7 @@ ParserConfiguration::parse_generic_properties(void) {
  * Parse the internal NF chain connections
  */
 short
-ParserConfiguration::parse_topology(const std::string& nf_topo) {
+ParserConfiguration::parse_topology(const std::string &nf_topo) {
 
 	if ( this->nf_chain == NULL ) {
 		this->usage("The graph of he chain does not exist.", "Badly instantiated ParserConfiguration.");
@@ -340,7 +339,7 @@ ParserConfiguration::parse_topology(const std::string& nf_topo) {
 			int position = atoi(get_number_from_string(nf).c_str());
 
 			// Check if this NF is already inserted
-			ChainVertex* v = static_cast<ChainVertex*> (this->nf_chain->get_vertex_by_position(position));
+			ChainVertex *v = static_cast<ChainVertex*> (this->nf_chain->get_vertex_by_position(position));
 
 			// Create one
 			if ( v == NULL ) {
@@ -350,7 +349,7 @@ ParserConfiguration::parse_topology(const std::string& nf_topo) {
 					nf_path = (std::string&) get_value("NF_MODULES", nf);
 				}
 				catch (const std::exception& e) {
-					log << error << "|-> " << e.what() << def << std::endl;
+					error_chatter(this->log, "|-> " << e.what());
 					return NF_CHAIN_NOT_ACYCLIC;
 				}
 
@@ -403,10 +402,11 @@ ParserConfiguration::parse_topology(const std::string& nf_topo) {
 	unsigned short graph_elements = this->nf_chain->get_vertices_no();
 
 	if ( elements_in_property > graph_elements ) {
-		log << warn << "There are " << elements_in_property - graph_elements << " unloaded NFs" << def << std::endl;
+		warn_chatter(this->log, "There are " << elements_in_property - graph_elements << " unloaded NFs");
 	}
 	else if ( elements_in_property < graph_elements ) {
-		log << error << "There are " << graph_elements - elements_in_property << " missing elements in [NF] section of the property file." << def << std::endl;
+		error_chatter(this->log, "There are " << graph_elements - elements_in_property << 
+						" missing elements in [NF] section of the property file.");
 		return CHAIN_PARSING_PROBLEM;
 	}
 
@@ -417,7 +417,7 @@ ParserConfiguration::parse_topology(const std::string& nf_topo) {
  * Parse the external NF chain connections with various domains
  */
 short
-ParserConfiguration::parse_domains(const std::string& nf_domains) {
+ParserConfiguration::parse_domains(const std::string &nf_domains) {
 	unsigned short domain = 0;
 
 	if ( this->nf_chain == NULL ) {
@@ -454,7 +454,7 @@ ParserConfiguration::parse_domains(const std::string& nf_domains) {
 		int position = atoi(get_number_from_string(nf).c_str());
 
 		// This NF must already exist
-		ChainVertex* v = static_cast<ChainVertex*> (this->nf_chain->get_vertex_by_position(position));
+		ChainVertex *v = static_cast<ChainVertex*> (this->nf_chain->get_vertex_by_position(position));
 
 		// If not, something is wrong..
 		if ( v == NULL ) {
@@ -493,7 +493,9 @@ ParserConfiguration::parse_domains(const std::string& nf_domains) {
 		domain++;
 	}
 
-	//this->nf_domains->print_adjacency_list();
+	#ifdef  DEBUG_MODE
+		this->nf_domains->print_adjacency_list();
+	#endif
 
 	return SUCCESS;
 }
@@ -504,22 +506,22 @@ ParserConfiguration::parse_domains(const std::string& nf_domains) {
 short
 ParserConfiguration::check_for_loops(void) {
 	if ( this->nf_chain == NULL ) {
-		log << warn << "\tGraph(s) do(es) not exist" << def << std::endl;
+		warn_chatter(this->log, "\tGraph(s) do(es) not exist");
 		return NO_MEM_AVAILABLE;
 	}
 
 	if ( this->nf_chain->is_empty() ) {
-		log << warn << "\tGraph(s) is(are) empty" << def << std::endl;
+		warn_chatter(this->log, "\tGraph(s) is(are) empty");
 		return NO_MEM_AVAILABLE;
 	}
 
 	try {
-		log << "\tTopological sort ... " << def << std::endl;
+		def_chatter(this->log, "\tTopological sort ... ");
 		this->nf_chain->topological_sort();
-		log << "\t|---> NF Chain graph is acyclic" << def << std::endl;
+		def_chatter(this->log, "\t|---> NF Chain graph is acyclic");
 	}
 	catch (const std::exception& e) {
-		log << error << "|--> " << e.what() << def << std::endl;
+		error_chatter(this->log, "|--> " << e.what());
 		return NF_CHAIN_NOT_ACYCLIC;
 	}
 
@@ -530,9 +532,9 @@ ParserConfiguration::check_for_loops(void) {
  * Print error messages regarding the property file
  */
 void
-ParserConfiguration::usage(const std::string& message, const std::string& usage) {
-	log << error << message << def << std::endl;
-	log << error << "|-> " << usage << def << std::endl;
+ParserConfiguration::usage(const std::string &message, const std::string &usage) {
+	error_chatter(this->log, message);
+	error_chatter(this->log, "|-> " << usage);
 }
 
 /*
@@ -540,40 +542,40 @@ ParserConfiguration::usage(const std::string& message, const std::string& usage)
  */
 void
 ParserConfiguration::print_loaded_property_status(void) {
-	log << "\t++++++++++++++ Generic Configuration ++++++++++++++" << def << std::endl;
-	log << info << "\t" << "                Output Folder: " <<
-		this->get_properties()->get_output_folder()   << def << std::endl;
-	log << info << "\t" << "              Output Filename: " <<
-		this->get_properties()->get_output_filename() << def << std::endl;
-	log << info << "\t" << "      Hardware Classification: " <<
-		bool_to_str(this->get_properties()->has_hardware_classification()) << def << std::endl;
+	def_chatter(this->log, "\t++++++++++++++ Generic Configuration ++++++++++++++");
+	info_chatter(this->log, "\t" << "                Output Folder: " <<
+		this->get_properties()->get_output_folder());
+	info_chatter(this->log, "\t" << "              Output Filename: " <<
+		this->get_properties()->get_output_filename());
+	info_chatter(this->log, "\t" << "      Hardware Classification: " <<
+		bool_to_str(this->get_properties()->has_hardware_classification()));
 
 	// Only if HW Classification is requested
 	if ( this->get_properties()->has_hardware_classification() ) {
-		log << info << "\t" << "Traffic Classification Format: " <<
-			tc_to_label(this->get_properties()->get_traffic_classification_format()) << def << std::endl;
-		log << info << "\t" << "    Non-Uniform Memory Access: " <<
-			bool_to_str(this->get_properties()->has_numa()) << def << std::endl;
-		log << info << "\t" << "             # of CPU Sockets: " <<
-			this->get_properties()->get_cpu_sockets_no()   << def << std::endl;
-		log << info << "\t" << "             # of CPU   Cores: " <<
-			this->get_properties()->get_cpu_cores_no()     << def << std::endl;
-		log << info << "\t" << "             # of NIC  Queues: " <<
-			this->get_properties()->get_nic_hw_queues_no() << def << std::endl;
+		info_chatter(this->log, "\t" << "Traffic Classification Format: " <<
+			tc_to_label(this->get_properties()->get_traffic_classification_format()));
+		info_chatter(this->log, "\t" << "    Non-Uniform Memory Access: " <<
+			bool_to_str(this->get_properties()->has_numa()));
+		info_chatter(this->log, "\t" << "             # of CPU Sockets: " <<
+			this->get_properties()->get_cpu_sockets_no());
+		info_chatter(this->log, "\t" << "             # of CPU   Cores: " <<
+			this->get_properties()->get_cpu_cores_no());
+		info_chatter(this->log, "\t" << "             # of NIC  Queues: " <<
+			this->get_properties()->get_nic_hw_queues_no());
 	}
-	log << "\t+++++++++++++++++++++++++++++++++++++++++++++++++++" << def << std::endl;
+	def_chatter(this->log, "\t+++++++++++++++++++++++++++++++++++++++++++++++++++");
 
-	log << "\t+++++++++++++++ Chain Interface Map +++++++++++++++" << def << std::endl;
+	def_chatter(this->log, "\t+++++++++++++++ Chain Interface Map +++++++++++++++");
 	for (auto& pair : this->nf_chain->get_adjacency_list()) {
 		ChainVertex* v = static_cast<ChainVertex*> (pair.first);
 		v->print_chain_interface_map();
 	}
-	log << "\t+++++++++++++++++++++++++++++++++++++++++++++++++++" << def << std::endl;
+	def_chatter(this->log, "\t+++++++++++++++++++++++++++++++++++++++++++++++++++");
 
-	log << "\t+++++++++++++++ Entry Interface Map +++++++++++++++" << def << std::endl;
+	def_chatter(this->log, "\t+++++++++++++++ Entry Interface Map +++++++++++++++");
 	for (auto& pair : this->nf_chain->get_adjacency_list()) {
 		ChainVertex* v = static_cast<ChainVertex*> (pair.first);
 		v->print_entry_interface_map();
 	}
-	log << "\t+++++++++++++++++++++++++++++++++++++++++++++++++++" << def << std::endl;
+	def_chatter(this->log, "\t+++++++++++++++++++++++++++++++++++++++++++++++++++");
 }

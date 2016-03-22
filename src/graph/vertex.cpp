@@ -9,22 +9,22 @@
 ////////////////////////////////////////////////////////////////////////
 // Vertex
 ////////////////////////////////////////////////////////////////////////
-Vertex::Vertex(std::string name, unsigned short pos, VertexType t) :
+Vertex::Vertex(const std::string &name, const unsigned short &pos, const VertexType &t) :
 				name(std::move(name)), position(pos), type(t) {
 	this->log.set_logger_file(__FILE__);
 	assert (this->position <= MAX_POSITION_IN_DAG);
-	//log << info << "\tVertex constructed" << def << std::endl;
+	debug_chatter(this->log, "\tVertex constructed");
 }
 
 Vertex::~Vertex() {
-	//log << info << "\tVertex destroyed" << def << std::endl;
+	debug_chatter(this->log, "\tVertex destroyed");
 }
 
-Vertex::Vertex(const Vertex& v) : 
+Vertex::Vertex(const Vertex &v) : 
 	name(v.get_name()), position(v.get_position()), type(v.get_type()) {
 }
 
-Vertex& Vertex::operator=(Vertex& v) {
+Vertex& Vertex::operator=(Vertex &v) {
 	if ( this != &v ) {
 		this->name     = v.name;
 		this->position = v.position;
@@ -35,19 +35,19 @@ Vertex& Vertex::operator=(Vertex& v) {
 
 void
 Vertex::print_info(void) {
-	log << info << "===     NF Name: " << this->name     << def << std::endl;
-	log << info << "=== NF Position: " << this->position << def << std::endl;
+	info_chatter(this->log, "===     NF Name: " << this->name);
+	info_chatter(this->log, "=== NF Position: " << this->position);
 }
 
 ////////////////////////////////////////////////////////////////////////
 // ChainVertex
 ////////////////////////////////////////////////////////////////////////
-ChainVertex::ChainVertex(const ChainVertex& cv) : 
+ChainVertex::ChainVertex(const ChainVertex &cv) : 
 	Vertex(cv), source_code_path(cv.source_code_path),
 	entry_interfaces(cv.entry_interfaces), chain_interfaces(cv.chain_interfaces) {
 }
 
-ChainVertex& ChainVertex::operator=(ChainVertex& cv) {
+ChainVertex& ChainVertex::operator=(ChainVertex &cv) {
 	if ( this != &cv ) {
 		Vertex::operator=(cv);
 		this->source_code_path = cv.source_code_path;
@@ -58,68 +58,68 @@ ChainVertex& ChainVertex::operator=(ChainVertex& cv) {
 }
 
 unsigned short
-ChainVertex::get_interfaces_no() {
+ChainVertex::get_interfaces_no(void) const {
 	return ( this->entry_interfaces.size() + this->chain_interfaces.size() );
 }
 
 unsigned short
-ChainVertex::get_entry_interfaces_no() {
+ChainVertex::get_entry_interfaces_no(void) const {
 	return this->entry_interfaces.size();
 }
 
 unsigned short
-ChainVertex::get_chain_interfaces_no() {
+ChainVertex::get_chain_interfaces_no(void) const {
 	return this->chain_interfaces.size();
 }
 
 bool
-ChainVertex::has_entry_interface(std::string iface) {
+ChainVertex::has_entry_interface(const std::string &iface) const {
 	if ( this->entry_interfaces.find(iface) == this->entry_interfaces.end() )
 		return false;
 	return true;
 }
 
 bool
-ChainVertex::has_chain_interface(std::string iface) {
+ChainVertex::has_chain_interface(const std::string &iface) const {
 	if ( this->chain_interfaces.find(iface) == this->chain_interfaces.end() )
 		return false;
 	return true;
 }
 
 void
-ChainVertex::add_entry_interface_key(std::string iface) {
+ChainVertex::add_entry_interface_key(const std::string &iface) {
 	if ( this->entry_interfaces.find(iface) == this->entry_interfaces.end() )
 		this->entry_interfaces.insert({iface, {"", ""}});
 	return;
 }
 
 void
-ChainVertex::add_entry_interface_pair(std::string iface, std::string mac, std::string domain) {
+ChainVertex::add_entry_interface_pair(const std::string &iface, const std::string &mac, const std::string &domain) {
 	if ( iface.empty() ) {
-		log << error << "Key (Interface) given is empty" << def << std::endl;
+		error_chatter(this->log, "Key (Interface) given is empty");
 		return;
 	}
 	this->entry_interfaces[iface] = {mac, domain};
 }
 
 void
-ChainVertex::add_chain_interface_key(std::string iface) {
+ChainVertex::add_chain_interface_key(const std::string &iface) {
 	if ( this->chain_interfaces.find(iface) == this->chain_interfaces.end() )
 		this->chain_interfaces.insert({iface, {"", ""}});
 	return;
 }
 
 void
-ChainVertex::add_chain_interface_pair(std::string iface, std::string mac, std::string nf) {
+ChainVertex::add_chain_interface_pair(const std::string &iface, const std::string &mac, const std::string &nf) {
 	if ( iface.empty() ) {
-		log << error << "Key (Interface) given is empty" << def << std::endl;
+		error_chatter(this->log, "Key (Interface) given is empty");
 		return;
 	}
 	this->chain_interfaces[iface] = {mac, nf};
 }
 
 std::string
-ChainVertex::get_mac_from_entry_interface(std::string iface) {
+ChainVertex::get_mac_from_entry_interface(const std::string &iface) const {
 	// If it does not exist
 	if ( !this->has_entry_interface(iface) )
 		return std::string("");
@@ -129,7 +129,7 @@ ChainVertex::get_mac_from_entry_interface(std::string iface) {
 }
 
 std::string
-ChainVertex::get_domain_from_entry_interface(std::string iface) {
+ChainVertex::get_domain_from_entry_interface(const std::string &iface) const {
 	// If it does not exist
 	if ( !this->has_entry_interface(iface) )
 		return std::string("");
@@ -139,7 +139,7 @@ ChainVertex::get_domain_from_entry_interface(std::string iface) {
 }
 
 std::string
-ChainVertex::get_iface_from_entry_domain(std::string domain) {
+ChainVertex::get_iface_from_entry_domain(const std::string &domain) const {
 	for ( auto& kv : this->entry_interfaces )
 	// Find the interface of the given Domain
 		if ( kv.second.second == domain )
@@ -148,7 +148,7 @@ ChainVertex::get_iface_from_entry_domain(std::string domain) {
 }
 
 std::string
-ChainVertex::get_mac_from_chain_interface(std::string iface) {
+ChainVertex::get_mac_from_chain_interface(const std::string &iface) const {
 	// If it does not exist
 	if ( !this->has_chain_interface(iface) )
 		return std::string("");
@@ -158,7 +158,7 @@ ChainVertex::get_mac_from_chain_interface(std::string iface) {
 }
 
 std::string
-ChainVertex::get_nf_from_chain_interface(std::string iface) {
+ChainVertex::get_nf_from_chain_interface(const std::string &iface) const {
 	// If it does not exist
 	if ( !this->has_chain_interface(iface) )
 		return std::string("");
@@ -168,7 +168,7 @@ ChainVertex::get_nf_from_chain_interface(std::string iface) {
 }
 
 std::string
-ChainVertex::get_iface_from_chain_nf(std::string nf) {
+ChainVertex::get_iface_from_chain_nf(const std::string &nf) const {
 	for ( auto& kv : this->chain_interfaces )
 		// Find the interface of the given NF
 		if ( kv.second.second == nf )
@@ -186,20 +186,22 @@ ChainVertex::get_source_code_path(void) const {
  */
 void
 ChainVertex::print_info(void) {
-	log << info << "===============================================" << def << std::endl;
+	info_chatter(this->log, "===============================================");
 	Vertex::print_info();
-	log << info << "=== Source Code: " << this->source_code_path     << def << std::endl;
-	log << info << "===============================================" << def << std::endl;
+	info_chatter(this->log, "=== Source Code: " << this->source_code_path);
+	info_chatter(this->log, "===============================================");
 }
 
 void
 ChainVertex::print_entry_interface_map(void) {
 	for ( auto& kv : this->entry_interfaces )
-		log << info << "\t" << this->get_name() << "-> [Interface: " << kv.first << ", [MAC: " << kv.second.first << ", Domain: " << kv.second.second << "] ]" << def << std::endl;
+		info_chatter(this->log, "\t" << this->get_name() << "-> [Interface: " << kv.first <<
+					", [MAC: " << kv.second.first << ", Domain: " << kv.second.second << "] ]");
 }
 
 void
 ChainVertex::print_chain_interface_map(void) {
 	for ( auto& kv : this->chain_interfaces )
-		log << info << "\t" << this->get_name() << "-> [Interface: " << kv.first << ", [MAC: " << kv.second.first << ", NF: " << kv.second.second << "] ]" << def << std::endl;
+		info_chatter(this->log, "\t" << this->get_name() << "-> [Interface: " << kv.first << 
+					", [MAC: " << kv.second.first << ", NF: " << kv.second.second << "] ]");
 }

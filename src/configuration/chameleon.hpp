@@ -16,21 +16,20 @@ class Chameleon
 
 	public:
 		Chameleon() {};
-		explicit Chameleon(int);
-		explicit Chameleon(unsigned short);
-		explicit Chameleon(bool);
-		explicit Chameleon(double);
-		explicit Chameleon(const std::string&);
-		explicit Chameleon(const char*);
+		explicit Chameleon(const int            &i);
+		explicit Chameleon(const unsigned short &u);
+		explicit Chameleon(const bool           &b);
+		explicit Chameleon(const double         &d);
+		explicit Chameleon(const std::string    &s);
+		explicit Chameleon(const char*           c);
 
-		Chameleon(const Chameleon&);
-		Chameleon& operator=(Chameleon const&);
-
-		Chameleon& operator=(int);
-		Chameleon& operator=(unsigned short);
-		Chameleon& operator=(bool);
-		Chameleon& operator=(double);
-		Chameleon& operator=(std::string const&);
+		Chameleon(const Chameleon &other);
+		Chameleon& operator=(Chameleon const  &other);
+		Chameleon& operator=(const int            &i);
+		Chameleon& operator=(const unsigned short &u);
+		Chameleon& operator=(const bool           &b);
+		Chameleon& operator=(const double         &d);
+		Chameleon& operator=(const std::string    &s);
 
 	public:
 		operator int           () const;

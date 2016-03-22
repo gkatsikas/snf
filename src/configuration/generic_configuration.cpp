@@ -10,7 +10,7 @@
 #include "generic_configuration.hpp"
 
 std::string
-trim(std::string const& source, char const* delims = " \t\r\n") {
+trim(std::string const &source, char const *delims = " \t\r\n") {
 	std::string result(source);
 	std::string::size_type index = result.find_last_not_of(delims);
 	if(index != std::string::npos)
@@ -25,15 +25,14 @@ trim(std::string const& source, char const* delims = " \t\r\n") {
 	return result;
 }
 
-GenericConfiguration::GenericConfiguration(const std::string& config_file) {
+GenericConfiguration::GenericConfiguration(const std::string &config_file) {
 	this->log.set_logger_file(__FILE__);
 
 	struct stat buffer;
 	if ( stat (config_file.c_str(), &buffer) == 0 )
 		this->filename = config_file;
-	else
-	{
-		log << "\t Property file " + config_file + "does not exist" << std::endl;
+	else {
+		error_chatter(this->log, "\t Property file " + config_file + "does not exist");
 		exit(FAILURE);
 	}
 
@@ -45,7 +44,7 @@ GenericConfiguration::GenericConfiguration(const std::string& config_file) {
 	std::string in_section;
 	int pos_equal = 0;
 
-	while (getline(file, line))
+	while ( getline(file, line) )
 	{
 		if (! line.length()) continue;
 
@@ -75,7 +74,7 @@ GenericConfiguration::~GenericConfiguration() {
 
 Chameleon const&
 GenericConfiguration::get_value(
-	std::string const& section, std::string const& entry) const {
+	std::string const &section, std::string const &entry) const {
 
 	std::map<std::string,Chameleon>::const_iterator ci = content_.find(section + '/' + entry);
 
@@ -87,7 +86,7 @@ GenericConfiguration::get_value(
 
 Chameleon const&
 GenericConfiguration::get_value(
-	std::string const& section, std::string const& entry, int value) {
+	std::string const &section, std::string const &entry, int value) {
 
 	try {
 		return get_value(section, entry);
@@ -99,7 +98,7 @@ GenericConfiguration::get_value(
 
 Chameleon const&
 GenericConfiguration::get_value(
-	std::string const& section, std::string const& entry, unsigned short value) {
+	std::string const &section, std::string const &entry, unsigned short value) {
 
 	try {
 		return get_value(section, entry);
@@ -111,7 +110,7 @@ GenericConfiguration::get_value(
 
 Chameleon const&
 GenericConfiguration::get_value(
-	std::string const& section, std::string const& entry, bool value) {
+	std::string const &section, std::string const &entry, bool value) {
 
 	try {
 		return get_value(section, entry);
@@ -123,7 +122,7 @@ GenericConfiguration::get_value(
 
 Chameleon const&
 GenericConfiguration::get_value(
-	std::string const& section, std::string const& entry, double value) {
+	std::string const &section, std::string const &entry, double value) {
 
 	try {
 		return get_value(section, entry);
@@ -135,7 +134,7 @@ GenericConfiguration::get_value(
 
 Chameleon const&
 GenericConfiguration::get_value(
-	std::string const& section, std::string const& entry, std::string const& value) {
+	std::string const &section, std::string const &entry, std::string const& value) {
 
 	try {
 		return get_value(section, entry);
@@ -146,7 +145,7 @@ GenericConfiguration::get_value(
 }
 
 unsigned short int
-GenericConfiguration::count_section_elements(std::string const& section) {
+GenericConfiguration::count_section_elements(std::string const &section) {
 	unsigned short int counter = 0;
 
 	for(auto const &entry : content_) {

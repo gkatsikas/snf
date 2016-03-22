@@ -25,7 +25,7 @@ class ChainParser {
 		/*
 		 * The NF chain (represented as a DAG) to be synthesized
 		 */
-		ParserConfiguration* chain_graph;
+		ParserConfiguration *chain_graph;
 
 		/*
 		 * Maps the position of a NF in the chain with a Click Router object.
@@ -49,33 +49,51 @@ class ChainParser {
 		 * Reads and loads one input Click configuration.
 		 * It uses built-in Click methods and data structures linked with this file.
 		 */
-		short load_nf(std::string nf_name, std::string nf_source, unsigned short position);
+		short load_nf(
+			const std::string &nf_name,
+			const std::string &nf_source, 
+			const unsigned short &position
+		);
 
 		/*
 		 * After loading all the NFs into the parser's memory, run a DFS visit per DAG
 		 * to build the NF Synthesizer's graph.
 		 */
-		short build_nf_dag(std::string nf_name, unsigned short position);
+		short build_nf_dag(
+			const std::string &nf_name,
+			const unsigned short &position
+		);
 
 		/*
 		 * After loading the Click elements into the DAG, we go back to the loaded topology and NFs (from property file)
 		 * and verify whether the interfaces are correct. The property file interfaces must be included int the actual
 		 * Click configuration, otherwise the synthesizer cannot assess the connectivity between two NFs.
 		 */
-		 short verify_and_connect_nfs(std::string nf_name, unsigned short position);
+		 short verify_and_connect_nfs(
+		 	const std::string &nf_name,
+		 	const unsigned short &position
+		 );
 
 		/*
 		 * Given a position in the chain and an output interface, we want to find the Click element of the next NF in
 		 * the chain. Essentially this function is a glue between two connected NFs.
 		 */
-		ElementVertex* find_input_element_of_nf(NFGraph* next_nf_graph, std::string target_interface);
+		ElementVertex* find_input_element_of_nf(
+			NFGraph *next_nf_graph,
+			const std::string &target_interface
+		);
 
 		/*
 		 * Assign IPMapper element to the appropriate IPRewriter.
 		 * IPMapper elements are exceptional. They have no inputs and outputs but serve as inputs to IPRewriters.
 		 */
-		int associate_ip_mapper_to_rewriter(Router* router, const std::string& mapper_variable, const std::string& mapper_conf, 
-											std::vector<std::string>& implicit_conf, short& implicit_port);
+		int associate_ip_mapper_to_rewriter(
+			Router *router,
+			const std::string &mapper_variable,
+			const std::string &mapper_conf,
+			std::vector<std::string> &implicit_conf,
+			short &implicit_port
+		);
 
 		/*
 		 * Visits recursively the Click DAG and returns the vector of Elements it contains.
@@ -87,7 +105,7 @@ class ChainParser {
 		/*
 		 * Public API for the Parser
 		 */
-		ChainParser (ParserConfiguration* pc);
+		ChainParser (ParserConfiguration *pc);
 		~ChainParser();
 
 		/*
@@ -95,7 +113,9 @@ class ChainParser {
 		 */
 		inline ParserConfiguration* get_chain_graph(void) { return this->chain_graph; };
 		inline NF_Map<NFGraph*>     get_nf_graphs  (void) { return this->nf_dag;      };
-		inline NFGraph*             get_nf_graph_at(unsigned short position) { return this->nf_dag[position]; };
+		inline NFGraph*             get_nf_graph_at(const unsigned short &position) {
+			return this->nf_dag[position];
+		};
 
 		/*
 		 * A.

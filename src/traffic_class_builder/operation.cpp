@@ -10,21 +10,22 @@
 #include <functional>
 
 #include "operation.hpp"
-
 #include "../shared/helpers.hpp"
 
-#define BUG(A) std::cerr<<"["<<__FILE__<<":"<<__LINE__<<"] "<<A <<std::endl; exit(1)
+// The logger of this module
+Logger op_log(__FILE__);
 
 FieldOperation::FieldOperation () : m_type(Noop), m_field(unknown) {}
 
 FieldOperation::FieldOperation (OperationType type, HeaderField field, uint32_t value) :
-	m_type(type), m_field(field) { m_value[0] = value; }
+								m_type(type), m_field(field) {
+	m_value[0] = value;
+}
 
 void
-FieldOperation::compose (const FieldOperation & rhs) {
+FieldOperation::compose (const FieldOperation &rhs) {
 	if (this->m_field != rhs.m_field) {
-		std::cerr<<"["<<__FILE__<<":"<<__LINE__<<"] Trying to compose FieldOperation "
-				"on different fields"<<std::endl;
+		error_chatter(op_log, "Trying to compose FieldOperation on different fields");
 	}
 
 	switch (rhs.m_type) {
@@ -34,10 +35,10 @@ FieldOperation::compose (const FieldOperation & rhs) {
 			return;
 		case WriteLB:
 			this->m_type = WriteLB;
-			this->m_lbValues.clear();
-			std::cerr<<"Before composition: "<<to_str()<<"\n";
-			this->m_lbValues.insert(m_lbValues.begin(),rhs.m_lbValues.begin(),rhs.m_lbValues.end());
-			std::cerr<<"After composition: "<<to_str()<<"\n";
+			this->m_lb_values.clear();
+			error_chatter(op_log, "Before composition: "<<to_str());
+			this->m_lb_values.insert(m_lb_values.begin(),rhs.m_lb_values.begin(),rhs.m_lb_values.end());
+			error_chatter(op_log, "After composition: "<<to_str());
 			return;
 		case WriteRR:
 		case WriteRa:
@@ -50,17 +51,17 @@ FieldOperation::compose (const FieldOperation & rhs) {
 			this->m_value[0] += rhs.m_value[0];
 			return;
 		default:
-			std::cerr<<"["<<__FILE__<<":"<<__LINE__<<"] Can only compose Write "
-						" and Translate"<<std::endl;
-			exit(1);
+			FANCY_BUG(op_log, "Can only compose Write and Translate");
 	}
 }
 
 uint32_t
-FieldOperation::get_value () const { return this->m_value[0]; }
+FieldOperation::get_value (void) const {
+	return this->m_value[0];
+}
 
 bool
-FieldOperation::is_same_value (const FieldOperation& rhs) const{
+FieldOperation::is_same_value (const FieldOperation &rhs) const{
 	bool result = true;
 	switch (m_type) {
 		case WriteRR:
@@ -77,12 +78,12 @@ FieldOperation::is_same_value (const FieldOperation& rhs) const{
 }
 
 bool
-FieldOperation::operator== (const FieldOperation& rhs) const{
+FieldOperation::operator== (const FieldOperation &rhs) const{
 	return (rhs.m_field==m_field && rhs.m_type==m_type && is_same_value(rhs));
 }
 
 FieldOperation*
-Operation::get_field_op(HeaderField field) {
+Operation::get_field_op(const HeaderField &field) {
 	if (m_fieldOps.find(field) == m_fieldOps.end() ) {
 		return nullptr;
 	}
@@ -92,12 +93,12 @@ Operation::get_field_op(HeaderField field) {
 }
 
 bool
-Operation::has_field_op(HeaderField field) const {
+Operation::has_field_op(const HeaderField &field) const {
 	return (m_fieldOps.find(field) != m_fieldOps.end());
 }
 
 std::string
-FieldOperation::to_str () const {
+FieldOperation::to_str (void) const {
 	std::string output = header_field_names[m_field];
 	
 	std::function<std::string(uint32_t)> to_str= [](uint32_t x){return std::to_string(x);};
@@ -120,7 +121,7 @@ FieldOperation::to_str () const {
 			break;
 		case WriteLB:
 			output += ":"+OperationName[m_type]+"(";
-			for(auto &value: m_lbValues) {
+			for(auto &value: m_lb_values) {
 				output+=to_str(value)+",";
 			}
 			output[output.size()-1]=')';
@@ -147,7 +148,7 @@ FieldOperation::to_str () const {
 }
 
 bool
-Operation::operator== (const Operation& rhs) {
+Operation::operator== (const Operation &rhs) {
 	
 	for (auto &it : m_fieldOps) {
 		FieldOperation *rfield_op = get_field_op(it.first);
@@ -169,7 +170,7 @@ Operation::add_field_op(const FieldOperation &field_op) {
 	
 	switch (new_op_type) {
 		case Monitor: {
-			this->monitors.push_back(field_op.m_value[0]);
+			this->m_monitors.push_back(field_op.m_value[0]);
 			return;
 		}
 		case Noop:
@@ -193,7 +194,7 @@ Operation::add_field_op(const FieldOperation &field_op) {
 }
 
 void
-Operation::compose_op (const Operation & operation) {
+Operation::compose_op (const Operation &operation) {
 	std::unordered_map<HeaderField, FieldOperation, std::hash<int> >
 					field_ops = operation.m_fieldOps;
 	for (auto it=field_ops.begin(); it!=field_ops.end(); ++it) {
@@ -202,7 +203,7 @@ Operation::compose_op (const Operation & operation) {
 }
 
 std::string
-Operation::to_str() const {
+Operation::to_str (void) const {
 	std::string output = "Operation:\n";
 	for (auto &it : m_fieldOps) {
 		output += ("\t"+it.second.to_str()+"\n");
@@ -211,7 +212,7 @@ Operation::to_str() const {
 }
 
 std::string
-Operation::to_iprw_conf () const {
+Operation::to_iprw_conf (void) const {
 	
 	std::string ipsrc, tpsrc, tpdst;
 
@@ -221,7 +222,7 @@ Operation::to_iprw_conf () const {
 			ipsrc = ntoa(field_op->second.m_value[0]);
 		}
 		else {
-			BUG("Expected write operation");
+			FANCY_BUG(op_log, "Unexpected write operation");
 		}
 	}
 	else{
@@ -244,7 +245,7 @@ Operation::to_iprw_conf () const {
 				tpsrc = std::to_string(field_op->second.m_value[0])+"-"+std::to_string(field_op->second.m_value[1]);
 				break;
 			default:
-				BUG("Expected write operation");
+				FANCY_BUG(op_log, "Unexpected write operation");
 		}
 	}
 	else{
@@ -257,7 +258,7 @@ Operation::to_iprw_conf () const {
 			tpdst = std::to_string(field_op->second.m_value[0]);
 		}
 		else {
-			BUG("Expected write operation, got "+to_str());
+			FANCY_BUG(op_log, "Expected write operation, got "+to_str());
 		}
 	}
 	else{
@@ -265,24 +266,25 @@ Operation::to_iprw_conf () const {
 	}
 
 	field_op = m_fieldOps.find(ip_dst);
+
 	if(field_op != m_fieldOps.end()) {
 		//TODO: add support for load balancing
-		if(field_op->second.m_type == Write) {
+		if ( field_op->second.m_type == Write ) {
 			return ipsrc+" "+tpsrc+" "+ntoa(field_op->second.m_value[0])+" "+tpdst+" ";
 		}
-		else if (field_op->second.m_type == WriteLB) {
+		else if ( field_op->second.m_type == WriteLB ) {
 			std::string output = "RoundRobinIPMapper(";
-			for (auto &ip : field_op->second.m_lbValues) {
+			for (auto &ip : field_op->second.m_lb_values) {
 				output += ipsrc+" "+tpsrc+" "+ntoa(ip)+" "+tpdst+", ";
 			}
 			output[output.size()-2] = ')';
 			return output.substr(0,output.size()-1);
 		}
 		else {
-			BUG("Expected write operation, got "+to_str());
+			FANCY_BUG(op_log, "Expected write operation, got "+to_str());
 		}
 	}
-	else{
+	else {
 		return "pattern "+ipsrc+" "+tpsrc+" "+"- "+tpdst+" ";
 	}
 }

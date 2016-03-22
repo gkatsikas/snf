@@ -36,9 +36,9 @@
 
 CLICK_USING_DECLS
 
-#define CLICKPATH_OPT           302
-#define ROUTER_OPT              303
-#define EXPRESSION_OPT          304
+#define CLICKPATH_OPT  302
+#define ROUTER_OPT     303
+#define EXPRESSION_OPT 304
 
 static const Clp_Option options[] = {
 	{ "clickpath",  'C', CLICKPATH_OPT,  Clp_ValString, 0 },
@@ -50,32 +50,34 @@ static const Clp_Option options[] = {
 Logger logger(__FILE__);
 int    click_nthreads = 1;
 static ErrorHandler* errh;
-static Router* click_router = NULL;
-static Master* click_master = NULL;
+static Router *click_router = NULL;
+static Master *click_master = NULL;
 
-void ClickCleaner::cleanup(Clp_Parser *clp, bool clean_all) {
+void
+ClickCleaner::cleanup(Clp_Parser *clp, const bool &clean_all) {
 	if ( clp != NULL )
 		Clp_DeleteParser(clp);
 
 	if ( clean_all ) {
-		logger << debug << "Cleaning up Click..." << def << std::endl;
+		note_chatter(logger, "\tCleaning up Click...");
 		click_static_cleanup();
-		logger << debug << "|-> Static clean up" << def << std::endl;
+		note_chatter(logger, "\t|-> Static clean up");
 		if ( (click_router != NULL) && (click_master != NULL) )
 			delete click_master;
-		logger << debug << "|-> Click Master is deleted" << def << std::endl;
+		note_chatter(logger, "\t|-> Click Master is deleted");
 		errh = NULL;
-		logger << debug << "|-> Click Error Handler is deleted" << def << std::endl;
+		note_chatter(logger, "\t|-> Click Error Handler is deleted");
 	}
 }
 
-Router* parse_configuration(const String &text, bool text_is_expr, ErrorHandler *errh) {
+Router*
+parse_configuration(const String &text, const bool &text_is_expr, ErrorHandler *errh) {
 	int before_errors = errh->nerrors();
 	Router *router = click_read_router(text, text_is_expr, errh, false, click_master);
 
 	// Check the object first
 	if ( !router ) {
-		errh->error("Network Function object is NULL");
+		error_chatter(logger, "\tNetwork Function object is NULL");
 		return NULL;
 	}
 
@@ -83,17 +85,18 @@ Router* parse_configuration(const String &text, bool text_is_expr, ErrorHandler 
 	// (or in other words whether it is a valid Click configuration)
 	bool initialize_only_dag = true;
 	if ( (errh->nerrors() == before_errors) && (router->initialize(errh, initialize_only_dag) >= 0) ) {
-		//errh->message("NF parsed successfully");
+		def_chatter(logger, "\tNF parsed successfully");
 		return router;
 	}
 	else {
-		//errh->error("NF is problematic");
+		error_chatter(logger, "\tNF is problematic");
 		delete router;
 		return NULL;
 	}
 }
 
-short generate_flat_configuration(char** output_file, short position) {
+short
+generate_flat_configuration(char **output_file, const short &position) {
 
 	if ( !click_router )
 		return FAILURE;
@@ -111,7 +114,7 @@ short generate_flat_configuration(char** output_file, short position) {
 	FILE *f = 0;
 	f = fopen(*output_file, "w");
 	if (!f) {
-		errh->error("%s: %s", *output_file, strerror(errno));
+		error_chatter(logger, std::string(*output_file) + ": " + strerror(errno));
 		return FAILURE;
 	}
 
@@ -125,7 +128,8 @@ short generate_flat_configuration(char** output_file, short position) {
 	return SUCCESS;
 }
 
-Router* input_a_click_configuration (const char* click_source_configuration) {
+Router*
+input_a_click_configuration (const char *click_source_configuration) {
 	// Important function that exports the Click elements
 	click_static_initialize();
 
@@ -135,27 +139,41 @@ Router* input_a_click_configuration (const char* click_source_configuration) {
 	// We currently support only simple deployments without extra options
 	// e.g. path_to_click_dir/click my_nf.click
 	int argc = 2;
-	const char* argv[2] = { "/usr/local/bin/click", click_source_configuration };
+	const char *argv[2] = {NULL, NULL};
+	#ifdef  CLICK_PATH
+		if ( !file_exists(std::string(CLICK_PATH)) ) {
+			error_chatter(logger, "Click executable's path " + std::string(CLICK_PATH) + " does not exist. Using default");
+			const std::string default_click_exec("/usr/local/bin/click");
+			argv[0] = default_click_exec.c_str();
+		}
+		else {
+			argv[0] = CLICK_PATH;
+		}
+		argv[1] = click_source_configuration;
+	#else
+		error_chatter(logger, "A non-existent CLICK_PATH variable implies problem in autoconf");
+		exit(FAILURE);
+	#endif
 
 	// Command line arguments' parser
 	Clp_Parser *clp = Clp_NewParser(argc, argv, sizeof(options) / sizeof(options[0]), options);
 
 	const char *router_file = NULL;
-	bool file_is_expr = false;
+	bool       file_is_expr = false;
 
 	// Iterate the parser to obtain all the commands
-	while (1) {
+	while (true) {
 		int opt = Clp_Next(clp);
 		switch (opt) {
 			case ROUTER_OPT:
 			case EXPRESSION_OPT:
 				router_file:
 					if (router_file) {
-						errh->error("Network Function's configuration specified twice");
+						error_chatter(logger, "Network Function's configuration specified twice");
 						goto bad_option;
 					}
 					router_file = clp->vstr;
-					// errh->message("Network Function's source code: %s", router_file);
+					debug_chatter(logger, "Network Function's source code: " + std::string(router_file));
 
 					file_is_expr = (opt == EXPRESSION_OPT);
 					break;
@@ -198,7 +216,7 @@ Router* input_a_click_configuration (const char* click_source_configuration) {
 
 		// Error while parsing the router
 		if ( !click_router ) {
-			errh->error("Error while parsing the Network Function in %s", router_file);
+			error_chatter(logger, "Error while parsing the Network Function in " + std::string(router_file));
 			// Do not clean now, the caller will do so
 			return NULL;
 		}
@@ -214,11 +232,12 @@ Router* input_a_click_configuration (const char* click_source_configuration) {
 		return click_router;
 }
 
-void potentially_useful_code_in_the_near_future() {
+void
+potentially_useful_code_in_the_near_future(void) {
 	// Generate the flat configuration of this NF
 	/*char* flat_router = NULL;
 	if ( generate_flat_configuration(&flat_router, position) != SUCCESS ) {
-		errh->error("Failed to generate flat configuration for %s", router_file);
+		debug_chatter(logger, "Failed to generate flat configuration for " >> router_file);
 		cleanup(clp, FAILURE);
 		return NULL;
 	}

@@ -15,7 +15,7 @@
 class GenericConfiguration
 {
 	protected:
-		std::string filename;
+		std::string                      filename;
 		std::map<std::string, Chameleon> content_;
 
 		/*
@@ -27,7 +27,7 @@ class GenericConfiguration
 		/*
 		 * Constructor
 		 */
-		GenericConfiguration(const std::string& config_file);
+		GenericConfiguration(const std::string &config_file);
 
 		/*
 		 * Destructor
@@ -43,28 +43,28 @@ class GenericConfiguration
 		 * Helper methods to read the property file
 		 */
 		Chameleon const& get_value(
-			std::string const& section, std::string const& entry
+			std::string const &section, std::string const &entry
 		) const;
 		Chameleon const& get_value(
-			std::string const& section, std::string const& entry, int value
+			std::string const &section, std::string const &entry, int value
 		);
 		Chameleon const& get_value(
-			std::string const& section, std::string const& entry, unsigned short value
+			std::string const &section, std::string const &entry, unsigned short value
 		);
 		Chameleon const& get_value(
-			std::string const& section, std::string const& entry, bool value
+			std::string const &section, std::string const &entry, bool value
 		);
 		Chameleon const& get_value(
-			std::string const& section, std::string const& entry, double value
+			std::string const &section, std::string const &entry, double value
 		);
 		Chameleon const& get_value(
-			std::string const& section, std::string const& entry, std::string const& value
+			std::string const &section, std::string const &entry, std::string const &value
 		);
 
 		/*
 		 * Count the entries of a section
 		 */
-		unsigned short int count_section_elements(std::string const& section);
+		unsigned short int count_section_elements(std::string const &section);
 };
 
 #endif
