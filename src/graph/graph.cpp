@@ -222,7 +222,7 @@ Graph::print_in_degrees(void) {
 	std::ostringstream output;
 
 	def_chatter(this->log, "\t================== In degrees =================");
-	output << "\t";
+	output << "\t\t\t\t\t\t\t\t";
 	for (auto &pair : this->get_in_degrees()) {
 		output << std::setw(2) << pair.first->get_name() << " has in-degree: " << pair.second << "\n";
 	}
@@ -236,7 +236,7 @@ Graph::print_adjacency_list(void) {
 
 	def_chatter(this->log, "\t================ Adjacency List ===============");
 	for (auto& pair : this->get_adjacency_list()) {
-		output << std::setw(2) << "\t\t\t" << pair.first->get_name() << ":" << pair.first->get_position() << "-> ";
+		output << std::setw(2) << "\t\t\t\t\t\t\t\t" << pair.first->get_name() << ":" << pair.first->get_position() << "-> ";
 		for (auto& neighbour : pair.second)
 			output << "[" << neighbour.first << "]" << neighbour.second->get_name() << ":" << neighbour.second->get_position() << ", ";
 		output << std::endl;
@@ -258,7 +258,7 @@ Graph::print_topological_sort(void) {
 		error_chatter(this->log, "\t\t|--> " << e.what());
 		exit(NF_CHAIN_NOT_ACYCLIC);
 	}
-	output << "\t";
+	output << "\t\t\t\t\t\t\t\t";
 	for (Vertex *v : ts)
 		output << v->get_name() << ",";
 	output << std::endl;
@@ -271,7 +271,7 @@ Graph::print_vertex_order(void) {
 	std::ostringstream output;
 
 	def_chatter(this->log, "\t================= Vertex Order ================");
-	output << "\t\t";
+	output << "\t\t\t\t\t\t\t\t";
 	for (Vertex *v : this->get_vertex_order()) {
 		output << v->get_name() << ",";
 	}

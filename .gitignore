@@ -4,7 +4,10 @@
 *.plist
 .*.cmd
 *.Po
+*.a
+*.in
 **/.deps/
+src/hypernf
 Makefile
 autom4te*
 build-aux
@@ -15,6 +18,8 @@ config.log
 config.mk
 config.status
 configure.lineno
+configure
+libtool
 depcomp
 man
 stamp-*

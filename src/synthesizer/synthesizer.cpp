@@ -264,7 +264,10 @@ Synthesizer::is_hyper_nf_iface(const std::string& nf, const std::string& iface) 
 void
 Synthesizer::print_hyper_nf_ifaces(void) {
 	for (auto &it : this->hyper_nf_ifaces ) {
-		info_chatter (this->log, "\t[Network Function: " << it.first << ", Iface: " << it.second << "]");
+		info_chatter (this->log, "\t[Network Function: " <<
+						std::right << std::setw(5)  << it.first <<
+						", Iface: " << 
+						std::right << std::setw(8) << it.second << "]");
 	}
 }
 
@@ -273,15 +276,15 @@ Synthesizer::test_traffic_class_builder(void) {
 	setvbuf(stdout, NULL, _IONBF, 0);
 
 	std::string routing_table = "10/8 0,192.168.5/24 1,0/0 2";
-	std::shared_ptr<ClickElement> lookup (new ClickElement("RadixIPLookup",routing_table));
+	std::shared_ptr<ClickElement> lookup  (new ClickElement("RadixIPLookup",routing_table));
 
 	std::string empty;
 	std::shared_ptr<ClickElement> discard (new ClickElement("Discard", empty));
 
-	std::shared_ptr<ClickElement> ttl (new ClickElement("DecIPTTL", empty));
+	std::shared_ptr<ClickElement> ttl     (new ClickElement("DecIPTTL", empty));
 
 	std::string address = "192.10.0.1";
-	std::shared_ptr<ClickElement> fixip (new ClickElement("FixIPSrc", address ));
+	std::shared_ptr<ClickElement> fixip   (new ClickElement("FixIPSrc", address ));
 
 	//std::string rewrite = "- - 192.168.0.1 100-200# 0 1";
 	//std::shared_ptr<ClickElement> iprewriter(new ClickElement(IPRewriter, rewrite));
