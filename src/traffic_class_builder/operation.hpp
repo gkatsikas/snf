@@ -1,12 +1,28 @@
-//============================================================================
-//        Name: operation.hpp
-//   Copyright: KTH ICT CoS Network Systems Lab
-// Description: Definition of the class that encodes the packet operations
-//              to be applied to Hyper-NF's traffic classes.
-//============================================================================
+#ifndef _OPERATION_HPP_
+#define _OPERATION_HPP_
 
-#ifndef OPERATION_HPP
-#define OPERATION_HPP
+/*
+ * operation.hpp
+ * 
+ * Definition of the class that encodes the packet operations
+ * to be applied to Hyper-NF's traffic classes.
+ *
+ * Copyright (c) 2015-2016 KTH Royal Institute of Technology
+ * Copyright (c) 2015-2016 Georgios Katsikas, Marcel Enguehard
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ * 
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ * 
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>
+ */
 
 #include <vector>
 #include <string>
@@ -60,15 +76,15 @@ struct FieldOperation {
 class Operation {
 
 	private:
-		std::unordered_map<HeaderField, FieldOperation, std::hash<int> > m_fieldOps;
+		std::unordered_map<HeaderField, FieldOperation, std::hash<int> > m_field_ops;
 		uint32_t         m_identifier;
 		std::vector<int> m_monitors;    /* List of m_monitors that this class goes through */
 
 	public:
 		void add_field_op(const FieldOperation &field_op);
-		void compose_op  (const Operation &operation);
-		bool has_field_op(const HeaderField &field) const;
-		bool operator==  (const Operation &rhs);
+		void compose_op  (const Operation      &operation);
+		bool has_field_op(const HeaderField    &field) const;
+		bool operator==  (const Operation      &rhs);
 
 		std::string to_str       (void) const;
 		std::string to_iprw_conf (void) const;

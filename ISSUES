@@ -12,11 +12,9 @@
 TODO:
 	* add ID to all elements
 	* add pointer->element in Write operations
-	* Check inport assignemnts for non-active ports
-	* Fix warnings of bootstrap
+	* Check inport assignments for non-active ports
 	* Compile tests with autotools
 	* Use m4/hypernf.m4 to apply system checks (e.g., CXX compiler, CLICK, DPDK) and alleviate configure.ac
-	* Include config.h and apply checks
  
 ###################
 # Element support #

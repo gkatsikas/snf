@@ -1,9 +1,25 @@
-//============================================================================
-//        Name: operation.cpp
-//   Copyright: KTH ICT CoS Network Systems Lab
-// Description: Implementation of the class that encodes the packet operations
-//              to be applied to Hyper-NF's traffic classes.
-//============================================================================
+// -*- c-basic-offset: 4 -*-
+/* operation.cpp
+ * 
+ * Implementation of the class that encodes the packet operations
+ * to be applied to Hyper-NF's traffic classes.
+ *
+ * Copyright (c) 2015-2016 KTH Royal Institute of Technology
+ * Copyright (c) 2015-2016 Georgios Katsikas, Marcel Enguehard
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ * 
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ * 
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>
+ */
 
 #include <iostream>
 #include <cstring>
@@ -84,17 +100,17 @@ FieldOperation::operator== (const FieldOperation &rhs) const{
 
 FieldOperation*
 Operation::get_field_op(const HeaderField &field) {
-	if (m_fieldOps.find(field) == m_fieldOps.end() ) {
+	if (m_field_ops.find(field) == m_field_ops.end() ) {
 		return nullptr;
 	}
 	else {
-		return &(m_fieldOps[field]);
+		return &(m_field_ops[field]);
 	}
 }
 
 bool
 Operation::has_field_op(const HeaderField &field) const {
-	return (m_fieldOps.find(field) != m_fieldOps.end());
+	return (m_field_ops.find(field) != m_field_ops.end());
 }
 
 std::string
@@ -150,13 +166,13 @@ FieldOperation::to_str (void) const {
 bool
 Operation::operator== (const Operation &rhs) {
 	
-	for (auto &it : m_fieldOps) {
+	for (auto &it : m_field_ops) {
 		FieldOperation *rfield_op = get_field_op(it.first);
 		if(!rfield_op || !(*rfield_op == it.second))
 			return false;
 	}
 	
-	for (auto &it : rhs.m_fieldOps) {
+	for (auto &it : rhs.m_field_ops) {
 		if(!this->has_field_op(it.first))
 			return false;
 	}
@@ -184,11 +200,11 @@ Operation::add_field_op(const FieldOperation &field_op) {
 			HeaderField field = field_op.m_field;
 
 			//If we don't have any operation yet
-			if (m_fieldOps.find(field) == m_fieldOps.end() ) {
-				this->m_fieldOps.emplace(field, field_op);
+			if (m_field_ops.find(field) == m_field_ops.end() ) {
+				this->m_field_ops.emplace(field, field_op);
 			}
 			else {
-				m_fieldOps[field].compose(field_op);
+				m_field_ops[field].compose(field_op);
 			}
 	}
 }
@@ -196,7 +212,7 @@ Operation::add_field_op(const FieldOperation &field_op) {
 void
 Operation::compose_op (const Operation &operation) {
 	std::unordered_map<HeaderField, FieldOperation, std::hash<int> >
-					field_ops = operation.m_fieldOps;
+					field_ops = operation.m_field_ops;
 	for (auto it=field_ops.begin(); it!=field_ops.end(); ++it) {
 		this->add_field_op (it->second);
 	}
@@ -205,7 +221,7 @@ Operation::compose_op (const Operation &operation) {
 std::string
 Operation::to_str (void) const {
 	std::string output = "Operation:\n";
-	for (auto &it : m_fieldOps) {
+	for (auto &it : m_field_ops) {
 		output += ("\t"+it.second.to_str()+"\n");
 	}
 	return output;
@@ -216,8 +232,8 @@ Operation::to_iprw_conf (void) const {
 	
 	std::string ipsrc, tpsrc, tpdst;
 
-	auto field_op = m_fieldOps.find(ip_src);
-	if(field_op != m_fieldOps.end()) {
+	auto field_op = m_field_ops.find(ip_src);
+	if(field_op != m_field_ops.end()) {
 		if(field_op->second.m_type == Write) {
 			ipsrc = ntoa(field_op->second.m_value[0]);
 		}
@@ -229,8 +245,8 @@ Operation::to_iprw_conf (void) const {
 		ipsrc= "-";
 	}
 
-	field_op = m_fieldOps.find(tp_srcPort);
-	if(field_op != m_fieldOps.end()) {
+	field_op = m_field_ops.find(tp_srcPort);
+	if(field_op != m_field_ops.end()) {
 		switch (field_op->second.m_type) {
 			case Write:
 				tpsrc = std::to_string(field_op->second.m_value[0]);
@@ -252,8 +268,8 @@ Operation::to_iprw_conf (void) const {
 		tpsrc = "-";
 	}
 
-	field_op = m_fieldOps.find(tp_dstPort);
-	if(field_op != m_fieldOps.end()) {
+	field_op = m_field_ops.find(tp_dstPort);
+	if(field_op != m_field_ops.end()) {
 		if(field_op->second.m_type == Write) {
 			tpdst = std::to_string(field_op->second.m_value[0]);
 		}
@@ -265,9 +281,9 @@ Operation::to_iprw_conf (void) const {
 		tpdst = "-";
 	}
 
-	field_op = m_fieldOps.find(ip_dst);
+	field_op = m_field_ops.find(ip_dst);
 
-	if(field_op != m_fieldOps.end()) {
+	if(field_op != m_field_ops.end()) {
 		//TODO: add support for load balancing
 		if ( field_op->second.m_type == Write ) {
 			return ipsrc+" "+tpsrc+" "+ntoa(field_op->second.m_value[0])+" "+tpdst+" ";

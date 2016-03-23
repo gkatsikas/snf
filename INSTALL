@@ -12,17 +12,17 @@ needs.
 CONFIGURING
 -----------
 
-Change to the Hyper-NF source directory and run
+Change to the Hyper-NF source directory and run:
 	./bootstrap
 
 This will initialize the required autotools to support the build process.
 
-To build Hyper-NF with basic Click support run
+To build Hyper-NF with basic Click support run:
 	./configure --with-click=<path-to-your-click-folder>
 Example:
-	./configure --with-click=/opt/click/
+	./configure --with-click=/opt/click
 
-To build Hyper-NF with Click-DPDK support run
+To build Hyper-NF with Click-DPDK support and more verbosity run:
 	./configure \
 			RTE_SDK=<path-to-your-dpdk-folder> \
 			RTE_TARGET=<your-dpdk-target> \
@@ -30,10 +30,10 @@ To build Hyper-NF with Click-DPDK support run
 			--enable-dpdk=yes
 Example:
 	./configure \
-			RTE_SDK=/opt/dpdk/ \
-			RTE_TARGET=x86_64-native-linuxapp-gcc \
-			--with-click=/opt/click-dpdk/ \
-			--enable-dpdk=yes --enable-debug=yes
+			RTE_SDK=/opt/dpdk \
+			RTE_TARGET=x86_64-native-linuxapp-gcc/ \
+			--with-click=/opt/click-dpdk \
+			--enable-dpdk=yes --enable-debug=no --enable-verbose=yes
 
 INSTALLING
 ---------

@@ -1,8 +1,24 @@
-//============================================================================
-//        Name: vertex.cpp
-//   Copyright: KTH ICT CoS Network Systems Lab
-// Description: Implements a digraph's vertex.
-//============================================================================
+// -*- c-basic-offset: 4 -*-
+/* vertex.cpp
+ * 
+ * Implements a digraph's vertex.
+ *
+ * Copyright (c) 2015-2016 KTH Royal Institute of Technology
+ * Copyright (c) 2015-2016 Georgios Katsikas, Marcel Enguehard
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ * 
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ * 
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>
+ */
 
 #include "vertex.hpp"
 
@@ -140,7 +156,7 @@ ChainVertex::get_domain_from_entry_interface(const std::string &iface) const {
 
 std::string
 ChainVertex::get_iface_from_entry_domain(const std::string &domain) const {
-	for ( auto& kv : this->entry_interfaces )
+	for ( auto &kv : this->entry_interfaces )
 	// Find the interface of the given Domain
 		if ( kv.second.second == domain )
 			return kv.first;
@@ -169,7 +185,7 @@ ChainVertex::get_nf_from_chain_interface(const std::string &iface) const {
 
 std::string
 ChainVertex::get_iface_from_chain_nf(const std::string &nf) const {
-	for ( auto& kv : this->chain_interfaces )
+	for ( auto &kv : this->chain_interfaces )
 		// Find the interface of the given NF
 		if ( kv.second.second == nf )
 			return kv.first;
@@ -194,14 +210,20 @@ ChainVertex::print_info(void) {
 
 void
 ChainVertex::print_entry_interface_map(void) {
-	for ( auto& kv : this->entry_interfaces )
+	#ifdef VERBOSE_MODE
+	for ( auto &kv : this->entry_interfaces ) {
 		info_chatter(this->log, "\t" << this->get_name() << "-> [Interface: " << kv.first <<
 					", [MAC: " << kv.second.first << ", Domain: " << kv.second.second << "] ]");
+	}
+	#endif
 }
 
 void
 ChainVertex::print_chain_interface_map(void) {
-	for ( auto& kv : this->chain_interfaces )
+	#ifdef VERBOSE_MODE
+	for ( auto &kv : this->chain_interfaces ) {
 		info_chatter(this->log, "\t" << this->get_name() << "-> [Interface: " << kv.first << 
 					", [MAC: " << kv.second.first << ", NF: " << kv.second.second << "] ]");
+	}
+	#endif
 }

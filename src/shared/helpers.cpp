@@ -1,8 +1,24 @@
-//============================================================================
-//        Name: helpers.cpp
-//   Copyright: KTH ICT CoS Network Systems Lab
-// Description: Global helper functions' definition
-//============================================================================
+// -*- c-basic-offset: 4 -*-
+/* helpers.cpp
+ * 
+ * Implements global helper functions.
+ *
+ * Copyright (c) 2015-2016 KTH Royal Institute of Technology
+ * Copyright (c) 2015-2016 Georgios Katsikas, Marcel Enguehard
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ * 
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ * 
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>
+ */
 
 #include <cstring>
 #include <sstream>
@@ -143,34 +159,35 @@ ntoa (uint32_t address) {
  * Allocate a buffer with size defined by the second argument.
  * Initialize and return(by ref) the allocated buffer or return NULL.
  */
-short int
+bool
 allocateMemory(void **memoryBuffer, size_t size) {
-	if ( *memoryBuffer != NULL )
+	if ( *memoryBuffer ) {
 		free(*memoryBuffer);
+	}
 
 	*memoryBuffer = (void*) malloc(size);
-	if ( *memoryBuffer == NULL )
+	if ( ! (*memoryBuffer) ) {
 		return NO_MEM_AVAILABLE;
-	else
-	{
+	}
+	else {
 		memset(*memoryBuffer, 0, size);
-		return SUCCESS;
+		return DONE;
 	}
 }
 
 /*
  * Free the space of a buffer if not already done
  */
-short int
+bool
 releaseMemory(void **memoryBuffer) {
-	if ( *memoryBuffer != NULL )
-	{
+	if ( *memoryBuffer ) {
 		free(*memoryBuffer);
 		*memoryBuffer = NULL;
-		return SUCCESS;
+		return DONE;
 	}
-	else
+	else {
 		return MEMORY_ALREADY_RELEASED;
+	}
 }
 
 /*

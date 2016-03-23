@@ -1,9 +1,24 @@
-//============================================================================
-//        Name: graph.cpp
-//   Copyright: KTH ICT CoS Network Systems Lab
-// Description: Implements a directed graph with topological sort and
-//              check for cycles.
-//============================================================================
+// -*- c-basic-offset: 4 -*-
+/* graph.cpp
+ * 
+ * Implements a directed graph with topological sorting.
+ *
+ * Copyright (c) 2015-2016 KTH Royal Institute of Technology
+ * Copyright (c) 2015-2016 Georgios Katsikas, Marcel Enguehard
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ * 
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ * 
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>
+ */
 
 #include "graph.hpp"
 #include "../shared/helpers.hpp"
@@ -14,7 +29,7 @@ Graph::Graph() {
 }
 
 Graph::~Graph() {
-	for (auto& pair : this->get_in_degrees())
+	for (auto &pair : this->get_in_degrees())
 		if ( pair.first != NULL )
 			delete pair.first;
 	this->in_degrees.clear();
@@ -51,7 +66,7 @@ Graph::is_empty(void) const {
  */
 bool
 Graph::contains(const unsigned short &pos) const {
-	for ( auto& pair : this->vertices )
+	for ( auto &pair : this->vertices )
 		if ( pair.first->get_position() == pos )
 			return true;
 	return false;
@@ -91,7 +106,7 @@ Graph::add_edge(Vertex *u, Vertex *v, const unsigned short &input_port_v) {
 	this->add_vertex(std::move(v));
 
 	// Check whether the edge does exist
-	for ( auto& neighbour : this->vertices[u] ) {
+	for ( auto &neighbour : this->vertices[u] ) {
 		if ( neighbour.second->get_position() == v->get_position() ) {
 			debug_chatter(this->log, "\t\tEdge exists: [" << u->get_name() << ":" << u->get_position() << 
 							"] -> [" << v->get_name() << ":" << v->get_position() << "]");
@@ -114,7 +129,7 @@ Graph::find_in_degrees(void) {
 	this->in_degrees.clear();
 
 	// Populate the data structure
-	for (auto& pair : this->vertices) {
+	for (auto &pair : this->vertices) {
 		// Initialise in degree for this vertex
 		this->in_degrees[pair.first];
 
@@ -126,7 +141,7 @@ Graph::find_in_degrees(void) {
 /*
  * Get the in degree of a specific vertex
  */
-int
+short
 Graph::get_in_degree(Vertex *u) {
 	// If the data structure is empty, we need to invoke the find method first
 	if ( this->in_degrees.empty() )
@@ -137,7 +152,7 @@ Graph::get_in_degree(Vertex *u) {
 /*
  * Get all the in degrees of the graph vertices
  */
-const Graph::VertexMap<int>
+const Graph::VertexMap<short>
 Graph::get_in_degrees(void) {
 	// If the data structure is empty, we need to invoke the find method first
 	if ( this->in_degrees.empty() )
@@ -170,11 +185,11 @@ Graph::get_vertex_by_name(const std::string &name) const {
 		return NULL;
 
 	if ( name.empty() ) {
-		DEBUG("\tBad vertex name");
+		debug_chatter(this->log, "\tBad vertex name");
 		return NULL;
 	}
 
-	for (auto& pair : this->vertices) {
+	for (auto &pair : this->vertices) {
 		if ( pair.first->get_name() == name )
 			return pair.first;
 	}
@@ -190,7 +205,7 @@ Graph::get_vertex_by_position(const unsigned short &pos) const {
 	if ( this->is_empty() )
 		return NULL;
 
-	for ( auto& pair : this->vertices ) {
+	for ( auto &pair : this->vertices ) {
 		if ( pair.first->get_position() == pos ) {
 			return pair.first;
 		}
@@ -204,28 +219,36 @@ Graph::get_vertex_by_position(const unsigned short &pos) const {
  */
 void
 Graph::print_in_degrees(void) {
+	std::ostringstream output;
+
 	def_chatter(this->log, "\t================== In degrees =================");
-	log << "\t" << def;
-	for (auto& pair : this->get_in_degrees())
-		log << std::setw(2) << pair.first->get_name() << " has in-degree: " << pair.second << def << std::endl;
-		//def_chatter(this->log, pair.first->get_name() << " has in-degree: " << pair.second);
+	output << "\t";
+	for (auto &pair : this->get_in_degrees()) {
+		output << std::setw(2) << pair.first->get_name() << " has in-degree: " << pair.second << "\n";
+	}
+	def_chatter(this->log, output.str());
 	def_chatter(this->log, "\t===============================================");
 }
 
 void
 Graph::print_adjacency_list(void) {
+	std::ostringstream output;
+
 	def_chatter(this->log, "\t================ Adjacency List ===============");
 	for (auto& pair : this->get_adjacency_list()) {
-		log << std::setw(2) << "\t\t\t" << pair.first->get_name() << ":" << pair.first->get_position() << "-> ";
+		output << std::setw(2) << "\t\t\t" << pair.first->get_name() << ":" << pair.first->get_position() << "-> ";
 		for (auto& neighbour : pair.second)
-			log << "[" << neighbour.first << "]" << neighbour.second->get_name() << ":" << neighbour.second->get_position() << ", " << def;
-		log << def << std::endl;
+			output << "[" << neighbour.first << "]" << neighbour.second->get_name() << ":" << neighbour.second->get_position() << ", ";
+		output << std::endl;
 	}
+	def_chatter(this->log, output.str());
 	def_chatter(this->log, "\t===============================================");
 }
 
 void
 Graph::print_topological_sort(void) {
+	std::ostringstream output;
+
 	def_chatter(this->log, "\t=============== Topological Sort ==============");
 	std::vector<Vertex*> ts;
 	try {
@@ -235,21 +258,25 @@ Graph::print_topological_sort(void) {
 		error_chatter(this->log, "\t\t|--> " << e.what());
 		exit(NF_CHAIN_NOT_ACYCLIC);
 	}
-	log << "\t" << def;
-	for (Vertex* v : ts)
-		log << v->get_name() << "," << def;
-	log << std::endl;
+	output << "\t";
+	for (Vertex *v : ts)
+		output << v->get_name() << ",";
+	output << std::endl;
+	def_chatter(this->log, output.str());
 	def_chatter(this->log, "\t===============================================");
 }
 
 void
 Graph::print_vertex_order(void) {
+	std::ostringstream output;
+
 	def_chatter(this->log, "\t================= Vertex Order ================");
-	log << "\t\t" << def;
-	for (Vertex* v : this->get_vertex_order()) {
-		log << v->get_name() << "," << def;
+	output << "\t\t";
+	for (Vertex *v : this->get_vertex_order()) {
+		output << v->get_name() << ",";
 	}
-	log << std::endl;
+	output << std::endl;
+	def_chatter(this->log, output.str());
 	def_chatter(this->log, "\t===============================================");
 }
 
@@ -285,7 +312,7 @@ Graph::get_vertex_order(void) {
 std::vector<Vertex*>
 Graph::get_vertex_children(Vertex *u) const {
 	std::vector<Vertex*> children;
-	for ( auto& pair : this->vertices.at(u) ) {
+	for ( auto &pair : this->vertices.at(u) ) {
 		children.push_back(pair.second);
 	}
 	return children;
@@ -306,7 +333,7 @@ Graph::topological_sort(void) {
 		return sorted;
 	}
 
-	VertexMap<int> in_degs = this->get_in_degrees();
+	VertexMap<short> in_degs = this->get_in_degrees();
 
 	std::vector<Vertex*> sorted;
 	sorted.reserve(in_degs.size());

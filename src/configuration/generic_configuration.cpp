@@ -1,8 +1,24 @@
-//============================================================================
-//        Name: generic_configuration.cpp
-//   Copyright: KTH ICT CoS Network Systems Lab
-// Description: Input Parameters' configuration implementation
-//============================================================================
+// -*- c-basic-offset: 4 -*-
+/* generic_configuration.cpp
+ * 
+ * Implementation of methods that read input parameters.
+ *
+ * Copyright (c) 2015-2016 KTH Royal Institute of Technology
+ * Copyright (c) 2015-2016 Georgios Katsikas, Marcel Enguehard
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ * 
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ * 
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>
+ */
 
 #include <sys/stat.h>
 
@@ -79,7 +95,7 @@ GenericConfiguration::get_value(
 	std::map<std::string,Chameleon>::const_iterator ci = content_.find(section + '/' + entry);
 
 	if (ci == content_.end())
-		throw std::runtime_error(entry + " does not exist in section " + section);
+		throw(entry + " does not exist in section " + section);
 
 	return ci->second;
 }
@@ -91,7 +107,7 @@ GenericConfiguration::get_value(
 	try {
 		return get_value(section, entry);
 	}
-	catch(const char *) {
+	catch(const std::exception& e) {
 		return content_.insert(make_pair(section+'/'+entry, Chameleon(value))).first->second;
 	}
 }
@@ -103,7 +119,7 @@ GenericConfiguration::get_value(
 	try {
 		return get_value(section, entry);
 	}
-	catch(const char *) {
+	catch(const std::exception& e) {
 		return content_.insert(make_pair(section+'/'+entry, Chameleon(value))).first->second;
 	}
 }
@@ -115,7 +131,7 @@ GenericConfiguration::get_value(
 	try {
 		return get_value(section, entry);
 	}
-	catch(const char *) {
+	catch(const std::exception& e) {
 		return content_.insert(make_pair(section+'/'+entry, Chameleon(value))).first->second;
 	}
 }
@@ -127,7 +143,7 @@ GenericConfiguration::get_value(
 	try {
 		return get_value(section, entry);
 	}
-	catch(const char *) {
+	catch(const std::exception& e) {
 		return content_.insert(make_pair(section+'/'+entry, Chameleon(value))).first->second;
 	}
 }
@@ -139,7 +155,7 @@ GenericConfiguration::get_value(
 	try {
 		return get_value(section, entry);
 	}
-	catch(const char *) {
+	catch(const std::exception& e) {
 		return content_.insert(make_pair(section+'/'+entry, Chameleon(value))).first->second;
 	}
 }

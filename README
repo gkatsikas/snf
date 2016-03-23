@@ -5,6 +5,7 @@ A framework to turn a chain of Click-based network functions (NFs) into a sythes
 
 ## Requirements
   * C++11 (e.g. apt-get install build-essential)
+  * `apt-get install autotools-dev`
   * `apt-get install libpcap-dev`
   * `apt-get install libboost-all-dev` (or libboost-dev)
 

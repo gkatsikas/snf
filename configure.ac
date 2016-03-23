@@ -84,11 +84,13 @@ AC_TRY_CPP([#include<click/routervisitor.hh>], , AC_MSG_ERROR([Cannot find click
 
 
 ################################################################################
-## Debug compilation support                                                  ##
+## Debugging and verbosity features                                           ##
 ################################################################################
+
+#### DEBUG_MODE
 AC_MSG_CHECKING([whether to build with debug information])
 
-# Use --enable-debug=yes to put more verbosity in g++
+# Use --enable-debug=yes to allow debug-level messages, more verbosity in g++, and gdb
 AC_ARG_ENABLE(
 	[debug],
 	AS_HELP_STRING([--enable-debug], [enable debugging (def=no)]),
@@ -100,14 +102,32 @@ AC_ARG_ENABLE(
 	[debug=false]
 )
 AC_MSG_RESULT([$enableval])
-#AM_CONDITIONAL(DEBUG, test x"$debug" = x"true")
 
 if test x"$debug" = x"true"; then
-	AC_DEFINE([DEBUG_MODE],[],[Debug Mode])
-	AM_CXXFLAGS="-g -O3 -std=c++11 -pedantic -Wall -Werror -Wno-uninitialized -Wextra"
+	AC_DEFINE([DEBUG_MODE],[1],[Debug Mode])
+	AM_CXXFLAGS="-g -O3 -std=c++11 -pedantic -Wall -Wno-uninitialized -Wextra"
 else
-	#AC_DEFINE([NON_DEBUG_MODE],[],[No-debug Mode])
-	AM_CXXFLAGS="   -O3 -std=c++11 -pedantic -Wall -Werror -Wextra"
+	AM_CXXFLAGS="   -O3 -std=c++11 -pedantic -Wall -Wextra"
+fi
+
+#### VERBOSE_MODE
+AC_MSG_CHECKING([verbosity])
+
+# Use --enable-verbose=yes to allow verbosity in stdout, stderr
+AC_ARG_ENABLE(
+	[verbose],
+	AS_HELP_STRING([--enable-verbose], [enable verbosity (def=yes)]),
+	[case "${enableval}" in
+		yes) verbose=true ;;
+		no)  verbose=false ;;
+		*)   AC_MSG_ERROR([bad value ${enableval} for --enable-verbose]) ;;
+	esac],
+	[verbose=true]
+)
+AC_MSG_RESULT([$enableval])
+
+if test x"$verbose" = x"true"; then
+	AC_DEFINE([VERBOSE_MODE],[1],[Verbosity Mode])
 fi
 ################################################################################
 
@@ -256,6 +276,9 @@ AM_LDFLAGS="-L/usr/local/lib/ -lclick -ldl -lpthread -lpcap"
 #LDFLAGS="$LDFLAGS -L/usr/local/lib/ -lclick -ldl -lpthread -lpcap"
 #CXXFLAGS="$CXXFLAGS -O3 -Wall -std=c++11 -pedantic -Wextra -g"
 
+# Fix warnings because of $ symbols appearing in Makefile.am
+AC_SUBST([DOLLAR_SIGN],[$])
+
 AC_SUBST([LIBS])
 AC_SUBST([AM_CXXFLAGS])
 AC_SUBST([AM_LDFLAGS])
@@ -265,6 +288,7 @@ AC_CONFIG_FILES([Makefile
 				 src/Makefile
 				 src/click/Makefile
 				 src/configuration/Makefile
+				 src/generator/Makefile
 				 src/graph/Makefile
 				 src/parser/Makefile
 				 src/shared/Makefile

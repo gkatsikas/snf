@@ -1,6 +1,10 @@
-/* Part of file:
- * click.cc -- user-level Click main program
- * Eddie Kohler
+#ifndef _CLICK_PARSE_CONFIGURATION_HPP_
+#define _CLICK_PARSE_CONFIGURATION_HPP_
+
+/* 
+ * click_parse_configuration.hpp
+ * 
+ * Header file to declare parse_configuration function and its custom wrapper.
  *
  * Copyright (c) 1999-2000 Massachusetts Institute of Technology
  * Copyright (c) 2000 Mazu Networks, Inc.
@@ -8,6 +12,7 @@
  * Copyright (c) 2004-2006 Regents of the University of California
  * Copyright (c) 2008-2009 Meraki, Inc.
  * Copyright (c) 1999-2015 Eddie Kohler
+ * Copyright (c) 2015-2016 Georgios Katsikas
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
  * copy of this software and associated documentation files (the "Software"),
@@ -19,17 +24,6 @@
  * notice is a summary of the Click LICENSE file; the license in that file is
  * legally binding.
  */
-
-//============================================================================
-//        Name: click_parse_configuration.hpp
-//   Copyright: KTH ICT CoS Network Systems Lab
-//  Co-authors: Georgios Katsikas(katsikas)-Marcel Enguehard(marcele) @kth.se
-// Description: Header file to declare parse_configuration function and its
-//              custom wrapper.
-//============================================================================
-
-#ifndef _CLICK_PARSE_CONFIGURATION_HPP_
-#define _CLICK_PARSE_CONFIGURATION_HPP_
 
 #ifdef HAVE_CLICK
 #include <click/config.h>
@@ -62,7 +56,7 @@ namespace ClickCleaner {
 /*
  * Generate an equivalent Click configuration with flattened statements
  */
-short
+bool
 generate_flat_configuration(
 	const char **output_file,
 	const short position = -1

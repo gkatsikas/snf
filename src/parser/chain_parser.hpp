@@ -1,11 +1,27 @@
-//============================================================================
-//        Name: chain_parser.hpp
-//   Copyright: KTH ICT CoS Network Systems Lab
-// Description: Class declaration for parsing Click configurations.
-//============================================================================
-
 #ifndef _CHAIN_PARSER_HPP_
 #define _CHAIN_PARSER_HPP_
+
+/*
+ * chain_parser.hpp
+ * 
+ * Class declaration for parsing and stitching Click configurations.
+ *
+ * Copyright (c) 2015-2016 KTH Royal Institute of Technology
+ * Copyright (c) 2015-2016 Georgios Katsikas, Marcel Enguehard
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ * 
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ * 
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>
+ */
 
 #include <unordered_map>
 
@@ -49,7 +65,7 @@ class ChainParser {
 		 * Reads and loads one input Click configuration.
 		 * It uses built-in Click methods and data structures linked with this file.
 		 */
-		short load_nf(
+		bool load_nf(
 			const std::string &nf_name,
 			const std::string &nf_source, 
 			const unsigned short &position
@@ -59,8 +75,8 @@ class ChainParser {
 		 * After loading all the NFs into the parser's memory, run a DFS visit per DAG
 		 * to build the NF Synthesizer's graph.
 		 */
-		short build_nf_dag(
-			const std::string &nf_name,
+		bool build_nf_dag(
+			const std::string    &nf_name,
 			const unsigned short &position
 		);
 
@@ -69,8 +85,8 @@ class ChainParser {
 		 * and verify whether the interfaces are correct. The property file interfaces must be included int the actual
 		 * Click configuration, otherwise the synthesizer cannot assess the connectivity between two NFs.
 		 */
-		 short verify_and_connect_nfs(
-		 	const std::string &nf_name,
+		 bool verify_and_connect_nfs(
+		 	const std::string    &nf_name,
 		 	const unsigned short &position
 		 );
 
@@ -99,7 +115,7 @@ class ChainParser {
 		 * Visits recursively the Click DAG and returns the vector of Elements it contains.
 		 * DEPRECATED from Click
 		 */
-		//Vector<Element*> visit_dag(unsigned short position);
+		Vector<Element*> visit_dag(const unsigned short &position);
 
 	public:
 		/*
@@ -124,14 +140,14 @@ class ChainParser {
 		 * It calls the private load_nf_configuration as many times an the number
 		 * of input NFs that compose the chain.
 		 */
-		short load_nf_configurations(void);
+		bool load_nf_configurations(void);
 
 		/*
 		 * B.
 		 * After passing the loading step above, we are ready to chain these configurations
 		 * by linking leaf nodes with roots.
 		 */
-		short chain_nf_configurations(void);
+		bool chain_nf_configurations(void);
 };
 
 #endif

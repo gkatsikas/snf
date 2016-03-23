@@ -51,10 +51,10 @@ fi
 
 ### Execution through GDB (Press r (run) and then q (quit))
 if [[ ! -z $debug_mode ]]; then
-	gdb --args $executable -p $input_property_file
+	gdb --args $executable -p $input_property_file -v
 ### Normal execution
 else
-	$executable -p $input_property_file
+	$executable -p $input_property_file -v
 fi
 
 exit $SUCCESS

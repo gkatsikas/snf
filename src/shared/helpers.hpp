@@ -1,11 +1,27 @@
-//============================================================================
-//        Name: helpers.hpp
-//   Copyright: KTH ICT CoS Network Systems Lab
-// Description: Global helper functions' declaration and variables
-//============================================================================
-
 #ifndef _HELPERS_HPP_
 #define _HELPERS_HPP_
+
+/*
+ * helpers.hpp
+ * 
+ * Global helper functions' and variables declarations.
+ *
+ * Copyright (c) 2015-2016 KTH Royal Institute of Technology
+ * Copyright (c) 2015-2016 Georgios Katsikas, Marcel Enguehard
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ * 
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ * 
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>
+ */
 
 /* 
  * The auto-generated header contains useful flags that
@@ -78,9 +94,11 @@ const short EXISTS                   =  1;
 
 // Generic Success
 const short SUCCESS                  =  0;
+const bool  DONE                     = true;
 
 // Generic Error
 const short FAILURE                  = -1;
+const bool  ERROR                    = false;
 const short WRONG_INPUT_ARGS         = -3;
 
 // File Management
@@ -127,32 +145,42 @@ const std::set<std::string> SUPPORTED_MAPPER_ELEMENTS = {
 };
 
 /*
- * Debugging macros
+ * Verbosity and Debugging macros
  */
-#define   def_chatter(LOG, MSG) LOG 	<< boost::format("[%4d] >> ") % __LINE__ \
-										<< def   << MSG << def << std::endl
-#define  info_chatter(LOG, MSG) LOG 	<< boost::format("[%4d] >> ") % __LINE__ \
-										<< info  << MSG << def << std::endl
-#define  note_chatter(LOG, MSG) LOG 	<< boost::format("[%4d] >> ") % __LINE__ \
-										<< note  << MSG << def << std::endl
-#define  warn_chatter(LOG, MSG) LOG 	<< boost::format("[%4d] >> ") % __LINE__ \
-										<< warn  << MSG << def << std::endl
-#define error_chatter(LOG, MSG) LOG 	<< boost::format("[%4d] >> ") % __LINE__ \
-										<< error << MSG << def << std::endl
-
-#ifdef  DEBUG_MODE
-#define debug_chatter(LOG, MSG)	LOG 	<< boost::format("[%4d] >> ") % __LINE__ \
-										<< debug << MSG << def << std::endl
-#define         DEBUG(MSG) std::cout 	<< boost::format("[%30s][%4d] >> ") %  __FILE__ % __LINE__ << " DEBUG: " \
-										<< MSG   << std::endl
+// If --enable-verbose=yes, you have additional three logging levels
+#ifdef  VERBOSE_MODE
+	#define   def_chatter(LOG, MSG) LOG 	<< boost::format("[%4d] >> ") % __LINE__ \
+											<< def   << MSG << def << std::endl
+	#define  info_chatter(LOG, MSG) LOG 	<< boost::format("[%4d] >> ") % __LINE__ \
+											<< info  << MSG << def << std::endl
+	#define  warn_chatter(LOG, MSG) LOG 	<< boost::format("[%4d] >> ") % __LINE__ \
+											<< warn  << MSG << def << std::endl
 #else
-#define debug_chatter(LOG, MSG) 
-#define         DEBUG(MSG) 
+	#define   def_chatter(LOG, MSG) 
+	#define  info_chatter(LOG, MSG) 
+	#define  warn_chatter(LOG, MSG) 
 #endif
 
-/*
- * Error handling macros
- */
+// If --enable-debug=yes, the ultimate verbosity is offered!
+// A lot of meesages...I warn you
+// When logger is not available we also offer macros for printing without the logger.
+#ifdef  DEBUG_MODE
+	#define debug_chatter(LOG, MSG)	LOG 	<< boost::format("[%4d] >> ") % __LINE__ \
+											<< debug << MSG << def << std::endl
+	#define         DEBUG(MSG) std::cout 	<< boost::format("[%30s][%4d] >> ") %  __FILE__ % __LINE__ << " DEBUG: " \
+											<< MSG   << std::endl
+#else
+	#define debug_chatter(LOG, MSG) 
+	#define         DEBUG(MSG) 
+#endif
+
+// Notes always appear (Used to print final messages about execution time and output folder)
+#define    note_chatter(LOG, MSG) LOG 		<< boost::format("[%4d] >> ") % __LINE__ \
+											<< note  << MSG << def << std::endl
+
+// Error handling macros (always active)
+#define   error_chatter(LOG, MSG) LOG 		<< boost::format("[%4d] >> ") % __LINE__ \
+											<< error << MSG << def << std::endl											
 #define                  BUG(MSG) std::cerr << boost::format("[%30s][%4d] >> ") %  __FILE__ % __LINE__ << " ERROR: " \
 											<< MSG   << std::endl; exit(FAILURE)
 #define MISSING_FEATURE(LOG, MSG) LOG		<< boost::format("[%4d] >> ") % __LINE__ \
@@ -177,8 +205,8 @@ std::string ntoa (uint32_t address);
 /*
  * Memory helpers
  */
-short allocateMemory(void **memoryBuffer, size_t size);
-short releaseMemory (void **memoryBuffer);
+bool allocateMemory(void **memoryBuffer, size_t size);
+bool releaseMemory (void **memoryBuffer);
 
 /*
  * Extract numbers from strings

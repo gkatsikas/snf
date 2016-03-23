@@ -1,8 +1,24 @@
-//============================================================================
-//        Name: nf_graph.cpp
-//   Copyright: KTH ICT CoS Network Systems Lab
-// Description: Implements a Click configuration as a DAG of Click Elements.
-//============================================================================
+// -*- c-basic-offset: 4 -*-
+/* nf_graph.cpp
+ * 
+ * Represents a Click configuration as a DAG of Click elements.
+ *
+ * Copyright (c) 2015-2016 KTH Royal Institute of Technology
+ * Copyright (c) 2015-2016 Georgios Katsikas, Marcel Enguehard
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ * 
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ * 
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>
+ */
 
 #include "nf_graph.hpp"
 #include <click/routervisitor.hh>
@@ -96,10 +112,10 @@ ElementVertex::print_info(void) {
 	info_chatter(this->log, "===         Stage: " << this->type);
 	info_chatter(this->log, "=== Click Element: " << this->click_element->class_name());
 	info_chatter(this->log, "===       Enpoint: " << std::string(this->is_endpoint() ? "True" : "False"));
-	if ( this->is_endpoint() )
-		info_chatter(this->log, "===         Stage: " << this->type);
-		info_chatter(this->log, "===  Next NF Info: [Pos " << this->glue.first << 
-								", Iface  " << this->glue.second << "]");
+	if ( this->is_endpoint() ) {
+		info_chatter(this->log, "===  Next NF Info: [Pos " << this->glue.first 
+					<< ", Iface  " << this->glue.second << "]");
+	}
 	info_chatter(this->log, "===============================================");
 }
 
@@ -132,8 +148,9 @@ NFGraph::add_vertex_and_neighbours(ElementVertex *u) {
 			ElementNeighborhoodTracker tracker(e->router(), 1);
 
 			// Backwards search
-			if ( e->router()->visit_upstream(e, i, &tracker) != SUCCESS )
+			if ( e->router()->visit_upstream(e, i, &tracker) != SUCCESS ) {
 				error_chatter(this->log, "Lost element");
+			}
 			Vector<Element*> found = tracker.elements();
 
 			// Make pairs between the current node (e) and all these vertices found
@@ -170,8 +187,9 @@ NFGraph::add_vertex_and_neighbours(ElementVertex *u) {
 			ElementNeighborhoodTracker tracker(e->router());
 
 			// Forward search
-			if ( e->router()->visit_downstream(e, i, &tracker) != SUCCESS )
+			if ( e->router()->visit_downstream(e, i, &tracker) != SUCCESS ) {
 				error_chatter(this->log, "Lost element");
+			}
 			Vector<Element*> found = tracker.elements();
 
 			unsigned short neighbour_inport = 0;
@@ -195,8 +213,8 @@ NFGraph::get_vertices_by_stage(const VertexType &st) const {
 
 	Vector<ElementVertex*> vertices;
 
-	for (auto& pair : this->vertices) {
-		ElementVertex* ev = static_cast<ElementVertex*> (pair.first);
+	for (auto &pair : this->vertices) {
+		ElementVertex *ev = static_cast<ElementVertex*> (pair.first);
 		if ( ev->get_type() == st )
 			vertices.push_back(ev);
 	}
@@ -206,8 +224,8 @@ NFGraph::get_vertices_by_stage(const VertexType &st) const {
 ElementVertex*
 NFGraph::get_vertex_by_click_element(const Element *e) const {
 
-	for (auto& pair : this->vertices) {
-		ElementVertex* ev = static_cast<ElementVertex*> (pair.first);
+	for (auto &pair : this->vertices) {
+		ElementVertex *ev = static_cast<ElementVertex*> (pair.first);
 		if ( ev->get_click_element()->eindex() == e->eindex() )
 			return ev;
 	}
@@ -219,8 +237,8 @@ NFGraph::get_all_endpoint_vertices(void) const {
 
 	Vector<ElementVertex*> endpoints;
 
-	for (auto& pair : this->vertices) {
-		ElementVertex* ev = static_cast<ElementVertex*> (pair.first);
+	for (auto &pair : this->vertices) {
+		ElementVertex *ev = static_cast<ElementVertex*> (pair.first);
 		if ( ev->is_endpoint() )
 			endpoints.push_back(ev);
 	}
@@ -232,8 +250,8 @@ NFGraph::get_endpoint_vertices(const VertexType &t) const {
 
 	Vector<ElementVertex*> endpoints;
 
-	for (auto& pair : this->vertices) {
-		ElementVertex* ev = static_cast<ElementVertex*> (pair.first);
+	for (auto &pair : this->vertices) {
+		ElementVertex *ev = static_cast<ElementVertex*> (pair.first);
 		if ( (ev->is_endpoint()) && (ev->get_type() == t) )
 			endpoints.push_back(ev);
 	}

@@ -1,7 +1,9 @@
 // -*- c-basic-offset: 4 -*-
-/* Part of file:
- * click.cc -- user-level Click main program
- * Eddie Kohler
+/* click_parse_configuration.cpp
+ * 
+ * Modified parts of click_path/userlevel/click.cc
+ * to load and parse a Click configurations. The code used to
+ * instantiate the router is intentionally bypassed.
  *
  * Copyright (c) 1999-2000 Massachusetts Institute of Technology
  * Copyright (c) 2000 Mazu Networks, Inc.
@@ -9,6 +11,7 @@
  * Copyright (c) 2004-2006 Regents of the University of California
  * Copyright (c) 2008-2009 Meraki, Inc.
  * Copyright (c) 1999-2015 Eddie Kohler
+ * Copyright (c) 2015-2016 Georgios Katsikas
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
  * copy of this software and associated documentation files (the "Software"),
@@ -20,15 +23,6 @@
  * notice is a summary of the Click LICENSE file; the license in that file is
  * legally binding.
  */
-
-//============================================================================
-//        Name: click_parse_configuration.hpp
-//   Copyright: KTH ICT CoS Network Systems Lab
-//  Co-authors: Georgios Katsikas(katsikas)-Marcel Enguehard(marcele) @kth.se
-// Description: Modified implementation of click_path/userlevel/click.cc
-//              to load and parse a Click configurations. The code used to
-//              instantiate the router is intentionally removed.
-//============================================================================
 
 #include "../shared/helpers.hpp"
 #include "../logger/logger.hpp"
@@ -95,11 +89,11 @@ parse_configuration(const String &text, const bool &text_is_expr, ErrorHandler *
 	}
 }
 
-short
+bool
 generate_flat_configuration(char **output_file, const short &position) {
 
 	if ( !click_router )
-		return FAILURE;
+		return CLICK_PARSING_PROBLEM;
 
 	if ( *output_file == NULL ) {
 		*output_file = new char[strlen("nf_repo/temp.click")+3];
@@ -115,7 +109,7 @@ generate_flat_configuration(char **output_file, const short &position) {
 	f = fopen(*output_file, "w");
 	if (!f) {
 		error_chatter(logger, std::string(*output_file) + ": " + strerror(errno));
-		return FAILURE;
+		return CLICK_PARSING_PROBLEM;
 	}
 
 	if (f) {
@@ -125,7 +119,7 @@ generate_flat_configuration(char **output_file, const short &position) {
 		fclose(f);
 	}
 
-	return SUCCESS;
+	return DONE;
 }
 
 Router*
@@ -236,7 +230,7 @@ void
 potentially_useful_code_in_the_near_future(void) {
 	// Generate the flat configuration of this NF
 	/*char* flat_router = NULL;
-	if ( generate_flat_configuration(&flat_router, position) != SUCCESS ) {
+	if ( !generate_flat_configuration(&flat_router, position) ) {
 		debug_chatter(logger, "Failed to generate flat configuration for " >> router_file);
 		cleanup(clp, FAILURE);
 		return NULL;

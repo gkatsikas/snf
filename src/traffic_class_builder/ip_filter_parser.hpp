@@ -1,12 +1,28 @@
-//============================================================================
-//        Name: ip_filter_parser.hpp
-//   Copyright: KTH ICT CoS Network Systems Lab
-// Description: Definition of the methods that parse the filters of 
-//              Hyper-NF's traffic classes.
-//============================================================================
-
 #ifndef _IP_FILTER_PARSER_HPP_
 #define _IP_FILTER_PARSER_HPP_
+
+/*
+ * ip_filter_parser.hpp
+ * 
+ * Definition of the methods that parse the filters of 
+ * Hyper-NF's traffic classes.
+ *
+ * Copyright (c) 2015-2016 KTH Royal Institute of Technology
+ * Copyright (c) 2015-2016 Georgios Katsikas, Marcel Enguehard
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ * 
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ * 
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>
+ */
 
 #include <string>
 

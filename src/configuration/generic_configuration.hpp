@@ -1,11 +1,27 @@
-//============================================================================
-//        Name: generic_configuration.hpp
-//   Copyright: KTH ICT CoS Network Systems Lab
-// Description: Input Parameters' configuration library
-//============================================================================
-
 #ifndef _GENERIC_CONFIG_HPP_
 #define _GENERIC_CONFIG_HPP_
+
+/*
+ * generic_configuration.hpp
+ * 
+ * Input Parameters' configuration library
+ *
+ * Copyright (c) 2015-2016 KTH Royal Institute of Technology
+ * Copyright (c) 2015-2016 Georgios Katsikas, Marcel Enguehard
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ * 
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ * 
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>
+ */
 
 #include <map>
 
@@ -37,7 +53,7 @@ class GenericConfiguration
 		/*
 		 * Load the property file (Abstract method)
 		 */
-		virtual short load_property_file(void) = 0;
+		virtual bool load_property_file(void) = 0;
 
 		/*
 		 * Helper methods to read the property file

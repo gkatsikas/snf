@@ -1,11 +1,27 @@
-//============================================================================
-//        Name: parser_configuration.cpp
-//   Copyright: KTH ICT CoS Network Systems Lab
-// Description: Implements the parsing mechanisms that feed the NF Synthesizer.
-//              Implements a NF chain as a digraph of interconnected NFs while
-//              another digraph shows the connectivity of this chain with
-//              external NFV domains.
-//============================================================================
+// -*- c-basic-offset: 4 -*-
+/* parser_configuration.cpp
+ * 
+ * Implements the parsing mechanisms that feed the NF Synthesizer.
+ * Implements a NF chain as a digraph of interconnected NFs while
+ * another digraph shows the connectivity of this chain with
+ * external NFV domains.
+ *
+ * Copyright (c) 2015-2016 KTH Royal Institute of Technology
+ * Copyright (c) 2015-2016 Georgios Katsikas, Marcel Enguehard
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ * 
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ * 
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>
+ */
 
 #include <boost/tokenizer.hpp>
 #include "parser_configuration.hpp"
@@ -42,13 +58,13 @@ ParserConfiguration::~ParserConfiguration() {
  * Read the topology of the NF chain and encode it into a graph structure.
  * The topology is represented as a Click configuration, e.g. NF_1[eth0] -> NF2;
  */
-short
+bool
 ParserConfiguration::load_property_file(void) {
 	unsigned short exit_status = 0;
 	std::string nf_topo, nf_domains;
 
 	// First, parse the generic properties of the chain
-	if ( (exit_status=this->parse_generic_properties()) != SUCCESS ) {
+	if ( !(exit_status=this->parse_generic_properties()) ) {
 		return exit_status;
 	}
 
@@ -59,45 +75,45 @@ ParserConfiguration::load_property_file(void) {
 		// Read the domains interconnected to that topology
 		nf_domains = (std::string&) get_value("ENTRY_POINTS", "DOMAINS");
 	}
-	catch (const std::exception& e) {
+	catch (const std::exception &e) {
 		error_chatter(this->log, "|--> " << e.what());
 		return NF_CHAIN_NOT_ACYCLIC;
 	}
 
 	debug_chatter(this->log, "\tNF Topology = " << nf_topo);
 	// Parse the chain of NFs form the property file
-	if ( (exit_status=this->parse_topology(nf_topo)) != SUCCESS ) {
+	if ( !(exit_status=this->parse_topology(nf_topo)) ) {
 		return exit_status;
 	}
 
 	debug_chatter(this->log, "\tNFV Domains = " << nf_domains);
 	// Parse the connection points of the chain with the outside world (e.g. operator's domains)
-	if ( (exit_status=this->parse_domains(nf_domains)) != SUCCESS ) {
+	if ( !(exit_status=this->parse_domains(nf_domains)) ) {
 		return exit_status;
 	}
 
 	def_chatter(this->log, "\tThe property file is successfully parsed");
-	log << "" << def << std::endl;
+	def_chatter(this->log, "");
 
 	// Check if the graph is acyclic
-	if ( (exit_status=this->check_for_loops())  != SUCCESS ) {
+	if ( !(exit_status=this->check_for_loops()) ) {
 		return exit_status;
 	}
 
-	log << "" << def << std::endl;
+	def_chatter(this->log, "");
 
 	// Print the configuration details
 	this->print_loaded_property_status();
 
-	log << "" << def << std::endl;
+	def_chatter(this->log, "");
 
-	return SUCCESS;
+	return DONE;
 }
 
 /*
  * Read the generic parameters of the Chain Configurator
  */
-short
+bool
 ParserConfiguration::parse_generic_properties(void) {
 
 	// Apply the default configuration in case something goes wrong.
@@ -120,7 +136,7 @@ ParserConfiguration::parse_generic_properties(void) {
 
 		if ( ! directory_exists(output_folder) ) {
 			if ( ! create_directory(output_folder) ) {
-				return FAILURE;
+				return ERROR;
 			}
 		}
 	}
@@ -192,14 +208,14 @@ ParserConfiguration::parse_generic_properties(void) {
 				error_chatter(this->log, 
 					"Click is not hardware based traffic class format. Choose [RSS-Hashing, Flow-Director, OpenFlow]"
 				);
-				exit(WRONG_INPUT_ARGS);
+				return WRONG_INPUT_ARGS;
 			}
 		}
 		catch (const std::exception& e) {
 			error_chatter(this->log, 
 				"Unknown Traffic Class format. Choose [RSS-Hashing, Flow-Director, OpenFlow]"
 			);
-			exit(WRONG_INPUT_ARGS);
+			return WRONG_INPUT_ARGS;
 		}
 
 		// B. Non-Uniform Memory Access
@@ -247,13 +263,13 @@ ParserConfiguration::parse_generic_properties(void) {
 		cpu_cores_no, nic_hw_queues_no
 	);
 
-	return SUCCESS;
+	return DONE;
 }
 
 /*
  * Parse the internal NF chain connections
  */
-short
+bool
 ParserConfiguration::parse_topology(const std::string &nf_topo) {
 
 	if ( this->nf_chain == NULL ) {
@@ -342,7 +358,7 @@ ParserConfiguration::parse_topology(const std::string &nf_topo) {
 			ChainVertex *v = static_cast<ChainVertex*> (this->nf_chain->get_vertex_by_position(position));
 
 			// Create one
-			if ( v == NULL ) {
+			if ( !v ) {
 				// Read the path of the Click configuration for this element
 				std::string nf_path;
 				try {
@@ -410,13 +426,13 @@ ParserConfiguration::parse_topology(const std::string &nf_topo) {
 		return CHAIN_PARSING_PROBLEM;
 	}
 
-	return SUCCESS;
+	return DONE;
 }
 
 /*
  * Parse the external NF chain connections with various domains
  */
-short
+bool
 ParserConfiguration::parse_domains(const std::string &nf_domains) {
 	unsigned short domain = 0;
 
@@ -457,7 +473,7 @@ ParserConfiguration::parse_domains(const std::string &nf_domains) {
 		ChainVertex *v = static_cast<ChainVertex*> (this->nf_chain->get_vertex_by_position(position));
 
 		// If not, something is wrong..
-		if ( v == NULL ) {
+		if ( !v ) {
 			this->usage(nf + " does not exist in the topology", "Please cross check NF_MODULES and NF_TOPO sections");
 			return CHAIN_PARSING_PROBLEM;
 		}
@@ -483,9 +499,9 @@ ParserConfiguration::parse_domains(const std::string &nf_domains) {
 		v->add_entry_interface_pair(interface, "", domain_name);
 
 		// Create also a node that represents the domain to which the NF is connected.
-		ChainVertex* d = new ChainVertex("", domain_name, 0, VertexType::Domain);
+		ChainVertex *d = new ChainVertex("", domain_name, 0, VertexType::Domain);
 		// Create a copy of the chain's vertex to facilitate the memory clean-up at the end.
-		ChainVertex* f = new ChainVertex(*v);
+		ChainVertex *f = new ChainVertex(*v);
 
 		// Add a link
 		this->nf_domains->add_edge( std::move(d), std::move(f), 0 );
@@ -497,15 +513,15 @@ ParserConfiguration::parse_domains(const std::string &nf_domains) {
 		this->nf_domains->print_adjacency_list();
 	#endif
 
-	return SUCCESS;
+	return DONE;
 }
 
 /*
  * Check whether the formulated graph of the chain is acyclic
  */
-short
+bool
 ParserConfiguration::check_for_loops(void) {
-	if ( this->nf_chain == NULL ) {
+	if ( !this->nf_chain ) {
 		warn_chatter(this->log, "\tGraph(s) do(es) not exist");
 		return NO_MEM_AVAILABLE;
 	}
@@ -520,12 +536,12 @@ ParserConfiguration::check_for_loops(void) {
 		this->nf_chain->topological_sort();
 		def_chatter(this->log, "\t|---> NF Chain graph is acyclic");
 	}
-	catch (const std::exception& e) {
+	catch (const std::exception &e) {
 		error_chatter(this->log, "|--> " << e.what());
 		return NF_CHAIN_NOT_ACYCLIC;
 	}
 
-	return SUCCESS;
+	return DONE;
 }
 
 /*

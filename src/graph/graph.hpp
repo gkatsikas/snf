@@ -1,11 +1,27 @@
-//============================================================================
-//        Name: graph.hpp
-//   Copyright: KTH ICT CoS Network Systems Lab
-// Description: Defines a directed graph
-//============================================================================
-
 #ifndef _GRAPH_HPP_
 #define _GRAPH_HPP_
+
+/*
+ * graph.hpp
+ * 
+ * Defines a directed graph.
+ *
+ * Copyright (c) 2015-2016 KTH Royal Institute of Technology
+ * Copyright (c) 2015-2016 Georgios Katsikas, Marcel Enguehard
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ * 
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ * 
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>
+ */
 
 #include <unordered_map>
 
@@ -39,7 +55,7 @@ class Graph
 		/*
 		 * In degree per vertex
 		 */
-		VertexMap<int> in_degrees;
+		VertexMap<short> in_degrees;
 
 		/*
 		 * Logger
@@ -47,7 +63,7 @@ class Graph
 		Logger log;
 
 	public:
-		Graph();
+		Graph ();
 		~Graph();
 
 		/*
@@ -62,8 +78,8 @@ class Graph
 		void                   add_edge          (Vertex *u, Vertex *v, const unsigned short &input_port_v);
 
 		void                   find_in_degrees   (void);
-		int                    get_in_degree     (Vertex *u);
-		const VertexMap<int>   get_in_degrees    (void);
+		short                  get_in_degree     (Vertex *u);
+		const VertexMap<short> get_in_degrees    (void);
 
 		unsigned short         get_vertices_no   (void)   const;
 		const AdjacencyList    get_adjacency_list(void)   const;

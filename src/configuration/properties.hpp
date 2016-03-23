@@ -1,16 +1,32 @@
-//============================================================================
-//        Name: properties.hpp
-//   Copyright: KTH ICT CoS Network Systems Lab
-// Description: Defines generic properties that drive the synthesis.
-//              Among them, the output folder and filename where Hyper-NF
-//              will generate the results, whether Hyper-NF will produce a 
-//              pure software or a hardware assisted synthesis. If the latter
-//              is selected, the number of CPU sockets, cores, NIC hardware 
-//              queues the type of CPU architecture are requested.          
-//============================================================================
-
 #ifndef _PROPERTIES_HPP_
 #define _PROPERTIES_HPP_
+
+/*
+ * properties.hpp
+ * 
+ * Defines generic properties that drive the synthesis.
+ * Among them, the output folder and filename where Hyper-NF
+ * will generate the results, whether Hyper-NF will produce a 
+ * pure software or a hardware assisted synthesis. If the latter
+ * is selected, the number of CPU sockets, cores, NIC hardware 
+ * queues the type of CPU architecture are requested.
+ *
+ * Copyright (c) 2015-2016 KTH Royal Institute of Technology
+ * Copyright (c) 2015-2016 Georgios Katsikas, Marcel Enguehard
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ * 
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ * 
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>
+ */
 
 #include <unordered_map>
 
