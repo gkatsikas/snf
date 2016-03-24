@@ -3,14 +3,12 @@ noinst_LIBRARIES = libvertex.a libgraph.a libnfgraph.a
 
 #####################################################################################
 # A vertex definition
-libvertex_a_CPPFLAGS = 	$(AM_CXXFLAGS)
 libvertex_a_SOURCES  = 	vertex.cpp \
 						vertex.hpp
 #####################################################################################
 
 #####################################################################################
 # Generic Graph
-libgraph_a_CPPFLAGS = 	$(AM_CXXFLAGS)
 libgraph_a_SOURCES  = 	graph.cpp \
 						graph.hpp \
 						$(top_builddir)/src/logger/logger.hpp
@@ -21,7 +19,6 @@ libgraph_a_LIBADD   = 	libvertex.a \
 
 #####################################################################################
 # NF Graph
-libnfgraph_a_CPPFLAGS = $(AM_CXXFLAGS)
 libnfgraph_a_SOURCES  = nf_graph.cpp \
 						nf_graph.hpp
 

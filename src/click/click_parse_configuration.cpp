@@ -55,12 +55,12 @@ ClickCleaner::cleanup(Clp_Parser *clp, const bool &clean_all) {
 	if ( clean_all ) {
 		def_chatter(logger, "\tCleaning up Click...");
 		click_static_cleanup();
-		def_chatter(logger, "\t|-> Static clean up");
+		def_chatter(logger, "\t|--> Static clean up");
 		if ( (click_router != NULL) && (click_master != NULL) )
 			delete click_master;
-		def_chatter(logger, "\t|-> Click Master is deleted");
+		def_chatter(logger, "\t|--> Click Master is deleted");
 		errh = NULL;
-		def_chatter(logger, "\t|-> Click Error Handler is deleted");
+		def_chatter(logger, "\t|--> Click Error Handler is deleted");
 	}
 }
 

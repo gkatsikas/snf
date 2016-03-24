@@ -283,16 +283,18 @@ AC_SUBST([LIBS])
 AC_SUBST([AM_CXXFLAGS])
 AC_SUBST([AM_LDFLAGS])
 
-AC_CONFIG_FILES([Makefile
-				 doc/Makefile
-				 src/Makefile
-				 src/click/Makefile
-				 src/configuration/Makefile
-				 src/generator/Makefile
-				 src/graph/Makefile
-				 src/parser/Makefile
-				 src/shared/Makefile
-				 src/synthesizer/Makefile
-				 src/traffic_class_builder/Makefile])
+AC_CONFIG_FILES(
+	[Makefile
+	doc/Makefile
+	src/Makefile
+	src/click/Makefile
+	src/configuration/Makefile
+	src/generator/Makefile
+	src/graph/Makefile
+	src/parser/Makefile
+	src/shared/Makefile
+	src/synthesizer/Makefile
+	src/traffic_class_builder/Makefile]
+)
 
 AC_OUTPUT

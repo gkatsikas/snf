@@ -577,7 +577,7 @@ Filter::ip_filter_to_flow_director_pattern(const std::string &keyword) const {
 }
 
 HeaderField
-Filter::get_field() const{
+Filter::get_field(void) const{
 	return this->m_field;
 }
 
@@ -600,12 +600,12 @@ Condition::intersect(const Filter &filter) {
 }
 
 bool
-Condition::is_none() const {
+Condition::is_none(void) const {
 	return this->m_filter.is_none();
 }
 
 std::string
-Condition::to_str() const {
+Condition::to_str(void) const {
 	return "Condition on " + this->m_element->to_str() + ": " + this->m_filter.to_str();
 }
 
@@ -757,7 +757,7 @@ TrafficClass::intersect_filter(const Filter &filter) {
 	auto got = this->m_filters.find(field);
 
 	if ( got == this->m_filters.end() ) {
-		this->m_filters[field]=filter;
+		this->m_filters[field] = filter;
 	}
 	else {
 		this->m_filters[field].intersect(filter);
@@ -769,10 +769,14 @@ TrafficClass::intersect_filter(const Filter &filter) {
 int
 TrafficClass::intersect_condition(const Filter &condition, const FieldOperation &operation) {
 	HeaderField field = condition.get_field();
-	auto got=this->m_write_conditions.find(field);
-	if(got == this->m_write_conditions.end() ||  !this->m_write_conditions[field].back().is_same_write(operation)) {
+	auto got = this->m_write_conditions.find(field);
+
+	if ( got == this->m_write_conditions.end() || 
+		!this->m_write_conditions[field].back().is_same_write(operation) ) {
+		
 		this->m_write_conditions[field].push_back(
-				Condition(field,this->m_element_path.back(),condition,operation));
+				Condition(field,this->m_element_path.back(),condition,operation)
+		);
 	}
 	else {
 		this->m_write_conditions[field].back().intersect(condition);
@@ -782,7 +786,7 @@ TrafficClass::intersect_condition(const Filter &condition, const FieldOperation 
 }
 
 int
-TrafficClass::add_element (std::shared_ptr<ClickElement> element, int port) {
+TrafficClass::add_element (std::shared_ptr<ClickElement> element, const int port) {
 
 	int nb_none_filters=0;
 	(this->m_element_path).push_back(element);
@@ -866,7 +870,7 @@ TrafficClass::add_element (std::shared_ptr<ClickElement> element, int port) {
 	return nb_none_filters;
 }
 
-std::string
+const std::string
 TrafficClass::get_output_iface_conf (void) {
 	if ( ! this->is_discarded() ) {
 		if ( this->m_element_path.size() > 1 ) {
@@ -895,7 +899,7 @@ TrafficClass::get_output_iface_conf (void) {
 	return "";
 }
 
-std::string
+const std::string
 TrafficClass::get_output_iface (void) {
 	std::string iface;
 
@@ -923,48 +927,38 @@ TrafficClass::get_output_iface (void) {
 }
 
 std::string
-TrafficClass::get_nf_of_output_iface(void) {
+TrafficClass::get_nf_of_output_iface(void) const {
 	return this->m_nf_of_output_iface;
 }
 
 Operation
-TrafficClass::get_operation (void) {
+TrafficClass::get_operation (void) const {
 	return this->m_operation;
 }
 
 void
-TrafficClass::set_nat (std::shared_ptr<SynthesizedNAT> nat, const unsigned short& port) {
+TrafficClass::set_nat (const std::shared_ptr<SynthesizedNAT> &nat, const unsigned short &port) {
 	this->m_nat = nat;
 	this->m_nat_input_port = port;
 }
 
 void
-TrafficClass::set_output_iface(const std::string& iface) {
+TrafficClass::set_output_iface(const std::string &iface) {
 	this->m_output_iface = iface;
 }
 
 void
-TrafficClass::set_output_iface_conf(const std::string& iface_conf) {
+TrafficClass::set_output_iface_conf(const std::string &iface_conf) {
 	this->m_output_iface_conf = iface_conf;
 }
 
 void
-TrafficClass::set_nf_of_output_iface(const std::string& nf) {
+TrafficClass::set_nf_of_output_iface(const std::string &nf) {
 	this->m_nf_of_output_iface = nf;
 }
 
-std::shared_ptr<SynthesizedNAT>
-TrafficClass::get_nat (void) {
-	return this->m_nat;
-}
-
-unsigned short
-TrafficClass::get_nat_input_port (void) {
-	return this->m_nat_input_port;
-}
-
 std::string
-TrafficClass::to_str() const {
+TrafficClass::to_str(void) const {
 	std::string output = "\n================= Begin Traffic Class =================\nFilters:";
 	output += this->to_ip_classifier_pattern();
 	output += "\nConditions on Write operations:\n";

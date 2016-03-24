@@ -3,7 +3,6 @@ noinst_LIBRARIES = libsynth_nat.a libsynthesizer.a
 
 #####################################################################################
 # NAT operations' Synthesis
-libsynth_nat_a_CPPFLAGS = 	$(AM_CXXFLAGS)
 libsynth_nat_a_SOURCES  = 	synth_nat.cpp \
 							synth_nat.hpp
 
@@ -13,7 +12,6 @@ libsynth_nat_a_LIBADD   = 	$(top_builddir)/src/traffic_class_builder/libfilter.a
 
 #####################################################################################
 # Generic Synthesis
-libsynthesizer_a_CPPFLAGS = $(AM_CXXFLAGS)
 libsynthesizer_a_SOURCES  = synthesizer.cpp \
 							synthesizer.hpp \
 							synth_nat.hpp

@@ -45,13 +45,15 @@ struct ConsolidatedTc {
 	std::string    m_nat;
 	
 	ConsolidatedTc();
-	ConsolidatedTc(const std::string  &nf_of_out_iface, const std::string &out_iface,
-					const std::string &out_iface_conf,  const std::string &op,
-					const std::string &chain);
+	ConsolidatedTc(
+		const std::string &nf_of_out_iface, const std::string &out_iface,
+		const std::string &out_iface_conf,  const std::string &op,
+		const std::string &chain
+	);
 
-	void        add_tc (const TrafficClass &tc, const TrafficClassFormat &tc_format);
-	void        set_nat(std::shared_ptr<SynthesizedNAT> nat, unsigned short input_port);
-	std::string get_chain ();
+	void        add_tc   (const TrafficClass &tc, const TrafficClassFormat &tc_format);
+	void        set_nat  (std::shared_ptr<SynthesizedNAT> nat, unsigned short input_port);
+	std::string get_chain(void);
 };
 
 class Synthesizer {
@@ -116,6 +118,10 @@ class Synthesizer {
 		inline std::string get_nat_per_output_iface_conf(const std::string &key) {
 			return this->nat_per_output_iface_conf[key];
 		};
+		inline std::set < std::pair<std::string, std::string> > get_hyper_nf_ifaces(void) {
+			return this->hyper_nf_ifaces;
+		};
+
 		short get_hyper_nf_ifaces_no   (void);
 		bool  is_hyper_nf_iface        (const std::string &nf, const std::string &iface);
 		void  print_hyper_nf_ifaces    (void);

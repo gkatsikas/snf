@@ -3,7 +3,6 @@ noinst_LIBRARIES = libchainparser.a
 
 #####################################################################################
 # Chain Parser (Hyper-DAG)
-libchainparser_a_CPPFLAGS = $(AM_CXXFLAGS)
 libchainparser_a_SOURCES  = chain_parser.cpp \
 							chain_parser.hpp
 # Linked with

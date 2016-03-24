@@ -24,6 +24,10 @@
 #include "logger/logger.hpp"
 #include "shared/helpers.hpp"
 #include "generator/generator.hpp"
+#include "generator/rss_generator.hpp"
+#include "generator/soft_generator.hpp"
+#include "generator/openflow_generator.hpp"
+#include "generator/flow_director_generator.hpp"
 #include "synthesizer/synthesizer.hpp"
 
 void
@@ -64,7 +68,9 @@ parse_arguments(
 	const char *program = cmd_args[0];
 
 	// Check number of arguments
-	if ( (cmd_args_no != 2) && (cmd_args_no != 3 ) && (cmd_args_no != 4) ) {
+	if ( 	(cmd_args_no != 2) && 
+			(cmd_args_no != 3) && 
+			(cmd_args_no != 4) ) {
 		usage(main_log, program);
 	}
 
@@ -112,6 +118,37 @@ parse_arguments(
 	return DONE;
 }
 
+Generator*
+identify_code_generator(
+		Logger                   &main_log,
+		Synthesizer              *synthesizer,
+		const bool               &has_hw_classification,
+		const TrafficClassFormat &tc_format) {
+
+	if ( has_hw_classification ) {
+		#ifdef HAVE_DPDK
+
+			switch (tc_format) {
+				case RSS_Hashing:
+					return new RSSGenerator         (std::move(synthesizer));
+				case Flow_Director:
+					//return new FlowDirectorGenerator(std::move(synthesizer));
+				case OpenFlow:
+					//return new OpenFlowGenerator    (std::move(synthesizer));
+				default:
+					MISSING_FEATURE(main_log, "Unimplemented Traffic Class Format: " + tc_to_label(tc_format));
+			}
+		#else
+			error_chatter(main_log, "Hardware classification requires DPDK support!");
+			return ERROR;
+		#endif
+	}
+	// Pure software based implementation in Click.
+	else {
+		return new SoftGenerator(std::move(synthesizer));
+	}
+}
+
 int
 main(int argc, char **argv) {
 	setvbuf(stdout, NULL, _IONBF, 0);
@@ -133,7 +170,7 @@ main(int argc, char **argv) {
 	info_chatter(main_log, "Hyper-NF" + version + ": A synthesizer of Click-based chained Network Functions");
 
 	//////////////////////////////////// Load property file ///////////////////////////////////
-	ParserConfiguration* pcf = NULL;
+	ParserConfiguration *pcf = NULL;
 
 	info_chatter(main_log, "");
 	info_chatter(main_log, "+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+");
@@ -155,7 +192,7 @@ main(int argc, char **argv) {
 	total_exec_time += task_exec_time;
 
 	////////////////////////////////////// Parse Input NFs ////////////////////////////////////
-	ChainParser* parser = NULL;
+	ChainParser *parser = NULL;
 
 	info_chatter(main_log, "");
 	info_chatter(main_log, "+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+");
@@ -164,7 +201,7 @@ main(int argc, char **argv) {
 		try {
 			parser = new ChainParser(std::move(pcf));
 		}
-		catch (const std::exception& e) {
+		catch (const std::exception &e) {
 			error_chatter(main_log, "|--> " << e.what());
 			delete pcf;
 			exit(CHAIN_PARSING_PROBLEM);
@@ -190,7 +227,7 @@ main(int argc, char **argv) {
 	total_exec_time += task_exec_time;
 
 	/////////////////////////////////// Build Traffic Classes /////////////////////////////////
-	Synthesizer* synthesizer = NULL;
+	Synthesizer *synthesizer = NULL;
 
 	info_chatter(main_log, "");
 	info_chatter(main_log, "+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+");
@@ -199,7 +236,7 @@ main(int argc, char **argv) {
 		try {
 			synthesizer = new Synthesizer(std::move(parser));
 		}
-		catch (const std::exception& e) {
+		catch (const std::exception &e) {
 			error_chatter(main_log, "|--> " << e.what());
 			delete parser;
 			exit(CHAIN_SYNTHESIS_PROBLEM);
@@ -236,15 +273,22 @@ main(int argc, char **argv) {
 	total_exec_time += task_exec_time;
 
 	////////////////////////////// Generate Hyper-NF Configuration ////////////////////////////
-	Generator* generator = NULL;
+	Generator *generator = NULL;
+	std::string output_files;
+
 	info_chatter(main_log, "");
 	info_chatter(main_log, "+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+");
 	task_exec_time = measure<>::execution( [&]() {
 		info_chatter(main_log, "Hyper-NF Generator... ");
 		try {
-			generator = new Generator(std::move(synthesizer));
+			generator = identify_code_generator(
+				main_log, 
+				std::move(synthesizer),
+				pcf->get_properties()->has_hardware_classification(),
+				pcf->get_properties()->get_traffic_classification_format()
+			);
 		}
-		catch (const std::exception& e) {
+		catch (const std::exception &e) {
 			error_chatter(main_log, "|--> " << e.what());
 			delete synthesizer;
 			exit(CHAIN_SYNTHESIS_PROBLEM);
@@ -254,6 +298,9 @@ main(int argc, char **argv) {
 			delete generator;
 			exit(exit_status);
 		}
+		
+		// Fetch the file(s) where Hyper-NF has generated the chain's configuration
+		output_files = generator->get_output_files_list_str();
 	});
 	info_chatter(main_log, task_exec_time << "  microseconds");
 	info_chatter(main_log, "+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+");
@@ -280,14 +327,16 @@ main(int argc, char **argv) {
 	info_chatter(main_log, "");
 	///////////////////////////////////////////////////////////////////////////////////////////
 
+	//info_chatter(main_log, "HW Class: " << pcf->get_properties()->has_hardware_classification() );
+
 	total_exec_time += task_exec_time;
 
 	info_chatter(main_log, "");
-	note_chatter(main_log, "=================================================================================");
-	note_chatter(main_log, "=== Total Execution Time: " + 
-							std::to_string(float(total_exec_time)/1000) + 
+	note_chatter(main_log, "\t=================================================================================");
+	note_chatter(main_log, "\t==== Hyper-NF Configuration in: " + output_files);
+	note_chatter(main_log, "\t==== Total Execution Time: " + std::to_string(float(total_exec_time)/1000) + 
 							" milliseconds");
-	note_chatter(main_log, "=================================================================================");
+	note_chatter(main_log, "\t=================================================================================");
 
 	exit(SUCCESS);
 }
