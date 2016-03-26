@@ -50,91 +50,36 @@ SoftGenerator::generate_all_in_soft_configuration(const bool &to_file) {
 	std::stringstream config_stream;
 
 	def_chatter(this->log, "\tAll-in-Software Hyper-NF Generator...");
+	//this->synthesizer->print_hyper_nf_ifaces();
 
-	this->synthesizer->print_hyper_nf_ifaces();
+	// Step 1: Write some static information about the interfaces'
+	// addressing of the Hyper-NF configuration.
+	this->generate_static_configuration(config_stream);
 
-	// Costruct the path of Click elements that will lead this modified
-	// (i.e., rewritten by Click IPRewriter already) traffic class out of Click.
-	// This set of elements follows IPRewriter.
-	for ( auto &it : this->synthesizer->get_nat_per_output_iface() ) {
+	// A map between a NIC and the IPClassifier to handle its packets.
+	std::map < std::string, std::string > nic_to_ip_classifier;
 
-		std::string out_nf_and_iface = it.first;
-
-		// Extract the NF name and its' interface
-		std::vector<std::string> token = split(out_nf_and_iface, "-");
-		std::string nf    = token[0];
-		std::string iface = token[1];
-
-		// The NAT of this path
-		auto nat = it.second;
-
-		// The configuration parameters of the ToDevice element
-		std::string iface_config = out_nf_and_iface + ", " +
-									this->synthesizer->get_nat_per_output_iface_conf(out_nf_and_iface);
-
-		// If we meet the interface of the first NF, it means that we go backward
-		// The MAC addresses are set accordingly
-		std::string encap_addresses;
-		if ( nf == "NF_1" ) {
-			encap_addresses = "$macAddr0, $gwMACAddr0";
-		}
-		// If we meet the interface of the last NF, it means that we go forward
-		else {
-			encap_addresses = "$macAddr1, $gwMACAddr1";
-		}
-
-		config_stream 	<< "/** NAT going to: " << out_nf_and_iface << " **/" << std::endl;	
-		config_stream 	<< nat->get_name() << " :: IPRewriter(" << nat->compute_conf() 
-						<< "DEC_IP_TTL true, CALC_CHECKSUM true);" << std::endl;
-
-		// Be careful, some interfaces that appear here are internal.
-		// These need to be discarded.
-		if ( this->synthesizer->is_hyper_nf_iface(nf, iface) ) {
-			config_stream 	<< nat->get_name() << "[" << nat->get_outbound_port()
-							<< "] -> EtherEncap(0x0800, " + encap_addresses + 
-							") -> Queue ($queueSize) -> ToDevice ("
-							<< iface_config << ");" << std::endl;
-			//config_stream << nat->get_name() << "[" << nat->get_outbound_port()
-			//				<< "] -> StoreEtherAddress($gwMACAddr1, dst) -> ToDPDKDevice ("
-			//				<< dpdk_iface << ", BURST $burst, NDESC $txNdesc, IQUEUE $queueSize, TIMEOUT 0);"
-			//				<< std::endl;
-		}
-		else {
-			config_stream 	<< nat->get_name() << "[" << nat->get_outbound_port()
-							<< "] -> Discard();" << std::endl;
-		}
-		
-		// Discarded paths
-		for(unsigned short i=0; i<nat->get_outbound_port(); i++) {
-			config_stream 	<< nat->get_name() << "[" << i << "] -> Discard();" << std::endl;
-		}
-
-		config_stream << std::endl;
+	// Step 2: Construct the path of Click elements that will lead each 
+	// modified (i.e., rewritten by Click IPRewriter already) traffic 
+	// class out of Click. This path of elements follows IPRewriter.
+	if ( ! this->generate_write_and_output_part_of_synthesis(config_stream) ) {
+		return CODE_GENERATION_PROBLEM;
 	}
 
-	int i = 0;
-
-	// Construct the IPClassifier(s) and the path of Click elements
+	// Step 3: Construct the IPClassifier(s) and the path of Click elements
 	// that lead to all its/their traffic classes.
-	for ( auto &it : this->synthesizer->get_tc_per_input_iface() ) {
-		std::string ipc_name = "ipc"+std::to_string(i++);
-		config_stream << ipc_name + " :: IPClassifier (" << std::endl;
-		std::vector<std::string> chains;
-		for (auto &tc: it.second) {
-			config_stream << "\t" << tc.second.m_pattern << "," << std::endl;
-			chains.push_back(tc.second.get_chain());
-		}
-		config_stream << ");" << std::endl;
+	if ( ! this->generate_read_part_of_synthesis(
+			config_stream,
+			nic_to_ip_classifier)) {
+		return CODE_GENERATION_PROBLEM;
+	}
 
-		for (size_t i = 0; i<chains.size(); i++) {
-			config_stream << ipc_name + "[" << i << "] -> " << chains[i] << std::endl;
-		}
-
-		//config_stream << "FromDevice (" << it.first << ") -> MarkIPHeader(OFFSET 14) -> " + ipc_name + ";" << std:;endl;	
-		//config_stream << "FromDevice (" << it.first << ") -> Strip(14) -> MarkIPHeader() -> IPPrint(LENGTH true, TTL true) -> " + ipc_name + ";" << std::endl;
-		//config_stream << "FromDevice (" << it.first << ") -> MarkIPHeader(OFFSET 14) -> " + ipc_name + ";" << std::endl;
-		config_stream << "FromDevice (" << it.first << ") -> Strip(14) -> MarkIPHeader() -> " + ipc_name + ";" << std::endl;
-		i++;
+	// Step 4: Construct the input Click elements that capture incoming traffic 
+	// to be sent to the Classifiers.
+	if ( ! this->generate_input_part_of_synthesis(
+			config_stream,
+			nic_to_ip_classifier) ) {
+		return CODE_GENERATION_PROBLEM;
 	}
 
 	// The generated Click configuration will be written to a file
@@ -158,6 +103,188 @@ SoftGenerator::generate_all_in_soft_configuration(const bool &to_file) {
 
 	def_chatter(this->log,	"\tSuccessfully generated the NF chain synthesis to: \n" << 
 							"\t\t\t\t\t\t\t\t|--> " << this->soft_configuration_filename);
+
+	return DONE;
+}
+
+void
+SoftGenerator::generate_static_configuration(std::stringstream &config_stream) {
+	for (unsigned short i = 0 ; i < this->synthesizer->get_hyper_nf_ifaces_no() ; i++) {
+		config_stream << "AddressInfo(dev" << i << " $macAddr" << i << " $ipAddr"<< i << ");" << std::endl; 
+	}
+	config_stream << std::endl;
+}
+
+/*
+ * Generate the input part of a Hyper-NF chain.
+ */
+bool
+SoftGenerator::generate_input_part_of_synthesis(
+		std::stringstream                     &config_stream,
+		std::map < std::string, std::string > &nic_to_ip_classifier) {
+
+	config_stream << "///////////////////////////////////////////////////////////////" << std::endl;
+	config_stream << "// The input-part of the synthesized Hyper-NF code"              << std::endl;
+	config_stream << "///////////////////////////////////////////////////////////////" << std::endl;
+
+	for (auto &it : nic_to_ip_classifier) {
+
+		std::string nic      = it.first;
+		std::string ipc_name = it.second;
+
+		std::string decap;
+		decap = (this->proc_layer == L3)? \
+						"Strip(14) -> MarkIPHeader()" : 
+						"MarkIPHeader(OFFSET 14)";
+
+		#ifdef HAVE_DPDK
+		config_stream << 	"FromDPDKDevice(" << nic
+							<< ", BURST $burst, NDESC $rxNdesc) -> " << decap << " -> " << ipc_name << ";"
+							<< std::endl;
+		#else
+		// "IPPrint(LENGTH true, TTL true) -> "
+		config_stream << 	"FromDevice(" << nic
+							<< ", SNAPLEN $mtuSize, PROMISC true, METHOD $ioMethod, SNIFFER false) -> " 
+							<< decap << " -> " << ipc_name << ";" << std::endl;
+		#endif
+	}
+
+	return DONE;
+}
+
+/*
+ * Generate the read part of a Hyper-NF chain.
+ */
+bool
+SoftGenerator::generate_read_part_of_synthesis(
+		std::stringstream                     &config_stream,
+		std::map < std::string, std::string > &nic_to_ip_classifier) {
+
+	config_stream << "///////////////////////////////////////////////////////////////" << std::endl;
+	config_stream << "// The read-part of the synthesized Hyper-NF code"               << std::endl;
+	config_stream << "///////////////////////////////////////////////////////////////" << std::endl;
+	config_stream << std::endl;
+
+	unsigned short i = 0;
+
+	// Construct the IPClassifier(s) and the path of Click elements
+	// that lead to all its/their traffic classes.
+	for ( auto &it : this->synthesizer->get_tc_per_input_iface() ) {
+		std::string ipc_name = "ipc"+std::to_string(i);
+		config_stream << ipc_name + " :: IPClassifier(" << std::endl;
+		std::vector<std::string> chains;
+		for (auto &tc: it.second) {
+			config_stream << "\t" << tc.second.m_pattern << "," << std::endl;
+			chains.push_back( tc.second.get_path_to_rewriter_after_classifier() );
+		}
+		config_stream << ");" << std::endl;
+
+		for (size_t j = 0; j<chains.size(); j++) {
+			config_stream << ipc_name + "[" << j << "] -> " << chains[j] << std::endl;
+		}
+		config_stream << std::endl;
+
+		std::string key;
+		#ifdef HAVE_DPDK
+			key = std::to_string(i);
+		#else
+			key = it.first;
+		#endif
+
+		nic_to_ip_classifier[key] = ipc_name;
+
+		i++;
+	}
+
+	return DONE;
+}
+
+/*
+ * Generate the write and output parts of a Hyper-NF chain.
+ */
+bool
+SoftGenerator::generate_write_and_output_part_of_synthesis(std::stringstream &config_stream) {
+
+	config_stream << "///////////////////////////////////////////////////////////////" << std::endl;
+	config_stream << "// The write and output parts of the synthesized Hyper-NF code"  << std::endl;
+	config_stream << "///////////////////////////////////////////////////////////////" << std::endl;
+	config_stream << std::endl;
+
+	// Costruct the path of Click elements that will lead this modified
+	// (i.e., rewritten by Click IPRewriter already) traffic class out 
+	// of Click. This set of elements follows IPRewriter.
+	for ( auto &it : this->synthesizer->get_stateful_rewriter_per_output_iface() ) {
+
+		std::string out_nf_and_iface = it.first;
+
+		// Extract the NF name and its' interface
+		std::vector<std::string> token = split(out_nf_and_iface, "-");
+		std::string nf    = token[0];
+		std::string iface = token[1];
+
+		// The statefule Rewriter of this path
+		auto rewriter = it.second;
+
+		// If we meet the interface of the first NF, it means that we go backwards.
+		// Processing layer arguments determines whether we strip Ethernet headers or not.
+		// The MAC addresses are set accordingly.
+		#ifdef HAVE_DPDK
+		unsigned short dpdk_iface;
+		#endif
+		std::string encap;
+		if ( nf == "NF_1" ) {
+			#ifdef HAVE_DPDK
+			dpdk_iface = 0;
+			#endif
+
+			encap = (this->proc_layer == L3)? \
+						"EtherEncap(0x0800, $macAddr0, $gwMACAddr0)" : 
+						"StoreEtherAddress($gwMACAddr0, dst)";
+		}
+		// If we meet the interface of the last NF, it means that we go forward
+		else {
+			#ifdef HAVE_DPDK
+			dpdk_iface = 1;
+			#endif
+
+			encap = (this->proc_layer == L3)? \
+						"EtherEncap(0x0800, $macAddr1, $gwMACAddr1)" : 
+						"StoreEtherAddress($gwMACAddr1, dst)";
+		}
+
+		// If --enable-dpdk=yes, a FromDPDKDevice is used instead of regualar FromDevice
+		std::string to_device;
+		#ifdef HAVE_DPDK
+		to_device = "ToDPDKDevice(" + std::to_string(dpdk_iface) + ", BURST $burst, NDESC $txNdesc, IQUEUE $queueSize, TIMEOUT 0);";
+		#else
+		std::string iface_config = out_nf_and_iface + ", " +
+									this->synthesizer->get_stateful_rewriter_per_output_iface_conf(out_nf_and_iface);
+		to_device = "Queue($queueSize) -> ToDevice(" + iface_config + ", BURST $burst, METHOD $);";
+		#endif
+
+		config_stream 	<< "/** Stateful Path going to: " << out_nf_and_iface << " **/" << std::endl;
+		config_stream 	<< rewriter->get_name() << " :: IPRewriter(" << rewriter->compute_conf() 
+						<< "DEC_IP_TTL true, CALC_CHECKSUM true);" << std::endl;
+
+		// Only a Hyper-NF interface will take a ToDevice element.
+		if ( this->synthesizer->is_hyper_nf_iface(nf, iface) ) {
+			config_stream 	<< rewriter->get_name() << "[" << rewriter->get_outbound_port()
+							<< "] -> " << encap << " -> " + to_device << std::endl;
+		}
+		// Be careful, some interfaces that appear here are internal.
+		// These need to be discarded.
+		else {
+			config_stream 	<< rewriter->get_name() << "[" << rewriter->get_outbound_port()
+							<< "] -> Discard();" << std::endl;
+		}
+		
+		// Discarded paths
+		for(unsigned short j=0; j<rewriter->get_outbound_port(); j++) {
+			config_stream 	<< rewriter->get_name() << "[" << j << "] -> Discard();" << std::endl;
+		}
+
+		config_stream << std::endl;
+	}
 
 	return DONE;
 }

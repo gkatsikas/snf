@@ -38,7 +38,7 @@ ConsolidatedTc::ConsolidatedTc () :
 	m_pattern        (),
 	m_chain          (),
 	m_input_port     (256),
-	m_nat            () {}
+	m_stateful            () {}
 
 ConsolidatedTc::ConsolidatedTc (const std::string &nf_of_out_iface, const std::string &out_iface,
 								const std::string &out_iface_conf,  const std::string &op,
@@ -79,19 +79,34 @@ ConsolidatedTc::add_tc (const TrafficClass &tc, const TrafficClassFormat &tc_for
 }
 
 void
-ConsolidatedTc::set_nat (std::shared_ptr<SynthesizedNAT> nat, unsigned short input_port) {
-	this->m_nat = nat->get_name();
+ConsolidatedTc::set_stateful_rewriter (std::shared_ptr<StatefulSynthesizer> st_synth, unsigned short input_port) {
+	this->m_stateful = st_synth->get_name();
 	this->m_input_port = input_port;
 }
 
+unsigned short
+ConsolidatedTc::get_input_port(void) {
+	return this->m_input_port;
+}
+
 std::string
-ConsolidatedTc::get_chain() {
-	return this->m_chain + "[" + std::to_string(this->m_input_port) + "]" + this->m_nat + ";";
+ConsolidatedTc::get_stateful_rewriter(const std::string &at_queue, const bool &with_inport) {
+	// Return the rewriter with its port
+	if ( with_inport )
+		return "[" + std::to_string(this->m_input_port) + "]" + this->m_stateful + at_queue + ";";
+	return this->m_stateful + at_queue;
+}
+
+std::string
+ConsolidatedTc::get_path_to_rewriter_after_classifier(const std::string &at_queue, const bool &with_the_rewriter) {
+	if ( with_the_rewriter )
+		return this->m_chain + this->get_stateful_rewriter(at_queue, true);
+	return this->m_chain;
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-Synthesizer::Synthesizer(ChainParser *cp) : tc_per_input_iface(), nat_per_output_iface() {
+Synthesizer::Synthesizer(ChainParser *cp) : tc_per_input_iface(), st_oper_per_out_iface() {
 	this->log.set_logger_file(__FILE__);
 	if ( !cp ) {
 		FANCY_BUG(this->log, "Synthesizer: Invalid Parser object");
@@ -99,7 +114,7 @@ Synthesizer::Synthesizer(ChainParser *cp) : tc_per_input_iface(), nat_per_output
 
 	this->parser = cp;
 	this->traffic_classification_format = 
-		 this->parser->get_chain_graph()->get_properties()->get_traffic_classification_format();
+		this->parser->get_chain_graph()->get_properties()->get_traffic_classification_format();
 
 	def_chatter(this->log, "\tSynthesizer constructed");
 }
@@ -208,10 +223,10 @@ Synthesizer::build_traffic_classes(void) {
 
 /*
  * Builds a path of elements per input-output interface pair.
- * Synthesizes ``Write'' operations by calling synth_nat.
+ * Synthesizes ``Write'' operations by calling stateful_synthesizer.
  */
 bool
-Synthesizer::synthesize_nat(void) {
+Synthesizer::synthesize_stateful(void) {
 
 	for (auto &it : this->tc_per_input_iface) {
 		for(auto &tc : it.second) {
@@ -219,16 +234,16 @@ Synthesizer::synthesize_nat(void) {
 			std::string out_nf_and_iface = tc.second.m_nf_of_out_iface + "-" + tc.second.m_out_iface;
 
 			// Create space for the path of elements and the interface's configuration
-			if ( this->nat_per_output_iface.find(out_nf_and_iface) == this->nat_per_output_iface.end()) {
-				this->nat_per_output_iface[out_nf_and_iface] = std::shared_ptr<SynthesizedNAT> ( 
-					new SynthesizedNAT()
+			if ( this->st_oper_per_out_iface.find(out_nf_and_iface) == this->st_oper_per_out_iface.end()) {
+				this->st_oper_per_out_iface[out_nf_and_iface] = std::shared_ptr<StatefulSynthesizer> ( 
+					new StatefulSynthesizer()
 				);
-				this->nat_per_output_iface_conf[out_nf_and_iface] = tc.second.m_out_iface_conf;
+				this->st_oper_per_out_iface_conf[out_nf_and_iface] = tc.second.m_out_iface_conf;
 			}
 
-			tc.second.set_nat(
-				this->nat_per_output_iface[out_nf_and_iface],
-				this->nat_per_output_iface[out_nf_and_iface]->add_traffic_class(tc.second, it.first)
+			tc.second.set_stateful_rewriter(
+				this->st_oper_per_out_iface[out_nf_and_iface],
+				this->st_oper_per_out_iface[out_nf_and_iface]->add_traffic_class(tc.second, it.first)
 			);
 		}
 	}

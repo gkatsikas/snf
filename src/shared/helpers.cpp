@@ -116,10 +116,32 @@ separate_args(const std::string &s) {
 }
 
 /*
+ * Get the substring before a pattern
+ */
+const std::string
+get_substr_before(const std::string &str, const std::string &pattern) {
+	std::size_t found = str.find(pattern);
+	if ( found != std::string::npos ) {
+		return str.substr(0, found);
+	}
+	return str;
+}
+
+/*
+ * Get string extension
+ */
+const std::string
+get_string_extension(const std::string &str, const char delim) {
+	if( str.find_last_of(delim) != std::string::npos )
+		return str.substr(str.find_last_of(delim) + 1);
+	return std::string("");
+}
+
+/*
  * IP helpers
  */
 bool
-is_ip4_prefix (const std::string &address, bool full) {
+is_ip4_prefix(const std::string &address, bool full) {
 	std::vector<std::string> split_address = split(address,".");
 	if (address.find_first_not_of(".0123456789") != std::string::npos
 		|| split_address.size() > 4) {
@@ -136,7 +158,7 @@ is_ip4_prefix (const std::string &address, bool full) {
 }
 
 uint32_t
-aton (const std::string &address) {
+aton(const std::string &address) {
 
 	uint32_t result = 0;
 	std::vector<std::string> split_address = split(address,".");
@@ -150,7 +172,7 @@ aton (const std::string &address) {
 }
 
 std::string
-ntoa (uint32_t address) {
+ntoa(uint32_t address) {
 	return std::to_string(address>>24)+"."+std::to_string((address>>16) % 256)+"."+
 		std::to_string((address>>8) % 256)+"."+std::to_string(address % 256);
 }
@@ -248,26 +270,4 @@ bool
 file_exists(const std::string &file_path) {
 	struct stat buffer;
 	return ( stat(file_path.c_str(), &buffer) == 0 ); 
-}
-
-/*
- * Get file extension
- */
-const std::string
-get_string_extension(const std::string &str, const char delim) {
-	if( str.find_last_of(delim) != std::string::npos )
-		return str.substr(str.find_last_of(delim) + 1);
-	return std::string("");
-}
-
-/*
- * Get the substring before a pattern
- */
-const std::string
-get_substr_before(const std::string &str, const std::string &pattern) {
-	std::size_t found = str.find(pattern);
-	if ( found != std::string::npos ) {
-		return str.substr(0, found);
-	}
-	return str;
 }

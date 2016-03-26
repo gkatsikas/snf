@@ -44,6 +44,11 @@ Generator::Generator(Synthesizer *synth) {
 											->get_chain_graph()
 											->get_properties()
 											->get_traffic_classification_format();
+	this->proc_layer                    = this->synthesizer
+											->get_chain_parser()
+											->get_chain_graph()
+											->get_properties()
+											->get_processing_layer();
 	this->basic_configuration_filename  = this->synthesizer
 											->get_chain_parser()
 											->get_chain_graph()

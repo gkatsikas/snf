@@ -119,16 +119,19 @@ ParserConfiguration::parse_generic_properties(void) {
 	// Apply the default configuration in case something goes wrong.
 	std::string output_folder(DEFAULT_HYPER_NF_OUT_FOLDER);
 	std::string output_filename(output_folder + DEFAULT_HYPER_NF_CONF_NAME);
+
 	bool hw_classification = false;
 	std::string hardware_classification_label;
+	std::string proc_layer_label;
 	TrafficClassFormat traffic_class_format = DEFAULT_TC_FORMAT;
-	bool numa = true;
-	unsigned short cpu_cores_no   = DEFAULT_CPU_CORES_NO;
-	unsigned short cpu_sockets_no = DEFAULT_CPU_SOCKETS_NO;
-	// Modern NICs have a lot of queues but it makes sence
-	// to adapt this number to the available CPU cores.
-	unsigned short nic_hw_queues_no = cpu_cores_no;
+	ProcessingLayer    proc_layer           = DEFAULT_PROC_LAYER;
 
+	bool numa = true;
+	unsigned short cpu_cores_no     = DEFAULT_CPU_CORES_NO;
+	unsigned short cpu_sockets_no   = DEFAULT_CPU_SOCKETS_NO;
+	unsigned short nic_hw_queues_no = DEFAULT_NIC_HW_QUEUES_NO;
+
+	//////////////////////////////////////////
 	// Read the output folder
 	// If not given, use the default
 	try {
@@ -144,6 +147,7 @@ ParserConfiguration::parse_generic_properties(void) {
 
 	}
 
+	//////////////////////////////////////////
 	// Read the desired filename of the generated code
 	// If not given, use the default (constructor)
 	try {
@@ -171,6 +175,29 @@ ParserConfiguration::parse_generic_properties(void) {
 		output_filename = output_folder + DEFAULT_HYPER_NF_CONF_NAME;
 	}
 
+	//////////////////////////////////////////
+	// Method to process traffic in Hyper-NF.
+	try {
+		proc_layer_label = (std::string&) get_value(
+			"GENERIC", "PROCESSING_LAYER"
+		);
+	}
+	catch (const std::exception& e) {
+		proc_layer_label = static_cast<std::string>("Unknown");
+	}
+
+	// Check the given layer against a dictionary of supported layers.
+	try {
+		proc_layer = ProcLayerToNumber.at(proc_layer_label);
+	}
+	catch (const std::exception& e) {
+		error_chatter(this->log, 
+			"Unknown processing layer format. Choose [L2, L3]"
+		);
+		return WRONG_INPUT_ARGS;
+	}
+
+	//////////////////////////////////////////
 	// If Hardware classification option is true, the generated code
 	// will consist of two parts. One Intel RSS file with the expressions to
 	// be given to the NIC and one .click file. The Click file will assume 
@@ -190,7 +217,8 @@ ParserConfiguration::parse_generic_properties(void) {
 	// of the targte system.
 	if ( hw_classification ) {
 
-		// A. Method to classify traffic in hardware.
+		//////////////////////////////////////////
+		// Method to classify traffic in hardware.
 		try {
 			hardware_classification_label = (std::string&) get_value(
 				"GENERIC", "HARDWARE_CLASSIFICATION_FORMAT"
@@ -218,7 +246,8 @@ ParserConfiguration::parse_generic_properties(void) {
 			return WRONG_INPUT_ARGS;
 		}
 
-		// B. Non-Uniform Memory Access
+		//////////////////////////////////////////
+		// Non-Uniform Memory Access
 		try {
 			numa = (bool) get_value("GENERIC", "NUMA", true);
 		}
@@ -226,7 +255,8 @@ ParserConfiguration::parse_generic_properties(void) {
 
 		}
 
-		// C. # of CPU sockets
+		//////////////////////////////////////////
+		// # of CPU sockets
 		try {
 			cpu_sockets_no = (unsigned short) get_value("GENERIC", "CPU_SOCKETS");
 		}
@@ -234,7 +264,8 @@ ParserConfiguration::parse_generic_properties(void) {
 
 		}
 
-		// D. # of CPU cores
+		//////////////////////////////////////////
+		// # of CPU cores
 		try {
 			cpu_cores_no = (unsigned short) get_value("GENERIC", "CPU_CORES");
 		}
@@ -259,8 +290,8 @@ ParserConfiguration::parse_generic_properties(void) {
 	// Allocate the properties object after all the configuration is applied.
 	this->properties = new Properties(
 		output_folder, output_filename, hw_classification,
-		traffic_class_format, numa, cpu_sockets_no,
-		cpu_cores_no, nic_hw_queues_no
+		traffic_class_format, proc_layer, numa, 
+		cpu_sockets_no, cpu_cores_no, nic_hw_queues_no
 	);
 
 	return DONE;
@@ -563,6 +594,8 @@ ParserConfiguration::print_loaded_property_status(void) {
 		this->get_properties()->get_output_folder());
 	info_chatter(this->log, "\t" << "              Output Filename: " <<
 		this->get_properties()->get_output_filename());
+	info_chatter(this->log, "\t" << "     Traffic Processing Layer: " <<
+		proc_layer_to_label(this->get_properties()->get_processing_layer()));
 	info_chatter(this->log, "\t" << "      Hardware Classification: " <<
 		bool_to_str(this->get_properties()->has_hardware_classification()));
 

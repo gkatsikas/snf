@@ -31,7 +31,7 @@
 #include "click_element.hpp"
 
 #include "../shared/helpers.hpp"
-#include "../synthesizer/synth_nat.hpp"
+#include "../synthesizer/stateful_synthesizer.hpp"
 
 // The logger of traffic class-related classes
 Logger tc_log(__FILE__);
@@ -616,7 +616,7 @@ Condition::to_str(void) const {
 TrafficClass::TrafficClass () : m_output_iface(), m_nf_of_output_iface(), m_filters(),
 								m_write_conditions(), m_drop_broadcasts(false),
 								m_ip_gw_options(false), m_ether_encap_conf(),
-								m_element_path(), m_operation(), m_nat_input_port(0) {}
+								m_element_path(), m_operation(), m_stateful_input_port(0) {}
 
 bool
 TrafficClass::is_discarded(void) const {
@@ -645,8 +645,8 @@ TrafficClass::synthesize_chain (unsigned short &direction) {
 			output += "IPGWOptions($ipAddr" + std::to_string(direction) + ") -> ";
 		}
 		/*
-		if(m_nat) {
-			output += "["+std::to_string(m_nat_input_port)+"]"+m_nat->get_name()+";";
+		if(m_stateful) {
+			output += "["+std::to_string(m_stateful_input_port)+"]"+m_stateful->get_name()+";";
 		}
 		else {
 			output += "[0]IPRewriter(";
@@ -937,9 +937,11 @@ TrafficClass::get_operation (void) const {
 }
 
 void
-TrafficClass::set_nat (const std::shared_ptr<SynthesizedNAT> &nat, const unsigned short &port) {
-	this->m_nat = nat;
-	this->m_nat_input_port = port;
+TrafficClass::set_stateful_rewriter (
+		const std::shared_ptr<StatefulSynthesizer> &sf,
+		const unsigned short &port) {
+	this->m_stateful = sf;
+	this->m_stateful_input_port = port;
 }
 
 void

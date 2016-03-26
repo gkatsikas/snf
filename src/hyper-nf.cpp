@@ -260,7 +260,7 @@ main(int argc, char **argv) {
 	info_chatter(main_log, "+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+");
 	task_exec_time = measure<>::execution( [&]() {
 		info_chatter(main_log, "Hyper-NF Synthesizer... ");
-		if ( !(exit_status=synthesizer->synthesize_nat()) ) {
+		if ( !(exit_status=synthesizer->synthesize_stateful()) ) {
 			delete synthesizer;
 			exit(exit_status);
 		}

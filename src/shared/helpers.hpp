@@ -132,9 +132,10 @@ const short CHAIN_PARSING_PROBLEM    = -36;
 const short NF_CHAIN_NOT_ACYCLIC     = -37;
 const short CLICK_PARSING_PROBLEM    = -38;
 const short CHAIN_SYNTHESIS_PROBLEM  = -39;
+const short CODE_GENERATION_PROBLEM  = -40;
 
 // Protocol Management
-const short INVALID_PROTOCOL         = -40;
+const short INVALID_PROTOCOL         = -41;
 
 // List of IPMapper elements
 const std::set<std::string> MAPPER_ELEMENTS = {
@@ -191,12 +192,15 @@ const std::set<std::string> SUPPORTED_MAPPER_ELEMENTS = {
 /*
  * String helpers
  */
-std::vector<std::string> split        (const std::string &s, const std::string& delim);
-std::vector<std::string> separate_args(const std::string &s);
-std::string              vector_to_str(const std::vector<std::string> &vec, const std::string &delim);
+std::vector<std::string>  split(const std::string &s, const std::string& delim);
+std::vector<std::string>& split(const std::string &s, char delim, std::vector<std::string> &elems);
+std::string               vector_to_str(const std::vector<std::string> &vec, const std::string &delim);
+std::vector<std::string>  separate_args(const std::string &s);
+const std::string         get_substr_before   (const std::string &str, const std::string &pattern);
+const std::string         get_string_extension(const std::string &str, const char delim='.');
 
 /*
- * IP helpers
+ * Networking helpers
  */
 bool        is_ip4_prefix (const std::string &address, bool full=true);
 uint32_t    aton (const std::string &address);
@@ -236,16 +240,6 @@ bool create_directory(const std::string &dir_path);
  * Check if file exists
  */
 bool file_exists(const std::string &file_path);
-
-/*
- * Get file extension
- */
-const std::string get_string_extension(const std::string &str, const char delim='.');
-
-/*
- * Get the substring before a pattern
- */
-const std::string get_substr_before(const std::string &str, const std::string &pattern);
 
 /*
  * A C++11 template that is able to receive any function with any arguments

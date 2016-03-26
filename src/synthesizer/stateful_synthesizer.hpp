@@ -1,8 +1,8 @@
-#ifndef _SYNTH_NAT_HPP_
-#define _SYNTH_NAT_HPP_
+#ifndef _STATEFUL_SYNTH_HPP_
+#define _STATEFUL_SYNTH_HPP_
 
 /*
- * synth_nat.hpp
+ * stateful_synthesizer.hpp
  * 
  * Definition of the class that handles the synthesis of stateful operations.
  *
@@ -30,17 +30,19 @@
 
 struct ConsolidatedTc;
 
-class SynthesizedNAT {
+class StatefulSynthesizer {
 
 	public:
-		SynthesizedNAT();
+		StatefulSynthesizer();
 	
 		//Returns the input port on which to connect
-		unsigned short add_traffic_class (const struct ConsolidatedTc &tc, const std::string &src_iface);
-		std::string    compute_conf      (void);
+		unsigned short add_traffic_class(
+			const struct ConsolidatedTc &tc, const std::string &src_iface
+		);
+		std::string    compute_conf     (void);
 
-		std::string    get_name          (void) const;
-		unsigned short get_outbound_port (void) const;
+		std::string    get_name         (void) const;
+		unsigned short get_outbound_port(void) const;
 
 	private:
 		/*
@@ -61,7 +63,7 @@ class SynthesizedNAT {
 		std::unordered_map<std::string,unsigned short> m_iface_to_output_port;
 
 		// Returns the part of the pattern that sets the rewriting up
-		std::string conf_line_from_operation (Operation &op);
+		std::string conf_line_from_operation(Operation &op);
 };
 
 #endif

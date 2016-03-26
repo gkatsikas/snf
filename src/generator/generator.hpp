@@ -47,6 +47,12 @@ class Generator {
 		TrafficClassFormat traffic_classification_format;
 
 		/*
+		 * Hyper-NF can process traffic at L2 and L3
+		 * Input confguration can set this accordingly.
+		 */
+		ProcessingLayer proc_layer;
+
+		/*
 		 * The filename that becomes the base for either software or hardware configuration files.
 		 */
 		std::string basic_configuration_filename;
@@ -70,7 +76,7 @@ class Generator {
 		/*
 		 * Public API for the Generator
 		 */
-		Generator (Synthesizer *synth);
+		Generator(Synthesizer *synth);
 		virtual ~Generator();
 
 		/*

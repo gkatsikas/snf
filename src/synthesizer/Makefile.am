@@ -1,20 +1,20 @@
 # 2 libraries comprise this folder
-noinst_LIBRARIES = libsynth_nat.a libsynthesizer.a
+noinst_LIBRARIES = libstateful_synthesizer.a libsynthesizer.a
 
 #####################################################################################
 # NAT operations' Synthesis
-libsynth_nat_a_SOURCES  = 	synth_nat.cpp \
-							synth_nat.hpp
+libstateful_synthesizer_a_SOURCES = stateful_synthesizer.cpp \
+									stateful_synthesizer.hpp
 
 # Linked with
-libsynth_nat_a_LIBADD   = 	$(top_builddir)/src/traffic_class_builder/libfilter.a
+libstateful_synthesizer_a_LIBADD  = $(top_builddir)/src/traffic_class_builder/libfilter.a
 #####################################################################################
 
 #####################################################################################
 # Generic Synthesis
 libsynthesizer_a_SOURCES  = synthesizer.cpp \
 							synthesizer.hpp \
-							synth_nat.hpp
+							stateful_synthesizer.hpp
 
 # Linked with
 libsynthesizer_a_LIBADD   = $(top_builddir)/src/graph/libgraph.a \

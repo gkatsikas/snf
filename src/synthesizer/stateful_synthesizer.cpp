@@ -1,5 +1,5 @@
 // -*- c-basic-offset: 4 -*-
-/* synth_nat.cpp
+/* stateful_synthesizer.cpp
  * 
  * Implementation of stateful operations' synthesis.
  *
@@ -22,18 +22,23 @@
 
 #include <set>
 
-#include "synth_nat.hpp"
 #include "synthesizer.hpp"
+#include "stateful_synthesizer.hpp"
+
 #include "../shared/helpers.hpp"
 
-int SynthesizedNAT::count = 0;
+int StatefulSynthesizer::count = 0;
 
-SynthesizedNAT::SynthesizedNAT() : m_name("iprw" + std::to_string(count++)), m_outbound_port(0) {
+StatefulSynthesizer::StatefulSynthesizer() : 
+		m_name("iprw" + std::to_string(count++)), 
+		m_outbound_port(0) {
 	this->log.set_logger_file(__FILE__);
 }
 
 unsigned short
-SynthesizedNAT::add_traffic_class (const struct ConsolidatedTc &tc, const std::string &src_iface) {
+StatefulSynthesizer::add_traffic_class(
+		const struct ConsolidatedTc &tc,
+		const std::string &src_iface) {
 	std::string confLine = tc.m_operation;
 
 	unsigned short idx = this->m_input_port_to_iface.size();
@@ -44,7 +49,7 @@ SynthesizedNAT::add_traffic_class (const struct ConsolidatedTc &tc, const std::s
 }
 
 std::string
-SynthesizedNAT::compute_conf (void) {
+StatefulSynthesizer::compute_conf(void) {
 
 	std::string output;
 
@@ -80,11 +85,11 @@ SynthesizedNAT::compute_conf (void) {
 }
 
 std::string
-SynthesizedNAT::get_name (void) const {
+StatefulSynthesizer::get_name(void) const {
 	return this->m_name;
 }
 
 unsigned short
-SynthesizedNAT::get_outbound_port (void) const {
+StatefulSynthesizer::get_outbound_port(void) const {
 	return this->m_outbound_port;
 }

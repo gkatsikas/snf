@@ -43,17 +43,24 @@ class RSSGenerator : public Generator {
 		 * The number of available CPU cores, as specified by 
 		 * the user in the input file.
 		 */
-		unsigned short rss_cores;
+		unsigned short    rss_cores;
 		/*
 		 * The number of available hardware queues, as specified by 
 		 * the user in the input file.
 		 */
-		unsigned short rss_queues;
+		unsigned short    rss_queues;
 		/*
 		 * The number of available CPU sockets, as specified by 
 		 * the user in the input file.
 		 */
-		unsigned short socket_cores;
+		unsigned short    socket_cores;
+
+		/*
+		 * Extra prefix to be appended to Click objects
+		 * in order to replicate them across multiple 
+		 * queues of the NIC.
+		 */
+		const std::string queue_ext_prefix = std::string("_q");
 
 	public:
 		/*
@@ -74,31 +81,86 @@ class RSSGenerator : public Generator {
 		/*
 		 * Hardware-assisted, RSS-based Hyper-NF:
 		 *    RSS-Hashing in the NIC splits traffic at will (based on fields that we specify).
-		 *    Then, a Click-DPDK configuration is reading packets from different queues, schedules threads
-		 *    from multiple cores on these queues, and clones the chain across all of them.
+		 *    Then, a Click-DPDK configuration is reading packets from different queues, 
+		 *    schedules threads from multiple cores on these queues, and clones the chain 
+		 *    across all of them.
 		 */
-		bool generate_rss_cloned_pipelines    (const bool &to_file);
+		bool generate_rss_cloned_pipelines(const bool &to_file);
+
+		/*
+		 * Generate some static information about the interfaces' addresses.
+		 */
+		void generate_static_configuration(
+			std::stringstream &config_stream
+		);
+
+		/*
+		 * Clone the input, read, write, and output parts of a Hyper-NF 
+		 * chain across multiple CPU cores.
+		 */
+		bool replicate_input_part_of_synthesis(
+			std::stringstream                                     &config_stream,
+			std::map < unsigned short, std::string >              &nic_to_classifier,
+			std::map < std::string,    unsigned short >           &nic_desc_to_core,
+			std::map < unsigned short, std::vector<std::string> > &nic_to_classifier_repl,
+			std::map < std::string,    std::vector<std::string> > &classifier_to_nic_desc
+		);
+		bool replicate_read_part_of_synthesis(
+			std::stringstream                                     &config_stream,
+			std::map < unsigned short, std::string >              &nic_to_classifier,
+			std::map < unsigned short, std::vector<std::string> > &nic_to_classifier_repl
+		);
+		bool replicate_write_and_output_part_of_synthesis(
+			std::stringstream                                     &config_stream,
+			std::map < 	std::pair< std::string, unsigned short>,
+						std::pair< std::string, unsigned short> > &classifier_repl_to_rewriter_repl
+
+		);
+
+		/*
+		 * Map a Classifier to the Rewriter objects that will
+		 * modify its traffic classes. One classifier has at maximum
+		 * as many rewriters as the number of its traffic classes.
+		 * However, sometimes traffic classes from different classifiers
+		 * might end up to the same rewriter. This is the case for stateful
+		 * middlebox operations such as NAPT, where two directions of the
+		 * same flow need to pass through the same stateful rewriter.
+		 */
+		bool construct_classifier_to_rewriter_map(
+			std::map < 	std::pair< std::string, unsigned short>,
+						std::pair< std::string, unsigned short> > &classifier_repl_to_rewriter_repl
+		);
+
+		/*
+		 * Given a rewriter, search in the Classifier-Rewriter map to
+		 * find the classifier associated to that specific rewriter.
+		 */
+		std::pair< std::string, unsigned short > from_rewriter_to_classifier(
+			const std::map<	std::pair< std::string, unsigned short>,
+							std::pair< std::string, unsigned short> > &classifier_repl_to_rewriter_repl,
+			const std::string &rewriter_name
+		);
 
 		/*
 		 * When hardware classification is on, we need to schedule multiple
 		 * threads (one per core) to the various NIC queues and attach one 
-		 * Click-DPDK Input element (FromDPDKDevice) to each queue.
+		 * Click-DPDK input element (FromDPDKDevice) to each queue.
 		 */
-		bool allocate_queues_to_cores(
+		bool assign_queues_to_cores(
 			std::map < std::string, unsigned short >           &nic_desc_to_core,
-			std::map < std::string, std::vector<std::string> > &nic_desc_to_ip_class,
-			std::string                                        &code_buffer,
+			std::map < std::string, std::vector<std::string> > &classifier_to_nic_desc,
+			std::stringstream                                  &config_stream,
 			const unsigned short                               &nic_no,
 			const std::string                                  &ipcl_name
 		);
 
 		/*
 		 * Compose the arguments of Click's StaticThreadSched element.
-		 * These arguments are maps of nic descriptors to CPU cores.
+		 * These arguments are maps of NIC descriptors to CPU cores.
 		 */
 		bool schedule_core_threads_on_queues(
 			std::map <std::string, unsigned short> &nic_desc_to_core,
-			std::string &code_buffer
+			std::stringstream &config_stream
 		);
 };
 

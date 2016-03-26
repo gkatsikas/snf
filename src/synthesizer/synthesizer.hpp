@@ -27,7 +27,7 @@
 #include "../../config.h"
 #endif
 
-#include "synth_nat.hpp"
+#include "stateful_synthesizer.hpp"
 
 #include "../parser/chain_parser.hpp"
 #include "../traffic_class_builder/filter.hpp"
@@ -42,7 +42,7 @@ struct ConsolidatedTc {
 	std::string    m_pattern;
 	std::string    m_chain;
 	unsigned short m_input_port;
-	std::string    m_nat;
+	std::string    m_stateful;
 	
 	ConsolidatedTc();
 	ConsolidatedTc(
@@ -51,9 +51,27 @@ struct ConsolidatedTc {
 		const std::string &chain
 	);
 
-	void        add_tc   (const TrafficClass &tc, const TrafficClassFormat &tc_format);
-	void        set_nat  (std::shared_ptr<SynthesizedNAT> nat, unsigned short input_port);
-	std::string get_chain(void);
+	void           add_tc(
+		const TrafficClass       &tc,
+		const TrafficClassFormat &tc_format
+	);
+
+	void           set_stateful_rewriter(
+		std::shared_ptr<StatefulSynthesizer> st_synth,
+		unsigned short input_port
+	);
+
+	unsigned short get_input_port(void);
+
+	std::string    get_stateful_rewriter(
+		const std::string &at_queue    = std::string(""),
+		const bool        &with_inport = false
+	);
+
+	std::string    get_path_to_rewriter_after_classifier(
+		const std::string &at_queue          = std::string(""),
+		const bool        &with_the_rewriter = true
+	);
 };
 
 class Synthesizer {
@@ -73,22 +91,26 @@ class Synthesizer {
 		 * A traffic class specification associated with an input interface.
 		 * |--> {FromDevice --> IPClassifier --> IPRewriter} paths.
 		 */
-		std::unordered_map< std::string, std::unordered_map<std::string, ConsolidatedTc> > tc_per_input_iface;
+		std::unordered_map< std::string, std::unordered_map<std::string, ConsolidatedTc> > 
+			tc_per_input_iface;
 
 		/*
 		 * A map of output interfaces associated with stateful rewrite operations.
 		 * |--> {IPRewriter --> ToDevice} paths.
 		 */
-		std::unordered_map< std::string, std::shared_ptr<SynthesizedNAT> > nat_per_output_iface;
+		std::unordered_map< std::string, std::shared_ptr<StatefulSynthesizer> > 
+			st_oper_per_out_iface;
 		/*
 		 * The configuration of these interfaces
 		 */
-		std::unordered_map< std::string, std::string > nat_per_output_iface_conf;
+		std::unordered_map< std::string, std::string > 
+			st_oper_per_out_iface_conf;
 
 		/*
 		 * A vector with the discrete interfaces of the final chain.
 		 */
-		std::set < std::pair<std::string, std::string> > hyper_nf_ifaces;
+		std::set < std::pair<std::string, std::string> > 
+			hyper_nf_ifaces;
 
 		/*
 		 * If hardware_classification is set, one of the following formats are valid:
@@ -111,12 +133,12 @@ class Synthesizer {
 				get_tc_per_input_iface(void) {
 			return this->tc_per_input_iface;
 		};
-		inline std::unordered_map< std::string, std::shared_ptr<SynthesizedNAT> > 
-				get_nat_per_output_iface(void) {
-			return this->nat_per_output_iface;
+		inline std::unordered_map< std::string, std::shared_ptr<StatefulSynthesizer> > 
+				get_stateful_rewriter_per_output_iface(void) {
+			return this->st_oper_per_out_iface;
 		};
-		inline std::string get_nat_per_output_iface_conf(const std::string &key) {
-			return this->nat_per_output_iface_conf[key];
+		inline std::string get_stateful_rewriter_per_output_iface_conf(const std::string &key) {
+			return this->st_oper_per_out_iface_conf[key];
 		};
 		inline std::set < std::pair<std::string, std::string> > get_hyper_nf_ifaces(void) {
 			return this->hyper_nf_ifaces;
@@ -136,7 +158,7 @@ class Synthesizer {
 		/*
 		 * Builds a path of elements per input-output interface pair
 		 */
-		bool synthesize_nat            (void);
+		bool synthesize_stateful       (void);
 
 
 		/*

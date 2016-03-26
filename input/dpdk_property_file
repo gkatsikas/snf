@@ -21,7 +21,11 @@ HARDWARE_CLASSIFICATION_FORMAT = RSS-Hashing
 NUMA                    = true
 CPU_SOCKETS             = 2
 CPU_CORES               = 16
-NIC_HW_QUEUES           = 16
+NIC_HW_QUEUES           = 128
+# Options: L2, L3
+# Comment: If L2, the Hyper-NF configuration will not strip/unStrip Ethernet headers
+#          If L3, a strip decapsulates IP packets that become frames again with EtherEncap.
+PROCESSING_LAYER        = L3
 
 ##############################################################################################
 #######

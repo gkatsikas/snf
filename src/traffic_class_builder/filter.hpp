@@ -40,7 +40,7 @@
 #define TRAFFIC_CLASS_FORMAT
 
 class ClickElement;
-class SynthesizedNAT;
+class StatefulSynthesizer;
 
 /*
  * Contains one field-specific filter
@@ -59,10 +59,18 @@ class Filter {
 
 		bool operator== (const Filter &rhs) const;
 
-		static Filter get_filter_from_v4_prefix      (HeaderField field, uint32_t value, uint32_t prefix);
-		static Filter get_filter_from_v4_prefix_str  (HeaderField field, const std::string &prefix_as_str);
-		static Filter get_filter_from_ipclass_pattern(HeaderField field, const std::string &args);
-		static Filter get_filter_from_prefix_pattern (HeaderField field, const std::string &args);
+		static Filter get_filter_from_v4_prefix      (
+			HeaderField field, uint32_t value, uint32_t prefix
+		);
+		static Filter get_filter_from_v4_prefix_str  (
+			HeaderField field, const std::string &prefix_as_str
+		);
+		static Filter get_filter_from_ipclass_pattern(
+			HeaderField field, const std::string &args
+		);
+		static Filter get_filter_from_prefix_pattern (
+			HeaderField field, const std::string &args
+		);
 
 		void make_none (void);       // Make this filter refuse all packets
 		bool is_none   (void) const; // Returns true if the filter refuses all packets
@@ -102,7 +110,7 @@ class Filter {
 		/*
 		 * Translates a (complex) condition on IP header fields to OpenFlow rules.
 		 */
-		std::string ip_filter_to_openflow_pattern(const std::string &keyword) const;
+		std::string ip_filter_to_openflow_pattern     (const std::string &keyword) const;
 };
 
 /*
@@ -113,8 +121,8 @@ class Condition { //FIXME: just inherit Filter?
 	public:
 		Condition(HeaderField, std::shared_ptr<ClickElement>, Filter, FieldOperation);
 
-		bool        is_same_write(const FieldOperation& op) const;
-		bool        intersect    (const Filter& filter); //return true if condition is not empty
+		bool        is_same_write(const FieldOperation &op) const;
+		bool        intersect    (const Filter &filter); //return true if condition is not empty
 		std::string to_str       (void) const;
 		bool        is_none      (void) const;
 
@@ -148,17 +156,20 @@ class TrafficClass {
 		 */
 		int  add_element (std::shared_ptr<ClickElement> element, const int port=-1);
 
-		void set_nat               (const std::shared_ptr<SynthesizedNAT> &nat, const unsigned short &port);
+		void set_stateful_rewriter (
+			const std::shared_ptr<StatefulSynthesizer> &sf,
+			const unsigned short &port
+		);
 		void set_output_iface      (const std::string &iface);
 		void set_output_iface_conf (const std::string &iface_conf);
 		void set_nf_of_output_iface(const std::string &nf);
 		
-		const std::string               get_output_iface      (void);
-		const std::string               get_output_iface_conf (void);
-		std::string                     get_nf_of_output_iface(void) const;
-		Operation                       get_operation         (void) const;
-		unsigned short                  get_nat_input_port    (void) const;
-		std::shared_ptr<SynthesizedNAT> get_nat               (void) const;
+		const std::string                    get_output_iface                (void);
+		const std::string                    get_output_iface_conf           (void);
+		std::string                          get_nf_of_output_iface          (void) const;
+		Operation                            get_operation                   (void) const;
+		unsigned short                       get_stateful_rewriter_input_port(void) const;
+		std::shared_ptr<StatefulSynthesizer> get_stateful_rewriter           (void) const;
 
 		/*
 		 * Core method that extends a filter by applying intersection with another.
@@ -232,12 +243,12 @@ class TrafficClass {
 		/*
 		 * 
 		 */
-		std::shared_ptr<SynthesizedNAT> m_nat;
+		std::shared_ptr<StatefulSynthesizer> m_stateful;
 
 		/*
 		 * The input port of the IPRewriter that performs NAT.
 		 */
-		unsigned short m_nat_input_port;
+		unsigned short m_stateful_input_port;
 
 		void add_filter         (Filter filter, HeaderField field);
 		int  intersect_condition(const Filter &condition, const FieldOperation &operation);

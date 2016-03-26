@@ -11,7 +11,7 @@ OBJS =  helpers.o chameleon.o vertex.o segment_list.o operation.o \
 		generic_configuration.o graph.o filter.o ip_filter_parser.o \
 		click_parse_configuration.o nf_graph.o click_element.o \
 		output_class.o click_tree.o parser_configuration.o chain_parser.o \
-		synthesizer.o synth_nat.o
+		synthesizer.o stateful_synthesizer.o
 
 EXECUTABLE = hyper-nf
 
@@ -112,11 +112,11 @@ synthesizer.o: ./src/synthesizer/synthesizer.cpp ./src/synthesizer/synthesizer.h
 				./src/traffic_class_builder/click_tree.cpp ./src/traffic_class_builder/click_tree.hpp \
 				./src/traffic_class_builder/output_class.hpp ./src/traffic_class_builder/operation.hpp \
 				./src/traffic_class_builder/element_type.hpp ./src/traffic_class_builder/filter.hpp \
-				./src/synthesizer/synth_nat.hpp
+				./src/synthesizer/stateful_synthesizer.hpp
 	$(CC) $(CFLAGS) ./src/synthesizer/synthesizer.cpp
 	
-synth_nat.o: ./src/synthesizer/synth_nat.hpp ./src/synthesizer/synth_nat.cpp ./src/traffic_class_builder/filter.hpp
-	$(CC) $(CFLAGS) ./src/synthesizer/synth_nat.cpp
+stateful_synthesizer.o: ./src/synthesizer/stateful_synthesizer.hpp ./src/synthesizer/stateful_synthesizer.cpp ./src/traffic_class_builder/filter.hpp
+	$(CC) $(CFLAGS) ./src/synthesizer/stateful_synthesizer.cpp
 	
 ### House keeping
 clean:

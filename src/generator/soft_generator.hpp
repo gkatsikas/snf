@@ -53,6 +53,29 @@ class SoftGenerator : public Generator {
 		 * The configuration must achieve equivalent functionality with the initial chain.
 		 */
 		bool generate_all_in_soft_configuration(const bool &to_file);
+
+		/*
+		 * Generate some static information about the interfaces' addresses.
+		 */
+		void generate_static_configuration     (
+			std::stringstream &config_stream
+		);
+
+		/*
+		 * Generate the input, read, write, and output parts of 
+		 * a Hyper-NF chain.
+		 */
+		bool generate_input_part_of_synthesis  (
+			std::stringstream                     &config_stream,
+			std::map < std::string, std::string > &nic_to_ip_classifier
+		);
+		bool generate_read_part_of_synthesis   (
+			std::stringstream                     &config_stream,
+			std::map < std::string, std::string > &nic_to_ip_classifier
+		);
+		bool generate_write_and_output_part_of_synthesis(
+			std::stringstream &config_stream
+		);
 };
 
 #endif
