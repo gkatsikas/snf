@@ -364,7 +364,7 @@ ChainParser::verify_and_connect_nfs(const std::string &nf_name, const unsigned s
 		std::string el_name  = element->get_name();
 		std::string el_class = element->get_class();
 		VertexType  type     = element->get_type();
-		//std::string type_str = element->get_type_str();
+		std::string type_str = element->get_type_str();
 		std::string configuration = element->get_configuration();
 
 		// Configuration might contain e.g. BURST burst_size after the interface.

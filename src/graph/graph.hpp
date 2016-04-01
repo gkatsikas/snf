@@ -85,7 +85,7 @@ class Graph
 		const AdjacencyList    get_adjacency_list(void)   const;
 
 
-		Vertex*                get_vertex_by_name    (const std::string   &name) const;
+		Vertex*                get_vertex_by_name    (const std::string   &name);
 		Vertex*                get_vertex_by_position(const unsigned short &pos) const;
 		std::vector<Vertex*>   get_vertex_children   (Vertex *u)                 const;
 		std::vector<std::pair<unsigned short, Vertex*>> get_vertex_children_and_ports(Vertex *u) const ;

@@ -180,7 +180,7 @@ Graph::get_adjacency_list(void) const {
  * Get a graph vertex by name (The first one to be found)
  */
 Vertex*
-Graph::get_vertex_by_name(const std::string &name) const {
+Graph::get_vertex_by_name(const std::string &name) {
 	if ( this->is_empty() )
 		return NULL;
 

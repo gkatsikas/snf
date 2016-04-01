@@ -229,7 +229,7 @@ RSSGenerator::replicate_input_part_of_synthesis(
 			}
 		}
 		if ( nic < 0 ) {
-			error_chatter(this->log, "Could not find the NIC of IPClassifier: " + ipc_class);
+			error_chatter(this->log, "\tCould not find the NIC of IPClassifier: " + ipc_class);
 			return TO_BOOL(CODE_GENERATION_PROBLEM);
 		}
 
@@ -241,12 +241,12 @@ RSSGenerator::replicate_input_part_of_synthesis(
 			unsigned short core_of_this_fd = nic_desc_to_core[fd];
 			std::string class_repl = nic_to_classifier_repl[nic][replica_counter];
 			classifier_to_core[class_repl] = core_of_this_fd;
-			debug_chatter(this->log, "\tClassifier " + class_repl + " handled by core " + std::to_string(core_of_this_fd));
+			debug_chatter(this->log, "\t\tClassifier " + class_repl + " handled by core " + std::to_string(core_of_this_fd));
 
 			config_stream 	<< std::left << std::setw(15) << fd << " -> " << decap << " -> " 
 							#ifdef  DEBUG_MODE
 							<< "IPPrint(" << std::left << std::setw(15) << fd // Check which core gets packets from RSS
-							<< ", , LENGTH true, TTL true) -> "
+							<< ", LENGTH true, TTL true) -> "
 							#endif
 							<< std::right << std::setw(10) << class_repl << ";" << std::endl;
 
