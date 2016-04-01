@@ -30,12 +30,18 @@
 #include "generator/flow_director_generator.hpp"
 #include "synthesizer/synthesizer.hpp"
 
+/*
+ * User guide to start Hyper-NF
+ */
 void
 usage(Logger &main_log, const char* program) {
 	error_chatter(main_log, "Usage: " << program << " -p [propertyFile] [-v]");
 	exit(WRONG_INPUT_ARGS);
 }
 
+/*
+ * Version report and license
+ */
 void
 version_report(const std::string &version) {
 	std::cout << "Hyper-NF "+ version + "\n" << std::endl;
@@ -57,7 +63,10 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>" << std::en
 	exit(SUCCESS);
 }
 
-bool
+/*
+ * Parse command line arguments
+ */
+void
 parse_arguments(
 		int         cmd_args_no,
 		char        **cmd_args,
@@ -114,10 +123,12 @@ parse_arguments(
 	}
 
 	*cmd_args = NULL;
-
-	return DONE;
 }
 
+/*
+ * Based on user's input, decide which code generation class to use
+ * in order to produce a runnable synthesized Click chain.
+ */
 Generator*
 identify_code_generator(
 		Logger                   &main_log,
@@ -136,11 +147,12 @@ identify_code_generator(
 				case OpenFlow:
 					//return new OpenFlowGenerator    (std::move(synthesizer));
 				default:
-					MISSING_FEATURE(main_log, "Unimplemented Traffic Class Format: " + tc_to_label(tc_format));
+					error_chatter(main_log, "Unimplemented Traffic Class Format: " + tc_to_label(tc_format));
+					return NULL;
 			}
 		#else
 			error_chatter(main_log, "Hardware classification requires DPDK support!");
-			return ERROR;
+			return NULL;
 		#endif
 	}
 	// Pure software based implementation in Click.
@@ -149,24 +161,24 @@ identify_code_generator(
 	}
 }
 
+/*
+ * Hyper-NF's bootstrapping function
+ */
 int
 main(int argc, char **argv) {
 	setvbuf(stdout, NULL, _IONBF, 0);
 
 	std::string property_file;
 	std::string version("");
-	short       exit_status     = 0;
-	int         task_exec_time  = 0;
-	int         total_exec_time = 0;
+	bool        exit_status     = 0;
+	long        task_exec_time  = 0;
+	long        total_exec_time = 0;
 
 	// Initialize logger
 	Logger main_log(__FILE__);
 
 	// Check input arguments validity
-	if ( !(exit_status=parse_arguments(argc, argv, main_log, &property_file, &version)) ) {
-		exit(exit_status);
-	}
-
+	parse_arguments(argc, argv, main_log, &property_file, &version);
 	info_chatter(main_log, "Hyper-NF" + version + ": A synthesizer of Click-based chained Network Functions");
 
 	//////////////////////////////////// Load property file ///////////////////////////////////
@@ -294,6 +306,11 @@ main(int argc, char **argv) {
 			exit(CHAIN_SYNTHESIS_PROBLEM);
 		}
 
+		if ( !generator ) {
+			delete synthesizer;
+			exit(CHAIN_SYNTHESIS_PROBLEM);
+		}
+
 		if ( !(exit_status=generator->generate_equivalent_configuration()) ) {
 			delete generator;
 			exit(exit_status);
@@ -326,8 +343,6 @@ main(int argc, char **argv) {
 	info_chatter(main_log, "+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+");
 	info_chatter(main_log, "");
 	///////////////////////////////////////////////////////////////////////////////////////////
-
-	//info_chatter(main_log, "HW Class: " << pcf->get_properties()->has_hardware_classification() );
 
 	total_exec_time += task_exec_time;
 

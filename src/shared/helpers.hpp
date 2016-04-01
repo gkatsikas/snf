@@ -137,6 +137,10 @@ const short CODE_GENERATION_PROBLEM  = -40;
 // Protocol Management
 const short INVALID_PROTOCOL         = -41;
 
+// Convert the above error types to bool
+//#define TO_BOOL(x) (!!(x))
+#define TO_BOOL(x) ( x == 0 )
+
 // List of IPMapper elements
 const std::set<std::string> MAPPER_ELEMENTS = {
 	"SourceIPHashMapper", "RoundRobinIPMapper", "FTPPortMapper"

@@ -39,12 +39,12 @@ class ParserConfiguration : public GenericConfiguration {
 		/*
 		 * A Directed Acyclic Graph of chained NFs
 		 */
-		Graph *nf_chain;
+		Graph      *nf_chain;
 
 		/*
 		 * Another DAG that shows how the NF chain is connected to several domains
 		 */
-		Graph *nf_domains;
+		Graph      *nf_domains;
 
 
 		/*

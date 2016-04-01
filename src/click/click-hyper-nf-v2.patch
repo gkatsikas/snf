@@ -1404,31 +1404,6 @@ index 4246624..6cd0caa 100644
  
      };
  
-diff --git a/include/click/dpdkdevice.hh b/include/click/dpdkdevice.hh
-index e2883a2..4891aa7 100644
---- a/include/click/dpdkdevice.hh
-+++ b/include/click/dpdkdevice.hh
-@@ -7,6 +7,9 @@
- 
- CLICK_DECLS
- 
-+#define DEF_TX_NDESC 2048 // 1024
-+#define DEF_RX_NDESC 2048 // 256
-+
- class DPDKDevice {
- public:
- 
-@@ -54,8 +57,8 @@ private:
-             n_rx_queues((dir == DPDKDevice::RX) ? queue_id + 1 : 0),
-             n_tx_queues((dir == DPDKDevice::TX) ? queue_id + 1 : 0),
-             promisc(promisc),
--            n_rx_descs((dir == DPDKDevice::RX) ? n_desc : 256),
--            n_tx_descs((dir == DPDKDevice::TX) ? n_desc : 1024)
-+            n_rx_descs((dir == DPDKDevice::RX) ? n_desc : DEF_RX_NDESC), //256
-+            n_tx_descs((dir == DPDKDevice::TX) ? n_desc : DEF_TX_NDESC) //1024
-             {}
- 
-         unsigned n_rx_queues;
 diff --git a/include/click/router.hh b/include/click/router.hh
 index dc83606..87a7b68 100644
 --- a/include/click/router.hh

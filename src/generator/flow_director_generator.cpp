@@ -117,9 +117,9 @@ FlowDirectorGenerator::generate_flow_director_configuration(
 		unsigned short &nics_no,
 		std::streambuf *def_cout) {
 
-	for (unsigned short i = 0 ; i < nics_no ; i++) {
+	for (unsigned short nic = 0 ; nic < nics_no ; nic++) {
 		// Move cout to the files where we write the hardware configuration
-		def_cout = std::cout.rdbuf(hw_out_file[i]->rdbuf());
+		def_cout = std::cout.rdbuf(hw_out_file[nic]->rdbuf());
 		//std::cout << "OOOOOOOOOOOOOO" << std::endl;
 	}
 

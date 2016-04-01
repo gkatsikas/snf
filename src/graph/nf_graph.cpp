@@ -176,7 +176,7 @@ NFGraph::add_vertex_and_neighbours(ElementVertex *u) {
 			ElementVertex *v = static_cast<ElementVertex*> ( this->get_vertex_by_position(neighbour->eindex()) );
 
 			// This element is not in the graph. New vertex needs to be created
-			if ( v == NULL ) {
+			if ( !v ) {
 				debug_chatter(this->log, "\t\tNEW " << neighbour->class_name() << ":" << neighbour->eindex());
 				v = new ElementVertex(neighbour, neighbour->class_name(), (unsigned short) neighbour->eindex());
 			}
@@ -197,7 +197,7 @@ NFGraph::add_vertex_and_neighbours(ElementVertex *u) {
 				debug_chatter(this->log, "\t\t" << (*j)->class_name() << ":" << (*j)->eindex());
 	
 				ElementVertex *v = static_cast<ElementVertex*> ( this->get_vertex_by_position((*j)->eindex()) );
-				if ( v == NULL ) {
+				if ( !v ) {
 					v = new ElementVertex(*j, (*j)->class_name(), (*j)->eindex());
 				}
 				this->add_edge(std::move(u), std::move(v), neighbour_inport);

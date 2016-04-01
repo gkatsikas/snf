@@ -6,15 +6,14 @@ Basic Installation
 
     To compile any version of Hyper-NF, you will need the GNU C compiler;
 a recent version of the GNU C++ compiler with C++11; and GNU Make. The
-'./configure' script should complain if it cannot find software it
+'./configure' script should complain if it cannot find the software it
 needs.
 
-CONFIGURING
+CONFIGURE
 -----------
 
 Change to the Hyper-NF source directory and run:
 	./bootstrap
-
 This will initialize the required autotools to support the build process.
 
 To build Hyper-NF with basic Click support run:
@@ -22,22 +21,22 @@ To build Hyper-NF with basic Click support run:
 Example:
 	./configure --with-click=/opt/click
 
-To build Hyper-NF with Click-DPDK support and more verbosity run:
+To build Hyper-NF with Click-DPDK support run:
 	./configure \
 			RTE_SDK=<path-to-your-dpdk-folder> \
 			RTE_TARGET=<your-dpdk-target> \
 			--with-click=<path-to-your-click-folder> \
 			--enable-dpdk=yes
-Example:
+Example (with more verbosity but no debug messages):
 	./configure \
 			RTE_SDK=/opt/dpdk \
 			RTE_TARGET=x86_64-native-linuxapp-gcc/ \
 			--with-click=/opt/click-dpdk \
 			--enable-dpdk=yes --enable-debug=no --enable-verbose=yes
 
-INSTALLING
+INSTALL
 ---------
-After `configure` stay at the Hyper-NF source directory and run
+After `configure` stay at the Hyper-NF source directory and run:
 	out_bin=<your preferred destination for the Hyper-NF binaries, libraries, headers>
 	DESTDIR="$out_bin" make install -j <cpu-cores-no>
 	find "$out_bin"
@@ -46,19 +45,27 @@ Example:
 	out_bin="$(pwd)/bin" && DESTDIR="$out_bin" make install -j 16
 	find "$out_bin"
 
-UN-INSTALLING
+RUN
 ---------
-To un-install Hyper-NF change to the Hyper-NF source directory and run
+One can execute the following synthesis example:
+	./run bin/usr/local/bin/hypernf input/dpdk_property_file
+
+UN-INSTALL
+---------
+To un-install Hyper-NF change to the Hyper-NF source directory and run:
 	out_bin=<your existing folder that contains the Hyper-NF binaries, libraries, headers>
 	DESTDIR="$out_bin" make uninstall
 	find "$out_bin"
-
 Example:
 	out_bin="$(pwd)/bin" && DESTDIR="$out_bin" make uninstall
 	find "$out_bin"
 
-CLEANING
+CLEAN
 ---------
-To clean the repository change to the Hyper-NF source directory and run
+To clean the repository change to the Hyper-NF source directory and run:
 	make clean
 	./clean
+
+REPORT
+---------
+Please report bugs, issues, comments, suggestions for improvements at: katsikas at kth dot se

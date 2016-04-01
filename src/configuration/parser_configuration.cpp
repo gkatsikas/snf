@@ -35,23 +35,23 @@ ParserConfiguration::ParserConfiguration(const std::string &config_file)
 	this->nf_chain   = new Graph();
 	this->nf_domains = new Graph();
 	this->properties = NULL;
-	def_chatter(this->log, "\tParserConfiguration constructed");
+	def_chatter(this->log, "\tParser Configuration constructed");
 }
 
 /*
  * Destruct a parser configuration
  */
 ParserConfiguration::~ParserConfiguration() {
-	if ( this->nf_chain != NULL ) {
+	if ( this->nf_chain ) {
 		delete this->nf_chain;
 	}
-	if ( this->nf_domains != NULL ) {
+	if ( this->nf_domains ) {
 		delete this->nf_domains;
 	}
-	if ( this->properties != NULL ) {
+	if ( this->properties ) {
 		delete this->properties;
 	}
-	def_chatter(this->log, "\tParserConfiguration deleted");
+	def_chatter(this->log, "\tParser Configuration deleted");
 }
 
 /*
@@ -60,7 +60,7 @@ ParserConfiguration::~ParserConfiguration() {
  */
 bool
 ParserConfiguration::load_property_file(void) {
-	unsigned short exit_status = 0;
+	bool exit_status;
 	std::string nf_topo, nf_domains;
 
 	// First, parse the generic properties of the chain
@@ -117,16 +117,18 @@ bool
 ParserConfiguration::parse_generic_properties(void) {
 
 	// Apply the default configuration in case something goes wrong.
-	std::string output_folder(DEFAULT_HYPER_NF_OUT_FOLDER);
+	std::string output_folder  (DEFAULT_HYPER_NF_OUT_FOLDER);
 	std::string output_filename(output_folder + DEFAULT_HYPER_NF_CONF_NAME);
 
-	bool hw_classification = false;
+	bool numa                   = true;
+	bool hw_classification      = false;
+	bool rss_aggressive_pinning = false;
+
 	std::string hardware_classification_label;
 	std::string proc_layer_label;
 	TrafficClassFormat traffic_class_format = DEFAULT_TC_FORMAT;
 	ProcessingLayer    proc_layer           = DEFAULT_PROC_LAYER;
 
-	bool numa = true;
 	unsigned short cpu_cores_no     = DEFAULT_CPU_CORES_NO;
 	unsigned short cpu_sockets_no   = DEFAULT_CPU_SOCKETS_NO;
 	unsigned short nic_hw_queues_no = DEFAULT_NIC_HW_QUEUES_NO;
@@ -144,7 +146,7 @@ ParserConfiguration::parse_generic_properties(void) {
 		}
 	}
 	catch (const std::exception& e) {
-
+		// Initialized already
 	}
 
 	//////////////////////////////////////////
@@ -194,7 +196,7 @@ ParserConfiguration::parse_generic_properties(void) {
 		error_chatter(this->log, 
 			"Unknown processing layer format. Choose [L2, L3]"
 		);
-		return WRONG_INPUT_ARGS;
+		return TO_BOOL(WRONG_INPUT_ARGS);
 	}
 
 	//////////////////////////////////////////
@@ -210,7 +212,7 @@ ParserConfiguration::parse_generic_properties(void) {
 		hw_classification = (bool) get_value("GENERIC", "HARDWARE_CLASSIFICATION", true);
 	}
 	catch (const std::exception& e) {
-
+		// Initialized already
 	}
 
 	// If Hardware classification option is true, we want to know certain properties
@@ -233,17 +235,16 @@ ParserConfiguration::parse_generic_properties(void) {
 			traffic_class_format = TCLabelToFormat.at(hardware_classification_label);
 
 			if ( traffic_class_format == Click ) {
-				error_chatter(this->log, 
-					"Click is not hardware based traffic class format. Choose [RSS-Hashing, Flow-Director, OpenFlow]"
-				);
-				return WRONG_INPUT_ARGS;
+				error_chatter(this->log, "Choose [RSS-Hashing, Flow-Director, OpenFlow]");
+				error_chatter(this->log, "For purely software-based Hyper-NF disable HW classification");
+				return TO_BOOL(WRONG_INPUT_ARGS);
 			}
 		}
 		catch (const std::exception& e) {
 			error_chatter(this->log, 
 				"Unknown Traffic Class format. Choose [RSS-Hashing, Flow-Director, OpenFlow]"
 			);
-			return WRONG_INPUT_ARGS;
+			return TO_BOOL(WRONG_INPUT_ARGS);
 		}
 
 		//////////////////////////////////////////
@@ -252,7 +253,7 @@ ParserConfiguration::parse_generic_properties(void) {
 			numa = (bool) get_value("GENERIC", "NUMA", true);
 		}
 		catch (const std::exception& e) {
-
+			// Initialized already
 		}
 
 		//////////////////////////////////////////
@@ -261,7 +262,7 @@ ParserConfiguration::parse_generic_properties(void) {
 			cpu_sockets_no = (unsigned short) get_value("GENERIC", "CPU_SOCKETS");
 		}
 		catch (const std::exception& e) {
-
+			// Initialized already
 		}
 
 		//////////////////////////////////////////
@@ -270,7 +271,7 @@ ParserConfiguration::parse_generic_properties(void) {
 			cpu_cores_no = (unsigned short) get_value("GENERIC", "CPU_CORES");
 		}
 		catch (const std::exception& e) {
-			
+			// Initialized already
 		}
 
 		// You cannot have more sockets than cores, be serious
@@ -283,15 +284,26 @@ ParserConfiguration::parse_generic_properties(void) {
 			nic_hw_queues_no = (unsigned short) get_value("GENERIC", "NIC_HW_QUEUES");
 		}
 		catch (const std::exception& e) {
-			
+			// Initialized already
 		}
+	}
+
+	//////////////////////////////////////////
+	// Not only pin FromDPDKDevice elements 
+	// but all their subsequent paths.
+	try {
+		rss_aggressive_pinning = (bool) get_value("GENERIC", "RSS_AGGRESSIVE_PINNING", false);
+	}
+	catch (const std::exception& e) {
+		// Initialized already
 	}
 
 	// Allocate the properties object after all the configuration is applied.
 	this->properties = new Properties(
 		output_folder, output_filename, hw_classification,
 		traffic_class_format, proc_layer, numa, 
-		cpu_sockets_no, cpu_cores_no, nic_hw_queues_no
+		cpu_sockets_no, cpu_cores_no, nic_hw_queues_no,
+		rss_aggressive_pinning
 	);
 
 	return DONE;
@@ -305,7 +317,7 @@ ParserConfiguration::parse_topology(const std::string &nf_topo) {
 
 	if ( this->nf_chain == NULL ) {
 		this->usage("The graph of he chain does not exist.", "Badly instantiated ParserConfiguration.");
-		return NO_MEM_AVAILABLE;
+		return TO_BOOL(NO_MEM_AVAILABLE);
 	}
 
 	// Count the number of NFs in the property file
@@ -323,7 +335,7 @@ ParserConfiguration::parse_topology(const std::string &nf_topo) {
 		// The delimiter is a string. If I don't find '->' I quit!
 		if ( line->find("->") == std::string::npos ) {
 			this->usage("Each connection statement must have two parts separated by ->.", "Syntax: NF_1[iface]->[iface]NF_2;");
-			return CHAIN_PARSING_PROBLEM;
+			return TO_BOOL(CHAIN_PARSING_PROBLEM);
 		}
 
 		// Now split
@@ -333,7 +345,7 @@ ParserConfiguration::parse_topology(const std::string &nf_topo) {
 		// Operator -> must split the statement into exactly two parts.
 		if ( std::distance(connections.begin(), connections.end()) > 2 ) {
 			this->usage("Each connection statement must have two parts separated by ->.", "Syntax: NF_1[iface]->[iface]NF_2;");
-			return CHAIN_PARSING_PROBLEM;
+			return TO_BOOL(CHAIN_PARSING_PROBLEM);
 		}
 
 		unsigned short tokens = 0;
@@ -343,7 +355,7 @@ ParserConfiguration::parse_topology(const std::string &nf_topo) {
 			// One more check does not harm
 			if ( tokens > 1 ) {
 				this->usage("Invalid interface specification.", "Syntax: NF_1[iface]->[iface]NF_2;");
-				return CHAIN_PARSING_PROBLEM;
+				return TO_BOOL(CHAIN_PARSING_PROBLEM);
 			}
 
 			std::string nf;
@@ -353,14 +365,14 @@ ParserConfiguration::parse_topology(const std::string &nf_topo) {
 			std::size_t left_bracket = elem->find("[");
 			if ( left_bracket == std::string::npos ) {
 				this->usage("An interface must be specified in []", "Syntax: NF_1[iface]->[iface]NF_2;");
-				return CHAIN_PARSING_PROBLEM;
+				return TO_BOOL(CHAIN_PARSING_PROBLEM);
 			}
 
 			// ]
 			std::size_t right_bracket = elem->find("]");
 			if ( right_bracket == std::string::npos ) {
 				this->usage("An interface must be specified in []", "Syntax: NF_1[iface]->[iface]NF_2;");
-				return CHAIN_PARSING_PROBLEM;
+				return TO_BOOL(CHAIN_PARSING_PROBLEM);
 			}
 
 			// Extract the interface from the brackets
@@ -380,7 +392,7 @@ ParserConfiguration::parse_topology(const std::string &nf_topo) {
 			}
 			else {
 				this->usage("Invalid interface specification.", "Syntax: NF_1[iface]->[iface]NF_2;");
-				return CHAIN_PARSING_PROBLEM;
+				return TO_BOOL(CHAIN_PARSING_PROBLEM);
 			}
 
 			int position = atoi(get_number_from_string(nf).c_str());
@@ -397,13 +409,13 @@ ParserConfiguration::parse_topology(const std::string &nf_topo) {
 				}
 				catch (const std::exception& e) {
 					error_chatter(this->log, "|-> " << e.what());
-					return NF_CHAIN_NOT_ACYCLIC;
+					return TO_BOOL(NF_CHAIN_NOT_ACYCLIC);
 				}
 
 				// Check what's being read
 				if ( nf_path.empty() ) {
 					this->usage("Invalid interface specification.", "Syntax: NF_1[iface]->[iface]NF_2;");
-					return CHAIN_PARSING_PROBLEM;
+					return TO_BOOL(CHAIN_PARSING_PROBLEM);
 				}
 				//log << "Source Path: " << nf_path << std::endl;
 
@@ -414,7 +426,7 @@ ParserConfiguration::parse_topology(const std::string &nf_topo) {
 			else {
 				if ( v->has_chain_interface(interface) ) {
 					this->usage("Invalid interface specification.", v->get_name() + " has already set interface " + interface);
-					return CHAIN_PARSING_PROBLEM;
+					return TO_BOOL(CHAIN_PARSING_PROBLEM);
 				}
 			}
 
@@ -431,7 +443,7 @@ ParserConfiguration::parse_topology(const std::string &nf_topo) {
 		// The vector must contain exactly two vertices (either new or existing) after this for loop.
 		if ( vertices.size() != 2 ) {
 			this->usage("Unbalanced connection.", "Syntax: NF_1[iface]->[iface]NF_2;");
-			return CHAIN_PARSING_PROBLEM;
+			return TO_BOOL(CHAIN_PARSING_PROBLEM);
 		}
 
 		// Now that eveything is read properly, associate the interface names with the NF names in the InterfaceMap
@@ -454,7 +466,7 @@ ParserConfiguration::parse_topology(const std::string &nf_topo) {
 	else if ( elements_in_property < graph_elements ) {
 		error_chatter(this->log, "There are " << graph_elements - elements_in_property << 
 						" missing elements in [NF] section of the property file.");
-		return CHAIN_PARSING_PROBLEM;
+		return TO_BOOL(CHAIN_PARSING_PROBLEM);
 	}
 
 	return DONE;
@@ -469,7 +481,7 @@ ParserConfiguration::parse_domains(const std::string &nf_domains) {
 
 	if ( this->nf_chain == NULL ) {
 		this->usage("The graph of he chain does not exist.", "Badly instantiated ParserConfiguration.");
-		return NO_MEM_AVAILABLE;
+		return TO_BOOL(NO_MEM_AVAILABLE);
 	}
 
 	// The token used to separate rows in the input topology map
@@ -486,14 +498,14 @@ ParserConfiguration::parse_domains(const std::string &nf_domains) {
 		std::size_t left_bracket = point->find("[");
 		if ( left_bracket == std::string::npos ) {
 			this->usage("Entry NF must have interface.", "Syntax: [iface]NF_X,");
-			return CHAIN_PARSING_PROBLEM;
+			return TO_BOOL(CHAIN_PARSING_PROBLEM);
 		}
 		std::size_t right_bracket = point->find("]");
 
 		// Extract what is in bracket
 		if ( right_bracket == std::string::npos ) {
 			this->usage("Entry NF must have interface.", "Syntax: [iface]NF_X,");
-			return CHAIN_PARSING_PROBLEM;
+			return TO_BOOL(CHAIN_PARSING_PROBLEM);
 		}
 
 		nf = point->substr(right_bracket+1);
@@ -506,7 +518,7 @@ ParserConfiguration::parse_domains(const std::string &nf_domains) {
 		// If not, something is wrong..
 		if ( !v ) {
 			this->usage(nf + " does not exist in the topology", "Please cross check NF_MODULES and NF_TOPO sections");
-			return CHAIN_PARSING_PROBLEM;
+			return TO_BOOL(CHAIN_PARSING_PROBLEM);
 		}
 		// If it exists, check if the interface to be inserted already exists in the list of chain interfaces.
 		// One interface maps to only one NF
@@ -514,13 +526,13 @@ ParserConfiguration::parse_domains(const std::string &nf_domains) {
 			// Check if this interface exists in the set chain interfaces. It must not!
 			if ( v->has_chain_interface(interface) ) {
 				this->usage("Invalid interface specification.", v->get_name() + " has already set interface " + interface);
-				return CHAIN_PARSING_PROBLEM;
+				return TO_BOOL(CHAIN_PARSING_PROBLEM);
 			}
 
 			// Now check if it exists in the list of entry interfaces (inserted previously)
 			if ( v->has_entry_interface(interface) ) {
 				this->usage("Invalid interface specification.", v->get_name() + " has already set interface " + interface);
-				return CHAIN_PARSING_PROBLEM;
+				return TO_BOOL(CHAIN_PARSING_PROBLEM);
 			}
 		}
 
@@ -554,12 +566,12 @@ bool
 ParserConfiguration::check_for_loops(void) {
 	if ( !this->nf_chain ) {
 		warn_chatter(this->log, "\tGraph(s) do(es) not exist");
-		return NO_MEM_AVAILABLE;
+		return TO_BOOL(NO_MEM_AVAILABLE);
 	}
 
 	if ( this->nf_chain->is_empty() ) {
 		warn_chatter(this->log, "\tGraph(s) is(are) empty");
-		return NO_MEM_AVAILABLE;
+		return TO_BOOL(NO_MEM_AVAILABLE);
 	}
 
 	try {
@@ -569,7 +581,7 @@ ParserConfiguration::check_for_loops(void) {
 	}
 	catch (const std::exception &e) {
 		error_chatter(this->log, "|--> " << e.what());
-		return NF_CHAIN_NOT_ACYCLIC;
+		return TO_BOOL(NF_CHAIN_NOT_ACYCLIC);
 	}
 
 	return DONE;
@@ -599,10 +611,11 @@ ParserConfiguration::print_loaded_property_status(void) {
 	info_chatter(this->log, "\t" << "      Hardware Classification: " <<
 		bool_to_str(this->get_properties()->has_hardware_classification()));
 
+	info_chatter(this->log, "\t" << "Traffic Classification Format: " <<
+			tc_to_label(this->get_properties()->get_traffic_classification_format()));
+
 	// Only if HW Classification is requested
 	if ( this->get_properties()->has_hardware_classification() ) {
-		info_chatter(this->log, "\t" << "Traffic Classification Format: " <<
-			tc_to_label(this->get_properties()->get_traffic_classification_format()));
 		info_chatter(this->log, "\t" << "    Non-Uniform Memory Access: " <<
 			bool_to_str(this->get_properties()->has_numa()));
 		info_chatter(this->log, "\t" << "             # of CPU Sockets: " <<
@@ -612,6 +625,13 @@ ParserConfiguration::print_loaded_property_status(void) {
 		info_chatter(this->log, "\t" << "             # of NIC  Queues: " <<
 			this->get_properties()->get_nic_hw_queues_no());
 	}
+
+	// If RSS
+	if ( this->get_properties()->get_traffic_classification_format() == RSS_Hashing ) {
+		info_chatter(this->log, "\t" << "       RSS Aggressive Pinning: " <<
+		bool_to_str(this->get_properties()->get_rss_aggressive_pinning()));
+	}
+
 	def_chatter(this->log, "\t+++++++++++++++++++++++++++++++++++++++++++++++++++");
 
 	def_chatter(this->log, "\t+++++++++++++++ Chain Interface Map +++++++++++++++");

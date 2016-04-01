@@ -63,7 +63,7 @@ SoftGenerator::generate_all_in_soft_configuration(const bool &to_file) {
 	// modified (i.e., rewritten by Click IPRewriter already) traffic 
 	// class out of Click. This path of elements follows IPRewriter.
 	if ( ! this->generate_write_and_output_part_of_synthesis(config_stream) ) {
-		return CODE_GENERATION_PROBLEM;
+		return TO_BOOL(CODE_GENERATION_PROBLEM);
 	}
 
 	// Step 3: Construct the IPClassifier(s) and the path of Click elements
@@ -71,7 +71,7 @@ SoftGenerator::generate_all_in_soft_configuration(const bool &to_file) {
 	if ( ! this->generate_read_part_of_synthesis(
 			config_stream,
 			nic_to_ip_classifier)) {
-		return CODE_GENERATION_PROBLEM;
+		return TO_BOOL(CODE_GENERATION_PROBLEM);
 	}
 
 	// Step 4: Construct the input Click elements that capture incoming traffic 
@@ -79,7 +79,7 @@ SoftGenerator::generate_all_in_soft_configuration(const bool &to_file) {
 	if ( ! this->generate_input_part_of_synthesis(
 			config_stream,
 			nic_to_ip_classifier) ) {
-		return CODE_GENERATION_PROBLEM;
+		return TO_BOOL(CODE_GENERATION_PROBLEM);
 	}
 
 	// The generated Click configuration will be written to a file
@@ -139,13 +139,21 @@ SoftGenerator::generate_input_part_of_synthesis(
 
 		#ifdef HAVE_DPDK
 		config_stream << 	"FromDPDKDevice(" << nic
-							<< ", BURST $burst, NDESC $rxNdesc) -> " << decap << " -> " << ipc_name << ";"
+							<< ", BURST $burst, NDESC $rxNdesc) -> " 
+							<< decap << " -> " 
+							#ifdef  DEBUG_MODE
+							<< "IPPrint(NIC" + nic + ", LENGTH true, TTL true) -> " // Check what is received by the NIC
+							#endif
+							<< ipc_name << ";"
 							<< std::endl;
 		#else
-		// "IPPrint(LENGTH true, TTL true) -> "
 		config_stream << 	"FromDevice(" << nic
 							<< ", SNAPLEN $mtuSize, PROMISC true, METHOD $ioMethod, SNIFFER false) -> " 
-							<< decap << " -> " << ipc_name << ";" << std::endl;
+							<< decap << " -> " 
+							#ifdef  DEBUG_MODE
+							<< "IPPrint(NIC" + nic + ", LENGTH true, TTL true) -> " // Check what is received by the NIC
+							#endif
+							<< ipc_name << ";" << std::endl;
 		#endif
 	}
 
@@ -165,12 +173,12 @@ SoftGenerator::generate_read_part_of_synthesis(
 	config_stream << "///////////////////////////////////////////////////////////////" << std::endl;
 	config_stream << std::endl;
 
-	unsigned short i = 0;
+	unsigned short ipc_no = 0;
 
 	// Construct the IPClassifier(s) and the path of Click elements
 	// that lead to all its/their traffic classes.
 	for ( auto &it : this->synthesizer->get_tc_per_input_iface() ) {
-		std::string ipc_name = "ipc"+std::to_string(i);
+		std::string ipc_name = "ipc" + std::to_string(ipc_no);
 		config_stream << ipc_name + " :: IPClassifier(" << std::endl;
 		std::vector<std::string> chains;
 		for (auto &tc: it.second) {
@@ -180,20 +188,20 @@ SoftGenerator::generate_read_part_of_synthesis(
 		config_stream << ");" << std::endl;
 
 		for (size_t j = 0; j<chains.size(); j++) {
-			config_stream << ipc_name + "[" << j << "] -> " << chains[j] << std::endl;
+			config_stream << ipc_name + "[" << std::right << std::setw(2) << j << "] -> " << chains[j] << ";" << std::endl;
 		}
 		config_stream << std::endl;
 
 		std::string key;
 		#ifdef HAVE_DPDK
-			key = std::to_string(i);
+			key = std::to_string(ipc_no);
 		#else
 			key = it.first;
 		#endif
 
 		nic_to_ip_classifier[key] = ipc_name;
 
-		i++;
+		ipc_no++;
 	}
 
 	return DONE;
@@ -255,7 +263,7 @@ SoftGenerator::generate_write_and_output_part_of_synthesis(std::stringstream &co
 		// If --enable-dpdk=yes, a FromDPDKDevice is used instead of regualar FromDevice
 		std::string to_device;
 		#ifdef HAVE_DPDK
-		to_device = "ToDPDKDevice(" + std::to_string(dpdk_iface) + ", BURST $burst, NDESC $txNdesc, IQUEUE $queueSize, TIMEOUT 0);";
+		to_device = "ToDPDKDevice(" + std::to_string(dpdk_iface) + ", BURST $burst, NDESC $txNdesc, IQUEUE $queueSize, TIMEOUT -1);";
 		#else
 		std::string iface_config = out_nf_and_iface + ", " +
 									this->synthesizer->get_stateful_rewriter_per_output_iface_conf(out_nf_and_iface);

@@ -33,28 +33,17 @@ Generator::Generator(Synthesizer *synth) {
 		FANCY_BUG(this->log, "Generator: Invalid Synthesizer object");
 	}
 
-	this->synthesizer = synth;
-	this->hw_classification             = this->synthesizer
-											->get_chain_parser()
-											->get_chain_graph()
-											->get_properties()
-											->has_hardware_classification();
-	this->traffic_classification_format = this->synthesizer
-											->get_chain_parser()
-											->get_chain_graph()
-											->get_properties()
-											->get_traffic_classification_format();
-	this->proc_layer                    = this->synthesizer
-											->get_chain_parser()
-											->get_chain_graph()
-											->get_properties()
-											->get_processing_layer();
-	this->basic_configuration_filename  = this->synthesizer
-											->get_chain_parser()
-											->get_chain_graph()
-											->get_properties()
-											->get_output_filename();
-	this->soft_configuration_filename = this->basic_configuration_filename + ".click";
+	this->synthesizer      = synth;
+	this->input_properties = this->synthesizer
+								->get_chain_parser()
+								->get_chain_graph()
+								->get_properties();
+
+	this->hw_classification             = this->input_properties->has_hardware_classification();
+	this->traffic_classification_format = this->input_properties->get_traffic_classification_format();
+	this->proc_layer                    = this->input_properties->get_processing_layer();
+	this->basic_configuration_filename  = this->input_properties->get_output_filename();
+	this->soft_configuration_filename   = this->basic_configuration_filename + ".click";
 }
 
 Generator::~Generator() {

@@ -39,6 +39,14 @@
 
 class RSSGenerator : public Generator {
 	private:
+
+		/*
+		 * Boolean that indicates whether the target system supports
+		 * Non-Uniform Memory Access (NUMA).
+		 * This helps to do core allocation.
+		 */
+		bool              numa;
+
 		/*
 		 * The number of available CPU cores, as specified by 
 		 * the user in the input file.
@@ -53,7 +61,20 @@ class RSSGenerator : public Generator {
 		 * The number of available CPU sockets, as specified by 
 		 * the user in the input file.
 		 */
-		unsigned short    socket_cores;
+		unsigned short    cpu_sockets_no;
+
+		/*
+		 * Divide rss_cores with cpu_sockets_no
+		 */
+		unsigned short    cores_per_socket;
+
+		/*
+		 * Instead of simply attaching FromDPDKDevice elements to different NIC queues (and cores)
+		 * Follow the paths of each FromDPDKDevice descriptor and pin elements along these paths.
+		 * This might not always increase the throughput of Hyper-NF as inter-core communication
+		 * might be increased without any reason.
+		 */
+		bool              rss_aggressive_pinning;
 
 		/*
 		 * Extra prefix to be appended to Click objects
@@ -103,18 +124,22 @@ class RSSGenerator : public Generator {
 			std::map < unsigned short, std::string >              &nic_to_classifier,
 			std::map < std::string,    unsigned short >           &nic_desc_to_core,
 			std::map < unsigned short, std::vector<std::string> > &nic_to_classifier_repl,
-			std::map < std::string,    std::vector<std::string> > &classifier_to_nic_desc
+			std::map < std::string,    std::vector<std::string> > &classifier_to_nic_desc,
+			std::map < std::string,    unsigned short >           &classifier_to_core
 		);
 		bool replicate_read_part_of_synthesis(
 			std::stringstream                                     &config_stream,
 			std::map < unsigned short, std::string >              &nic_to_classifier,
-			std::map < unsigned short, std::vector<std::string> > &nic_to_classifier_repl
+			std::map < unsigned short, std::vector<std::string> > &nic_to_classifier_repl,
+			std::map <
+				std::string, std::vector< 
+				std::pair< std::string, unsigned short > >
+			>                                                     &classifier_repl_to_rewriter_repl
 		);
 		bool replicate_write_and_output_part_of_synthesis(
 			std::stringstream                                     &config_stream,
 			std::map < 	std::pair< std::string, unsigned short>,
-						std::pair< std::string, unsigned short> > &classifier_repl_to_rewriter_repl
-
+						std::pair< std::string, unsigned short> > &classifier_repl_to_rewriter
 		);
 
 		/*
@@ -128,7 +153,7 @@ class RSSGenerator : public Generator {
 		 */
 		bool construct_classifier_to_rewriter_map(
 			std::map < 	std::pair< std::string, unsigned short>,
-						std::pair< std::string, unsigned short> > &classifier_repl_to_rewriter_repl
+						std::pair< std::string, unsigned short> > &classifier_repl_to_rewriter
 		);
 
 		/*
@@ -136,9 +161,11 @@ class RSSGenerator : public Generator {
 		 * find the classifier associated to that specific rewriter.
 		 */
 		std::pair< std::string, unsigned short > from_rewriter_to_classifier(
-			const std::map<	std::pair< std::string, unsigned short>,
-							std::pair< std::string, unsigned short> > &classifier_repl_to_rewriter_repl,
-			const std::string &rewriter_name
+			const std::map<	
+				std::pair< std::string, unsigned short>,
+				std::pair< std::string, unsigned short>
+			>                                             &classifier_repl_to_rewriter,
+			const std::string                             &rewriter_name
 		);
 
 		/*
@@ -146,7 +173,7 @@ class RSSGenerator : public Generator {
 		 * threads (one per core) to the various NIC queues and attach one 
 		 * Click-DPDK input element (FromDPDKDevice) to each queue.
 		 */
-		bool assign_queues_to_cores(
+		bool assign_nic_queues_to_cores(
 			std::map < std::string, unsigned short >           &nic_desc_to_core,
 			std::map < std::string, std::vector<std::string> > &classifier_to_nic_desc,
 			std::stringstream                                  &config_stream,
@@ -155,12 +182,22 @@ class RSSGenerator : public Generator {
 		);
 
 		/*
-		 * Compose the arguments of Click's StaticThreadSched element.
-		 * These arguments are maps of NIC descriptors to CPU cores.
+		 * Call Click's StaticThreadSched element to schedule a map
+		 * of Click instances to different CPU cores.
 		 */
-		bool schedule_core_threads_on_queues(
-			std::map <std::string, unsigned short> &nic_desc_to_core,
-			std::stringstream &config_stream
+		bool static_path_scheduling(
+			std::map <std::string, unsigned short> &instance_to_core,
+			std::stringstream                      &config_stream,
+			const std::string                      &purpose
+		);
+
+		bool stateful_path_scheduling(
+			std::map <std::string, unsigned short>          &classifier_to_core,
+			std::map <
+				std::string, std::vector< 
+				std::pair< std::string, unsigned short > >
+			>                                               &classifier_repl_to_rewriter_repl,
+			std::stringstream                               &config_stream
 		);
 };
 

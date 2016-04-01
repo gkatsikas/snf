@@ -189,7 +189,7 @@ allocateMemory(void **memoryBuffer, size_t size) {
 
 	*memoryBuffer = (void*) malloc(size);
 	if ( ! (*memoryBuffer) ) {
-		return NO_MEM_AVAILABLE;
+		return TO_BOOL(NO_MEM_AVAILABLE);
 	}
 	else {
 		memset(*memoryBuffer, 0, size);
@@ -208,7 +208,7 @@ releaseMemory(void **memoryBuffer) {
 		return DONE;
 	}
 	else {
-		return MEMORY_ALREADY_RELEASED;
+		return TO_BOOL(MEMORY_ALREADY_RELEASED);
 	}
 }
 

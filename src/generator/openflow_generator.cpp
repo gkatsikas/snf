@@ -7,9 +7,9 @@
  * is exported to an OpenFlow v1.3 switch. The switch encodes the traffic
  * classes using tags on the packet headers and sends those packets to 
  * one or more NFV servers.
- * Each server hashes the traffic based on the tag to dispatch load across
- * multiple cores using RSS. Each core is then assigned with a pipeline that 
- * modifies the corresponding traffic class accordingly.
+ * Each server distributes the traffic based on the tag to dispatch load across
+ * multiple cores using Flow Director. Each core is then assigned with a pipeline 
+ * that modifies the corresponding traffic class accordingly.
  * This processing model is totally distributed because each core's pipeline is 
  * different; we do not replicate the pipeline of the entire chain).
  *
@@ -54,7 +54,7 @@ OpenFlowGenerator::generate_equivalent_configuration(const bool to_file) {
  *    OpenFlow v1.3 rules are generated to spit the traffic classes 
  *    in an OpenFlow-based switch.
  *    Packets are tagged by the switch and then dispatched to one or 
- *    more NFV servers. Each server applies RSS hashing on the tags to 
+ *    more NFV servers. Each server uses Flow Director rules on the tags to 
  *    assign different traffic classes to different Click-DPDK pipelines.
  *    This is a split processing model, the pipeline is not cloned.
  */

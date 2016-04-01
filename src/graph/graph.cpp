@@ -30,7 +30,7 @@ Graph::Graph() {
 
 Graph::~Graph() {
 	for (auto &pair : this->get_in_degrees())
-		if ( pair.first != NULL )
+		if ( pair.first )
 			delete pair.first;
 	this->in_degrees.clear();
 	this->vertices.clear();
@@ -300,7 +300,7 @@ Graph::get_vertex_order(void) {
 		return chain_order;
 
 	std::reverse(topo_sort.begin(), topo_sort.end());
-	for ( Vertex* v : topo_sort )
+	for ( Vertex *v : topo_sort )
 		chain_order.push_back(v);
 
 	return chain_order;
@@ -341,12 +341,12 @@ Graph::topological_sort(void) {
 	VertexMap<Colour> visited;
 	visited.reserve(in_degs.size());
 
-	for (auto& pair : in_degs) {
+	for (auto &pair : in_degs) {
 		// Vertex has in degree of 0
 		if (pair.second == 0) {
 			
-			Vertex* vertex = pair.first;
-			Colour& colour = visited[vertex];
+			Vertex *vertex = pair.first;
+			Colour &colour = visited[vertex];
 
 			// This should never happen here because vertex has in degree 0
 			assert (colour == White);

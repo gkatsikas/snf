@@ -30,7 +30,7 @@
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Synthesis of ``Read'' operations
-ConsolidatedTc::ConsolidatedTc () :
+ConsolidatedTc::ConsolidatedTc() :
 	m_nf_of_out_iface(),
 	m_out_iface      (),
 	m_out_iface_conf (),
@@ -38,48 +38,60 @@ ConsolidatedTc::ConsolidatedTc () :
 	m_pattern        (),
 	m_chain          (),
 	m_input_port     (256),
-	m_stateful            () {}
+	m_stateful       () {
 
-ConsolidatedTc::ConsolidatedTc (const std::string &nf_of_out_iface, const std::string &out_iface,
-								const std::string &out_iface_conf,  const std::string &op,
-								const std::string &chain) :
+}
+
+ConsolidatedTc::ConsolidatedTc(
+		const std::string &nf_of_out_iface, const std::string &out_iface,
+		const std::string &out_iface_conf,  const std::string &op,
+		const std::string &chain) :
 	m_nf_of_out_iface(nf_of_out_iface),
 	m_out_iface      (out_iface),
 	m_out_iface_conf (out_iface_conf),
 	m_operation      (op),
 	m_chain          (chain),
-	m_input_port     (256) {}
+	m_input_port     (256) {
 
-void
-ConsolidatedTc::add_tc (const TrafficClass &tc, const TrafficClassFormat &tc_format) {
+}
+
+bool
+ConsolidatedTc::add_tc(const TrafficClass &tc, const TrafficClassFormat &tc_format) {
+
+	Logger m_lg(__FILE__);
 
 	switch (tc_format) {
 
 		case Click:
 		case RSS_Hashing:
-			if( !m_pattern.empty() ) {
-				m_pattern += " || ";
+			if( !this->m_pattern.empty() ) {
+				this->m_pattern += " || ";
 			}
-			m_pattern += "("+tc.to_ip_classifier_pattern()+")";
+			this->m_pattern += "(" + tc.to_ip_classifier_pattern() + ")";
 			break;
 
 		case Flow_Director:
-			throw std::runtime_error("Unimplemented Traffic Class pattern: " + tc_to_label(tc_format));
-			//m_pattern = tc.to_flow_director_pattern();
+			error_chatter(m_lg, "\tUnimplemented Traffic Class pattern: " + tc_to_label(tc_format));
+			return TO_BOOL(CHAIN_SYNTHESIS_PROBLEM);
+			//this->m_pattern = tc.to_flow_director_pattern();
 			//break;
 
 		case OpenFlow:
-			throw std::runtime_error("Unimplemented Traffic Class pattern: " + tc_to_label(tc_format));
-			//m_pattern = tc.to_openflow_pattern();
+			error_chatter(m_lg, "\tUnimplemented Traffic Class pattern: " + tc_to_label(tc_format));
+			return TO_BOOL(CHAIN_SYNTHESIS_PROBLEM);
+			//this->m_pattern = tc.to_openflow_pattern();
 			//break;
 
 		default:
-			throw std::runtime_error("Unimplemented Traffic Class pattern: " + tc_to_label(tc_format));
+			error_chatter(m_lg, "\tUnknown Traffic Class pattern: " + tc_to_label(tc_format));
+			return TO_BOOL(CHAIN_SYNTHESIS_PROBLEM);
 	}
+
+	return DONE;
 }
 
 void
-ConsolidatedTc::set_stateful_rewriter (std::shared_ptr<StatefulSynthesizer> st_synth, unsigned short input_port) {
+ConsolidatedTc::set_stateful_rewriter(std::shared_ptr<StatefulSynthesizer> st_synth, unsigned short input_port) {
 	this->m_stateful = st_synth->get_name();
 	this->m_input_port = input_port;
 }
@@ -93,8 +105,9 @@ std::string
 ConsolidatedTc::get_stateful_rewriter(const std::string &at_queue, const bool &with_inport) {
 	// Return the rewriter with its port
 	if ( with_inport )
-		return "[" + std::to_string(this->m_input_port) + "]" + this->m_stateful + at_queue + ";";
-	return this->m_stateful + at_queue;
+		return (boost::format("[%2d]%s%s") % this->m_input_port % this->m_stateful % at_queue ).str();
+	// Or the rewriter only
+	return (boost::format("%s%s") % this->m_stateful % at_queue ).str();
 }
 
 std::string
@@ -209,7 +222,11 @@ Synthesizer::build_traffic_classes(void) {
 							tc.synthesize_chain(direction)
 						};
 					}
-					(this->tc_per_input_iface[key][snd_key]).add_tc(tc, tc_format);
+
+					bool exit_status = this->tc_per_input_iface[key][snd_key].add_tc(tc, tc_format);
+					if ( !exit_status ) {
+						return exit_status;
+					}
 				}
 			}
 

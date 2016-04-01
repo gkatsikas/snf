@@ -51,7 +51,7 @@ struct ConsolidatedTc {
 		const std::string &chain
 	);
 
-	void           add_tc(
+	bool           add_tc(
 		const TrafficClass       &tc,
 		const TrafficClassFormat &tc_format
 	);

@@ -166,6 +166,14 @@ class Properties {
 		 */
 		unsigned short    nic_hw_queues_no;
 
+		/*
+		 * Instead of simply attaching FromDPDKDevice elements to different NIC queues (and cores)
+		 * Follow the paths of each FromDPDKDevice descriptor and pin elements along these paths.
+		 * This might not always increase the throughput of Hyper-NF as inter-core communication
+		 * might be increased without any reason.
+		 */
+		bool              rss_aggressive_pinning;
+
 	public:
 
 		/*
@@ -181,6 +189,7 @@ class Properties {
 			this->cpu_sockets_no                = DEFAULT_CPU_SOCKETS_NO;
 			this->cpu_cores_no                  = DEFAULT_CPU_CORES_NO;
 			this->nic_hw_queues_no              = DEFAULT_NIC_HW_QUEUES_NO;
+			this->rss_aggressive_pinning        = false;
 		};
 
 		/*
@@ -190,65 +199,69 @@ class Properties {
 			const std::string &out_fold, const std::string &out_file, const bool &hw_class, 
 			const TrafficClassFormat &tc_format, const ProcessingLayer &p_layer, 
 			const bool &nm, const unsigned short &sockets_no, const unsigned short &cores_no,
-			const unsigned short &nic_queues): 
+			const unsigned short &nic_queues, const bool &rss_aggr_pin): 
 			output_folder(out_fold), output_filename(out_file), hardware_classification(hw_class),
 			traffic_classification_format(tc_format), proc_layer(p_layer), numa(nm),
-			cpu_sockets_no(sockets_no), cpu_cores_no(cores_no), nic_hw_queues_no(nic_queues)
+			cpu_sockets_no(sockets_no), cpu_cores_no(cores_no), nic_hw_queues_no(nic_queues),
+			rss_aggressive_pinning(rss_aggr_pin)
 			{};
 
 		/*
 		 * Getters
 		 */
-		inline std::string get_output_folder        (void) const { return this->output_folder;   };
-		inline std::string get_output_filename      (void) const { return this->output_filename; };
-
-		inline bool has_numa                        (void) const { return this->numa; };
-		inline bool has_hardware_classification     (void) const { return this->hardware_classification; };
+		inline bool               has_numa                          (void) const { return this->numa; };
+		inline bool               has_hardware_classification       (void) const { return this->hardware_classification; };
 		inline TrafficClassFormat get_traffic_classification_format (void) const {
 			return this->traffic_classification_format;
 		};
-		inline ProcessingLayer get_processing_layer (void) const { return this->proc_layer;       };
 
-		inline unsigned short  get_cpu_cores_no     (void) const { return this->cpu_cores_no;     };
-		inline unsigned short  get_cpu_sockets_no   (void) const { return this->cpu_sockets_no;   };
-		inline unsigned short  get_nic_hw_queues_no (void) const { return this->nic_hw_queues_no; };
+		inline std::string        get_output_folder         (void) const { return this->output_folder;       };
+		inline std::string        get_output_filename       (void) const { return this->output_filename;     };
+		inline ProcessingLayer    get_processing_layer      (void) const { return this->proc_layer;          };
+
+		inline unsigned short     get_cpu_cores_no          (void) const { return this->cpu_cores_no;        };
+		inline unsigned short     get_cpu_sockets_no        (void) const { return this->cpu_sockets_no;      };
+		inline unsigned short     get_nic_hw_queues_no      (void) const { return this->nic_hw_queues_no;    };
+
+		inline bool               get_rss_aggressive_pinning(void) const { return this->rss_aggressive_pinning; };
 
 		/*
 		 * Setters (Basic sanity check)
 		 */
-		inline void set_output_folder           (const std::string &out_fold) {
+		inline void set_output_folder                (const std::string &out_fold) {
 			this->output_folder   = out_fold;
 		}
-		inline void set_output_filename         (const std::string &out_file) {
+		inline void set_output_filename              (const std::string &out_file) {
 			this->output_filename = out_file;
 		}
-
-		inline void set_numa                    (const bool &nm)       {
+		inline void set_numa                         (const bool &nm)       {
 			this->numa = nm;
 		}
-		inline void set_hardware_classification (const bool &hw_class) {
-			this->hardware_classification = hw_class; 
+		inline void set_hardware_classification      (const bool &hw_class) {
+			this->hardware_classification = hw_class;
 		}
 		inline void set_traffic_classification_format(const TrafficClassFormat &tc_format) {
 			this->traffic_classification_format = tc_format;
 		}
-		inline void set_processing_layer        (const ProcessingLayer &p_layer) {
+		inline void set_processing_layer             (const ProcessingLayer &p_layer) {
 			assert ( (p_layer == L2) || (p_layer == L3) );
 			this->proc_layer = p_layer;
 		}
-
-		inline void set_cpu_cores_no            (const unsigned short &cores_no)   {
+		inline void set_cpu_cores_no                 (const unsigned short &cores_no)   {
 			assert ( (cores_no > 0) && (cores_no < MAX_CPU_CORES_NO) );
 			this->cpu_cores_no = cores_no;
 		}
-		inline void set_cpu_sockets_no          (const unsigned short &sockets_no) {
+		inline void set_cpu_sockets_no               (const unsigned short &sockets_no) {
 			assert ( (sockets_no > 0) && (sockets_no < MAX_CPU_SOCKETS_NO) );
 			this->cpu_sockets_no = sockets_no;
 		}
-		inline void set_nic_hw_queues_no        (const unsigned short &nic_queues) {
+		inline void set_nic_hw_queues_no             (const unsigned short &nic_queues) {
 			assert ( (nic_queues > 0) && (nic_queues < MAX_NIC_HW_QUEUES_NO) );
 			if ( nic_queues == 0 ) return;
 			this->nic_hw_queues_no = nic_queues;
+		}
+		inline void set_rss_aggressive_pinning       (const bool &rss_aggr_pin) {
+			this->rss_aggressive_pinning = rss_aggr_pin;
 		}
 };
 

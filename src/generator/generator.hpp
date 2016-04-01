@@ -35,7 +35,7 @@ class Generator {
 		 * Generate the synthesis as a combination of Intel-RSS rules for the NIC
 		 * and Click code that runs per hardware queue.
 		 */
-		bool hw_classification;
+		bool               hw_classification;
 
 		/*
 		 * If hardware_classification is set, one of the following formats are valid:
@@ -50,27 +50,32 @@ class Generator {
 		 * Hyper-NF can process traffic at L2 and L3
 		 * Input confguration can set this accordingly.
 		 */
-		ProcessingLayer proc_layer;
+		ProcessingLayer    proc_layer;
 
 		/*
 		 * The filename that becomes the base for either software or hardware configuration files.
 		 */
-		std::string basic_configuration_filename;
+		std::string        basic_configuration_filename;
 
 		/*
 		 * The filename where the generated Click code will be written.
 		 */
-		std::string soft_configuration_filename;
+		std::string        soft_configuration_filename;
 
 		/*
 		 * The object that provides the Hyper-NF configuration we want to generate.
 		 */
-		Synthesizer *synthesizer;
+		Synthesizer        *synthesizer;
+
+		/*
+		 * Pointer to the input properties class
+		 */
+		Properties         *input_properties;
 
 		/*
 		 * Logger instance
 		 */
-		Logger log;
+		Logger             log;
 
 	public:
 		/*

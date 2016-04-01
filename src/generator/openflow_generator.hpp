@@ -12,14 +12,15 @@
  * and send those classes to one of multiple NFV servers.
  * 
  * On the server side, a Click-DPDK module is generated with the following properties:
- * |-> Receive-side Scaling (RSS) mechanism to read packets from different
- *     hardware queues of the NIC, using one FromDPDKDevice element per queue.
- *     RSS-hashing is performed on the tags introduced by the OpenFlow switch.
+ * |-> Generate a set of Flow Director rules that will guide each VLAN tag
+ *     (coming form the switch), to a different hardware queue of the NIC.
+ * |-> Read packets from different hardware queues of the NIC, using one 
+ *     FromDPDKDevice element per queue.
  * |-> Scheduling of all the FromDPDKDevice elements to perform distributed I/O 
  *     across multiple cores.
  * |-> Implementation of the ``write'' part of the synthesized chain in Click.
- *     Packets read FromDPDKDevice on a particular queue will be modified by the
- *     synthesized Click modification element and then sent out of the chain.
+ *     Packets read by a FromDPDKDevice on a particular queue will be modified by
+ *     the synthesized Click modification element and then sent out of the chain.
  *
  * Copyright (c) 2015-2016 KTH Royal Institute of Technology
  * Copyright (c) 2015-2016 Georgios Katsikas, Marcel Enguehard
