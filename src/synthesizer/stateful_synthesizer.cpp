@@ -50,7 +50,6 @@ StatefulSynthesizer::add_traffic_class(
 
 std::string
 StatefulSynthesizer::compute_conf(void) {
-
 	std::string output;
 
 	for(auto &it : this->m_input_port_to_iface) {

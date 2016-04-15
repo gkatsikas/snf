@@ -9,9 +9,10 @@ libchameleon_a_SOURCES  = 	chameleon.cpp \
 
 #####################################################################################
 # Generic configuration
-libgenconf_a_SOURCES  = generic_configuration.cpp \
-						generic_configuration.hpp \
+libgenconf_a_SOURCES  = generic_config.cpp \
+						generic_config.hpp \
 						$(top_builddir)/src/logger/logger.hpp
+
 # Linked with
 libgenconf_a_LIBADD   = libchameleon.a \
 						$(top_builddir)/src/shared/libhelpers.a
@@ -19,8 +20,8 @@ libgenconf_a_LIBADD   = libchameleon.a \
 
 #####################################################################################
 # Parser's configuration
-libconf_a_SOURCES  = 	parser_configuration.cpp \
-						parser_configuration.hpp \
+libconf_a_SOURCES  = 	parser_config.cpp \
+						parser_config.hpp \
 						properties.hpp
 
 # Linked with

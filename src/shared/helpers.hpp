@@ -137,8 +137,7 @@ const short CODE_GENERATION_PROBLEM  = -40;
 // Protocol Management
 const short INVALID_PROTOCOL         = -41;
 
-// Convert the above error types to bool
-//#define TO_BOOL(x) (!!(x))
+// Convert an integer to boolean
 #define TO_BOOL(x) ( x == 0 )
 
 // List of IPMapper elements
@@ -201,7 +200,12 @@ std::vector<std::string>& split(const std::string &s, char delim, std::vector<st
 std::string               vector_to_str(const std::vector<std::string> &vec, const std::string &delim);
 std::vector<std::string>  separate_args(const std::string &s);
 const std::string         get_substr_before   (const std::string &str, const std::string &pattern);
+const std::string         get_substr_after    (const std::string &str, const std::string &pattern);
 const std::string         get_string_extension(const std::string &str, const char delim='.');
+std::string               ltrim(std::string &s, const char *to_trim=" \t\n\r\f\v");
+std::string               rtrim(std::string &s, const char *to_trim=" \t\n\r\f\v");
+std::string               trim (std::string &s, const char *to_trim=" \t\n\r\f\v");
+std::string               trim (std::string const &s, char const *to_trim = " \t\n\r\f\v");
 
 /*
  * Networking helpers
@@ -237,9 +241,10 @@ bool str_to_bool(const std::string &s);
 bool directory_exists(const std::string &dir_path);
 
 /*
- * Create a directory
+ * Create a (path of) directory(ies)
  */
-bool create_directory(const std::string &dir_path);
+bool create_directory     (const std::string &dir);
+bool create_directory_path(const std::string &dir_path);
 /*
  * Check if file exists
  */
@@ -253,8 +258,7 @@ bool file_exists(const std::string &file_path);
 template<typename TimeT = std::chrono::microseconds>
 struct measure {
 	template<typename F, typename ...Args>
-	static typename TimeT::rep execution(F func, Args&&... args)
-	{
+	static typename TimeT::rep execution(F func, Args&&... args) {
 		auto start = std::chrono::system_clock::now();
 
 		// Now call the function with all the parameters you need
@@ -267,26 +271,59 @@ struct measure {
 };
 
 /*
- * Vector manipulation functions.
+ * Data structures manipulation functions.
+ */ 
+
+/*
  * Concatenate vectors v1 and v2.
  */ 
 template<typename T>
-std::vector<T> concatenate_two_vectors(std::vector<T> &v1, const std::vector<T> &v2) {
+std::vector<T> 
+concatenate_two_vectors(std::vector<T> &v1, const std::vector<T> &v2) {
 	std::vector<T> outcome(v1);
 
-	for (auto& e : v2)
-		outcome.push_back(e);
+	for (auto &el : v2) {
+		outcome.push_back(el);
+	}
 }
+
+/*
+ * Check if value exists in vector.
+ */
+template<typename T>
+inline bool 
+exists_in_vector(const std::vector<T> &v, const T &item) {
+	return ( std::find(v.begin(), v.end(), item) != v.end() );
+}
+
+/*
+ * Remove from vector by value.
+ */
+template<typename T>
+inline void 
+remove_from_vector_by_val(std::vector<T> &v, const T &item) {
+	v.erase(std::remove(v.begin(), v.end(), item), v.end());
+}
+
+/*
+ * Check if value exists in map.
+ */
+//template<typename T>
+//inline bool 
+//exists_in_map(const std::map<T, U> &m, const T &item) {
+template <typename Map, typename Key>
+bool exists_in_map(const Map& m, const Key& k) {
+    return m.find(k) != m.end();
+} 
 
 /*
  * Generic method to delete a pointer of any type (T) from a data structure.
  * Usage: std::for_each (data_str.begin (), data_str.end (), deleter<T>());
  */
-/*template<typename T>
-struct deleter : std::unary_function<const T*, void>
-{
-	void operator() (const T *ptr) const
-	{
+/*
+template<typename T>
+struct deleter : std::unary_function<const T*, void> {
+	void operator() (const T *ptr) const {
 		delete ptr;
 		std::cout << "Pointer deleted" << std::endl;
 	}

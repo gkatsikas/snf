@@ -100,7 +100,6 @@ Graph::add_vertex(Vertex *u) {
  */
 void
 Graph::add_edge(Vertex *u, Vertex *v, const unsigned short &input_port_v) {
-
 	// Add these two vertices if do not exist
 	this->add_vertex(std::move(u));
 	this->add_vertex(std::move(v));
@@ -215,72 +214,6 @@ Graph::get_vertex_by_position(const unsigned short &pos) const {
 }
 
 /*
- * Print graph info
- */
-void
-Graph::print_in_degrees(void) {
-	std::ostringstream output;
-
-	def_chatter(this->log, "\t================== In degrees =================");
-	output << "\t\t\t\t\t\t\t\t";
-	for (auto &pair : this->get_in_degrees()) {
-		output << std::setw(2) << pair.first->get_name() << " has in-degree: " << pair.second << "\n";
-	}
-	def_chatter(this->log, output.str());
-	def_chatter(this->log, "\t===============================================");
-}
-
-void
-Graph::print_adjacency_list(void) {
-	std::ostringstream output;
-
-	def_chatter(this->log, "\t================ Adjacency List ===============");
-	for (auto& pair : this->get_adjacency_list()) {
-		output << std::setw(2) << "\t\t\t\t\t\t\t\t" << pair.first->get_name() << ":" << pair.first->get_position() << "-> ";
-		for (auto& neighbour : pair.second)
-			output << "[" << neighbour.first << "]" << neighbour.second->get_name() << ":" << neighbour.second->get_position() << ", ";
-		output << std::endl;
-	}
-	def_chatter(this->log, output.str());
-	def_chatter(this->log, "\t===============================================");
-}
-
-void
-Graph::print_topological_sort(void) {
-	std::ostringstream output;
-
-	def_chatter(this->log, "\t=============== Topological Sort ==============");
-	std::vector<Vertex*> ts;
-	try {
-		ts = this->topological_sort();
-	}
-	catch (const std::exception& e) {
-		error_chatter(this->log, "\t\t|--> " << e.what());
-		exit(NF_CHAIN_NOT_ACYCLIC);
-	}
-	output << "\t\t\t\t\t\t\t\t";
-	for (Vertex *v : ts)
-		output << v->get_name() << ",";
-	output << std::endl;
-	def_chatter(this->log, output.str());
-	def_chatter(this->log, "\t===============================================");
-}
-
-void
-Graph::print_vertex_order(void) {
-	std::ostringstream output;
-
-	def_chatter(this->log, "\t================= Vertex Order ================");
-	output << "\t\t\t\t\t\t\t\t";
-	for (Vertex *v : this->get_vertex_order()) {
-		output << v->get_name() << ",";
-	}
-	output << std::endl;
-	def_chatter(this->log, output.str());
-	def_chatter(this->log, "\t===============================================");
-}
-
-/*
  * The natural flow of the NF chain is the reverse topological sort
  */
 std::vector<Vertex*>
@@ -292,12 +225,14 @@ Graph::get_vertex_order(void) {
 		topo_sort = this->topological_sort();
 	}
 	catch (const std::exception& e) {
-		error_chatter(this->log, "|--> " << e.what());
+		error_chatter(this->log, "\t|--> " << e.what());
 		exit(NF_CHAIN_NOT_ACYCLIC);
 	}
 
-	if ( topo_sort.empty() )
+	if ( topo_sort.empty() ) {
+		warn_chatter(this->log, "\tEmpty topo sort");
 		return chain_order;
+	}
 
 	std::reverse(topo_sort.begin(), topo_sort.end());
 	for ( Vertex *v : topo_sort )
@@ -333,10 +268,27 @@ Graph::topological_sort(void) {
 		return sorted;
 	}
 
+	// A list of all the vertices of the graph, associated with their in degrees.
 	VertexMap<short> in_degs = this->get_in_degrees();
 
+	// The first vertex of the graph
+	Vertex *first = this->get_vertex_by_position(1);
+	
 	std::vector<Vertex*> sorted;
 	sorted.reserve(in_degs.size());
+
+	// List of in degrees has only one node and this node is a leaf.
+	// |--> Singleton graph (one node only)
+	bool singleton_graph = (
+		(in_degs.size() == 1) && 
+		this->is_leaf(first)
+	);
+	// No need for DFS, just output the singleton.
+	if ( singleton_graph ) {
+		debug_chatter(this->log, "\tTopological sort found a singleton graph");
+		sorted.push_back(first);
+		return sorted;
+	}
 
 	VertexMap<Colour> visited;
 	visited.reserve(in_degs.size());
@@ -361,7 +313,7 @@ Graph::topological_sort(void) {
 	}
 
 	if ( (sorted.size() == 0) && (this->get_vertices_no() > 1) ) {
-		error_chatter(this->log, "Cycle in graph");
+		error_chatter(this->log, "\tCycle in graph");
 		exit(NF_CHAIN_NOT_ACYCLIC);
 	}
 
@@ -389,23 +341,136 @@ dfs(
 				dfs(neighbour.second, neighbour_colour, adjacency_list, visited, sorted);
 			// Ambiguous color denotes a cycle!
 			else if (neighbour_colour == Grey) {
-				error_chatter(log, "Cycle in graph");
+				error_chatter(log, "\tCycle in graph");
 				exit(NF_CHAIN_NOT_ACYCLIC);
 			}
 		}
 	}
 	catch (const std::logic_error& le) {
-		error_chatter(log, "Cycle in graph");
+		error_chatter(log, "\tCycle in graph: " << le.what());
 		exit(NF_CHAIN_NOT_ACYCLIC);
 	}
 	catch (const std::exception& e) {
-		error_chatter(log, "Graph is not built properly, invalid access to memory.\nCheck Click configuration file");
+		error_chatter(log, "\tGraph is not built properly, invalid access to memory.");
+		error_chatter(log, "\t|--> " << e.what());
 		exit(NF_CHAIN_NOT_ACYCLIC);
 	}
 
 	// Visited nodes are in black list :p
 	colour = Black;
 	sorted.push_back(vertex);
+}
+
+/*
+ * Print graph info
+ */
+void
+Graph::print_in_degrees(void) {
+	unsigned short counter   = 0;
+	unsigned short list_size = this->get_in_degrees().size();
+	const std::string align  = "\t\t\t\t\t\t";
+	std::ostringstream output;
+
+	def_chatter(this->log, "\t================== In degrees =================");
+	for (auto &pair : this->get_in_degrees()) {
+		if ( counter > 0 ) {
+			output << align;
+		}
+		output 	<< "\t" << std::setw(2) << pair.first->get_name() 
+				<< " has in-degree: " << pair.second;
+
+		if ( counter < list_size-1 )
+			output << std::endl;
+		counter++;
+	}
+	def_chatter(this->log, output.str());
+	def_chatter(this->log, "\t===============================================");
+}
+
+void
+Graph::print_adjacency_list(void) {
+	unsigned short counter   = 0;
+	unsigned short list_size = this->get_adjacency_list().size();
+	const std::string align  = "\t\t\t\t\t\t";
+	std::ostringstream output;
+
+	def_chatter(this->log, "\t================ Adjacency List ===============");
+	for (auto& pair : this->get_adjacency_list()) {
+		if ( counter > 0 ) {
+			output << align;
+		}
+		output 	<< "\t" << std::setw(2) << pair.first->get_name() 
+				<< ":" << pair.first->get_position() << "-> ";
+
+		unsigned short elements = 0;
+		unsigned short elements_list_size = pair.second.size();
+		for (auto& neighbour : pair.second) {
+			output 	<< "[" << neighbour.first << "]" << neighbour.second->get_name() 
+					<< ":" << neighbour.second->get_position();
+			if ( elements < elements_list_size-1 )
+				output << ", ";
+			elements++;
+		}
+
+		if ( counter < list_size-1 )
+			output << std::endl;
+		counter++;
+	}
+	def_chatter(this->log, output.str());
+	def_chatter(this->log, "\t===============================================");
+}
+
+void
+Graph::print_topological_sort(void) {
+	unsigned short counter   = 0;
+	const std::string align  = "\t\t\t\t\t\t";
+	std::ostringstream output;
+
+	def_chatter(this->log, "\t=============== Topological Sort ==============");
+	std::vector<Vertex*> ts;
+	try {
+		ts = this->topological_sort();
+	}
+	catch (const std::exception& e) {
+		error_chatter(this->log, "\t\t|--> " << e.what());
+		exit(NF_CHAIN_NOT_ACYCLIC);
+	}
+
+	unsigned short list_size = ts.size();
+
+	for (Vertex *v : ts) {
+		output << "\t"<< v->get_name();
+		if ( counter < list_size-1 )
+			output << ", ";
+		if ( counter % 3 == 0 )
+			output << std::endl << align;
+		counter++;
+	}
+	def_chatter(this->log, output.str());
+	def_chatter(this->log, "\t===============================================");
+}
+
+void
+Graph::print_vertex_order(void) {
+	unsigned short counter = 0;
+	unsigned short list_size = this->get_vertex_order().size();
+	std::ostringstream output;
+
+	if ( this->get_vertices_no() <= 1 ) {
+		return;
+	}
+
+	def_chatter(this->log, "\t================= Vertex Order ================");
+	output << "\t";
+	for (Vertex *v : this->get_vertex_order()) {
+		output << v->get_name();
+
+		if ( counter < list_size-1 )
+			output << ", ";
+		counter++;
+	}
+	def_chatter(this->log, output.str());
+	def_chatter(this->log, "\t===============================================");
 }
 
 /*std::vector<Vertex*>

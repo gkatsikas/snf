@@ -8,9 +8,9 @@ LIBS = -L/usr/local/lib/ -lclick -ldl -lpthread -lpcap
 
 ### Object files of NF Synthesizer
 OBJS =  helpers.o chameleon.o vertex.o segment_list.o operation.o \
-		generic_configuration.o graph.o filter.o ip_filter_parser.o \
-		click_parse_configuration.o nf_graph.o click_element.o \
-		output_class.o click_tree.o parser_configuration.o chain_parser.o \
+		generic_config.o graph.o filter.o ip_filter_parser.o \
+		click_parser.o nf_graph.o click_element.o \
+		output_class.o click_tree.o parser_config.o chain_parser.o \
 		synthesizer.o stateful_synthesizer.o
 
 EXECUTABLE = hyper-nf
@@ -56,12 +56,12 @@ segment_list.o: ./src/traffic_class_builder/segment_list.cpp ./src/traffic_class
 	$(CC) $(CFLAGS) ./src/traffic_class_builder/segment_list.cpp
 
 operation.o: ./src/traffic_class_builder/operation.cpp ./src/traffic_class_builder/operation.hpp \
-				./src/traffic_class_builder/header_fields.hpp
+		./src/traffic_class_builder/header_fields.hpp
 	$(CC) $(CFLAGS) ./src/traffic_class_builder/operation.cpp
 
-generic_configuration.o: ./src/configuration/generic_configuration.cpp ./src/configuration/generic_configuration.hpp \
-						 ./src/configuration/chameleon.hpp ./src/logger/logger.hpp
-	$(CC) $(CFLAGS) ./src/configuration/generic_configuration.cpp
+generic_config.o: ./src/configuration/generic_config.cpp ./src/configuration/generic_config.hpp \
+			./src/configuration/chameleon.hpp ./src/logger/logger.hpp
+	$(CC) $(CFLAGS) ./src/configuration/generic_config.cpp
 
 graph.o: ./src/graph/graph.cpp ./src/graph/graph.hpp ./src/graph/vertex.hpp ./src/logger/logger.hpp
 	$(CC) $(CFLAGS) ./src/graph/graph.cpp
@@ -72,47 +72,47 @@ filter.o: ./src/traffic_class_builder/filter.cpp ./src/traffic_class_builder/fil
 	$(CC) $(CFLAGS) ./src/traffic_class_builder/filter.cpp
 
 ip_filter_parser.o: ./src/traffic_class_builder/ip_filter_parser.cpp ./src/traffic_class_builder/ip_filter_parser.hpp \
-					./src/traffic_class_builder/filter.hpp
+			./src/traffic_class_builder/filter.hpp
 	$(CC) $(CFLAGS) ./src/traffic_class_builder/ip_filter_parser.cpp
 
-click_parse_configuration.o: ./src/click/click_parse_configuration.cpp ./src/click/click_parse_configuration.hpp \
-							 ./src/logger/logger.hpp ./src/shared/helpers.hpp
-	$(CC) $(CFLAGS) ./src/click/click_parse_configuration.cpp
+click_parser.o: ./src/click/click_parser.cpp ./src/click/click_parser.hpp \
+		 ./src/logger/logger.hpp ./src/shared/helpers.hpp
+	$(CC) $(CFLAGS) ./src/click/click_parser.cpp
 
-nf_graph.o: ./src/graph/nf_graph.cpp ./src/graph/nf_graph.hpp ./src/graph/graph.hpp ./src/click/click_parse_configuration.hpp \
+nf_graph.o: ./src/graph/nf_graph.cpp ./src/graph/nf_graph.hpp ./src/graph/graph.hpp ./src/click/click_parser.hpp \
 			./src/shared/helpers.hpp
 	$(CC) $(CFLAGS) ./src/graph/nf_graph.cpp
 
 click_element.o: ./src/traffic_class_builder/click_element.cpp ./src/traffic_class_builder/click_element.hpp \
-					./src/traffic_class_builder/header_fields.hpp ./src/traffic_class_builder/operation.hpp \
-					./src/traffic_class_builder/filter.hpp ./src/traffic_class_builder/element_type.hpp \
-					./src/shared/helpers.hpp ./src/traffic_class_builder/ip_filter_parser.hpp
+			./src/traffic_class_builder/header_fields.hpp ./src/traffic_class_builder/operation.hpp \
+			./src/traffic_class_builder/filter.hpp ./src/traffic_class_builder/element_type.hpp \
+			./src/shared/helpers.hpp ./src/traffic_class_builder/ip_filter_parser.hpp
 	$(CC) $(CFLAGS) ./src/traffic_class_builder/click_element.cpp
 
 output_class.o: ./src/traffic_class_builder/output_class.cpp ./src/traffic_class_builder/output_class.hpp \
-				./src/traffic_class_builder/filter.hpp ./src/traffic_class_builder/click_element.hpp \
-				./src/shared/helpers.hpp
+			./src/traffic_class_builder/filter.hpp ./src/traffic_class_builder/click_element.hpp \
+			./src/shared/helpers.hpp
 	$(CC) $(CFLAGS) ./src/traffic_class_builder/output_class.cpp
 
 click_tree.o: ./src/traffic_class_builder/click_tree.cpp ./src/traffic_class_builder/click_tree.hpp \
-				./src/traffic_class_builder/output_class.hpp ./src/traffic_class_builder/operation.hpp \
-				./src/traffic_class_builder/element_type.hpp ./src/traffic_class_builder/filter.hpp
+			./src/traffic_class_builder/output_class.hpp ./src/traffic_class_builder/operation.hpp \
+			./src/traffic_class_builder/element_type.hpp ./src/traffic_class_builder/filter.hpp
 	$(CC) $(CFLAGS) ./src/traffic_class_builder/click_tree.cpp
 
-parser_configuration.o: ./src/configuration/parser_configuration.cpp ./src/configuration/parser_configuration.hpp \
-						./src/configuration/properties.hpp ./src/configuration/generic_configuration.hpp \
-						./src/graph/graph.hpp
-	$(CC) $(CFLAGS) ./src/configuration/parser_configuration.cpp
+parser_config.o: ./src/configuration/parser_config.cpp ./src/configuration/parser_config.hpp \
+			./src/configuration/properties.hpp ./src/configuration/generic_config.hpp \
+			./src/graph/graph.hpp
+	$(CC) $(CFLAGS) ./src/configuration/parser_config.cpp
 
-chain_parser.o: ./src/parser/chain_parser.cpp ./src/parser/chain_parser.hpp ./src/configuration/parser_configuration.hpp \
-				./src/graph/nf_graph.hpp
+chain_parser.o: ./src/parser/chain_parser.cpp ./src/parser/chain_parser.hpp ./src/configuration/parser_config.hpp \
+			./src/graph/nf_graph.hpp
 	$(CC) $(CFLAGS) ./src/parser/chain_parser.cpp
 
 synthesizer.o: ./src/synthesizer/synthesizer.cpp ./src/synthesizer/synthesizer.hpp ./src/parser/chain_parser.hpp \
-				./src/traffic_class_builder/click_tree.cpp ./src/traffic_class_builder/click_tree.hpp \
-				./src/traffic_class_builder/output_class.hpp ./src/traffic_class_builder/operation.hpp \
-				./src/traffic_class_builder/element_type.hpp ./src/traffic_class_builder/filter.hpp \
-				./src/synthesizer/stateful_synthesizer.hpp
+			./src/traffic_class_builder/click_tree.cpp ./src/traffic_class_builder/click_tree.hpp \
+			./src/traffic_class_builder/output_class.hpp ./src/traffic_class_builder/operation.hpp \
+			./src/traffic_class_builder/element_type.hpp ./src/traffic_class_builder/filter.hpp \
+			./src/synthesizer/stateful_synthesizer.hpp
 	$(CC) $(CFLAGS) ./src/synthesizer/synthesizer.cpp
 	
 stateful_synthesizer.o: ./src/synthesizer/stateful_synthesizer.hpp ./src/synthesizer/stateful_synthesizer.cpp ./src/traffic_class_builder/filter.hpp

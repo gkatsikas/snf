@@ -52,8 +52,9 @@ const std::string OperationName[8] = {
 };
 
 struct FieldOperation {
-	FieldOperation ();
-	FieldOperation (OperationType, HeaderField, uint32_t);
+
+	FieldOperation();
+	FieldOperation(OperationType, HeaderField, uint32_t);
 
 	OperationType m_type;
 	HeaderField   m_field;
@@ -64,7 +65,7 @@ struct FieldOperation {
 	 *    - Monitor ID for Monitor: Monitor[i](packet)
 	 */
 	uint32_t              m_value[2];
-	std::vector<uint32_t> m_lb_values; //Values for the load balancer
+	std::vector<uint32_t> m_lb_values; // Values for the load balancer
 
 	void compose       (const FieldOperation &rhs);
 	uint32_t get_value (void) const;
@@ -78,7 +79,7 @@ class Operation {
 	private:
 		std::unordered_map<HeaderField, FieldOperation, std::hash<int> > m_field_ops;
 		uint32_t         m_identifier;
-		std::vector<int> m_monitors;    /* List of m_monitors that this class goes through */
+		std::vector<int> m_monitors;    // List of m_monitors that this class goes through
 
 	public:
 		void add_field_op(const FieldOperation &field_op);
@@ -86,8 +87,8 @@ class Operation {
 		bool has_field_op(const HeaderField    &field) const;
 		bool operator==  (const Operation      &rhs);
 
-		std::string to_str       (void) const;
-		std::string to_iprw_conf (void) const;
+		std::string to_str      (void) const;
+		std::string to_iprw_conf(void) const;
 
 		FieldOperation* get_field_op(const HeaderField &field);
 };

@@ -1,0 +1,142 @@
+##############################################################################################
+#######
+####### SECTION 1: In this section you specifiy the generic properties such as system properties
+#######            or paths where the results will be stored. If you do not specify some of these
+#######            properties, default ones will be used, so pay attention.
+#######
+[GENERIC]
+OUTPUT_FOLDER           = ./results/osdi16/napts
+#OUTPUT_FILE             = synth_napt_1.click
+OUTPUT_FILE             = synth_napt_2.click
+#OUTPUT_FILE             = synth_napt_3.click
+#OUTPUT_FILE             = synth_napt_4.click
+#OUTPUT_FILE             = synth_napt_5.click
+#OUTPUT_FILE             = synth_napt_6.click
+#OUTPUT_FILE             = synth_napt_7.click
+#OUTPUT_FILE             = synth_napt_8.click
+#OUTPUT_FILE             = synth_napt_9.click
+#OUTPUT_FILE             = synth_napt_10.click
+
+HARDWARE_CLASSIFICATION = false
+# Options: RSS-Hashing, Flow-Director, OpenFlow
+HARDWARE_CLASSIFICATION_FORMAT = RSS-Hashing
+
+NUMA                    = true
+CPU_SOCKETS             = 2
+CPU_CORES               = 16
+NUMBER_OF_NICS          = 2
+NIC_HW_QUEUES           = 16
+PROCESSING_LAYER        = L3
+# Options:
+#  1. SingleCore   (One core does only I/O across all queues of a NIC; other cores do only processing)
+#  2. ShareNothing (One core/queue does both I/O and processing for this queue)
+IO_MODE                 = ShareNothing
+RSS_AGGRESSIVE_PINNING  = true
+
+##############################################################################################
+#######
+####### SECTION 2: In this section you specifiy the modules you want to chain. 
+####### Use NF_number to specify the placement of the module in the chain.
+#######
+[NF_MODULES]
+
+#
+#  PZ --- |NAT1| --- |NAT2| ... |NAT10| --- Internet
+#
+#NF_1  = input/chains/osdi16/napts/length_1/nf1.click
+
+NF_1  = input/chains/osdi16/napts/length_2/nf1.click
+NF_2  = input/chains/osdi16/napts/length_2/nf2.click
+
+#NF_1  = input/chains/osdi16/napts/length_3/nf1.click
+#NF_2  = input/chains/osdi16/napts/length_3/nf2.click
+#NF_3  = input/chains/osdi16/napts/length_3/nf3.click
+
+#NF_1  = input/chains/osdi16/napts/length_4/nf1.click
+#NF_2  = input/chains/osdi16/napts/length_4/nf2.click
+#NF_3  = input/chains/osdi16/napts/length_4/nf3.click
+#NF_4  = input/chains/osdi16/napts/length_4/nf4.click
+
+#NF_1  = input/chains/osdi16/napts/length_5/nf1.click
+#NF_2  = input/chains/osdi16/napts/length_5/nf2.click
+#NF_3  = input/chains/osdi16/napts/length_5/nf3.click
+#NF_4  = input/chains/osdi16/napts/length_5/nf4.click
+#NF_5  = input/chains/osdi16/napts/length_5/nf5.click
+
+#NF_1  = input/chains/osdi16/napts/length_6/nf1.click
+#NF_2  = input/chains/osdi16/napts/length_6/nf2.click
+#NF_3  = input/chains/osdi16/napts/length_6/nf3.click
+#NF_4  = input/chains/osdi16/napts/length_6/nf4.click
+#NF_5  = input/chains/osdi16/napts/length_6/nf5.click
+#NF_6  = input/chains/osdi16/napts/length_6/nf6.click
+
+#NF_1  = input/chains/osdi16/napts/length_7/nf1.click
+#NF_2  = input/chains/osdi16/napts/length_7/nf2.click
+#NF_3  = input/chains/osdi16/napts/length_7/nf3.click
+#NF_4  = input/chains/osdi16/napts/length_7/nf4.click
+#NF_5  = input/chains/osdi16/napts/length_7/nf5.click
+#NF_6  = input/chains/osdi16/napts/length_7/nf6.click
+#NF_7  = input/chains/osdi16/napts/length_7/nf7.click
+
+#NF_1  = input/chains/osdi16/napts/length_8/nf1.click
+#NF_2  = input/chains/osdi16/napts/length_8/nf2.click
+#NF_3  = input/chains/osdi16/napts/length_8/nf3.click
+#NF_4  = input/chains/osdi16/napts/length_8/nf4.click
+#NF_5  = input/chains/osdi16/napts/length_8/nf5.click
+#NF_6  = input/chains/osdi16/napts/length_8/nf6.click
+#NF_7  = input/chains/osdi16/napts/length_8/nf7.click
+#NF_8  = input/chains/osdi16/napts/length_8/nf8.click
+
+#NF_1  = input/chains/osdi16/napts/length_9/nf1.click
+#NF_2  = input/chains/osdi16/napts/length_9/nf2.click
+#NF_3  = input/chains/osdi16/napts/length_9/nf3.click
+#NF_4  = input/chains/osdi16/napts/length_9/nf4.click
+#NF_5  = input/chains/osdi16/napts/length_9/nf5.click
+#NF_6  = input/chains/osdi16/napts/length_9/nf6.click
+#NF_7  = input/chains/osdi16/napts/length_9/nf7.click
+#NF_8  = input/chains/osdi16/napts/length_9/nf8.click
+#NF_9  = input/chains/osdi16/napts/length_9/nf9.click
+
+#NF_1  = input/chains/osdi16/napts/length_10/nf1.click
+#NF_2  = input/chains/osdi16/napts/length_10/nf2.click
+#NF_3  = input/chains/osdi16/napts/length_10/nf3.click
+#NF_4  = input/chains/osdi16/napts/length_10/nf4.click
+#NF_5  = input/chains/osdi16/napts/length_10/nf5.click
+#NF_6  = input/chains/osdi16/napts/length_10/nf6.click
+#NF_7  = input/chains/osdi16/napts/length_10/nf7.click
+#NF_8  = input/chains/osdi16/napts/length_10/nf8.click
+#NF_9  = input/chains/osdi16/napts/length_10/nf9.click
+#NF_10 = input/chains/osdi16/napts/length_10/nf10.click
+
+#######
+####### SECTION 3: In this section you specifiy the topology of the modules.
+####### Use NF_number1[iface] -> [iface]NF_number2 to connect NFs. See the example below.
+#######
+[NF_TOPO]
+
+# Singleton Chain (One NF)
+#TOPOLOGY = NF_1[nf1vif1];
+
+# 2-N chained NFs (Uncomment one line per additional NF)
+TOPOLOGY = NF_1[nf1vif1] -> [nf2vif0]NF_2;
+#NF_2[nf2vif1] -> [nf3vif0]NF_3;
+#NF_3[nf3vif1] -> [nf4vif0]NF_4;
+#NF_4[nf4vif1] -> [nf5vif0]NF_5; 
+#NF_5[nf5vif1] -> [nf6vif0]NF_6; 
+#NF_6[nf6vif1] -> [nf7vif0]NF_7; 
+#NF_7[nf7vif1] -> [nf8vif0]NF_8; 
+#NF_8[nf8vif1] -> [nf9vif0]NF_9; 
+#NF_9[nf9vif1] -> [nf10vif0]NF_10;
+
+
+#######
+####### SECTION 4: In this section you specifiy the entry/end points of the chain.
+#######            In other words, how the chain is connected to the outside world.
+#######            Use [iface]NF_number to indicate interface 'iface' as entry/end 
+#######            point. See the example below.
+#######
+[ENTRY_POINTS]
+
+### TOPO 1 and 2
+DOMAINS  = [nf1vif0]NF_1
+##############################################################################################

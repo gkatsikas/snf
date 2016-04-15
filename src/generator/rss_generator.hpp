@@ -38,7 +38,13 @@
 #include "generator.hpp"
 
 class RSSGenerator : public Generator {
+
 	private:
+		/*
+		 * Enum type that indicates how we use multiple cores to do 
+		 * I/O and processing. Check properties class.
+		 */
+		IOMode            io_mode;
 
 		/*
 		 * Boolean that indicates whether the target system supports
@@ -46,6 +52,12 @@ class RSSGenerator : public Generator {
 		 * This helps to do core allocation.
 		 */
 		bool              numa;
+
+		/*
+		 * The NICs to be (potentially) used by multi-core Hyper-NF.
+		 * In fact, Hyper-NF can use up to this number, depending on the input chain.
+		 */
+		unsigned short    number_of_nics;
 
 		/*
 		 * The number of available CPU cores, as specified by 
@@ -69,6 +81,12 @@ class RSSGenerator : public Generator {
 		unsigned short    cores_per_socket;
 
 		/*
+		 * While allocating CPU cores to pipelines we need a step
+		 * counter to traverse our sockets.
+		 */
+		unsigned short    cores_step;
+
+		/*
 		 * Instead of simply attaching FromDPDKDevice elements to different NIC queues (and cores)
 		 * Follow the paths of each FromDPDKDevice descriptor and pin elements along these paths.
 		 * This might not always increase the throughput of Hyper-NF as inter-core communication
@@ -82,6 +100,11 @@ class RSSGenerator : public Generator {
 		 * queues of the NIC.
 		 */
 		const std::string queue_ext_prefix = std::string("_q");
+
+		/*
+		 * Map [SocketNo] --> [List of core numbers in this socket]
+		 */
+		std::unordered_map< unsigned short, std::vector <unsigned short> > cpu_layout;
 
 	public:
 		/*
@@ -122,7 +145,7 @@ class RSSGenerator : public Generator {
 		bool replicate_input_part_of_synthesis(
 			std::stringstream                                     &config_stream,
 			std::map < unsigned short, std::string >              &nic_to_classifier,
-			std::map < std::string,    unsigned short >           &nic_desc_to_core,
+			std::map < std::string,    unsigned short >           &in_nic_desc_to_core,
 			std::map < unsigned short, std::vector<std::string> > &nic_to_classifier_repl,
 			std::map < std::string,    std::vector<std::string> > &classifier_to_nic_desc,
 			std::map < std::string,    unsigned short >           &classifier_to_core
@@ -138,6 +161,7 @@ class RSSGenerator : public Generator {
 		);
 		bool replicate_write_and_output_part_of_synthesis(
 			std::stringstream                                     &config_stream,
+			std::map < std::string,    unsigned short >           &out_nic_desc_to_core,
 			std::map < 	std::pair< std::string, unsigned short>,
 						std::pair< std::string, unsigned short> > &classifier_repl_to_rewriter
 		);
@@ -174,7 +198,7 @@ class RSSGenerator : public Generator {
 		 * Click-DPDK input element (FromDPDKDevice) to each queue.
 		 */
 		bool assign_nic_queues_to_cores(
-			std::map < std::string, unsigned short >           &nic_desc_to_core,
+			std::map < std::string, unsigned short >           &in_nic_desc_to_core,
 			std::map < std::string, std::vector<std::string> > &classifier_to_nic_desc,
 			std::stringstream                                  &config_stream,
 			const unsigned short                               &nic_no,
@@ -182,13 +206,24 @@ class RSSGenerator : public Generator {
 		);
 
 		/*
-		 * Call Click's StaticThreadSched element to schedule a map
-		 * of Click instances to different CPU cores.
+		 * Call Click's StaticThreadSched element to schedule 
+		 * Click instances to different CPU cores.
 		 */
+		bool scheduling(
+			std::map < std::string, unsigned short >        &in_nic_desc_to_core,
+			std::map < std::string, unsigned short >        &out_nic_desc_to_core,
+			std::map < std::string, unsigned short >        &classifier_to_core,
+			std::map <
+				std::string, std::vector< 
+				std::pair< std::string, unsigned short > >
+			>                                               &classifier_repl_to_rewriter_repl,
+			std::stringstream                               &config_stream
+		);
+
 		bool static_path_scheduling(
-			std::map <std::string, unsigned short> &instance_to_core,
-			std::stringstream                      &config_stream,
-			const std::string                      &purpose
+			std::map <std::string, unsigned short>          &instance_to_core,
+			std::stringstream                               &config_stream,
+			const std::string                               &purpose
 		);
 
 		bool stateful_path_scheduling(
@@ -199,6 +234,27 @@ class RSSGenerator : public Generator {
 			>                                               &classifier_repl_to_rewriter_repl,
 			std::stringstream                               &config_stream
 		);
+
+		/*
+		 * Based on the input configuration, build a map of cores assigned to
+		 * sockets
+		 */
+		void           build_cpu_layout    (void);
+		void           print_cpu_layout    (void);
+
+		/*
+		 * Ask the CPU layout for the list of cores that belong to the same
+		 * socket with the excluded core (which does the I/O).
+		 * These cores will do processing.
+		 */
+		std::vector< unsigned short > get_proc_cores_of_this_socket(
+			const unsigned short &core_to_exclude
+		);
+
+		/*
+		 * A global way of naming NIC descriptors
+		 */
+		std::string get_nic_desc_for_queue(const unsigned short &nic_no, const std::string &mode);
 };
 
 #endif

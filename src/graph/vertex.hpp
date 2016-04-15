@@ -54,11 +54,12 @@ enum VertexType {
 const std::string VertexTypeStrings[] = { "Input", "Processing", "Output", "None", "Domain", "NF" };
 
 class Vertex {
+
 	protected:
 		/*
 		 * A label for this vertex
 		 */
-		std::string name;
+		std::string    name;
 
 		/*
 		 * The distance from the root (or the position in the chain)
@@ -69,7 +70,7 @@ class Vertex {
 		 * If this vertex represents a NF --> VertexType becomes NodeType
 		 * If this vertex represents an element --> VertexType becomes Stage
 		 */
-		VertexType type;
+		VertexType     type;
 
 		/*
 		 * Logger
@@ -112,13 +113,13 @@ using InterfaceMap = std::unordered_map<std::string, std::pair<std::string, std:
 /*
  * The Chain graph contains an associated source code filename per vertex
  */
-class ChainVertex : public Vertex
-{
+class ChainVertex : public Vertex {
+
 	private:
 		/*
 		 * The path of the NF implementation file of this node
 		 */
-		std::string source_code_path;
+		std::string  source_code_path;
 
 		/*
 		 * Stores the interfaces of a NF that connect it to the outside world.
@@ -131,11 +132,11 @@ class ChainVertex : public Vertex
 		InterfaceMap chain_interfaces;
 
 	public:
-		ChainVertex(const std::string &path, const std::string &name, 
+		ChainVertex (const std::string &path, const std::string &name, 
 					const unsigned short &pos, const VertexType &type) :
 					Vertex(std::move(name), pos, type), source_code_path(std::move(path)) {};
 		~ChainVertex() {};
-		ChainVertex(const ChainVertex &cv);
+		ChainVertex (const ChainVertex &cv);
 		ChainVertex& operator=(ChainVertex &cv);
 
 		/*
@@ -165,9 +166,9 @@ class ChainVertex : public Vertex
 		/*
 		 * Debugging
 		 */
-		void print_info               (void);
-		void print_chain_interface_map(void);
-		void print_entry_interface_map(void);
+		void           print_info               (void);
+		void           print_chain_interface_map(void);
+		void           print_entry_interface_map(void);
 };
 
 #endif

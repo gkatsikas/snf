@@ -30,7 +30,7 @@ To build Hyper-NF with Click-DPDK support run:
 Example (with more verbosity but no debug messages):
 	./configure \
 			RTE_SDK=/opt/dpdk \
-			RTE_TARGET=x86_64-native-linuxapp-gcc/ \
+			RTE_TARGET=x86_64-native-linuxapp-gcc \
 			--with-click=/opt/click-dpdk \
 			--enable-dpdk=yes --enable-debug=no --enable-verbose=yes
 
@@ -47,8 +47,9 @@ Example:
 
 RUN
 ---------
-One can execute the following synthesis example:
-	./run bin/usr/local/bin/hypernf input/dpdk_property_file
+One can execute the following synthesis examples:
+	./run bin/usr/local/bin/hypernf input/chains/tests/tests.prop
+	./run bin/usr/local/bin/hypernf input/chains/osdi16/routers/routers.prop
 
 UN-INSTALL
 ---------

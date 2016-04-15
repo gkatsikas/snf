@@ -41,6 +41,7 @@ class ClickTree {
 		int                       m_input_nf;
 		std::string               m_input_iface;
 		std::vector<TrafficClass> m_traffic_classes;
+		bool                      m_behind_proxy;
 
 		Logger log;
 
@@ -50,9 +51,12 @@ class ClickTree {
 		void find_classes(void);
 
 	public:
-		ClickTree (std::shared_ptr<ClickElement> root) ;
+		ClickTree(std::shared_ptr<ClickElement> root) ;
 		ClickTree(int input_nf, std::string input_interface, std::shared_ptr<ClickElement> root);
-		std::vector<TrafficClass> get_traffic_classes() const;
+
+		void set_behind_proxy(const bool& bn);
+		bool get_behind_proxy(void);
+		std::vector<TrafficClass> get_traffic_classes(void) const;
 };
 
 #endif

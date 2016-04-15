@@ -33,6 +33,8 @@
 #include <boost/foreach.hpp>
 #include <boost/tokenizer.hpp>
 
+#define FILENAME_GAP 21
+
 // Colors for the logger classes
 namespace Color {
 	enum Code {
@@ -160,7 +162,7 @@ class Logger {
 					}
 				}
 				std::ostringstream tt;
-				tt << std::right << std::setw(30) << token;
+				tt << std::right << std::setw(FILENAME_GAP) << token;
 				return tt.str();
 			}
 };

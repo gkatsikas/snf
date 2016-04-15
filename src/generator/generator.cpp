@@ -54,7 +54,7 @@ const std::string
 Generator::get_output_files_list_str(void) {
 
 	std::string all_out_files;
-	all_out_files = "\n\t\t\t\t\t\t\t\t==== |--> " + this->soft_configuration_filename;
+	all_out_files = "\n\t\t\t\t\t\t\t==== |--> " + this->soft_configuration_filename;
 	TrafficClassFormat tc_format = this->traffic_classification_format;
 
 	// A single configuration file is produced if we are in Click or RSS mode.
@@ -90,7 +90,7 @@ Generator::get_output_files_list_str(void) {
 		std::string nf    = it.first;
 		std::string iface = it.second;
 		std::string hdwr_file = this->basic_configuration_filename + "_" + nf + "_" + iface + extension;
-		all_out_files += "\t\t\t\t\t\t\t\t==== |--> " + hdwr_file;
+		all_out_files += "\t\t\t\t\t\t\t==== |--> " + hdwr_file;
 
 		++iface_counter;
 

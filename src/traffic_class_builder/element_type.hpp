@@ -26,50 +26,55 @@
 #include <string>
 
 // List of allowed Click elements
+// Input, Output, Processing, Drop, and Monitoring
 static const uint32_t elem_start = __LINE__;
-#define _Element(FOO) \
-	FOO(DecIPTTL) \
-	FOO(AverageCounter) \
-	FOO(FixIPSrc) \
-	FOO(IPFilter) \
-	FOO(IPClassifier) \
-	FOO(RadixIPLookup) \
-	FOO(DirectIPLookup) \
-	FOO(LinearIPLookup) \
-	FOO(StaticIPLookup) \
-	FOO(IPRewriter) \
-	FOO(Discard) \
-	FOO(MarkIPHeader) \
-	FOO(CheckIPHeader) \
-	FOO(CheckICMPHeader) \
-	FOO(GetIPAddress) \
-	FOO(CheckUDPHeader) \
-	FOO(CheckTCPHeader) \
-	FOO(RoundRobinIPMapper) \
-	FOO(VLANEncap) \
-	FOO(VLANDecap) \
-	FOO(SetVLANAnno) \
-	FOO(EtherEncap) \
-	FOO(ARPResponder) \
-	FOO(ARPQuerier) \
-	FOO(PollDevice) \
-	FOO(FromDevice) \
-	FOO(FromNetFront) \
-	FOO(FromDPDKDevice) \
-	FOO(ToDevice) \
-	FOO(ToNetFront) \
-	FOO(ToDPDKDevice) \
-	FOO(Strip) \
-	FOO(IPGWOptions) \
-	FOO(DropBroadcasts) \
-	FOO(IPFragmenter) \
-	FOO(Classifier) \
-	FOO(Queue) \
-	FOO(Paint) \
-	FOO(PaintTee) \
-	FOO(Print) \
-	FOO(Discard_def) \
-	FOO(No_elem)
+#define _Element(EL) \
+	EL(PollDevice) \
+	EL(FromDevice) \
+	EL(FromNetFront) \
+	EL(FromDPDKDevice) \
+	EL(Queue) \
+	EL(ToDevice) \
+	EL(ToNetFront) \
+	EL(ToDPDKDevice) \
+	EL(IPFilter) \
+	EL(Classifier) \
+	EL(IPClassifier) \
+	EL(RadixIPLookup) \
+	EL(DirectIPLookup) \
+	EL(LinearIPLookup) \
+	EL(StaticIPLookup) \
+	EL(LookupIPRouteMP) \
+	EL(Strip) \
+	EL(MarkIPHeader) \
+	EL(CheckIPHeader) \
+	EL(CheckICMPHeader) \
+	EL(CheckUDPHeader) \
+	EL(CheckTCPHeader) \
+	EL(GetIPAddress) \
+	EL(IPRewriter) \
+	EL(DecIPTTL) \
+	EL(FixIPSrc) \
+	EL(IPGWOptions) \
+	EL(DropBroadcasts) \
+	EL(IPFragmenter) \
+	EL(IPOutputCombo) \
+	EL(RoundRobinIPMapper) \
+	EL(VLANEncap) \
+	EL(VLANDecap) \
+	EL(SetVLANAnno) \
+	EL(EtherEncap) \
+	EL(StoreEtherAddress) \
+	EL(ARPResponder) \
+	EL(ARPQuerier) \
+	EL(Paint) \
+	EL(PaintTee) \
+	EL(Print) \
+	EL(Counter) \
+	EL(AverageCounter) \
+	EL(Discard) \
+	EL(Discard_def) \
+	EL(No_elem)
 static const uint32_t elem_end = __LINE__;
 
 const uint32_t NB_ELEMENT_TYPES = elem_end - elem_start - 2;

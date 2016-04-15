@@ -31,17 +31,17 @@
 // The logger of this module
 Logger op_log(__FILE__);
 
-FieldOperation::FieldOperation () : m_type(Noop), m_field(unknown) {}
+FieldOperation::FieldOperation() : m_type(Noop), m_field(unknown) {}
 
-FieldOperation::FieldOperation (OperationType type, HeaderField field, uint32_t value) :
+FieldOperation::FieldOperation(OperationType type, HeaderField field, uint32_t value) :
 								m_type(type), m_field(field) {
 	m_value[0] = value;
 }
 
 void
-FieldOperation::compose (const FieldOperation &rhs) {
+FieldOperation::compose(const FieldOperation &rhs) {
 	if (this->m_field != rhs.m_field) {
-		error_chatter(op_log, "Trying to compose FieldOperation on different fields");
+		error_chatter(op_log, "\tTrying to compose FieldOperation on different fields");
 	}
 
 	switch (rhs.m_type) {
@@ -52,9 +52,9 @@ FieldOperation::compose (const FieldOperation &rhs) {
 		case WriteLB:
 			this->m_type = WriteLB;
 			this->m_lb_values.clear();
-			error_chatter(op_log, "Before composition: "<<to_str());
+			error_chatter(op_log, "\tBefore composition: "<<to_str());
 			this->m_lb_values.insert(m_lb_values.begin(),rhs.m_lb_values.begin(),rhs.m_lb_values.end());
-			error_chatter(op_log, "After composition: "<<to_str());
+			error_chatter(op_log, "\tAfter composition: "<<to_str());
 			return;
 		case WriteRR:
 		case WriteRa:
@@ -67,17 +67,17 @@ FieldOperation::compose (const FieldOperation &rhs) {
 			this->m_value[0] += rhs.m_value[0];
 			return;
 		default:
-			FANCY_BUG(op_log, "Can only compose Write and Translate");
+			FANCY_BUG(op_log, "\tCan only compose Write and Translate");
 	}
 }
 
 uint32_t
-FieldOperation::get_value (void) const {
+FieldOperation::get_value(void) const {
 	return this->m_value[0];
 }
 
 bool
-FieldOperation::is_same_value (const FieldOperation &rhs) const{
+FieldOperation::is_same_value(const FieldOperation &rhs) const{
 	bool result = true;
 	switch (m_type) {
 		case WriteRR:
@@ -114,7 +114,7 @@ Operation::has_field_op(const HeaderField &field) const {
 }
 
 std::string
-FieldOperation::to_str (void) const {
+FieldOperation::to_str(void) const {
 	std::string output = header_field_names[m_field];
 	
 	std::function<std::string(uint32_t)> to_str= [](uint32_t x){return std::to_string(x);};
@@ -210,7 +210,7 @@ Operation::add_field_op(const FieldOperation &field_op) {
 }
 
 void
-Operation::compose_op (const Operation &operation) {
+Operation::compose_op(const Operation &operation) {
 	std::unordered_map<HeaderField, FieldOperation, std::hash<int> >
 					field_ops = operation.m_field_ops;
 	for (auto it=field_ops.begin(); it!=field_ops.end(); ++it) {
@@ -219,7 +219,7 @@ Operation::compose_op (const Operation &operation) {
 }
 
 std::string
-Operation::to_str (void) const {
+Operation::to_str(void) const {
 	std::string output = "Operation:\n";
 	for (auto &it : m_field_ops) {
 		output += ("\t"+it.second.to_str()+"\n");
@@ -228,7 +228,7 @@ Operation::to_str (void) const {
 }
 
 std::string
-Operation::to_iprw_conf (void) const {
+Operation::to_iprw_conf(void) const {
 	
 	std::string ipsrc, tpsrc, tpdst;
 
@@ -238,14 +238,14 @@ Operation::to_iprw_conf (void) const {
 			ipsrc = ntoa(field_op->second.m_value[0]);
 		}
 		else {
-			FANCY_BUG(op_log, "Unexpected write operation");
+			FANCY_BUG(op_log, "\tUnexpected write operation");
 		}
 	}
 	else{
 		ipsrc= "-";
 	}
 
-	field_op = m_field_ops.find(tp_srcPort);
+	field_op = m_field_ops.find(tp_src_port);
 	if(field_op != m_field_ops.end()) {
 		switch (field_op->second.m_type) {
 			case Write:
@@ -261,20 +261,20 @@ Operation::to_iprw_conf (void) const {
 				tpsrc = std::to_string(field_op->second.m_value[0])+"-"+std::to_string(field_op->second.m_value[1]);
 				break;
 			default:
-				FANCY_BUG(op_log, "Unexpected write operation");
+				FANCY_BUG(op_log, "\tUnexpected write operation");
 		}
 	}
 	else{
 		tpsrc = "-";
 	}
 
-	field_op = m_field_ops.find(tp_dstPort);
+	field_op = m_field_ops.find(tp_dst_port);
 	if(field_op != m_field_ops.end()) {
 		if(field_op->second.m_type == Write) {
 			tpdst = std::to_string(field_op->second.m_value[0]);
 		}
 		else {
-			FANCY_BUG(op_log, "Expected write operation, got "+to_str());
+			FANCY_BUG(op_log, "\tExpected write operation, got "+to_str());
 		}
 	}
 	else{
@@ -297,7 +297,7 @@ Operation::to_iprw_conf (void) const {
 			return output.substr(0,output.size()-1);
 		}
 		else {
-			FANCY_BUG(op_log, "Expected write operation, got "+to_str());
+			FANCY_BUG(op_log, "\tExpected write operation, got "+to_str());
 		}
 	}
 	else {

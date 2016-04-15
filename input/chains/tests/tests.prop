@@ -1,0 +1,121 @@
+###################################################################################################
+####### This is a test property file to try your first synthesis examples.
+####### Follow the guidelines and you should be able to successfully synthesize the examples below.
+####### Please use the bitbucket wiki to report any bugs or contact katsikas@kth.se
+###################################################################################################
+
+###################################################################################################
+#######
+####### SECTION 1: In this section you specifiy the generic properties such as system properties
+#######            or paths where the results will be stored. If you do not specify some of these
+#######            properties, default ones will be used, so pay attention.
+#######
+[GENERIC]
+OUTPUT_FOLDER           = ./results/tests
+OUTPUT_FILE             = synth_topo1.click
+#OUTPUT_FILE             = synth_topo2.click
+#OUTPUT_FILE             = synth_topo3.click
+#OUTPUT_FILE             = synth_topo4.click
+
+HARDWARE_CLASSIFICATION = false
+# Options: RSS-Hashing, Flow-Director, OpenFlow
+HARDWARE_CLASSIFICATION_FORMAT = RSS-Hashing
+
+NUMA                    = true
+CPU_SOCKETS             = 2
+CPU_CORES               = 16
+NIC_HW_QUEUES           = 16
+
+
+###################################################################################################
+#######
+####### SECTION 2: In this section you specifiy the modules you want to chain. 
+####### Use NF_number to specify the placement of the module in the chain.
+#######
+[NF_MODULES]
+
+### TOPO 1
+#
+#  PZ --- |NAT| --- |FW| --- Internet
+#                     |
+#                     |
+#                    DMZ
+#
+NF_1 = input/chains/tests/compound/napt_2if.click
+NF_2 = input/chains/tests/compound/firewall_3if.click
+
+
+### TOPO 2
+#
+#  PZ --- |NAT| --- |NAT| --- Internet
+#            \       /
+#             \     /
+#               DMZ
+#
+#NF_1 = input/chains/tests/compound/napt_3if.click
+#NF_2 = input/chains/tests/compound/napt_3if.click
+
+
+### TOPO 3
+#
+#                                        Server 1
+#                                       /
+#  Client --- |NAT| --- |FW| --- |LB| -- 
+#                                       \
+#                                        Server 2
+#
+#NF_1 = input/chains/tests/compound/napt_2if.click
+#NF_2 = input/chains/tests/compound/firewall_2if.click
+#NF_3 = input/chains/tests/compound/load_balancer_2if.click
+
+### TOPO 4
+#
+#  Domain 1 --- |R| --- |R| --- |R| --- |R| --- Domain 3
+#                         \      /
+#                          \    /
+#                         Domain 2
+#
+#NF_1 = input/chains/tests/compound/router_2if.click
+#NF_2 = input/chains/tests/compound/router_3if.click
+#NF_3 = input/chains/tests/compound/router_3if.click
+#NF_4 = input/chains/tests/compound/router_2if.click
+
+
+#######
+####### SECTION 3: In this section you specifiy the topology of the modules.
+####### Use NF_number1[iface] -> [iface]NF_number2 to connect NFs. See the example below.
+#######
+[NF_TOPO]
+
+### TOPO 1
+TOPOLOGY = NF_1[eth1] -> [eth0]NF_2;
+
+### TOPO 2
+#TOPOLOGY = NF_1[eth2] -> [eth0]NF_2;
+
+### TOPO 3
+#TOPOLOGY = NF_1[eth1] -> [eth0]NF_2;NF_2[eth1] -> [eth0]NF_3;
+
+### TOPO 4
+#TOPOLOGY = NF_1[eth1] -> [eth0]NF_2;NF_2[eth2] -> [eth0]NF_3;NF_3[eth2] -> [eth0]NF_4;
+
+
+#######
+####### SECTION 4: In this section you specifiy the entry/end points of the chain.
+#######            In other words, how the chain is connected to the outside world.
+#######            Use [iface]NF_number to indicate interface 'iface' as entry/end 
+#######            point. See the examples below.
+#######
+[ENTRY_POINTS]
+### TOPO 1
+DOMAINS  = [eth0]NF_1
+
+### TOPO 2
+#DOMAINS  = [eth0]NF_1, [eth1]NF_1, [eth1]NF_2
+
+### TOPO 3
+#DOMAINS  = [eth0]NF_1
+
+### TOPO 4
+#DOMAINS  = [eth0]NF_1, [eth1]NF_2, [eth1]NF_3
+###################################################################################################

@@ -32,11 +32,11 @@
 #include "flow_director_generator.hpp"
 
 FlowDirectorGenerator::FlowDirectorGenerator(Synthesizer *synth) : Generator(synth) {
-	def_chatter(this->log, "\tFlow Director-based generator constructed");
+	def_chatter(this->log, "\tFlow Director-based Hyper-NF generator constructed");
 }
 
 FlowDirectorGenerator::~FlowDirectorGenerator() {
-	def_chatter(this->log, "\tFlow Director-based generator deleted");
+	def_chatter(this->log, "\tFlow Director-based Hyper-NF generator deleted");
 }
 
 /*
@@ -104,7 +104,7 @@ FlowDirectorGenerator::generate_flow_director_split_pipelines(const bool &to_fil
 		//hard_out_file = NULL;
 	}
 
-	MISSING_FEATURE(this->log, "Flow Director traffic class generator not implemented");
+	MISSING_FEATURE(this->log, "Flow Director traffic class generator not implemented yet");
 	return DONE;
 }
 

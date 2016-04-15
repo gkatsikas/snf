@@ -43,14 +43,13 @@ split(const std::string &s, const std::string& delim) {
 	std::vector<std::string> elems;
 	size_t start=s.find_first_not_of(delim);
 
-	while(start != std::string::npos) {
-		size_t end = s.find_first_of(delim,start);
-		std::string temp = s.substr(start,end-start);
+	while ( start != std::string::npos ) {
+		size_t end = s.find_first_of(delim, start);
+		std::string temp = s.substr(start, end-start);
 		elems.push_back(temp);
-		start = s.find_first_not_of(delim,end);
+		start = s.find_first_not_of(delim, end);
 	}
 	return elems;
-	
 }
 
 std::string
@@ -64,7 +63,7 @@ vector_to_str(const std::vector<std::string> &vec, const std::string &delim) {
 		}
 		i++;
 	}
-    return res;
+	return res;
 }
 
 std::vector<std::string>
@@ -75,8 +74,7 @@ separate_args(const std::string &s) {
 	size_t position=0;
 	std::string spaces = " \t\n";
 
-	
-	while(position < size && position != std::string::npos) {
+	while( (position < size) && (position != std::string::npos) ) {
 		switch(s[position]) {
 			case ' ':
 			case '\t':
@@ -128,6 +126,18 @@ get_substr_before(const std::string &str, const std::string &pattern) {
 }
 
 /*
+ * Get the substring after the first occurance of a pattern
+ */
+const std::string
+get_substr_after(const std::string &str, const std::string &pattern) {
+	std::size_t found = str.find(pattern);
+	if ( found != std::string::npos ) {
+		return str.substr(found+1, str.size()-1);
+	}
+	return str;
+}
+
+/*
  * Get string extension
  */
 const std::string
@@ -137,12 +147,49 @@ get_string_extension(const std::string &str, const char delim) {
 	return std::string("");
 }
 
+// Trim string from left
+std::string
+ltrim(std::string &s, const char *to_trim) {
+	std::string out_str = s.erase(0, s.find_first_not_of(to_trim));
+	return out_str;
+}
+
+// Trim string from right
+std::string
+rtrim(std::string &s, const char *to_trim) {
+	std::string out_str = s.erase(s.find_last_not_of(to_trim) + 1);
+	return out_str;
+}
+
+// Trim string from left & right
+std::string
+trim(std::string &s, const char *to_trim) {
+	std::string out_str = rtrim(s, to_trim);
+	return ltrim(out_str, to_trim);
+}
+
+std::string
+trim(std::string const &s, char const *to_trim) {
+	std::string result(s);
+	std::string::size_type index = result.find_last_not_of(to_trim);
+	if ( index != std::string::npos )
+		result.erase(++index);
+
+	index = result.find_first_not_of(to_trim);
+	if ( index != std::string::npos )
+		result.erase(0, index);
+	else
+		result.erase();
+
+	return result;
+}
+
 /*
  * IP helpers
  */
 bool
 is_ip4_prefix(const std::string &address, bool full) {
-	std::vector<std::string> split_address = split(address,".");
+	std::vector<std::string> split_address = split(address, ".");
 	if (address.find_first_not_of(".0123456789") != std::string::npos
 		|| split_address.size() > 4) {
 		return false;
@@ -167,14 +214,16 @@ aton(const std::string &address) {
 		result <<= 8;
 		result += atoi (split_address[i].c_str());
 	}
-	result <<= (8*(4-split_address.size())); //If it's a prefix like 10.0 we have to fill up the rest
+	// If it's a prefix like 10.0 we have to fill up the rest
+	result <<= (8*(4-split_address.size()));
+
 	return result;
 }
 
 std::string
 ntoa(uint32_t address) {
-	return std::to_string(address>>24)+"."+std::to_string((address>>16) % 256)+"."+
-		std::to_string((address>>8) % 256)+"."+std::to_string(address % 256);
+	return 	std::to_string(address>>24)+"."+std::to_string((address>>16) % 256)+"."+
+			std::to_string((address>>8) % 256)+"."+std::to_string(address % 256);
 }
 
 /*
@@ -231,8 +280,8 @@ get_number_from_string(std::string const &str) {
 const std::string
 bool_to_str(const bool b) {
 	std::ostringstream ss;
-    ss << std::boolalpha << b;
-    return ss.str();
+	ss << std::boolalpha << b;
+	return ss.str();
 }
 
 /*
@@ -251,16 +300,62 @@ str_to_bool(const std::string &s) {
 bool
 directory_exists(const std::string &dir_path) {
 	struct stat info;
-	return ( (stat(dir_path.c_str(), &info) == 0) && (info.st_mode & S_IFDIR) );
+	return (
+		(stat(dir_path.c_str(), &info) == 0) &&
+		(info.st_mode & S_IFDIR)
+	);
 }
 
 /*
  * Create a directory
  */
 bool
-create_directory(const std::string &dir_path) {
+create_directory(const std::string &dir) {
 	mode_t mode = 0700;
-	return ( mkdir(dir_path.c_str(), mode) == 0 );
+	return (
+		(mkdir(dir.c_str(), mode) == 0) ||
+		(errno == EEXIST)
+	);
+}
+
+bool
+create_directory_path(const std::string &dir_path) {
+	bool status = false;
+	mode_t mode = 0700;
+	std::string sub_path;
+
+	int result = mkdir( dir_path.c_str(), mode );
+	if ( result < 0 ) {
+		switch( errno )	{
+			case ENOENT:
+				// Try to create the parent folder
+				sub_path = dir_path.substr(0, dir_path.find_last_of('/'));
+
+				if ( ! create_directory_path(sub_path) ) {
+					status = false;
+				}
+				else {
+					// Try again... you might be lucky this time
+					status = (
+						(mkdir( dir_path.c_str(), mode ) == 0) ||
+						(errno == EEXIST)
+					);
+				}
+				break;		
+			case EEXIST:
+				// Done!
+				status = true;
+				break;
+			default:
+				status = false;
+				break;
+		}
+	}
+	else {
+		status = true;
+	}
+
+	return status;
 }
 
 /*
@@ -269,5 +364,5 @@ create_directory(const std::string &dir_path) {
 bool
 file_exists(const std::string &file_path) {
 	struct stat buffer;
-	return ( stat(file_path.c_str(), &buffer) == 0 ); 
+	return ( stat(file_path.c_str(), &buffer) == 0 );
 }

@@ -57,7 +57,6 @@ ConsolidatedTc::ConsolidatedTc(
 
 bool
 ConsolidatedTc::add_tc(const TrafficClass &tc, const TrafficClassFormat &tc_format) {
-
 	Logger m_lg(__FILE__);
 
 	switch (tc_format) {
@@ -119,7 +118,9 @@ ConsolidatedTc::get_path_to_rewriter_after_classifier(const std::string &at_queu
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-Synthesizer::Synthesizer(ChainParser *cp) : tc_per_input_iface(), st_oper_per_out_iface() {
+Synthesizer::Synthesizer(ChainParser *cp) : tc_per_input_iface(), st_oper_per_out_iface(), 
+											st_oper_per_out_iface_conf(), hyper_nf_ifaces(),
+											hyper_nf_ifaces_to_nics() {
 	this->log.set_logger_file(__FILE__);
 	if ( !cp ) {
 		FANCY_BUG(this->log, "Synthesizer: Invalid Parser object");
@@ -144,7 +145,6 @@ Synthesizer::~Synthesizer() {
  */
 bool
 Synthesizer::build_traffic_classes(void) {
-
 	info_chatter(this->log, "");
 	info_chatter(this->log, "==============================================================================");
 	info_chatter(this->log, "Build Traffic Classes ...");
@@ -161,7 +161,7 @@ Synthesizer::build_traffic_classes(void) {
 		// The Click DAG of this NF
 		NFGraph* nf_graph = this->get_chain_parser()->get_nf_graph_at(nf_position);
 		if ( !nf_graph )
-			return NO_MEM_AVAILABLE;
+			return TO_BOOL(NO_MEM_AVAILABLE);
 
 		info_chatter(this->log, "Network Function: " << cv->get_name());
 
@@ -193,10 +193,14 @@ Synthesizer::build_traffic_classes(void) {
 			std::string key = cv->get_name() + "-" + interface;
 			ClickTree ct (ep);
 
+			unsigned short all_tc = ct.get_traffic_classes().size();
+			unsigned short discarded_tc = 0;
+
 			// Create an array with all the traffic classes
 			for (auto &tc : ct.get_traffic_classes()) {
+
 				// A valid traffic class
-				if ( !tc.is_discarded() ) {
+				if ( ! tc.is_discarded() ) {
 					std::string op_as_str = tc.get_operation().to_iprw_conf();
 					debug_chatter(this->log, op_as_str);
 					std::string snd_key = op_as_str+"\\"+tc.get_output_iface();
@@ -206,6 +210,7 @@ Synthesizer::build_traffic_classes(void) {
 						std::string nf_of_tc_out_iface = tc.get_nf_of_output_iface();
 						std::string tc_out_iface = tc.get_output_iface();
 
+						// FIXME: Multiple directions may exist
 						unsigned short direction;
 						if ( is_hyper_nf_iface( nf_of_tc_out_iface, tc_out_iface) && (nf_of_tc_out_iface == "NF_1") ) {
 							direction = 0;
@@ -221,6 +226,7 @@ Synthesizer::build_traffic_classes(void) {
 							op_as_str,
 							tc.synthesize_chain(direction)
 						};
+						info_chatter(this->log, "\t\tAdded traffic class towards " << tc_out_iface);
 					}
 
 					bool exit_status = this->tc_per_input_iface[key][snd_key].add_tc(tc, tc_format);
@@ -228,6 +234,14 @@ Synthesizer::build_traffic_classes(void) {
 						return exit_status;
 					}
 				}
+				else {
+					discarded_tc++;
+				}
+			}
+
+			if ( discarded_tc == all_tc ) {
+				warn_chatter(this->log, "\t\tNo way out from " << elem_name << "(" << interface << ")");
+				warn_chatter(this->log, "\t\tIs behind proxy: " << ((ct.get_behind_proxy()) ? "True":"False"));
 			}
 
 			def_chatter(this->log, "");
@@ -244,7 +258,6 @@ Synthesizer::build_traffic_classes(void) {
  */
 bool
 Synthesizer::synthesize_stateful(void) {
-
 	for (auto &it : this->tc_per_input_iface) {
 		for(auto &tc : it.second) {
 			// The NF name with the output interface name is the combined key.
@@ -271,19 +284,11 @@ Synthesizer::synthesize_stateful(void) {
 }
 
 /*
- * Get the number of interfaces of the final Hyper-NF chain.
- */
-short
-Synthesizer::get_hyper_nf_ifaces_no(void) {
-	return this->hyper_nf_ifaces.size();
-}
-
-/*
  * Check whether an interface belongs to the interfaces' list of the final Hyper-NF chain.
  */
 bool
 Synthesizer::is_hyper_nf_iface(const std::string& nf, const std::string& iface) {
-	for (auto& it : this->hyper_nf_ifaces )
+	for (auto &it : this->hyper_nf_ifaces )
 		if ( (it.first == nf) && (it.second == iface) )
 			return true;
 
@@ -291,15 +296,73 @@ Synthesizer::is_hyper_nf_iface(const std::string& nf, const std::string& iface) 
 }
 
 /*
+ * Get the number of interfaces of the final Hyper-NF chain.
+ */
+unsigned short
+Synthesizer::get_hyper_nf_ifaces_no(void) {
+	return this->hyper_nf_ifaces.size();
+}
+
+/*
+ * Given a Hyper-NF, retrieve the associated NIC.
+ */
+std::string
+Synthesizer::get_nic_of_hyper_nf_iface(std::pair<std::string, std::string> nf_iface) {
+	if ( nf_iface.first.empty() || nf_iface.second.empty() ) return "";
+	if ( exists_in_map(this->hyper_nf_ifaces_to_nics, nf_iface) ) {
+		return this->hyper_nf_ifaces_to_nics[nf_iface];
+	}
+	return "";
+}
+
+/*
+ * Given a NIC of the system, retrieve the Hyper-NF iface associated with this NIC.
+ */
+std::pair<std::string, std::string>
+Synthesizer::get_hyper_nf_iface_of_nic(std::string nic) {
+	if ( nic.empty() ) return std::make_pair("", "");
+	for (auto &it : this->hyper_nf_ifaces_to_nics ) {
+		if ( it.second == nic ) return it.first;
+	}
+	return std::make_pair("", "");
+}
+
+/*
+ * Add a mapping of a pair of (NF_X, nfxvify) --> NIC
+ */
+void
+Synthesizer::add_nic_of_hyper_nf_iface(std::pair<std::string, std::string> nf_iface, std::string nic) {
+	if ( nf_iface.first.empty() || nf_iface.second.empty() || nic.empty() ) return;
+	this->hyper_nf_ifaces_to_nics[nf_iface] = nic;
+}
+
+
+/*
  * Print the interfaces (and NFs that possess those interfaces) of the final Hyper-NF chain.
  */
 void
 Synthesizer::print_hyper_nf_ifaces(void) {
 	for (auto &it : this->hyper_nf_ifaces ) {
-		info_chatter (this->log, "\t[Network Function: " <<
-						std::right << std::setw(5)  << it.first <<
-						", Iface: " << 
-						std::right << std::setw(8) << it.second << "]");
+		info_chatter (this->log, "\t[Network Function: "
+						<< std::right << std::setw(5)  << it.first
+						<< ", Iface: " 
+						<< std::right << std::setw(8) << it.second 
+		);
+	}
+}
+
+/*
+ * Print the (NF, interface) associated with the NICs of the final Hyper-NF chain.
+ */
+void
+Synthesizer::print_hyper_nf_ifaces_to_nics(void) {
+	for (auto &it : this->hyper_nf_ifaces_to_nics ) {
+		info_chatter (this->log, "\t[Network Function: " 
+						<< std::right << std::setw(5)  << it.first.first
+						<< ", Iface: " 
+						<< std::right << std::setw(8) << it.first.second 
+						<< "] --> NIC: " << it.second
+		);
 	}
 }
 
@@ -365,14 +428,16 @@ TrafficBuilder::traffic_class_builder_dfs(
 			return;
 		}
 		// A way to continue in the chain
-		else if ( (!nf_vertex->is_endpoint()) && (nf_vertex->get_interface() != nf_iface) ) {
+		else if ( (! nf_vertex->is_endpoint()) && (nf_vertex->get_interface() != nf_iface) ) {
 			// Give me the 'good' paths
 			if ( (nf_vertex->get_class() != "Discard") ) {
 				unsigned short next_nf_position = nf_vertex->get_glue_nf_position();
 				std::string next_nf_iface = nf_vertex->get_glue_iface();
 
-				def_chatter  (log, "\t\t -----> JUMP FROM " << nf_vertex->get_name() << "(" << nf_vertex->get_interface() << ")");
-				debug_chatter(log, "\t\t -----> Next Pos: " << next_nf_position << " at iface " << next_nf_iface);
+				def_chatter  (log, "\t\t -----> JUMP FROM " << nf_vertex->get_name() 
+									<< "(" << nf_vertex->get_interface() << ")");
+				debug_chatter(log, "\t\t -----> NEXT POS: " << next_nf_position 
+									<< " at iface " << next_nf_iface);
 
 				// Change context, move to next graph
 				// 1. Change adjacency list
@@ -384,7 +449,8 @@ TrafficBuilder::traffic_class_builder_dfs(
 					if ( input_elem->get_interface() == next_nf_iface ) {
 						nf_vertex = input_elem;
 						found = true;
-						def_chatter(log, "\t\t ----->        TO " << nf_vertex->get_class() <<  "(" << nf_vertex->get_interface() << ")");
+						def_chatter(log, "\t\t ----->        TO " << nf_vertex->get_class() 
+										<<  "(" << nf_vertex->get_interface() << ")");
 						break;
 					}
 				}
@@ -401,16 +467,19 @@ TrafficBuilder::traffic_class_builder_dfs(
 			}
 			// A path that leads to the cliff
 			else {
-				def_chatter(log, "\t\t ----->      DROP " << nf_vertex->get_name() << "(" << nf_vertex->get_interface() << ")");
+				def_chatter(log, "\t\t ----->      DROP " << nf_vertex->get_name() << "(" 
+									<< nf_vertex->get_interface() << ")");
 			}
 		}
 		// Do not chain because a loop will be created
 		else if ( nf_vertex->get_interface() == nf_iface ) {
-			def_chatter(log, "\t\t ----->      LOOP " << nf_vertex->get_name() << "(" << nf_vertex->get_interface() << ")");
+			def_chatter(log, "\t\t ----->      LOOP " << nf_vertex->get_name() << "(" 
+								<< nf_vertex->get_interface() << ")");
 			return;
 		}
 		else {
-			def_chatter(log, "\t\t ----->       BUG " << nf_vertex->get_name() << "(" << nf_vertex->get_interface() << ")");
+			def_chatter(log, "\t\t ----->       BUG " << nf_vertex->get_name() << "(" 
+								<< nf_vertex->get_interface() << ")");
 			return;
 		}
 	}

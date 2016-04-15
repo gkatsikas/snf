@@ -25,33 +25,50 @@
 
 #include <string>
 
+// List of supported header fields
 static const int start = __LINE__;
-#define HEADER(FOO) \
-	FOO(unknown) \
-	FOO(mtu) \
-	FOO(vlan_pcp) \
-	FOO(vlan_vid) \
-	FOO(vlan_dei) \
-	FOO(ip_src) \
-	FOO(ip_dst) \
-	FOO(ip_ihl) \
-	FOO(ip_proto) \
-	FOO(ip_ver) \
-	FOO(ip_id) \
-	FOO(ip_dscp) \
-	FOO(ip_ect) \
-	FOO(ip_ce) \
-	FOO(ip_chksum) \
-	FOO(ip_TTL) \
-	FOO(tp_srcPort) \
-	FOO(tp_dstPort) \
-	FOO(tcp_syn) \
-	FOO(tcp_fin) \
-	FOO(tcp_ack) \
-	FOO(tcp_rst) \
-	FOO(tcp_psh) \
-	FOO(tcp_urg) \
-	FOO(tcp_win)
+#define HEADER(FL) \
+	FL(unknown) \
+	FL(ambiguous_field) \
+	FL(mtu) \
+	FL(vlan_pcp) \
+	FL(vlan_vid) \
+	FL(vlan_dei) \
+	FL(ip_ver) \
+	FL(ip_ihl) \
+	FL(ip_tl) \
+	FL(ip_id) \
+	FL(ip_dscp) \
+	FL(ip_ect) \
+	FL(ip_ce) \
+	FL(ip_TTL) \
+	FL(ip_proto) \
+	FL(ip_chksum) \
+	FL(ip_src) \
+	FL(ip_dst) \
+	FL(icmp_type) \
+	FL(icmp_code) \
+	FL(icmp_chs) \
+	FL(icmp_id) \
+	FL(icmp_seq) \
+	FL(tp_src_port) \
+	FL(tp_dst_port) \
+	FL(udp_len) \
+	FL(udp_chs) \
+	FL(tcp_sec) \
+	FL(tcp_ack) \
+	FL(tcp_off_res) \
+	FL(tcp_flags) \
+	FL(tcp_flag_syn) \
+	FL(tcp_flag_fin) \
+	FL(tcp_flag_ack) \
+	FL(tcp_flag_rst) \
+	FL(tcp_flag_psh) \
+	FL(tcp_flag_urg) \
+	FL(tcp_win) \
+	FL(tcp_chs) \
+	FL(tcp_urg) \
+	FL(tcp_opt)
 static const int end = __LINE__;
 
 #define DO_DESCRIPTION(e) #e,

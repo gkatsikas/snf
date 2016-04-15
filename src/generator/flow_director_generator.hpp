@@ -36,6 +36,7 @@
 #include "generator.hpp"
 
 class FlowDirectorGenerator : public Generator {
+
 	private:
 		/*
 		 * A map <Traffic Class ID, NIC> --> <File Name>

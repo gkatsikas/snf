@@ -12,7 +12,7 @@ SUCCESS=0
 program=$0
 
 function usage {
-	printf "Usage: %s <executable> <input_property_file> [OPTIONAL -d]\n" "$program"
+	printf "Usage: %s <executable> <input_property_file> [OPTIONAL -d]\n"
 	exit $ERROR
 }
 

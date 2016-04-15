@@ -16,7 +16,6 @@ AM_PROG_AR
 AC_PROG_CXXCPP
 AC_PROG_CXX
 #AX_CXX_COMPILE_STDCXX_11 # provided in directory m4
-#AC_SUBST(AM_CXXFLAGS, "-O3 -Wall -std=c++11 -pedantic -Wextra")
 
 LT_INIT
 

@@ -9,6 +9,8 @@
 !* Add "Unsupported Elements" category ==> allow to use unsupported elements anyway
 		--> can still look at (if it applies) the modified/read fields
 
+!!!filter_from_ip_option in ip_filter_parser.cpp creates Filter(ip_proto, 6); for UDP
+
 TODO:
 	* add ID to all elements
 	* add pointer->element in Write operations

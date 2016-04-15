@@ -27,14 +27,15 @@
 #include <memory>
 
 #include "graph.hpp"
+ 
 #include "../shared/helpers.hpp"
-#include "../click/click_parse_configuration.hpp"
+#include "../click/click_parser.hpp"
 
 /*
  * The Parser's graph contains Click Elements as vertices
  */
-class ElementVertex : public Vertex
-{
+class ElementVertex : public Vertex {
+
 	protected:
 		/*
 		 * A shared pointer that maps this vertex with the corresponding Click element
@@ -96,8 +97,8 @@ class ElementVertex : public Vertex
 		void print_info (void);
 };
 
-class NFGraph : public Graph
-{
+class NFGraph : public Graph {
+
 	protected:
 		// Nothing really different from a normal graph
 
@@ -108,7 +109,7 @@ class NFGraph : public Graph
 		/*
 		 * Add u into graph along with all its discovered neighbours
 		 */
-		void add_vertex_and_neighbours(ElementVertex *u);
+		void                   add_vertex_and_neighbours  (ElementVertex *u);
 
 		/*
 		 * Get subset of vertices based on several characteristics.

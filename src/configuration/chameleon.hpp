@@ -25,8 +25,8 @@
 
 #include <string>
 
-class Chameleon
-{
+class Chameleon {
+
 	private:
 		std::string value_;
 

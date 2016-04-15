@@ -21,9 +21,10 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>
  */
 
+#include "chain_parser.hpp"
+
 #include "../shared/helpers.hpp"
 #include "../traffic_class_builder/element_type.hpp"
-#include "chain_parser.hpp"
 
 #include <click/routervisitor.hh>
 
@@ -64,7 +65,6 @@ ChainParser::~ChainParser() {
  */
 bool
 ChainParser::load_nf_configurations(void) {
-	
 	info_chatter(this->log, "");
 
 	// For each NF
@@ -101,7 +101,6 @@ ChainParser::load_nf_configurations(void) {
  */
 bool
 ChainParser::chain_nf_configurations(void) {
-
 	info_chatter(this->log, "");
 	info_chatter(this->log, "==============================================================================");
 	info_chatter(this->log, "Chaining all Click Configurations...");
@@ -130,7 +129,6 @@ ChainParser::chain_nf_configurations(void) {
  */
 bool
 ChainParser::load_nf(const std::string &nf_name, const std::string &nf_source, const unsigned short &position) {
-
 	info_chatter(this->log, "Loading Click Configuration for " << nf_name << ": " << nf_source);
 
 	Router *router = input_a_click_configuration(nf_source.c_str());
@@ -153,7 +151,6 @@ ChainParser::load_nf(const std::string &nf_name, const std::string &nf_source, c
  */
 bool
 ChainParser::build_nf_dag(const std::string &nf_name, const unsigned short &position) {
-
 	Router *router = this->nf_configuration[position];
 
 	if ( !router ) {
@@ -253,8 +250,13 @@ ChainParser::build_nf_dag(const std::string &nf_name, const unsigned short &posi
 	}
 	def_chatter(this->log, "\tClick Graph is acyclic");
 
-	// If acyclic, print the adjacency list
+	// Print the adjacency list
 	nf_graph->print_adjacency_list();
+
+	#ifdef  DEBUG_MODE
+		nf_graph->print_in_degrees();
+		nf_graph->print_topological_sort();
+	#endif
 
 	return DONE;
 }
@@ -486,7 +488,6 @@ ChainParser::verify_and_connect_nfs(const std::string &nf_name, const unsigned s
  */
 ElementVertex*
 ChainParser::find_input_element_of_nf(NFGraph *next_nf_graph, const std::string &target_interface) {
-
 	if ( !next_nf_graph )
 		return NULL;
 
@@ -512,7 +513,6 @@ ChainParser::find_input_element_of_nf(NFGraph *next_nf_graph, const std::string 
 
 Vector<Element*>
 ChainParser::visit_dag(const unsigned short &position) {
-
 	// Storage to put the visited elements
 	Vector<Element*> path_elements;
 
@@ -533,11 +533,15 @@ ChainParser::visit_dag(const unsigned short &position) {
 	path_elements.push_back(first);
 	debug_chatter(this->log, "\tFirst element is " << std::string(first->class_name()));
 
-	// DEPRECATED
+	// Suppress deprecated Click method
+	#pragma GCC diagnostic push
+	#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 	if ( router->downstream_elements(first, port, NULL, path_elements) != SUCCESS ) {
 		error_chatter(this->log, "\tError while traversing NF no " << position << " configuration");
 		return path_elements;
 	}
+	#pragma GCC diagnostic pop
+
 	info_chatter(this->log, "\tNetwork Function is successfully traversed");
 	info_chatter(this->log, "\tFound " << path_elements.size() << " elements");
 

@@ -100,8 +100,9 @@ ElementVertex::set_glue_info(const unsigned short &next_nf_pos, const std::strin
 }
 
 void
-ElementVertex::set_implicit_configuration(const short &port, 
-											const std::vector<std::string> &implicit_conf) {
+ElementVertex::set_implicit_configuration(
+		const short &port, 
+		const std::vector<std::string> &implicit_conf) {
 	this->implicit_configuration[port] = implicit_conf;
 }
 
@@ -137,7 +138,7 @@ NFGraph::add_vertex_and_neighbours(ElementVertex *u) {
 			ElementVertex *v = static_cast<ElementVertex*> ( this->get_vertex_by_position(neighbour->eindex()) );
 
 			// This element is not in the graph. New vertex needs to be created
-			if ( v == NULL ) {
+			if ( !v ) {
 				debug_chatter(this->log, "\t\tNEW " << neighbour->class_name() << ":" << neighbour->eindex());
 				v = new ElementVertex(neighbour, neighbour->class_name(), (unsigned short) neighbour->eindex());
 			}
@@ -149,7 +150,7 @@ NFGraph::add_vertex_and_neighbours(ElementVertex *u) {
 
 			// Backwards search
 			if ( e->router()->visit_upstream(e, i, &tracker) != SUCCESS ) {
-				error_chatter(this->log, "Lost element");
+				error_chatter(this->log, "\t\tLost element");
 			}
 			Vector<Element*> found = tracker.elements();
 
@@ -158,7 +159,7 @@ NFGraph::add_vertex_and_neighbours(ElementVertex *u) {
 				debug_chatter(this->log, "\t\t" << (*j)->class_name() << ":" << (*j)->eindex());
 
 				ElementVertex *v = static_cast<ElementVertex*> ( this->get_vertex_by_position((*j)->eindex()) );
-				if ( v == NULL ) {
+				if ( !v ) {
 					v = new ElementVertex(*j, (*j)->class_name(), (*j)->eindex());
 				}
 				this->add_edge(std::move(v), std::move(u), i);
@@ -188,7 +189,7 @@ NFGraph::add_vertex_and_neighbours(ElementVertex *u) {
 
 			// Forward search
 			if ( e->router()->visit_downstream(e, i, &tracker) != SUCCESS ) {
-				error_chatter(this->log, "Lost element");
+				error_chatter(this->log, "\t\tLost element");
 			}
 			Vector<Element*> found = tracker.elements();
 
@@ -210,7 +211,6 @@ NFGraph::add_vertex_and_neighbours(ElementVertex *u) {
 
 Vector<ElementVertex*>
 NFGraph::get_vertices_by_stage(const VertexType &st) const {
-
 	Vector<ElementVertex*> vertices;
 
 	for (auto &pair : this->vertices) {
@@ -223,7 +223,6 @@ NFGraph::get_vertices_by_stage(const VertexType &st) const {
 
 ElementVertex*
 NFGraph::get_vertex_by_click_element(const Element *e) const {
-
 	for (auto &pair : this->vertices) {
 		ElementVertex *ev = static_cast<ElementVertex*> (pair.first);
 		if ( ev->get_click_element()->eindex() == e->eindex() )
@@ -234,7 +233,6 @@ NFGraph::get_vertex_by_click_element(const Element *e) const {
 
 Vector<ElementVertex*>
 NFGraph::get_all_endpoint_vertices(void) const {
-
 	Vector<ElementVertex*> endpoints;
 
 	for (auto &pair : this->vertices) {
@@ -247,7 +245,6 @@ NFGraph::get_all_endpoint_vertices(void) const {
 
 Vector<ElementVertex*>
 NFGraph::get_endpoint_vertices(const VertexType &t) const {
-
 	Vector<ElementVertex*> endpoints;
 
 	for (auto &pair : this->vertices) {

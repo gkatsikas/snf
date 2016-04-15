@@ -39,6 +39,13 @@
 
 #define TRAFFIC_CLASS_FORMAT
 
+#define DO_DESCRIPTION(e) #e,
+#define DO_ENUM(e) e,
+
+#define insert_last(container, containee) container.insert(container.end(), \
+															containee.begin(), \
+															containee.end())
+
 class ClickElement;
 class StatefulSynthesizer;
 
@@ -46,16 +53,18 @@ class StatefulSynthesizer;
  * Contains one field-specific filter
  */
 class Filter {
-	public:
-		Filter ();
-		Filter (HeaderField field);
-		Filter (HeaderField field, uint32_t value);
-		Filter (HeaderField field, uint32_t lower_value, uint32_t upper_value);
 
-		Filter& intersect     (const Filter &filter); // Intersects this and rhs
-		Filter& unite         (const Filter &filter);
-		Filter& differentiate (const Filter &filter);
-		Filter& translate     (uint32_t value, bool forward=true);
+	public:
+		Filter();
+		Filter(HeaderField field);
+		Filter(HeaderField field, uint32_t value);
+		Filter(HeaderField field, short &pos, short &len);
+		Filter(HeaderField field, uint32_t lower_value, uint32_t upper_value);
+
+		Filter& intersect    (const Filter &filter); // Intersects this and rhs
+		Filter& unite        (const Filter &filter);
+		Filter& differentiate(const Filter &filter);
+		Filter& translate    (uint32_t value, bool forward=true);
 
 		bool operator== (const Filter &rhs) const;
 
@@ -72,10 +81,10 @@ class Filter {
 			HeaderField field, const std::string &args
 		);
 
-		void make_none (void);       // Make this filter refuse all packets
-		bool is_none   (void) const; // Returns true if the filter refuses all packets
-		bool match     (uint32_t       value) const;
-		bool contains  (const Filter &filter) const;
+		void make_none(void);       // Make this filter refuse all packets
+		bool is_none  (void) const; // Returns true if the filter refuses all packets
+		bool match    (uint32_t       value) const;
+		bool contains (const Filter &filter) const;
 
 		HeaderField get_field(void) const;
 		std::string to_str   (void) const;
@@ -92,6 +101,11 @@ class Filter {
 
 	private:
 		HeaderField         m_field;
+		// In case of an ambiguous header field (e.g., DSCP) which is part of a byte, 
+		// we set a specific HeaderField type (position)
+		short               m_field_pos;
+		short               m_field_len;
+
 		DisjointSegmentList m_filter;
 		DisjointSegmentList m_to_subtract;
 
@@ -116,13 +130,13 @@ class Filter {
 /*
  * Condition on a Filter
  */
-class Condition { //FIXME: just inherit Filter?
+class Condition {
 
 	public:
 		Condition(HeaderField, std::shared_ptr<ClickElement>, Filter, FieldOperation);
 
 		bool        is_same_write(const FieldOperation &op) const;
-		bool        intersect    (const Filter &filter); //return true if condition is not empty
+		bool        intersect    (const Filter &filter);  //return true if condition is not empty
 		std::string to_str       (void) const;
 		bool        is_none      (void) const;
 
@@ -154,7 +168,9 @@ class TrafficClass {
 		 * |-> -1 indicates no output port (end of chain)
 		 * Returns the number of updated filters that are equals to None
 		 */
-		int  add_element (std::shared_ptr<ClickElement> element, const int port=-1);
+		int  add_element(
+			std::shared_ptr<ClickElement> element, const int port=-1, unsigned short* wr_op_no=NULL
+		);
 
 		void set_stateful_rewriter (
 			const std::shared_ptr<StatefulSynthesizer> &sf,
@@ -225,6 +241,11 @@ class TrafficClass {
 		bool m_ip_gw_options;
 
 		/*
+		 * Does this traffic class handle fragmented packets?
+		 */
+		bool m_ip_fragmenter;
+
+		/*
 		 * The configuraiton parameters of the EtherEncap element that
 		 * will convert the IP packets into Ethernet frames.
 		 */
@@ -241,12 +262,12 @@ class TrafficClass {
 		Operation m_operation;
 
 		/*
-		 * 
+		 * This traffic class applies stateful rewrite operations (e.g., NAT)
 		 */
 		std::shared_ptr<StatefulSynthesizer> m_stateful;
 
 		/*
-		 * The input port of the IPRewriter that performs NAT.
+		 * The input port of the IPRewriter that performs stateful rewrite operations.
 		 */
 		unsigned short m_stateful_input_port;
 

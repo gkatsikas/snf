@@ -75,42 +75,52 @@ struct ConsolidatedTc {
 };
 
 class Synthesizer {
-	private:
-		/*
-		 * The object that provides the individual NF data structures
-		 */
-		ChainParser *parser;
 
-		/*
-		 * Logger instance
-		 */
-		Logger log;
-		
+	private:
 		/*
 		 * Generated synthesized paths.
 		 * A traffic class specification associated with an input interface.
 		 * |--> {FromDevice --> IPClassifier --> IPRewriter} paths.
 		 */
 		std::unordered_map< std::string, std::unordered_map<std::string, ConsolidatedTc> > 
-			tc_per_input_iface;
+							tc_per_input_iface;
 
 		/*
 		 * A map of output interfaces associated with stateful rewrite operations.
 		 * |--> {IPRewriter --> ToDevice} paths.
 		 */
 		std::unordered_map< std::string, std::shared_ptr<StatefulSynthesizer> > 
-			st_oper_per_out_iface;
+							st_oper_per_out_iface;
 		/*
 		 * The configuration of these interfaces
 		 */
 		std::unordered_map< std::string, std::string > 
-			st_oper_per_out_iface_conf;
+							st_oper_per_out_iface_conf;
 
 		/*
 		 * A vector with the discrete interfaces of the final chain.
+		 * E.g., (NF_1, nf1vif0)
 		 */
 		std::set < std::pair<std::string, std::string> > 
-			hyper_nf_ifaces;
+							hyper_nf_ifaces;
+
+		/*
+		 * A vector with the discrete interfaces of the final chain
+		 * mapped to the actual NICs
+		 * E.g., (NF_1, nf1vif0) --> NIC 0
+		 */
+		std::map < std::pair<std::string, std::string>, std::string >
+							hyper_nf_ifaces_to_nics;
+
+		/*
+		 * Logger instance
+		 */
+		Logger              log;
+
+		/*
+		 * The object that provides the individual NF data structures
+		 */
+		ChainParser         *parser;
 
 		/*
 		 * If hardware_classification is set, one of the following formats are valid:
@@ -119,7 +129,7 @@ class Synthesizer {
 		 * |--> OpenFlow
 		 * Otherwise, Click is the standard way.
 		 */
-		TrafficClassFormat traffic_classification_format;
+		TrafficClassFormat  traffic_classification_format;
 
 	public:
 		/*
@@ -128,8 +138,8 @@ class Synthesizer {
 		Synthesizer (ChainParser *cp);
 		~Synthesizer();
 
-		inline ChainParser* get_chain_parser(void) { return this->parser; };
-		inline std::unordered_map< std::string, std::unordered_map<std::string, ConsolidatedTc> > 
+		inline 
+		std::unordered_map< std::string, std::unordered_map<std::string, ConsolidatedTc> > 
 				get_tc_per_input_iface(void) {
 			return this->tc_per_input_iface;
 		};
@@ -137,16 +147,36 @@ class Synthesizer {
 				get_stateful_rewriter_per_output_iface(void) {
 			return this->st_oper_per_out_iface;
 		};
-		inline std::string get_stateful_rewriter_per_output_iface_conf(const std::string &key) {
+		inline std::string get_stateful_rewriter_per_output_iface_conf(
+				const std::string &key) {
 			return this->st_oper_per_out_iface_conf[key];
 		};
 		inline std::set < std::pair<std::string, std::string> > get_hyper_nf_ifaces(void) {
 			return this->hyper_nf_ifaces;
 		};
+		inline std::map < std::pair<std::string, std::string>, std::string > 
+				get_hyper_nf_ifaces_to_nics     (void) {
+			return this->hyper_nf_ifaces_to_nics;
+		};
+		inline ChainParser* get_chain_parser(void) { return this->parser; };
 
-		short get_hyper_nf_ifaces_no   (void);
-		bool  is_hyper_nf_iface        (const std::string &nf, const std::string &iface);
-		void  print_hyper_nf_ifaces    (void);
+		bool is_hyper_nf_iface (
+			const std::string &nf, const std::string &iface
+		);
+		unsigned short get_hyper_nf_ifaces_no   (void);
+		std::string    get_nic_of_hyper_nf_iface(
+			std::pair<std::string, std::string> nf_iface
+		);
+		std::pair<std::string, std::string> get_hyper_nf_iface_of_nic(
+			std::string nic			
+		);
+
+		void add_nic_of_hyper_nf_iface(
+			std::pair<std::string, std::string> nf_iface, std::string nic
+		);
+		
+		void print_hyper_nf_ifaces        (void);
+		void print_hyper_nf_ifaces_to_nics(void);
 
 		/*
 		 * Traverse the NF DAGs, jump from NF to NF until you reach an
@@ -173,6 +203,7 @@ class Synthesizer {
  * this is a recursive graph composition function.
  */
 namespace TrafficBuilder {
+
 	void traffic_class_builder_dfs(
 		Graph                         *graph,
 		NF_Map<NFGraph*>              nf_chain,
@@ -180,6 +211,7 @@ namespace TrafficBuilder {
 		std::shared_ptr<ClickElement> elem,
 		std::string                   nf_conf
 	);
+
 }
 
 #endif

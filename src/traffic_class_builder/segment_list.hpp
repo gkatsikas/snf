@@ -69,12 +69,12 @@ class DisjointSegmentList {
 		);
 
 	public:
-		DisjointSegmentList  ();
-		DisjointSegmentList  (const DisjointSegmentList &rhs);
-		~DisjointSegmentList ();
+		DisjointSegmentList ();
+		DisjointSegmentList (const DisjointSegmentList &rhs);
+		~DisjointSegmentList();
 
 		// Returns true if the list is empty
-		bool empty() const;
+		bool empty(void) const;
 
 		// Returns true if one of the segments contains value
 		bool contains         (uint32_t value) const;
@@ -82,16 +82,16 @@ class DisjointSegmentList {
 		bool contains_seglist (const DisjointSegmentList &rhs) const;
 
 		// Add a segment to the union
-		void add_segment       (uint32_t lower_limit, uint32_t upper_limit);
-		void add_seglist       (const DisjointSegmentList &rhs);
+		void add_segment      (uint32_t lower_limit, uint32_t upper_limit);
+		void add_seglist      (const DisjointSegmentList &rhs);
 		// Differentiate the union from a segment
-		void substract_segment (uint32_t lower_limit, uint32_t upper_limit);
-		void substract_seglist (const DisjointSegmentList &rhs);
+		void substract_segment(uint32_t lower_limit, uint32_t upper_limit);
+		void substract_seglist(const DisjointSegmentList &rhs);
 		// Intersect the union with a segment
-		void intersect_segment (uint32_t lower_limit, uint32_t upper_limit);
-		void intersect_seglist (const DisjointSegmentList &rhs);
+		void intersect_segment(uint32_t lower_limit, uint32_t upper_limit);
+		void intersect_seglist(const DisjointSegmentList &rhs);
 		// Translate all the segments by value, either forward or backwards
-		void translate         (uint32_t value,bool forward=true);
+		void translate        (uint32_t value,bool forward=true);
 
 		DisjointSegmentList& operator= (const DisjointSegmentList &rhs);
 		bool operator== (const DisjointSegmentList &rhs) const;

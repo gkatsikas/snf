@@ -2,6 +2,7 @@
 noinst_LIBRARIES = 	libseglist.a \
 					libop.a \
 					libfilter.a \
+					libhexfilterparser.a \
 					libipfilterparser.a \
 					liboutputclass.a \
 					libclickelement.a \
@@ -33,12 +34,21 @@ libfilter_a_LIBADD   = 	libop.a
 #####################################################################################
 
 #####################################################################################
+# Hex Filter Parser
+libhexfilterparser_a_SOURCES = 	hex_filter_parser.cpp \
+								hex_filter_parser.hpp
+
+# Linked with
+libhexfilterparser_a_LIBADD  = 	libfilter.a
+#####################################################################################
+
+#####################################################################################
 # IP Filter Parser
 libipfilterparser_a_SOURCES  = 	ip_filter_parser.cpp \
 								ip_filter_parser.hpp
 
 # Linked with
-libipfilterparser_a_LIBADD = 	libfilter.a
+libipfilterparser_a_LIBADD   = 	libfilter.a
 #####################################################################################
 
 #####################################################################################

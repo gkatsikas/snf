@@ -31,7 +31,7 @@ Chameleon::Chameleon(const bool &b)            : value_(std::to_string(b)) {}
 
 Chameleon::Chameleon(const double &d)          : value_(std::to_string(d)) {}
 
-Chameleon::Chameleon(const char* c)            : value_(c){}
+Chameleon::Chameleon(const char *c)            : value_(c){}
 
 Chameleon::Chameleon(std::string const &value) : value_(value) {}
 

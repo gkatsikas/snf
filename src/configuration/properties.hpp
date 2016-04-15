@@ -34,11 +34,12 @@
 #define DEFAULT_HYPER_NF_OUT_FOLDER static_cast<std::string> ("./results/")
 
 // Default filename to save the synthesized Click (and RSS) configuration(s)
-#define DEFAULT_HYPER_NF_CONF_NAME static_cast<std::string> ("synth-nf")
+#define DEFAULT_HYPER_NF_CONF_NAME  static_cast<std::string> ("synth-nf")
 
 // Indicative defaults
 #define DEFAULT_CPU_CORES_NO     16
 #define DEFAULT_CPU_SOCKETS_NO   2
+#define DEFAULT_NUMBER_OF_NICS   2
 #define DEFAULT_NIC_HW_QUEUES_NO 128
 
 // Indicative upper-bounds
@@ -65,10 +66,10 @@ enum TrafficClassFormat {
  * above types.
  */
 const std::unordered_map<std::string, TrafficClassFormat> TCLabelToFormat = {
-	{static_cast<std::string> ("Click"),         Click         },
-	{static_cast<std::string> ("RSS-Hashing"),   RSS_Hashing   },
-	{static_cast<std::string> ("Flow-Director"), Flow_Director },
-	{static_cast<std::string> ("OpenFlow"),      OpenFlow      }
+	{"Click",         Click         },
+	{"RSS-Hashing",   RSS_Hashing   },
+	{"Flow-Director", Flow_Director },
+	{"OpenFlow",      OpenFlow      }
 };
 
 // Default method to classify the traffic.
@@ -87,21 +88,46 @@ enum ProcessingLayer {
 };
 
 /*
- * Convert the property value given by the user (string) to one of the
+ * Convert the processing layer given by the user (string) to one of the
  * above types.
  */
 const std::unordered_map<std::string, ProcessingLayer> ProcLayerToNumber = {
-	{static_cast<std::string> ("L2"), L2 },
-	{static_cast<std::string> ("L3"), L3 }
+	{"L2", L2 },
+	{"L3", L3 }
 };
 
-// Default Click processing layer for Hyper-NF.
+// Default processing layer for Hyper-NF.
 #define DEFAULT_PROC_LAYER L3
+
+/*
+ * Possible traffic processing layers
+ * |--> SingleCore:   One core does only I/O across all queues of a NIC; 
+ *                    other cores (in the same socket) do only processing.
+ *                    Involves inter-core communication (via the shared cache).
+ * |--> ShareNothing: One core/queue does both I/O and processing for this queue.
+ */
+enum IOMode {
+	SingleCore,
+	ShareNothing
+};
+
+/*
+ * Convert the I/O mode given by the user (string) to one of the
+ * above types.
+ */
+const std::unordered_map<std::string, IOMode> IOModeToNumber = {
+	{"SingleCore",   SingleCore   },
+	{"ShareNothing", ShareNothing }
+};
+
+// Default processing layer for Hyper-NF.
+#define DEFAULT_IO_MODE SingleCore
 
 /*
  * Class that groups useful system properties for Hyper-NF.
  */
 class Properties {
+
 	private:
 		/*
 		 * Output folder. This is where Hyper-NF Generator places the output files.
@@ -139,32 +165,49 @@ class Properties {
 		 * The network stack layer where Hyper-NF will process input traffic.
 		 * Possible values are L2, L3
 		 */
-		ProcessingLayer   proc_layer;
+		ProcessingLayer    proc_layer;
+
+		/*
+		 * The way that the multi-core Hyper-NF performs packet I/O.
+		 * |--> In SingleCore mode one core per NIC is dedicated to do only this task.
+		 *      In NUMA architectures, the reamining cores in the same socket exchange 
+		 *      packets via the LLC to do the processing.
+		 * |--> In ShareNothing mode, one core reads, processes, and writes packets in 
+		 *      one queue. This does not involve inter-core communication if we use 
+		 *      symmetric RSS to assign both directions of a flow to the same core.
+		 */
+		IOMode             io_mode;
 
 		/*
 		 * Boolean that indicates whether the target system supports
 		 * Non-Uniform Memory Access (NUMA).
 		 * This helps to do core allocation.
 		 */
-		bool              numa;
+		bool               numa;
 
 		/*
 		 * How many CPU sockets the target system has.
 		 * This helps to do core allocation.
 		 */
-		unsigned short    cpu_sockets_no;
+		unsigned short     cpu_sockets_no;
 
 		/*
 		 * How many CPU cores (in total) the target system has.
 		 * This helps to do core allocation.
 		 */
-		unsigned short    cpu_cores_no;
+		unsigned short     cpu_cores_no;
+
+		/*
+		 * The NICs to be (potentially) used by multi-core Hyper-NF.
+		 * In fact, Hyper-NF can use up to this number, depending on the input chain.
+		 */
+		unsigned short     number_of_nics;
 
 		/*
 		 * How many hardware queues the target system's NIC has.
 		 * This helps to do core allocation per queue.
 		 */
-		unsigned short    nic_hw_queues_no;
+		unsigned short     nic_hw_queues_no;
 
 		/*
 		 * Instead of simply attaching FromDPDKDevice elements to different NIC queues (and cores)
@@ -172,7 +215,7 @@ class Properties {
 		 * This might not always increase the throughput of Hyper-NF as inter-core communication
 		 * might be increased without any reason.
 		 */
-		bool              rss_aggressive_pinning;
+		bool               rss_aggressive_pinning;
 
 	public:
 
@@ -186,8 +229,10 @@ class Properties {
 			this->hardware_classification       = false;
 			this->traffic_classification_format = DEFAULT_TC_FORMAT;
 			this->proc_layer                    = DEFAULT_PROC_LAYER;
+			this->io_mode                       = DEFAULT_IO_MODE;
 			this->cpu_sockets_no                = DEFAULT_CPU_SOCKETS_NO;
 			this->cpu_cores_no                  = DEFAULT_CPU_CORES_NO;
+			this->number_of_nics                = DEFAULT_NUMBER_OF_NICS;
 			this->nic_hw_queues_no              = DEFAULT_NIC_HW_QUEUES_NO;
 			this->rss_aggressive_pinning        = false;
 		};
@@ -197,31 +242,34 @@ class Properties {
 		 */
 		Properties(
 			const std::string &out_fold, const std::string &out_file, const bool &hw_class, 
-			const TrafficClassFormat &tc_format, const ProcessingLayer &p_layer, 
+			const TrafficClassFormat &tc_format, const ProcessingLayer &p_layer, const IOMode &io_md,
 			const bool &nm, const unsigned short &sockets_no, const unsigned short &cores_no,
-			const unsigned short &nic_queues, const bool &rss_aggr_pin): 
+			const unsigned short &nics_no, const unsigned short &nic_queues, 
+			const bool &rss_aggr_pin): 
 			output_folder(out_fold), output_filename(out_file), hardware_classification(hw_class),
-			traffic_classification_format(tc_format), proc_layer(p_layer), numa(nm),
-			cpu_sockets_no(sockets_no), cpu_cores_no(cores_no), nic_hw_queues_no(nic_queues),
-			rss_aggressive_pinning(rss_aggr_pin)
+			traffic_classification_format(tc_format), proc_layer(p_layer), io_mode(io_md), numa(nm),
+			cpu_sockets_no(sockets_no), cpu_cores_no(cores_no), number_of_nics(nics_no),
+			nic_hw_queues_no(nic_queues), rss_aggressive_pinning(rss_aggr_pin)
 			{};
 
 		/*
 		 * Getters
 		 */
-		inline bool               has_numa                          (void) const { return this->numa; };
-		inline bool               has_hardware_classification       (void) const { return this->hardware_classification; };
-		inline TrafficClassFormat get_traffic_classification_format (void) const {
+		inline bool               has_numa                         (void) const { return this->numa; };
+		inline bool               has_hardware_classification      (void) const { return this->hardware_classification; };
+		inline TrafficClassFormat get_traffic_classification_format(void) const {
 			return this->traffic_classification_format;
 		};
 
-		inline std::string        get_output_folder         (void) const { return this->output_folder;       };
-		inline std::string        get_output_filename       (void) const { return this->output_filename;     };
-		inline ProcessingLayer    get_processing_layer      (void) const { return this->proc_layer;          };
+		inline std::string        get_output_folder         (void) const { return this->output_folder;          };
+		inline std::string        get_output_filename       (void) const { return this->output_filename;        };
+		inline ProcessingLayer    get_processing_layer      (void) const { return this->proc_layer;             };
+		inline IOMode             get_io_mode               (void) const { return this->io_mode;                };
 
-		inline unsigned short     get_cpu_cores_no          (void) const { return this->cpu_cores_no;        };
-		inline unsigned short     get_cpu_sockets_no        (void) const { return this->cpu_sockets_no;      };
-		inline unsigned short     get_nic_hw_queues_no      (void) const { return this->nic_hw_queues_no;    };
+		inline unsigned short     get_cpu_cores_no          (void) const { return this->cpu_cores_no;           };
+		inline unsigned short     get_cpu_sockets_no        (void) const { return this->cpu_sockets_no;         };
+		inline unsigned short     get_number_of_nics        (void) const { return this->number_of_nics;         };
+		inline unsigned short     get_nic_hw_queues_no      (void) const { return this->nic_hw_queues_no;       };
 
 		inline bool               get_rss_aggressive_pinning(void) const { return this->rss_aggressive_pinning; };
 
@@ -247,6 +295,10 @@ class Properties {
 			assert ( (p_layer == L2) || (p_layer == L3) );
 			this->proc_layer = p_layer;
 		}
+		inline void set_io_mode                      (const IOMode &io_md) {
+			assert ( (io_md == SingleCore) || (io_md == ShareNothing) );
+			this->io_mode = io_md;
+		}
 		inline void set_cpu_cores_no                 (const unsigned short &cores_no)   {
 			assert ( (cores_no > 0) && (cores_no < MAX_CPU_CORES_NO) );
 			this->cpu_cores_no = cores_no;
@@ -254,6 +306,10 @@ class Properties {
 		inline void set_cpu_sockets_no               (const unsigned short &sockets_no) {
 			assert ( (sockets_no > 0) && (sockets_no < MAX_CPU_SOCKETS_NO) );
 			this->cpu_sockets_no = sockets_no;
+		}
+		inline void set_number_of_nics               (const unsigned short &nics_no) {
+			assert ( (nics_no > 0) );
+			this->number_of_nics = nics_no;
 		}
 		inline void set_nic_hw_queues_no             (const unsigned short &nic_queues) {
 			assert ( (nic_queues > 0) && (nic_queues < MAX_NIC_HW_QUEUES_NO) );
@@ -279,12 +335,12 @@ inline const std::string tc_to_label(const TrafficClassFormat &tc_format) {
 		case OpenFlow:
 			return std::string("OpenFlow");
 		default:
-			throw std::runtime_error("Unknown Traffic Class format");
+			throw std::runtime_error("Unknown traffic class format");
 	}
 }
 
 /*
- * Translate the traffic classification enum type to text.
+ * Translate the processing layer enum type to text.
  */
 inline const std::string proc_layer_to_label(const ProcessingLayer &p_layer) {
 	switch (p_layer) {
@@ -294,6 +350,20 @@ inline const std::string proc_layer_to_label(const ProcessingLayer &p_layer) {
 			return std::string("L3");
 		default:
 			throw std::runtime_error("Unknown traffic processing layer");
+	}
+}
+
+/*
+ * Translate the I/O mode enum type to text.
+ */
+inline const std::string io_mode_to_label(const IOMode &io_md) {
+	switch (io_md) {
+		case SingleCore:
+			return std::string("SingleCore");
+		case ShareNothing:
+			return std::string("ShareNothing");
+		default:
+			throw std::runtime_error("Unknown I/O mode");
 	}
 }
 

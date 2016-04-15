@@ -33,12 +33,12 @@
 #include "openflow_generator.hpp"
 
 OpenFlowGenerator::OpenFlowGenerator(Synthesizer *synth) : Generator(synth) {
-	def_chatter(this->log, "\tOpenFlow-based generator constructed");
+	def_chatter(this->log, "\tOpenFlow-based Hyper-NF generator constructed");
 }
 
 OpenFlowGenerator::~OpenFlowGenerator() {
 	delete this->synthesizer;
-	def_chatter(this->log, "\tOpenFlow-based generator deleted");
+	def_chatter(this->log, "\tOpenFlow-based Hyper-NF generator deleted");
 }
 
 /*
@@ -82,6 +82,6 @@ OpenFlowGenerator::generate_openflow_split_pipelines (const bool &to_file) {
 		//delete hard_out_file;
 	}
 
-	MISSING_FEATURE(this->log, "OpenFlow traffic class generator not implemented");
+	MISSING_FEATURE(this->log, "OpenFlow traffic class generator not implemented yet");
 	return DONE;
 }

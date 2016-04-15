@@ -23,11 +23,11 @@
 #include "soft_generator.hpp"
 
 SoftGenerator::SoftGenerator(Synthesizer *synth) : Generator(synth) {
-	def_chatter(this->log, "\tSoftware-based generator constructed");
+	def_chatter(this->log, "\tSoftware-based, single-core Hyper-NF generator constructed");
 }
 
 SoftGenerator::~SoftGenerator() {
-	def_chatter(this->log, "\tSoftware-based generator deleted");
+	def_chatter(this->log, "\tSoftware-based, single-core Hyper-NF generator deleted");
 }
 
 /*
@@ -44,13 +44,13 @@ SoftGenerator::generate_equivalent_configuration(const bool to_file) {
  */
 bool
 SoftGenerator::generate_all_in_soft_configuration(const bool &to_file) {
-
 	std::ofstream  *out_file = NULL;
 	std::streambuf *def_cout = NULL;
 	std::stringstream config_stream;
 
-	def_chatter(this->log, "\tAll-in-Software Hyper-NF Generator...");
-	//this->synthesizer->print_hyper_nf_ifaces();
+	#ifdef DEBUG_MODE
+		this->synthesizer->print_hyper_nf_ifaces();
+	#endif
 
 	// Step 1: Write some static information about the interfaces'
 	// addressing of the Hyper-NF configuration.
@@ -65,6 +65,8 @@ SoftGenerator::generate_all_in_soft_configuration(const bool &to_file) {
 	if ( ! this->generate_write_and_output_part_of_synthesis(config_stream) ) {
 		return TO_BOOL(CODE_GENERATION_PROBLEM);
 	}
+
+	this->synthesizer->print_hyper_nf_ifaces_to_nics();
 
 	// Step 3: Construct the IPClassifier(s) and the path of Click elements
 	// that lead to all its/their traffic classes.
@@ -102,7 +104,7 @@ SoftGenerator::generate_all_in_soft_configuration(const bool &to_file) {
 	}
 
 	def_chatter(this->log,	"\tSuccessfully generated the NF chain synthesis to: \n" << 
-							"\t\t\t\t\t\t\t\t|--> " << this->soft_configuration_filename);
+							"\t\t\t\t\t\t\t|--> " << this->soft_configuration_filename);
 
 	return DONE;
 }
@@ -127,22 +129,23 @@ SoftGenerator::generate_input_part_of_synthesis(
 	config_stream << "// The input-part of the synthesized Hyper-NF code"              << std::endl;
 	config_stream << "///////////////////////////////////////////////////////////////" << std::endl;
 
+	std::string decap = (this->proc_layer == L3)? \
+						"Strip(14) -> MarkIPHeader()" : 
+						"MarkIPHeader(OFFSET 14)";
+
+	std::vector< std::string > driven_nics;
+
 	for (auto &it : nic_to_ip_classifier) {
 
 		std::string nic      = it.first;
 		std::string ipc_name = it.second;
-
-		std::string decap;
-		decap = (this->proc_layer == L3)? \
-						"Strip(14) -> MarkIPHeader()" : 
-						"MarkIPHeader(OFFSET 14)";
 
 		#ifdef HAVE_DPDK
 		config_stream << 	"FromDPDKDevice(" << nic
 							<< ", BURST $burst, NDESC $rxNdesc) -> " 
 							<< decap << " -> " 
 							#ifdef  DEBUG_MODE
-							<< "IPPrint(NIC" + nic + ", LENGTH true, TTL true) -> " // Check what is received by the NIC
+							<< "IPPrint(NIC" + nic + ", LENGTH true, TTL true) -> "
 							#endif
 							<< ipc_name << ";"
 							<< std::endl;
@@ -151,9 +154,43 @@ SoftGenerator::generate_input_part_of_synthesis(
 							<< ", SNAPLEN $mtuSize, PROMISC true, METHOD $ioMethod, SNIFFER false) -> " 
 							<< decap << " -> " 
 							#ifdef  DEBUG_MODE
-							<< "IPPrint(NIC" + nic + ", LENGTH true, TTL true) -> " // Check what is received by the NIC
+							<< "IPPrint(NIC" + nic + ", LENGTH true, TTL true) -> "
 							#endif
 							<< ipc_name << ";" << std::endl;
+		#endif
+
+		driven_nics.push_back(nic);
+	}
+
+	if ( driven_nics.size() == this->synthesizer->get_hyper_nf_ifaces_no() ) {
+		return DONE;
+	}
+
+	// There are interfaces that sit behind proxies
+	// These interfaces can access the chain only in-response
+	// to already initiated traffic request from inside.
+	for ( auto &pair_if : this->synthesizer->get_hyper_nf_ifaces() ) {
+
+		std::string nic = this->synthesizer->get_nic_of_hyper_nf_iface(pair_if);
+
+		if( exists_in_vector(driven_nics, nic) ) continue;
+
+		#ifdef HAVE_DPDK
+		config_stream << 	"FromDPDKDevice(" << nic
+							<< ", BURST $burst, NDESC $rxNdesc) -> " 
+							<< decap << " -> " 
+							#ifdef  DEBUG_MODE
+							<< "IPPrint(NIC" + nic + ", LENGTH true, TTL true) -> "
+							#endif
+							<< "Discard();" << std::endl;
+		#else
+		config_stream << 	"FromDevice(" << nic
+							<< ", SNAPLEN $mtuSize, PROMISC true, METHOD $ioMethod, SNIFFER false) -> " 
+							<< decap << " -> " 
+							#ifdef  DEBUG_MODE
+							<< "IPPrint(NIC" + nic + ", LENGTH true, TTL true) -> "
+							#endif
+							<< "Discard();" << std::endl;
 		#endif
 	}
 
@@ -212,11 +249,12 @@ SoftGenerator::generate_read_part_of_synthesis(
  */
 bool
 SoftGenerator::generate_write_and_output_part_of_synthesis(std::stringstream &config_stream) {
-
 	config_stream << "///////////////////////////////////////////////////////////////" << std::endl;
 	config_stream << "// The write and output parts of the synthesized Hyper-NF code"  << std::endl;
 	config_stream << "///////////////////////////////////////////////////////////////" << std::endl;
 	config_stream << std::endl;
+
+	int cur_hyper_nf_iface = -1;
 
 	// Costruct the path of Click elements that will lead this modified
 	// (i.e., rewritten by Click IPRewriter already) traffic class out 
@@ -230,44 +268,49 @@ SoftGenerator::generate_write_and_output_part_of_synthesis(std::stringstream &co
 		std::string nf    = token[0];
 		std::string iface = token[1];
 
-		// The statefule Rewriter of this path
+		// Hyper-NF's configuration to be filled below
+		std::string hyper_nf_iface = out_nf_and_iface;    // Initialized here, might change below
+		std::string hyper_nf_encap_conf;
+		std::string hyper_nf_to_device;
+
+		// The stateful Rewriter of this path
 		auto rewriter = it.second;
 
-		// If we meet the interface of the first NF, it means that we go backwards.
-		// Processing layer arguments determines whether we strip Ethernet headers or not.
-		// The MAC addresses are set accordingly.
-		#ifdef HAVE_DPDK
-		unsigned short dpdk_iface;
-		#endif
-		std::string encap;
-		if ( nf == "NF_1" ) {
+		// Get the DAG's vertex that corresponds to this NF
+		ChainVertex *this_nf = static_cast<ChainVertex*> (
+			this->synthesizer->get_chain_parser()->get_chain_graph()->get_chain()->get_vertex_by_name(nf)
+		);
+
+		// This interface is the very first one
+		if ( (nf == "NF_1") && this_nf->has_entry_interface(iface) ) {
 			#ifdef HAVE_DPDK
-			dpdk_iface = 0;
+				hyper_nf_iface = std::to_string(0);
 			#endif
 
-			encap = (this->proc_layer == L3)? \
+			hyper_nf_encap_conf = (this->proc_layer == L3)? \
 						"EtherEncap(0x0800, $macAddr0, $gwMACAddr0)" : 
 						"StoreEtherAddress($gwMACAddr0, dst)";
 		}
-		// If we meet the interface of the last NF, it means that we go forward
 		else {
 			#ifdef HAVE_DPDK
-			dpdk_iface = 1;
+				if ( cur_hyper_nf_iface < 0 ) {
+					cur_hyper_nf_iface = 1;
+				}
+				hyper_nf_iface = std::to_string(cur_hyper_nf_iface++);
 			#endif
 
-			encap = (this->proc_layer == L3)? \
+			hyper_nf_encap_conf = (this->proc_layer == L3)? \
 						"EtherEncap(0x0800, $macAddr1, $gwMACAddr1)" : 
 						"StoreEtherAddress($gwMACAddr1, dst)";
 		}
 
-		// If --enable-dpdk=yes, a FromDPDKDevice is used instead of regualar FromDevice
-		std::string to_device;
+		// If --enable-dpdk=yes, a FromDPDKDevice is used instead of regular FromDevice
 		#ifdef HAVE_DPDK
-		to_device = "ToDPDKDevice(" + std::to_string(dpdk_iface) + ", BURST $burst, NDESC $txNdesc, IQUEUE $queueSize, TIMEOUT -1);";
+			hyper_nf_to_device = "ToDPDKDevice(" + hyper_nf_iface + ", BURST $burst, NDESC $txNdesc, IQUEUE $queueSize, TIMEOUT -1);";
 		#else
-		std::string iface_config = out_nf_and_iface + ", " +
-									this->synthesizer->get_stateful_rewriter_per_output_iface_conf(out_nf_and_iface);
-		to_device = "Queue($queueSize) -> ToDevice(" + iface_config + ", BURST $burst, METHOD $);";
+			std::string iface_config = 	hyper_nf_iface + ", " + 
+										this->synthesizer->get_stateful_rewriter_per_output_iface_conf(out_nf_and_iface);
+			hyper_nf_to_device = "Queue($queueSize) -> ToDevice(" + iface_config + ", BURST $burst, METHOD $ioMethod);";
 		#endif
 
 		config_stream 	<< "/** Stateful Path going to: " << out_nf_and_iface << " **/" << std::endl;
@@ -276,19 +319,22 @@ SoftGenerator::generate_write_and_output_part_of_synthesis(std::stringstream &co
 
 		// Only a Hyper-NF interface will take a ToDevice element.
 		if ( this->synthesizer->is_hyper_nf_iface(nf, iface) ) {
+			this->synthesizer->add_nic_of_hyper_nf_iface( std::make_pair(nf, iface), hyper_nf_iface );
 			config_stream 	<< rewriter->get_name() << "[" << rewriter->get_outbound_port()
-							<< "] -> " << encap << " -> " + to_device << std::endl;
+							<< "] -> " << hyper_nf_encap_conf << " -> " + hyper_nf_to_device << std::endl;
 		}
-		// Be careful, some interfaces that appear here are internal.
-		// These need to be discarded.
+		// Be careful, some interfaces that appear here are internal. These need to be discarded.
 		else {
 			config_stream 	<< rewriter->get_name() << "[" << rewriter->get_outbound_port()
-							<< "] -> Discard();" << std::endl;
+							<< "] -> IPPrint(Discarded-Path) "
+							<< "-> Discard();" << std::endl;
 		}
 		
 		// Discarded paths
-		for(unsigned short j=0; j<rewriter->get_outbound_port(); j++) {
-			config_stream 	<< rewriter->get_name() << "[" << j << "] -> Discard();" << std::endl;
+		for(unsigned short disc=0; disc<rewriter->get_outbound_port(); disc++) {
+			config_stream 	<< rewriter->get_name() << "[" << disc 
+							<< "] -> IPPrint(Discarded-Path) "
+							<< "-> Discard();" << std::endl;
 		}
 
 		config_stream << std::endl;

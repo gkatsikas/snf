@@ -30,6 +30,7 @@
 #include "generator.hpp"
 
 class SoftGenerator : public Generator {
+
 	private:
 		// Nothing special
 

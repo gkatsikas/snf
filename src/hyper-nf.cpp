@@ -349,8 +349,7 @@ main(int argc, char **argv) {
 	info_chatter(main_log, "");
 	note_chatter(main_log, "\t=================================================================================");
 	note_chatter(main_log, "\t==== Hyper-NF Configuration in: " + output_files);
-	note_chatter(main_log, "\t==== Total Execution Time: " + std::to_string(float(total_exec_time)/1000) + 
-							" milliseconds");
+	note_chatter(main_log, "\t==== Total Execution Time: " << float(total_exec_time)/1000 <<	 " milliseconds");
 	note_chatter(main_log, "\t=================================================================================");
 
 	exit(SUCCESS);

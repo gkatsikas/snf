@@ -28,7 +28,7 @@ int main () {
 
 	TrafficClass test_tc;
 	test_tc.intersect_filter(Filter(ip_dst,aton("200.0.0.2")));
-	test_tc.intersect_filter(Filter(tp_dstPort, 1234));
+	test_tc.intersect_filter(Filter(tp_dst_port, 1234));
 	test_tc.intersect_filter(Filter(ip_proto,17));
 	
 	while (size < MAX_NUMBER_CLASSES) {
@@ -58,12 +58,12 @@ int main () {
 
 				tc.intersect_filter(f);
 
-				f = Filter(tp_dstPort);
+				f = Filter(tp_dst_port);
 				f.make_none();
 
 				for(int k=0; k<ALLOWED_PORTS; k++) {
 					dice_roll = distribution(generator);
-					f.unite(Filter(tp_dstPort,dice_roll));
+					f.unite(Filter(tp_dst_port,dice_roll));
 				}
 
 				tc.intersect_filter(f);

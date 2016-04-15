@@ -211,19 +211,31 @@ ChainVertex::print_info(void) {
 void
 ChainVertex::print_entry_interface_map(void) {
 	#ifdef VERBOSE_MODE
+
 	for ( auto &kv : this->entry_interfaces ) {
+		std::string mac = (kv.second.first.empty()) ? "-" : kv.second.first;
 		info_chatter(this->log, "\t" << this->get_name() << "-> [Interface: " << kv.first <<
-					", [MAC: " << kv.second.first << ", Domain: " << kv.second.second << "] ]");
+					", [MAC: " << mac << ", Domain: " << kv.second.second << "] ]");
 	}
+	if ( this->entry_interfaces.size() == 0 ) {
+		info_chatter(this->log, "\tEmpty");
+	}
+
 	#endif
 }
 
 void
 ChainVertex::print_chain_interface_map(void) {
 	#ifdef VERBOSE_MODE
+
 	for ( auto &kv : this->chain_interfaces ) {
+		std::string mac = (kv.second.first.empty()) ? "-" : kv.second.first;
 		info_chatter(this->log, "\t" << this->get_name() << "-> [Interface: " << kv.first << 
-					", [MAC: " << kv.second.first << ", NF: " << kv.second.second << "] ]");
+					", [MAC: " << mac << ", NF: " << kv.second.second << "] ]");
 	}
+	if ( this->chain_interfaces.size() == 0 ) {
+		info_chatter(this->log, "\tEmpty");
+	}
+
 	#endif
 }

@@ -30,6 +30,7 @@
 #include "../synthesizer/synthesizer.hpp"
 
 class Generator {
+
 	protected:
 		/*
 		 * Generate the synthesis as a combination of Intel-RSS rules for the NIC

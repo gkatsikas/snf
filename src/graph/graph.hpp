@@ -36,8 +36,8 @@ enum Colour { White, Grey, Black };
 /*
  * A Directed Graph
  */
-class Graph
-{
+class Graph {
+
 	public:
 		/*
 		 * Data structures
@@ -91,18 +91,18 @@ class Graph
 		std::vector<std::pair<unsigned short, Vertex*>> get_vertex_children_and_ports(Vertex *u) const ;
 
 		/*
+		 * Graph features
+		 */
+		std::vector<Vertex*>   get_vertex_order(void);
+		std::vector<Vertex*>   topological_sort(void);
+
+		/*
 		 * Printouts
 		 */
 		void print_in_degrees      (void);
 		void print_adjacency_list  (void);
 		void print_vertex_order    (void);
 		void print_topological_sort(void);
-
-		/*
-		 * Graph features
-		 */
-		std::vector<Vertex*> get_vertex_order(void);
-		std::vector<Vertex*> topological_sort(void);
 };
 
 /*

@@ -26,12 +26,13 @@
 #include <unordered_map>
 
 #include "../graph/nf_graph.hpp"
-#include "../configuration/parser_configuration.hpp"
+#include "../configuration/parser_config.hpp"
 
 template<typename T>
 using NF_Map = std::unordered_map<unsigned short, T>;
 
 class ChainParser {
+
 	private:
 		/*
 		 * The length of the chain

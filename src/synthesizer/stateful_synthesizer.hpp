@@ -48,9 +48,9 @@ class StatefulSynthesizer {
 		/*
 		 * Logger instance
 		 */
-		Logger log;
+		Logger                   log;
 		
-		static int count;
+		static int               count;
 
 		std::string              m_name;
 		std::vector<std::string> m_conf_string;

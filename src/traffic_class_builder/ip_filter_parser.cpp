@@ -1,7 +1,7 @@
 // -*- c-basic-offset: 4 -*-
 /* ip_filter_parser.cpp
  * 
- * Implementation of the methods that parse the filters of 
+ * Implementation of the methods that parse the IP filters of 
  * Hyper-NF's traffic classes.
  *
  * Copyright (c) 2015-2016 KTH Royal Institute of Technology
@@ -28,19 +28,15 @@
 
 #include "ip_filter_parser.hpp"
 
-Logger lg(__FILE__);
-
-#define insert_last(container,containee) container.insert(container.end(), \
-														containee.begin(), \
-														containee.end())
+Logger ip_par_lg(__FILE__);
 
 std::vector<PacketFilter>
-negate_pf (const PacketFilter &pf) {
+negate_pf(const PacketFilter &pf) {
 	std::vector<PacketFilter> pf_vec;
 	for (auto &it : pf) {
 		PacketFilter new_pf;
 		new_pf[it.first] = (Filter(it.first)).differentiate(it.second);
-		if (!new_pf[it.first].is_none()) {
+		if ( !new_pf[it.first].is_none() ) {
 			pf_vec.push_back(new_pf);
 		}
 	}
@@ -48,10 +44,10 @@ negate_pf (const PacketFilter &pf) {
 }
 
 bool
-add_filter_to_pf (PacketFilter &base_pf, const Filter &f) {
-	HeaderField field = f.get_field ();
+add_filter_to_pf(PacketFilter &base_pf, const Filter &f) {
+	HeaderField field = f.get_field();
 	auto got = base_pf.find(field);
-	if(got == base_pf.end()) {
+	if ( got == base_pf.end() ) {
 		base_pf[field] = f;
 	}
 	else {
@@ -61,7 +57,7 @@ add_filter_to_pf (PacketFilter &base_pf, const Filter &f) {
 }
 
 std::vector<PacketFilter>
-and_pf_vec (const std::vector<PacketFilter> &a, const std::vector<PacketFilter> &b) {
+and_pf_vec(const std::vector<PacketFilter> &a, const std::vector<PacketFilter> &b) {
 	std::vector<PacketFilter> result;
 	int is_none;
 	PacketFilter temp_pf;
@@ -70,7 +66,7 @@ and_pf_vec (const std::vector<PacketFilter> &a, const std::vector<PacketFilter> 
 			temp_pf = it1;
 			is_none = 0;
 			for	(auto &filter : it2) {
-				is_none += add_filter_to_pf (temp_pf, filter.second);
+				is_none += add_filter_to_pf(temp_pf, filter.second);
 			}
 			if (!is_none) {
 				result.push_back(temp_pf);
@@ -81,7 +77,7 @@ and_pf_vec (const std::vector<PacketFilter> &a, const std::vector<PacketFilter> 
 }
 
 std::vector<PacketFilter>
-negate_pf_vec (const std::vector<PacketFilter> &vec) {
+negate_pf_vec(const std::vector<PacketFilter> &vec) {
 	std::vector<PacketFilter> result;
 	result.push_back(PacketFilter());
 	for (auto &it : vec) {
@@ -96,21 +92,47 @@ reset_pf_vec(std::vector<PacketFilter> &vec) {
 	vec.push_back(PacketFilter());
 }
 
+const std::string
+pf_to_str(const PacketFilter &pf) {
+	std::stringstream pf_str;
+	for (auto &it : pf) {
+		pf_str 	<< "[Header Field: " << header_field_names[it.first] << ", " 
+				<< "Filter: " << it.second.to_str();
+	}
+
+	return pf_str.str();
+}
+
+const std::string
+pf_vec_to_str(std::vector<PacketFilter> &vec) {
+	int pf_counter = 0;
+	std::stringstream pf_str;
+	for (auto &it1 : vec) {
+		for (auto &it2 : it1) {
+			pf_str 	<< "[Header Field: " << header_field_names[it2.first] << ", " 
+					<< "Filter: " << it2.second.to_str();
+		}
+		pf_counter++;
+	}
+	return pf_str.str();
+}
+
 PacketFilter
-filter_from_option (const Primitive &primitive, const Option &option, const std::string &arg) {
+filter_from_option(const Primitive &primitive, const Option &option, const std::string &arg) {
 	switch (primitive) {
 		case Primitive::IP:
-			return filter_from_ip_option (option, arg);
+			return filter_from_ip_option  (option, arg);
 		case Primitive::SRC:
 			return filter_from_src_option (option, arg);
 		case Primitive::DST:
 			return filter_from_dst_option (option, arg);
 		case Primitive::TCP:
-			return filter_from_tcp_option(option, arg);
+			return filter_from_tcp_option (option, arg);
 		case Primitive::ICMP:
 			return filter_from_icmp_option(option, arg);
 		default:
-			BUG("Undefined primitive");
+			error_chatter(ip_par_lg, "\tUndefined primitive");
+			exit(CLICK_PARSING_PROBLEM);
 	}
 	return PacketFilter();
 }
@@ -121,7 +143,7 @@ filter_from_icmp_option(const Option &option, const std::string &arg) {
 	Filter f;
 	switch (option) {
 		case Option::ICMP_TYPE:
-			f = Filter::get_filter_from_ipclass_pattern(ip_src,arg);
+			f = Filter::get_filter_from_ipclass_pattern(ip_src, arg);
 			break;
 		default:
 			break;
@@ -131,7 +153,7 @@ filter_from_icmp_option(const Option &option, const std::string &arg) {
 }
 
 PacketFilter
-filter_from_src_option (const Option &option, const std::string &arg) {
+filter_from_src_option(const Option &option, const std::string &arg) {
 	PacketFilter pf;
 	Filter f;
 	switch (option) {
@@ -142,15 +164,15 @@ filter_from_src_option (const Option &option, const std::string &arg) {
 			f = Filter::get_filter_from_prefix_pattern (ip_src, arg);
 			break;
 		case Option::SRC_UDP_PORT:
-			f = Filter(ip_proto,17);
-			add_filter_to_pf(pf,f);
+			f = Filter(ip_proto, 17);
+			add_filter_to_pf(pf, f);
 			goto add_port;
 		case Option::SRC_TCP_PORT:
-			f = Filter(ip_proto,6);
-			add_filter_to_pf(pf,f);
+			f = Filter(ip_proto, 6);
+			add_filter_to_pf(pf, f);
 		case Option::SRC_PORT:
 		add_port:
-			f = Filter::get_filter_from_ipclass_pattern(tp_srcPort, arg);
+			f = Filter::get_filter_from_ipclass_pattern(tp_src_port, arg);
 			break;
 		default:
 			break;
@@ -160,7 +182,7 @@ filter_from_src_option (const Option &option, const std::string &arg) {
 }
 
 PacketFilter
-filter_from_dst_option (const Option &option, const std::string &arg) {
+filter_from_dst_option(const Option &option, const std::string &arg) {
 	PacketFilter pf;
 	Filter f;
 	switch (option) {
@@ -171,15 +193,15 @@ filter_from_dst_option (const Option &option, const std::string &arg) {
 			f = Filter::get_filter_from_prefix_pattern (ip_dst, arg);
 			break;
 		case Option::DST_UDP_PORT:
-			f = Filter(ip_proto,17);
-			add_filter_to_pf(pf,f);
+			f = Filter(ip_proto, 17);
+			add_filter_to_pf(pf, f);
 			goto add_port;
 		case Option::DST_TCP_PORT:
-			f = Filter(ip_proto,6);
-			add_filter_to_pf(pf,f);
+			f = Filter(ip_proto, 6);
+			add_filter_to_pf(pf, f);
 		case Option::DST_PORT:
 		add_port:
-			f = Filter::get_filter_from_ipclass_pattern(tp_dstPort, arg);
+			f = Filter::get_filter_from_ipclass_pattern(tp_dst_port, arg);
 			break;
 		default:
 			break;
@@ -189,120 +211,127 @@ filter_from_dst_option (const Option &option, const std::string &arg) {
 }
 
 PacketFilter
-filter_from_ip_option (const Option &option, const std::string &arg) {
+filter_from_ip_option(const Option &option, const std::string &arg) {
 	Filter f;
 	PacketFilter pf;
 	switch (option) {
+		case Option::IP_VERS:
+			f = Filter::get_filter_from_ipclass_pattern(ip_ver, arg);
+			break;
+		case Option::IP_HL:
+			f = Filter::get_filter_from_ipclass_pattern(ip_ihl, arg);
+			break;
+		case Option::IP_ToS:
+			error_chatter(ip_par_lg, "\tIP ToS not supported, please use IP DSCP and IP ECT/CE");
+			exit(CLICK_PARSING_PROBLEM);
+		case Option::IP_DSCP:
+			f = Filter::get_filter_from_ipclass_pattern(ip_dscp, arg);
+			break;
+		case Option::IP_ID:
+			f = Filter::get_filter_from_ipclass_pattern(ip_id, arg);
+			break;
+		case Option::IP_CE:
+			f = Filter(ip_ce, 1);
+			break;
+		case Option::IP_FRAG:
+		case Option::IP_UNFRAG:
+			error_chatter(ip_par_lg, "\tIP fragmentation not supported yet");
+			exit(CLICK_PARSING_PROBLEM);
+		case Option::IP_ECT:
+			f = Filter(ip_ect, 1);
+			break;
+		case Option::IP_TtL:
+			f = Filter::get_filter_from_ipclass_pattern(ip_TTL, arg);
+			break;
 		case Option::IP_PROTO:
 			if (!arg.compare("tcp")) {
 				f = Filter(ip_proto, 6);
 			}
 			else if (!arg.compare("udp")) {
-				f = Filter(ip_proto, 6);
+				f = Filter(ip_proto, 17);
 			}
 			else if(!arg.compare("icmp")) {
-				f = Filter(ip_proto,1);
+				f = Filter(ip_proto, 1);
 			}
 			else if (arg.find_first_not_of("0123456789") == std::string::npos) {
-				f = Filter::get_filter_from_ipclass_pattern(ip_proto,arg);
+				f = Filter::get_filter_from_ipclass_pattern(ip_proto, arg);
 			}
 			else {
-				BUG("Unknown protocol name: "<<arg);
+				error_chatter(ip_par_lg, "\tUnknown protocol name: " << arg);
+				exit(CLICK_PARSING_PROBLEM);
 			}
-			break;
-		case Option::IP_VERS:
-			f = Filter::get_filter_from_ipclass_pattern(ip_ver,arg);
-			break;
-		case Option::IP_HL:
-			f = Filter::get_filter_from_ipclass_pattern(ip_ihl,arg);
-			break;
-		case Option::IP_ID:
-			f = Filter::get_filter_from_ipclass_pattern(ip_id,arg);
-			break;
-		case Option::IP_ToS:
-			BUG("ip tos not supported, please use ip dscp and ip ect/ce");
-		case Option::IP_DSCP:
-			f = Filter::get_filter_from_ipclass_pattern(ip_dscp,arg);
-			break;
-		case Option::IP_ECT:
-			f = Filter(ip_ect,1);
-			break;
-		case Option::IP_CE:
-			f = Filter(ip_ce,1);
-			break;
-		case Option::IP_ttl:
-			f = Filter::get_filter_from_ipclass_pattern(ip_TTL,arg);
-			break;
-		case Option::IP_FRAG:
-		case Option::IP_UNFRAG:
-			BUG("IP fragmentation not supported yet");
+			break;		
 		default:
-			BUG("Unknown option for IP primitive");
+			error_chatter(ip_par_lg, "\tUnknown option for IP primitive");
+			exit(CLICK_PARSING_PROBLEM);
 	}
-	add_filter_to_pf(pf,f);
+	add_filter_to_pf(pf, f);
 	return pf;
 }
 
 PacketFilter
-filter_from_tcp_option (const Option &option, const std::string &arg) {
+filter_from_tcp_option(const Option &option, const std::string &arg) {
 	PacketFilter pf;
 	pf[ip_proto] = Filter(ip_proto, 6);
 	Filter f;
 	switch (option) {
 		case Option::TCP_OPT:
 			if(arg.empty()) {
-				BUG("Empty argument for tcp opt");
+				error_chatter(ip_par_lg, "\tEmpty argument for tcp opt");
+				exit(CLICK_PARSING_PROBLEM);
 			}
 			switch (arg[0]) {
 				case 'a':
 					if(!arg.compare("ack")) {
-						f = Filter(tcp_ack,1);
+						f = Filter(tcp_flag_ack, 1);
 						break;
 					}
 				case 'f':
 					if(!arg.compare("fin")) {
-						f = Filter(tcp_fin,1);
+						f = Filter(tcp_flag_fin, 1);
 						break;
 					}
 				case 'p':
 					if(!arg.compare("psh")) {
-						f = Filter(tcp_psh,1);
+						f = Filter(tcp_flag_psh, 1);
 						break;
 					}
 				case 'r':
 					if(!arg.compare("rst")) {
-						f = Filter(tcp_rst,1);
+						f = Filter(tcp_flag_rst, 1);
 						break;
 					}
 				case 's':
 					if(!arg.compare("syn")) {
-						f = Filter(tcp_syn,1);
+						f = Filter(tcp_flag_syn, 1);
 						break;
 					}
 				case 'u':
 					if(!arg.compare("urg")) {
-						f = Filter(tcp_urg,1);
+						f = Filter(tcp_flag_urg, 1);
 						break;
 					}
 					break;
 				default:
-					BUG("Unknown tcp option: "+arg);
+					error_chatter(ip_par_lg, "\tUnknown TCP option: " + arg);
+					exit(CLICK_PARSING_PROBLEM);
 			}
 			break;
 		case Option::TCP_WIN:
 			f = Filter::get_filter_from_ipclass_pattern(tcp_win,arg);
 			break;
 		default:
-			BUG("Unknown option for TCP primitive");
+			error_chatter(ip_par_lg, "\tUnknown option for TCP primitive");
+			exit(CLICK_PARSING_PROBLEM);
 	}
 	add_filter_to_pf(pf,f);
 	return pf;
 }
 
 Primitive
-primitive_from_string (const std::string &str) {
-	if (str.size()) {
-		switch (str[0]) { //Let's make it linear
+primitive_from_string(const std::string &str) {
+	if ( str.size() ) {
+		switch ( str[0] ) { //Let's make it linear
 			case '&':
 				if (str.size()==2 && str[1] =='&') {
 					return Primitive::AND;
@@ -318,9 +347,9 @@ primitive_from_string (const std::string &str) {
 					return Primitive::AND;
 				}
 				break;
-			case 'd':
-				if (str.size() == 3 && str[1] == 's' && str[2] == 't') {
-					return Primitive::DST;
+			case 'o':
+				if (str.size()==2 && str[1] =='r') {
+					return Primitive::OR;
 				}
 				break;
 			case 'i':
@@ -331,9 +360,9 @@ primitive_from_string (const std::string &str) {
 					return Primitive::ICMP;
 				}
 				break;
-			case 'o':
-				if (str.size()==2 && str[1] =='r') {
-					return Primitive::OR;
+			case 't':
+				if (str.size() == 3 && str[1] == 'c' && str[2] == 'p') {
+					return Primitive::TCP;
 				}
 				break;
 			case 's':
@@ -341,9 +370,9 @@ primitive_from_string (const std::string &str) {
 					return Primitive::SRC;
 				}
 				break;
-			case 't':
-				if (str.size() == 3 && str[1] == 'c' && str[2] == 'p') {
-					return Primitive::TCP;
+			case 'd':
+				if (str.size() == 3 && str[1] == 's' && str[2] == 't') {
+					return Primitive::DST;
 				}
 				break;
 			default:
@@ -356,8 +385,8 @@ primitive_from_string (const std::string &str) {
 
 Option
 ip_option_from_string(const std::string &str) {
-	if(str.size()) {
-		switch (str[0]) {
+	if( str.size() ) {
+		switch ( str[0] ) {
 			case 'c':
 				if(str.size() == 2 && str[1]=='e') {
 					return Option::IP_CE;
@@ -399,17 +428,17 @@ ip_option_from_string(const std::string &str) {
 						return Option::IP_ToS;
 					}
 					else if(str[1] == 't' && str[2]=='l') {
-						return Option::IP_ttl;
+						return Option::IP_TtL;
 					}
 				}
 				break;
 			case 'u':
-				if(!str.compare("unfrag")){
+				if( !str.compare("unfrag") ){
 					return Option::IP_UNFRAG;
 				}
 				break;
 			case 'v':
-				if (!str.compare("vers")) {
+				if ( !str.compare("vers") ) {
 					return Option::IP_VERS;
 				}
 				break;
@@ -421,7 +450,7 @@ ip_option_from_string(const std::string &str) {
 }
 
 bool
-is_operator (const Primitive prim) {
+is_operator(const Primitive prim) {
 	return (prim==Primitive::OR || prim==Primitive::AND);
 }
 
@@ -515,24 +544,25 @@ option_from_string(const Primitive &curr_prim, const std::string &str) {
 				return Option::ICMP_TYPE;
 			}
 		default:
-			BUG("Undefined primitive, cannot parse option");
+			error_chatter(ip_par_lg, "\tUndefined primitive, cannot parse option");
+			exit(CLICK_PARSING_PROBLEM);
 	}
 }
 
 bool
-is_opening_char (const char c) {
+is_opening_char(const char c) {
 	return (c == '(' || c == '!');
 }
 
 std::string
-parse_value (char **position, char *end) {
+parse_value(char **position, char *end) {
 	std::string current_word;
 	std::string value;
 	std::string temp;
 	char* current_position = *position;
 
 	while (current_position != end && *current_position != ')') {
-		debug_chatter(lg, "Current pos in parse_value: "+ *current_position);
+		debug_chatter(ip_par_lg, "\tCurrent pos in parse_value: "+ *current_position);
 
 		if (*current_position == ' ' ) {
 			Primitive p = primitive_from_string(current_word);
@@ -568,19 +598,18 @@ parse_value (char **position, char *end) {
 		*position = current_position;
 	}
 	else {
-		debug_chatter(lg, "About to pop: \""+value+"\"");
+		debug_chatter(ip_par_lg, "\tAbout to pop: \""+value+"\"");
 		value.pop_back();
 		(*position)++;
 	}
 
-	debug_chatter(lg, "Returning: \""+value+"\"");
+	debug_chatter(ip_par_lg, "\tReturning: \""+value+"\"");
 
 	return value;
 }
 
 std::vector<PacketFilter>
-filters_from_substr (char **position, char *end) {
-
+filters_from_substr(char **position, char *end) {
 /*
  * TODO:
  * - support pattern that are not of the type "primitive option [value]"
@@ -604,9 +633,9 @@ filters_from_substr (char **position, char *end) {
 	Primitive curr_operator = Primitive::AND;
 	Option curr_opt = Option::Undefined;
 
-	while (*position < end && **position != ')') {
+	while ( (*position < end) && (**position != ')') ) {
 
-		debug_chatter(lg, "Considering character: \"" + std::string(*position)+"\"");
+		debug_chatter(ip_par_lg, "\tConsidering character: \"" + std::string(*position)+"\"");
 
 		if (**position == '!') {
 			negate=true;
@@ -616,7 +645,7 @@ filters_from_substr (char **position, char *end) {
 			(*position)++;
 
 			std::vector<PacketFilter> pf_vec = filters_from_substr(position, end);
-			debug_chatter(lg, "Ended recursion");
+			debug_chatter(ip_par_lg, "\tEnded recursion");
 
 			if (negate) {
 				pf_vec = negate_pf_vec(pf_vec);
@@ -631,8 +660,8 @@ filters_from_substr (char **position, char *end) {
 					open_filters = pf_vec;
 					break;
 				default:
-					FANCY_BUG(lg, "curr_operator is not an operator");
-
+					error_chatter(ip_par_lg, "\tcurr_operator is not an operator");
+					exit(CLICK_PARSING_PROBLEM);
 			}
 			curr_operator = curr_prim = Primitive::Undefined;
 			curr_opt = Option::Undefined;
@@ -642,8 +671,9 @@ filters_from_substr (char **position, char *end) {
 			(*position)++;
 			if(curr_operator == Primitive::Undefined) {
 				curr_operator = primitive_from_string(current_word);
-				if (!is_operator(curr_operator)) {
-					BUG("Expected operator and got: \""+current_word+"\"");
+				if ( !is_operator(curr_operator) ) {
+					error_chatter(ip_par_lg, "\tExpected operator and got: \""+current_word+"\"");
+					exit(CLICK_PARSING_PROBLEM);
 				}
 			}
 			else if (curr_prim == Primitive::Undefined) {//Current word is a primitive
@@ -669,13 +699,15 @@ filters_from_substr (char **position, char *end) {
 							(*position)++;
 						}
 						if(current_word.compare("port")) {
-							BUG("Expected \"port\" after "+optionNames[(size_t) curr_opt]);
+							error_chatter(ip_par_lg, "\tExpected \"port\" after " + 
+											option_names[(size_t) curr_opt]);
+							exit(CLICK_PARSING_PROBLEM);
 						}
 						(*position)++;
 					default:
 						value = parse_value(position,end);
 				}
-				PacketFilter pf = filter_from_option (curr_prim, curr_opt, value);
+				PacketFilter pf = filter_from_option(curr_prim, curr_opt, value);
 				std::vector<PacketFilter> temp;
 				if (negate) {
 					temp = negate_pf(pf);
@@ -690,12 +722,13 @@ filters_from_substr (char **position, char *end) {
 						reset_pf_vec(open_filters);
 						open_filters[0] = pf;
 					case Primitive::AND: {
-						debug_chatter(lg, "AND Operator");
+						debug_chatter(ip_par_lg, "\tAND Operator");
 						open_filters = and_pf_vec(open_filters, temp);
 						break;
 					}
 					default:
-						FANCY_BUG(lg, "Expected operator");
+						error_chatter(ip_par_lg, "\tExpected operator");
+						exit(CLICK_PARSING_PROBLEM);
 				}
 				curr_operator = curr_prim = Primitive::Undefined;
 				curr_opt = Option::Undefined;
@@ -714,13 +747,14 @@ filters_from_substr (char **position, char *end) {
 }
 
 std::vector<PacketFilter>
-filters_from_ipfilter_line (const std::string &line) {
-
+filters_from_ipfilter_line(const std::string &line) {
 	if ( !line.size() ) {
-		FANCY_BUG(lg, "Empty IPFilter configuration");
+		error_chatter(ip_par_lg, "\tEmpty IPFilter configuration");
+		exit(CLICK_PARSING_PROBLEM);
+
 	}
 	const char *start = &(line[0]);
-	return filters_from_substr ((char**)&start, (char*)start+line.size());
+	return filters_from_substr( (char**)&start, (char*)start+line.size() );
 }
 
 std::string
@@ -738,7 +772,7 @@ pf_vec_to_str(const std::vector<PacketFilter> &vec) {
 
 #ifdef test
 int
-main() {
+main(int argc, char **argv) {
 	//std::string addr = "!(ip ttl 5 or ip vers < 6)";
 	//Filter f = Filter::get_filter_from_ipclass_pattern(ip_src,addr);
 	//std::cout << f.to_str() << "\n";
