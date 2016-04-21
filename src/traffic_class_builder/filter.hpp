@@ -26,6 +26,7 @@
 
 #define MAX_UINT32 0xFFFFFFFF
 
+#include <map>
 #include <string>
 #include <memory>
 #include <cstdint>
@@ -151,6 +152,17 @@ typedef std::unordered_map<HeaderField, Filter, std::hash<int> > PacketFilter;
 typedef std::unordered_map<HeaderField, std::vector<Condition>, std::hash<int> > ConditionMap;
 #define for_fields_in_pf(it,pf) for (auto it=pf.begin(); it != pf.end(); ++it)
 
+// A set of elements that will be synthesized by IPSynthesizer
+typedef std::map< ElementType, std::string > SynthElementKeyword;
+static const SynthElementKeyword ElementToKeyword = {
+	{DropBroadcasts, "DROP_BCAST"   },
+	{IPGWOptions,    "IPGW_OPTIONS" },
+	{FixIPSrc,       "FIX_IP_SRC"   },
+	{DecIPTTL,       "DEC_IP_TTL"   },
+	{IPOutputCombo,  "IP_OUT_COMBO" },
+	{IPFragmenter,   "IP_FRAGMENT"  }
+};
+
 /*
  * Overlay class for a collection of filters
  */
@@ -193,11 +205,25 @@ class TrafficClass {
 		int intersect_filter(const Filter &filter);
 
 		/*
-		 * Append a set of trailing Click elements after a traffic class's operation.
-		 * These elements lead the traffic class out of Click without redundancy.
-		 * The direction of the traffic is given in order to generate the proper elements' configuration.
+		 * A set of trailing Click elements after a traffic class.
+		 * These elements are kept in our internal data structures
+		 * which are used to configure the IPSynthesizer in order 
+		 * to realize these elements without redundancy.
 		 */
-		std::string synthesize_chain(unsigned short &direction);
+		std::string post_routing_pipeline(void);
+
+		/*
+		 * Returns the configuration of the IPSynthesizer.
+		 * This configuration encodes the post-routing operations
+		 * to be synthesized.
+		 */
+		std::string post_routing_synthesis_configuration(void);
+
+		/*
+		 * Add a post-routing element to the list of elements to be synthesized
+		 * by Hyper-NF's IPSytnhesizer.
+		 */
+		void add_post_routing_operation(const ElementType& et);
 
 		/*
 		 * Public API to convert a traffic class into a format understandable by:
@@ -232,18 +258,10 @@ class TrafficClass {
 		ConditionMap m_write_conditions;
 
 		/*
-		 * Does this traffic class contain a DropBroadcast element (afterwards)?
+		 * Does this traffic class apply modifications that require a checksum to be 
+		 * calculated?
 		 */
-		bool m_drop_broadcasts;
-		/*
-		 * Does this traffic class contain an IPGWOptions element (afterwards)?
-		 */
-		bool m_ip_gw_options;
-
-		/*
-		 * Does this traffic class handle fragmented packets?
-		 */
-		bool m_ip_fragmenter;
+		bool m_calc_checksum;
 
 		/*
 		 * The configuraiton parameters of the EtherEncap element that
@@ -258,8 +276,12 @@ class TrafficClass {
 
 		/*
 		 * The rewrite operations to be applied to this traffic class.
+		 * They are split into two parts:
+		 * 1) Actual packet header modifications
+		 * 2) Post-routing operations such as fragmentation, IP options, etc
 		 */
 		Operation m_operation;
+		std::vector<ElementType> m_post_operations;
 
 		/*
 		 * This traffic class applies stateful rewrite operations (e.g., NAT)
@@ -273,6 +295,19 @@ class TrafficClass {
 
 		void add_filter         (Filter filter, HeaderField field);
 		int  intersect_condition(const Filter &condition, const FieldOperation &operation);
+
+		/*
+		 * Check if a given element is present in the post-modification
+		 * pipeline of a traffic class. If so, an appropriate parameter
+		 * can be given to the IPSynthesizer in order to integrate this
+		 * element internally.
+		 */
+		bool has_post_routing_operation(const ElementType& et);
+
+		/*
+		 * Retrieve all the post-routing operations of a traffic class
+		 */
+		std::vector<ElementType> get_post_routing_operations(void);
 };
 
 #endif

@@ -36,7 +36,7 @@ ConsolidatedTc::ConsolidatedTc() :
 	m_out_iface_conf (),
 	m_operation      (),
 	m_pattern        (),
-	m_chain          (),
+	m_interm_chain   (),
 	m_input_port     (256),
 	m_stateful       () {
 
@@ -45,12 +45,12 @@ ConsolidatedTc::ConsolidatedTc() :
 ConsolidatedTc::ConsolidatedTc(
 		const std::string &nf_of_out_iface, const std::string &out_iface,
 		const std::string &out_iface_conf,  const std::string &op,
-		const std::string &chain) :
+		const std::string &int_chain) :
 	m_nf_of_out_iface(nf_of_out_iface),
 	m_out_iface      (out_iface),
 	m_out_iface_conf (out_iface_conf),
 	m_operation      (op),
-	m_chain          (chain),
+	m_interm_chain   (int_chain),
 	m_input_port     (256) {
 
 }
@@ -61,15 +61,15 @@ ConsolidatedTc::add_tc(const TrafficClass &tc, const TrafficClassFormat &tc_form
 
 	switch (tc_format) {
 
-		case Click:
-		case RSS_Hashing:
+		case ClickIPClassifier:
+		case RSSHashing:
 			if( !this->m_pattern.empty() ) {
 				this->m_pattern += " || ";
 			}
 			this->m_pattern += "(" + tc.to_ip_classifier_pattern() + ")";
 			break;
 
-		case Flow_Director:
+		case FlowDirector:
 			error_chatter(m_lg, "\tUnimplemented Traffic Class pattern: " + tc_to_label(tc_format));
 			return TO_BOOL(CHAIN_SYNTHESIS_PROBLEM);
 			//this->m_pattern = tc.to_flow_director_pattern();
@@ -112,8 +112,8 @@ ConsolidatedTc::get_stateful_rewriter(const std::string &at_queue, const bool &w
 std::string
 ConsolidatedTc::get_path_to_rewriter_after_classifier(const std::string &at_queue, const bool &with_the_rewriter) {
 	if ( with_the_rewriter )
-		return this->m_chain + this->get_stateful_rewriter(at_queue, true);
-	return this->m_chain;
+		return this->m_interm_chain + this->get_stateful_rewriter(at_queue, true);
+	return this->m_interm_chain;
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -123,7 +123,7 @@ Synthesizer::Synthesizer(ChainParser *cp) : tc_per_input_iface(), st_oper_per_ou
 											hyper_nf_ifaces_to_nics() {
 	this->log.set_logger_file(__FILE__);
 	if ( !cp ) {
-		FANCY_BUG(this->log, "Synthesizer: Invalid Parser object");
+		FANCY_BUG(this->log, "\tSynthesizer: Invalid Parser object");
 	}
 
 	this->parser = cp;
@@ -163,7 +163,11 @@ Synthesizer::build_traffic_classes(void) {
 		if ( !nf_graph )
 			return TO_BOOL(NO_MEM_AVAILABLE);
 
-		info_chatter(this->log, "Network Function: " << cv->get_name());
+		// Display the NFs that interface with the real world, not the internal ones
+		// Only these interfaces can give an end-to-end path throughout the chain.
+		if ( nf_graph->get_endpoint_vertices(VertexType::Input).size() > 0 ) {
+			info_chatter(this->log, "Network Function: " << cv->get_name());
+		}
 
 		// Get all the input entry points of this NF (if any)
 		// From these points, we start building the traffic classes
@@ -191,7 +195,7 @@ Synthesizer::build_traffic_classes(void) {
 			}
 
 			std::string key = cv->get_name() + "-" + interface;
-			ClickTree ct (ep);
+			ClickTree ct(ep);
 
 			unsigned short all_tc = ct.get_traffic_classes().size();
 			unsigned short discarded_tc = 0;
@@ -211,21 +215,25 @@ Synthesizer::build_traffic_classes(void) {
 						std::string tc_out_iface = tc.get_output_iface();
 
 						// FIXME: Multiple directions may exist
-						unsigned short direction;
+						/*unsigned short direction;
 						if ( is_hyper_nf_iface( nf_of_tc_out_iface, tc_out_iface) && (nf_of_tc_out_iface == "NF_1") ) {
 							direction = 0;
 						}
 						else {
 							direction = 1;
-						}
+						}*/
 
 						this->tc_per_input_iface[key][snd_key] = {
 							nf_of_tc_out_iface,
 							tc_out_iface,
 							tc.get_output_iface_conf(),
 							op_as_str,
-							tc.synthesize_chain(direction)
+							tc.post_routing_pipeline()
 						};
+
+						std::string out_nf_and_iface = nf_of_tc_out_iface + "-" + tc_out_iface;
+						this->synth_oper_per_out_iface[out_nf_and_iface] = tc.post_routing_synthesis_configuration();
+
 						info_chatter(this->log, "\t\tAdded traffic class towards " << tc_out_iface);
 					}
 

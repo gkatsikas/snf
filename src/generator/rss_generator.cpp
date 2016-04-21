@@ -25,9 +25,6 @@
 
 #include "rss_generator.hpp"
 
-static const std::string InputClassName  = "Input";
-static const std::string OutputClassName = "Output";
-
 RSSGenerator::RSSGenerator(Synthesizer *synth) : Generator(synth) {
 	this->io_mode                = this->input_properties->get_io_mode();
 	this->numa                   = this->input_properties->has_numa();
@@ -38,6 +35,11 @@ RSSGenerator::RSSGenerator(Synthesizer *synth) : Generator(synth) {
 	this->cores_per_socket       = this->rss_cores / this->cpu_sockets_no;
 	this->cores_step             = ( (this->cpu_sockets_no > 1) && (this->numa) ) ? 2 : 1;
 	this->rss_aggressive_pinning = this->input_properties->get_rss_aggressive_pinning();
+
+	this->fast_click             = ( this->click_type == FastClick ) ? true : false;
+	/*if ( this->fast_click ) {
+		this->rss_queues = 1;
+	}*/
 
 	this->build_cpu_layout();
 	#ifdef  DEBUG_MODE
@@ -90,11 +92,11 @@ RSSGenerator::generate_rss_cloned_pipelines(const bool &to_file) {
 	std::map < unsigned short, std::vector<std::string> >       nic_to_classifier_repl;
 	// A map between a replica of an IPClassifier and a CPU core to handle its packets.
 	std::map < std::string,    unsigned short >                 classifier_to_core;
-	// A map between a replica of an (IPClassifier, outport) and an (IPRewriter, inport).
+	// A map between a replica of an (IPClassifier, outport) and an (IPSynthesizer, inport).
 	// E.g., ipc0_q0[0] --> [0]iprw0
 	std::map <  std::pair< std::string, unsigned short>, 
 				std::pair< std::string, unsigned short> >       classifier_repl_to_rewriter;
-	// // A map between a replica of an (IPClassifier, outport) and a vector of (IPRewriter, inport) replicas.
+	// // A map between a replica of an (IPClassifier, outport) and a vector of (IPSynthesizer, inport) replicas.
 	// E.g., ipc0_q0[0] --> ([0]iprw0_q0, [1]iprw0_q2, ...)
 	std::map < 
 		std::string,
@@ -111,11 +113,11 @@ RSSGenerator::generate_rss_cloned_pipelines(const bool &to_file) {
 		return TO_BOOL(CODE_GENERATION_PROBLEM);
 	}
 
-	def_chatter(this->log, "\tClassifier to Stateful Rewriter Map");
+	def_chatter(this->log, "\tClassifier to Stateful Rewriter Map...");
 
 	// Step 4: Construct the path of Click elements that will lead each 
-	// modified (i.e., rewritten by Click IPRewriter already) traffic 
-	// class out of Click. This path of elements follows IPRewriter and
+	// modified (i.e., rewritten by Click IPSynthesizer already) traffic 
+	// class out of Click. This path of elements follows IPSynthesizer and
 	// preceeds the above-defined output elements.
 	if ( ! this->replicate_write_and_output_part_of_synthesis(
 			config_stream,
@@ -124,7 +126,11 @@ RSSGenerator::generate_rss_cloned_pipelines(const bool &to_file) {
 		return TO_BOOL(CODE_GENERATION_PROBLEM);
 	}
 
-	def_chatter(this->log, "\tWrite & Output Parts");
+	def_chatter(this->log, "\tGenerate Write & Output Parts...");
+
+	#ifdef DEBUG_MODE
+		this->synthesizer->print_hyper_nf_ifaces_to_nics();
+	#endif
 
 	// Step 5: Construct the IPClassifier(s) and the path of Click elements
 	// that lead to all its/their traffic classes. Replicate this set of 
@@ -137,7 +143,7 @@ RSSGenerator::generate_rss_cloned_pipelines(const bool &to_file) {
 		return TO_BOOL(CODE_GENERATION_PROBLEM);
 	}
 
-	def_chatter(this->log, "\tRead Part");
+	def_chatter(this->log, "\tGenerate Read Part...");
 
 	// Step 6: Construct the input Click elements that capture incoming traffic to be sent to the Classifiers.
 	// Replicate this set of elements across all hardware queues and assign queues to cores.
@@ -151,7 +157,7 @@ RSSGenerator::generate_rss_cloned_pipelines(const bool &to_file) {
 		return TO_BOOL(CODE_GENERATION_PROBLEM);
 	}
 
-	def_chatter(this->log, "\tInput Part");
+	def_chatter(this->log, "\tGenerate Input Part...");
 
 	// Step 7: Schedule the In->Proc->Out paths according to the input congifuration.
 	if ( ! this->scheduling(
@@ -162,7 +168,7 @@ RSSGenerator::generate_rss_cloned_pipelines(const bool &to_file) {
 		return TO_BOOL(CODE_GENERATION_PROBLEM);
 	}
 
-	def_chatter(this->log, "\tPinning");
+	def_chatter(this->log, "\tGenerate Pinning...");
 
 	// The generated Click configuration will be written to a file
 	if ( to_file ) {
@@ -207,27 +213,7 @@ RSSGenerator::generate_static_configuration(std::stringstream &config_stream) {
 
 	// This is a class that handles packet I/O per hardware queue.
 	// RSSGenerator constructs as many objects of this class as the number of CPU cores
-	std::string io_click_class = ""
-"elementclass "+ InputClassName +" {\n"
-"	// Module's arguments\n"
-"	$iface, $queueNo, $burst, $rxNdesc, $ioCore |\n\n"
-"	// Read from DPDK interface\n"
-"	nicIn :: FromDPDKDevice($iface, QUEUE $queueNo, BURST $burst, NDESC $rxNdesc);\n\n"
-"	// Pin the input element of this device to a specific core\n"
-"	//StaticThreadSched(nicIn $ioCore);\n\n"
-"	// Packet is received by the attached interface (I)\n"
-"	nicIn -> output;\n"
-"}\n\n"
-"elementclass "+ OutputClassName +" {\n"
-"	// Module's arguments\n"
-"	$iface, $queueNo, $queueSize, $burst, $txNdesc, $ioCore |\n\n"
-"	// Write to the interface\n"
-"	nicOut :: ToDPDKDevice  ($iface, QUEUE $queueNo, BURST $burst, NDESC $txNdesc, IQUEUE $queueSize, TIMEOUT -1);\n\n"
-"	// Pin the output element of this device to a specific core\n"
-"	//StaticThreadSched(nicOut $ioCore);\n\n"
-"	// Packet is received by the attached pipeline (O); sent it out\n"
-"	input -> nicOut;\n"
-"}\n";
+	std::string io_click_class = this->get_io_classes_by_type();
 
 	config_stream << "///////////////////////////////////////////////////////////////" << std::endl;
 	config_stream << "// Classes for handling and scheduling packet I/O per queue"     << std::endl;
@@ -308,9 +294,6 @@ RSSGenerator::replicate_input_part_of_synthesis(
 			}
 
 			// Check if this classifier has an associated NIC
-			// This is important because in stateful middlebox topologies
-			// it is not possible to access a subnet that sits behind a proxy (e.g., NAT)
-			// from the outside.
 			std::string class_repl;
 			std::stringstream action;
 			if ( nic_to_classifier_repl.find(nic) != nic_to_classifier_repl.end () ) {
@@ -322,9 +305,15 @@ RSSGenerator::replicate_input_part_of_synthesis(
 				action << std::right << std::setw(10) << class_repl;
 				replica_counter++;
 			}
+			// There are interfaces that sit behind proxies
+			// These interfaces can access the chain only in-response
+			// to already initiated traffic request from inside.
+			// We currently disable them but they should technically fall
+			// into the same Classifier and stateful rewriter as the other 
+			// direction.
 			else {
 				debug_chatter(this->log, "\t\t[NIC" << nic << "] is sitting behind a proxy");
-				action << "Discard();";
+				action << "Discard()";
 			}
 
 			config_stream 	<< std::left << std::setw(15) << fd << " -> " << decap << " -> " 
@@ -356,7 +345,6 @@ RSSGenerator::replicate_read_part_of_synthesis(
 	config_stream << "///////////////////////////////////////////////////////////////" << std::endl;
 	config_stream << "// The read-part of the synthesized Hyper-NF code"               << std::endl;
 	config_stream << "///////////////////////////////////////////////////////////////" << std::endl;
-	config_stream << std::endl;
 
 	unsigned short ipc_no = 0;
 
@@ -429,7 +417,7 @@ RSSGenerator::replicate_read_part_of_synthesis(
 			}
 			config_stream << std::endl;
 
-			// Map IPClassifer_qX[port] --> [ [Port]IPRewriter_Repl0, [Port]IPRewriter_Repl1, ..]
+			// Map IPClassifer_qX[port] --> [ [Port]IPSynthesizer_Repl0, [Port]IPSynthesizer_Repl1, ..]
 			classifier_repl_to_rewriter_repl[ipc_class_of_queue] = rewr_replicas_list;
 		}
 
@@ -460,15 +448,20 @@ RSSGenerator::replicate_write_and_output_part_of_synthesis(
 	config_stream << "///////////////////////////////////////////////////////////////" << std::endl;
 	config_stream << "// The write and output parts of the synthesized Hyper-NF code"  << std::endl;
 	config_stream << "///////////////////////////////////////////////////////////////" << std::endl;
-	config_stream << std::endl;
 
 	int cur_hyper_nf_iface     = -1;
 	unsigned short core_no     = 0;
 	unsigned short core_modulo = 0;
 
+	std::string ip_modifier = "IPSynthesizer";
+	if ( fast_click ) {
+		this->rss_queues = 1;
+		ip_modifier = "IPRewriter";
+	}
+
 	// Costruct the path of Click elements that will lead each modified
-	// (i.e., rewritten by Click IPRewriter) traffic class out of Click.
-	// This path of elements follows IPRewriter.
+	// (i.e., rewritten by Click IPSynthesizer) traffic class out of Click.
+	// This path of elements follows IPSynthesizer.
 	for ( auto &it : this->synthesizer->get_stateful_rewriter_per_output_iface() ) {
 
 		std::string out_nf_and_iface = it.first;
@@ -481,45 +474,12 @@ RSSGenerator::replicate_write_and_output_part_of_synthesis(
 		// Hyper-NF's configuration to be filled below
 		std::string hyper_nf_iface = out_nf_and_iface;    // Initialized here, might change below
 		std::string hyper_nf_encap_conf;
+		std::string hyper_nf_synth_conf = 
+			this->synthesizer->get_synthesized_config_per_output_iface(out_nf_and_iface);
 
 		// The stateful Rewriter of this path
 		auto rewriter = it.second;
 		std::string rewriter_name = rewriter->get_name();
-
-		// Get the DAG's vertex that corresponds to this NF
-		ChainVertex *this_nf = static_cast<ChainVertex*> (
-			this->synthesizer->get_chain_parser()->get_chain_graph()->get_chain()->get_vertex_by_name(nf)
-		);
-
-		// This interface is the very first one
-		if ( (nf == "NF_1") && this_nf->has_entry_interface(iface) ) {
-			core_no = 1;
-			cur_hyper_nf_iface = 0;
-			hyper_nf_iface = std::to_string(cur_hyper_nf_iface);
-			hyper_nf_encap_conf = (this->proc_layer == L3)? \
-						"EtherEncap(0x0800, $macAddr0, $gwMACAddr0)" : 
-						"StoreEtherAddress($gwMACAddr0, dst)";
-		}
-		else {
-			if ( cur_hyper_nf_iface <= 0 ) {
-				cur_hyper_nf_iface = 1;
-			}
-			// The pinning at the exit of the chain should be the reverse of the entry pinning.
-			// E.g., If packets --> NIC 0 [Core 0] --> Processing --> [Core 0] NIC 1 --> out
-			core_no = ( (cur_hyper_nf_iface % this->cpu_sockets_no) % 2 == 0 ) ? 1:0;
-			hyper_nf_iface = std::to_string(cur_hyper_nf_iface);
-
-			hyper_nf_encap_conf = (this->proc_layer == L3)? \
-						"EtherEncap(0x0800, $macAddr1, $gwMACAddr1)" : 
-						"StoreEtherAddress($gwMACAddr1, dst)";
-		}
-
-		// The Click instance name that corresponds to a ToDPDPDevice object.
-		std::string output_fd = this->get_nic_desc_for_queue(atoi(hyper_nf_iface.c_str()), "out");
-
-		if ( this->io_mode == SingleCore ) {
-			core_modulo = core_no;
-		}
 
 		// Find the IPClassifier that leads to this rewriter 
 		// to print a complete processing path
@@ -528,10 +488,49 @@ RSSGenerator::replicate_write_and_output_part_of_synthesis(
 				classifier_repl_to_rewriter,
 				rewriter_name
 		);
+		std::string clas      = class_and_port_of_rewriter.first;
+		std::string clas_port = std::to_string(class_and_port_of_rewriter.second);
+
+		// Check what's going on at this output interface
+		#ifdef  DEBUG_MODE
+			hyper_nf_encap_conf = "IPPrint(LENGTH true, TTL true) -> ";
+		#endif
+
+		// This interface is the very first one
+		unsigned short chain_len = 
+			this->synthesizer->get_chain_parser()->get_chain_graph()->get_chain_length();
+		std::string last_nf = "NF_" + std::to_string(chain_len);
+
+		if ( nf == last_nf ) {
+			core_no = 0;
+		}
+		else {
+			if ( cur_hyper_nf_iface <= 0 ) {
+				cur_hyper_nf_iface = 0;
+			}
+			// The pinning at the exit of the chain should be the reverse of the entry pinning.
+			// Cores form the same socket must handle both I and O.
+			// E.g., If packets --> NIC 0 [Core 0] --> Processing --> [Core 0] NIC 1 --> out
+			core_no = ( (cur_hyper_nf_iface % this->cpu_sockets_no) % 2 == 0 ) ? 1:0;
+		}
+
+		hyper_nf_iface = std::to_string(cur_hyper_nf_iface);
+		hyper_nf_encap_conf += (this->proc_layer == L3)? \
+			"EtherEncap(0x0800, $macAddr"   + hyper_nf_iface + 
+			", $gwMACAddr" + hyper_nf_iface + ")" : 
+			"StoreEtherAddress($gwMACAddr"  + hyper_nf_iface + 
+			", dst)";
+
+		// The Click instance name that corresponds to a ToDPDPDevice object.
+		std::string output_fd = this->get_nic_desc_for_queue(atoi(hyper_nf_iface.c_str()), "out");
+
+		if ( this->io_mode == SingleCore ) {
+			core_modulo = core_no;
+		}
 
 		// Towards a particular output interface
-		config_stream 	<< "/** Stateful Path from IPClassifier " << class_and_port_of_rewriter.first 
-						<<  "[" << class_and_port_of_rewriter.second << "] going to: " << out_nf_and_iface 
+		config_stream 	<< "/** Stateful Path from IPClassifier " << clas 
+						<<  "[" << clas_port << "] going to: " << out_nf_and_iface 
 						<< " **/" << std::endl;
 
 		// The rewriters are replicated across all classifiers' replicas (as many as queues)
@@ -548,15 +547,30 @@ RSSGenerator::replicate_write_and_output_part_of_synthesis(
 													this->queue_ext_prefix + 
 													std::to_string(queue);
 
-			config_stream 	<< rewriter_name_of_queue << " :: IPRewriter(" << rewriter->compute_conf() 
-							<< "DEC_IP_TTL true, CALC_CHECKSUM true);" << std::endl;
+			config_stream 	<< rewriter_name_of_queue << " :: " << ip_modifier 
+							<< "(" << rewriter->compute_conf();
+
+			std::stringstream out_str;
+			if ( this->fast_click ) {
+				config_stream 	<< ");" << std::endl;
+			}
+			else {
+				config_stream 	<< hyper_nf_synth_conf
+								<< ", CAPACITY 100000, MTU $mtuSize, IPADDR $ipAddr"
+								<< cur_hyper_nf_iface << ");" << std::endl;
+				out_str << " " << output_fd << std::left  << std::setw(2) << queue << " :: ";
+			}
+			out_str << OutputClassName << "(" << hyper_nf_iface << ", " 
+					<< std::right << std::setw(2) << queue
+					<< ", $queueSize, $burst, $txNdesc, " 
+					<< core_modulo << ");" << std::endl;
 
 			// Only a Hyper-NF interface will take a ToDevice element.
 			if ( this->synthesizer->is_hyper_nf_iface(nf, iface) ) {
 
 				this->synthesizer->add_nic_of_hyper_nf_iface( std::make_pair(nf, iface), hyper_nf_iface );
 
-				if ( this->rss_queues <= 1 ) {
+				if ( (this->rss_queues <= 1) && (! this->fast_click) ) {
 					config_stream 	<< rewriter_name_of_queue << "[" << rewriter->get_outbound_port()
 									<< "] -> " + hyper_nf_encap_conf + " -> "
 									<< output_fd
@@ -565,18 +579,12 @@ RSSGenerator::replicate_write_and_output_part_of_synthesis(
 				}
 				else {
 					config_stream 	<< rewriter_name_of_queue << "[" << rewriter->get_outbound_port()
-									<< "] -> " + hyper_nf_encap_conf + " -> "
-									<< " " << output_fd 
-									<< std::left  << std::setw(2) << queue 
-									<< " :: " << OutputClassName << "(" << hyper_nf_iface << ", " 
-									<< std::right << std::setw(2) << queue
-									<< ", $queueSize, $burst, $txNdesc, " 
-									<< core_modulo << ");" << std::endl;
+									<< "] -> " + hyper_nf_encap_conf + " -> " << out_str.str();
 				}
 
-				std::string queue_conf = ( this->rss_queues <= 1 ) ? "" : std::to_string(queue);
+				std::string queue_conf = ( (this->rss_queues <= 1) && (! this->fast_click) ) ? 
+											"" : std::to_string(queue);
 				out_nic_desc_to_core[output_fd + queue_conf] = core_modulo;
-				cur_hyper_nf_iface++;
 			}
 			// Be careful, some interfaces that appear here are internal. These need to be discarded.
 			else {
@@ -596,6 +604,13 @@ RSSGenerator::replicate_write_and_output_part_of_synthesis(
 
 			core_no += this->cores_step;
 		}
+
+		// Keep track of the interfaces
+		if ( this->synthesizer->is_hyper_nf_iface(nf, iface) ) {
+			debug_chatter(this->log, "\tHyper-NF function " << nf << " with iface: " << iface);
+			cur_hyper_nf_iface++;
+		}
+
 	}
 
 	return DONE;
@@ -643,7 +658,7 @@ RSSGenerator::construct_classifier_to_rewriter_map(
 										"] --> [" << tc.second.get_input_port() << "]" 
 										<< tc.second.get_stateful_rewriter());
 
-				// Map IPClassifier[outport] --> [inport]IPRewriter
+				// Map IPClassifier[outport] --> [inport]IPSynthesizer
 				classifier_repl_to_rewriter[
 					std::make_pair(ipc_class_repl_of_queue, tc_no)
 				] = std::make_pair(tc.second.get_stateful_rewriter(), tc.second.get_input_port());
@@ -708,7 +723,7 @@ RSSGenerator::assign_nic_queues_to_cores(
 	// We start from the appropriate core (and socket)
 	//unsigned short sock = ( nic_no % this->cpu_sockets_no == 0 )? true:false;
 	core_no = ( (nic_no % this->cpu_sockets_no) % 2 == 0 ) ? 0:1;
-	//core_no = 0;
+	core_no = 0;
 	debug_chatter(this->log, "\t\t[NIC " 	<< nic_no << " with " << this->rss_queues 
 											<< " queues]: Starts from CPU core " << core_no 
 											<< " with step " << this->cores_step);
@@ -735,7 +750,7 @@ RSSGenerator::assign_nic_queues_to_cores(
 
 		// If only one queue is requested (or even fewer), we omit the QUEUE argument 
 		// in order to read frames from all queues.
-		if ( this->rss_queues <= 1 ) {
+		if ( (this->rss_queues <= 1) && (! this->fast_click) ) {
 			config_stream 	<< input_nic_desc << std::left << std::setw(2) << queue 
 							<< " :: FromDPDKDevice(" << nic_no 
 							<< ", BURST $burst, NDESC $rxNdesc);" << std::endl;
@@ -777,24 +792,24 @@ RSSGenerator::scheduling(
 	config_stream << "///////////////////////////////////////////////////////////////" << std::endl;
 	config_stream << "// Pin the Hyper-NF pipelines"                                   << std::endl;
 	config_stream << "///////////////////////////////////////////////////////////////" << std::endl;
-	config_stream << std::endl;
 
 	config_stream << "StaticThreadSched(" << std::endl;
 
 	// Schedule the I/O descriptors
-	if ( ! this->static_path_scheduling(in_nic_desc_to_core, config_stream, "") ) {
-		return TO_BOOL(CODE_GENERATION_PROBLEM);
-	}
-	if ( ! this->static_path_scheduling(out_nic_desc_to_core, config_stream, "") ) {
-		return TO_BOOL(CODE_GENERATION_PROBLEM);
+	if ( ! this->fast_click ) {
+		if ( ! this->static_path_scheduling(in_nic_desc_to_core, config_stream, "") ) {
+			return TO_BOOL(CODE_GENERATION_PROBLEM);
+		}
+		if ( ! this->static_path_scheduling(out_nic_desc_to_core, config_stream, "") ) {
+			return TO_BOOL(CODE_GENERATION_PROBLEM);
+		}
 	}
 
-	def_chatter(this->log, "\tI/O scheduling done");
-
-	// Schedule paths between IPClassifiers and IPRewriters (Core Hyper-NF processing)
+	// Schedule paths between IPClassifiers and IPSynthesizers (Core Hyper-NF processing)
+	// 
 	if ( this->rss_aggressive_pinning ) {
-		warn_chatter(this->log,	"\tAggressive pinning of potentially stateful paths...");
-		warn_chatter(this->log,	"\tPerformance might be affected due to increased inter-core communication");
+		//warn_chatter(this->log,	"\tAggressive pinning of potentially stateful paths...");
+		//warn_chatter(this->log,	"\tPerformance might be affected due to increased inter-core communication");
 
 		//const std::string ipc_purpose = "Pin IPClassifiers to CPU cores";
 		if ( ! this->static_path_scheduling(classifier_to_core, config_stream, "") ) {
@@ -841,7 +856,7 @@ RSSGenerator::static_path_scheduling(
 
 /*
  * Call Click's StaticThreadSched element to schedule a map
- * of paths between IPClassifiers and IPRewriters
+ * of paths between IPClassifiers and IPSynthesizers
  */
 bool
 RSSGenerator::stateful_path_scheduling(
@@ -852,7 +867,7 @@ RSSGenerator::stateful_path_scheduling(
 		>                                               &classifier_repl_to_rewriter_repl,
 		std::stringstream                               &config_stream) {
 
-	//config_stream << "/** Pin IPClassifier -> IPRewriter paths to CPU cores **/"  << std::endl;
+	//config_stream << "/** Pin IPClassifier -> IPSynthesizer paths to CPU cores **/"  << std::endl;
 	//config_stream << "StaticThreadSched(" << std::endl;
 
 	//unsigned short cl_inst_no  = classifier_repl_to_rewriter_repl.size();
@@ -975,4 +990,49 @@ RSSGenerator::print_cpu_layout(void) {
 			info_chatter(this->log, "\t\tCore: " << c);
 		}
 	}
+}
+
+std::string 
+RSSGenerator::get_io_classes_by_type(void) const {
+	if ( this->fast_click ) {
+		return ""
+"elementclass "+ InputClassName +" {\n"
+"	// Module's arguments\n"
+"	$iface, $queueNo, $burst, $rxNdesc, $ioCore |\n\n"
+"	// Read from DPDK interface\n"
+"	nicIn :: FromDPDKDevice($iface, BURST $burst, NDESC $rxNdesc, THREADOFFSET $ioCore, MAXTHREADS 1);\n\n"
+"	// Packet is received by the attached interface (I)\n"
+"	nicIn -> output;\n"
+"}\n\n"
+"elementclass "+ OutputClassName +" {\n"
+"	// Module's arguments\n"
+"	$iface, $queueNo, $queueSize, $burst, $txNdesc, $ioCore |\n\n"
+"	// Write to the interface\n"
+"	nicOut :: ToDPDKDevice($iface, BURST $burst, NDESC $txNdesc, MAXTHREADS 1, MAXQUEUES 16, IQUEUE $queueSize, TIMEOUT -1);\n\n"
+"	// Packet is received by the attached pipeline (O); sent it out\n"
+"	input -> nicOut;\n"
+"}\n";
+	}
+
+	return ""
+"elementclass "+ InputClassName +" {\n"
+"	// Module's arguments\n"
+"	$iface, $queueNo, $burst, $rxNdesc, $ioCore |\n\n"
+"	// Read from DPDK interface\n"
+"	nicIn :: FromDPDKDevice($iface, QUEUE $queueNo, BURST $burst, NDESC $rxNdesc);\n\n"
+"	// Pin the input element of this device to a specific core\n"
+"	//StaticThreadSched(nicIn $ioCore);\n\n"
+"	// Packet is received by the attached interface (I)\n"
+"	nicIn -> output;\n"
+"}\n\n"
+"elementclass "+ OutputClassName +" {\n"
+"	// Module's arguments\n"
+"	$iface, $queueNo, $queueSize, $burst, $txNdesc, $ioCore |\n\n"
+"	// Write to the interface\n"
+"	nicOut :: ToDPDKDevice($iface, QUEUE $queueNo, BURST $burst, NDESC $txNdesc, IQUEUE $queueSize, TIMEOUT -1);\n\n"
+"	// Pin the output element of this device to a specific core\n"
+"	//StaticThreadSched(nicOut $ioCore);\n\n"
+"	// Packet is received by the attached pipeline (O); sent it out\n"
+"	input -> nicOut;\n"
+"}\n";
 }

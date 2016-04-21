@@ -52,8 +52,7 @@ bool
 ElementVertex::is_endpoint(void) const {
 	if ( this->type == Processing )
 		return false;
-	else
-		return this->_is_endpoint;
+	return this->_is_endpoint;
 }
 
 const
@@ -69,10 +68,11 @@ std::string ElementVertex::get_interface(void) const {
 
 const
 std::string ElementVertex::get_configuration(void) const {
-	//return std::string( this->click_element->configuration().c_str() );
-	return std::string(
-		this->click_element->router()->econfiguration( this->get_position() ).c_str()
-	);
+	assert( (this->click_element) && (this->click_element->router()) );
+	return std::string( this->click_element->configuration().c_str() );
+	//return std::string(
+	//	this->click_element->router()->econfiguration( this->get_position() ).c_str()
+	//);
 }
 
 const
@@ -88,7 +88,7 @@ ElementVertex::get_implicit_configuration(void) {
 void
 ElementVertex::set_endpoint(const bool &ep) {
 	if ( this->type == Processing ) {
-		warn_chatter(this->log, "Processing elements cannot be endpoints");
+		warn_chatter(this->log, "\tProcessing elements cannot be endpoints");
 		return;
 	}
 	this->_is_endpoint = ep;
@@ -114,8 +114,9 @@ ElementVertex::print_info(void) {
 	info_chatter(this->log, "=== Click Element: " << this->click_element->class_name());
 	info_chatter(this->log, "===       Enpoint: " << std::string(this->is_endpoint() ? "True" : "False"));
 	if ( this->is_endpoint() ) {
-		info_chatter(this->log, "===  Next NF Info: [Pos " << this->glue.first 
-					<< ", Iface  " << this->glue.second << "]");
+		info_chatter(this->log, "===  Next NF Info: [Pos " 	<< this->glue.first 
+															<< ", Iface  " 
+															<< this->glue.second << "]");
 	}
 	info_chatter(this->log, "===============================================");
 }
@@ -128,7 +129,8 @@ NFGraph::add_vertex_and_neighbours(ElementVertex *u) {
 	Element *e = u->get_click_element().get();
 	Element *neighbour = NULL;
 
-	debug_chatter(this->log, "\t" << e->class_name() << ":" << e->eindex() << " has " << e->ninputs() << " input ports");
+	debug_chatter(this->log, "\t" 	<< e->class_name() << ":" << e->eindex() 
+									<< " has " << e->ninputs() << " input ports");
 
 	// For each active input port
 	for ( int i=0 ; i < e->ninputs() ; i++ ) {
@@ -167,7 +169,8 @@ NFGraph::add_vertex_and_neighbours(ElementVertex *u) {
 		}
 	}
 
-	debug_chatter(this->log, "\t" << e->class_name() << ":" << e->eindex() << " has " << e->noutputs() << " output ports");
+	debug_chatter(this->log, "\t" 	<< e->class_name() << ":" << e->eindex() 
+									<< " has " << e->noutputs() << " output ports");
 
 	// For each active output port
 	for ( int i=0 ; i < e->noutputs() ; i++ ) {
@@ -210,12 +213,12 @@ NFGraph::add_vertex_and_neighbours(ElementVertex *u) {
 }
 
 Vector<ElementVertex*>
-NFGraph::get_vertices_by_stage(const VertexType &st) const {
+NFGraph::get_vertices_by_stage(const VertexType &t) const {
 	Vector<ElementVertex*> vertices;
 
 	for (auto &pair : this->vertices) {
 		ElementVertex *ev = static_cast<ElementVertex*> (pair.first);
-		if ( ev->get_type() == st )
+		if ( ev->get_type() == t )
 			vertices.push_back(ev);
 	}
 	return vertices;

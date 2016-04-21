@@ -1,4 +1,3 @@
- * Change exit(1) either to exit(EXIT_FAILURE) or to thrown exceptions to get the stack trace
  * Check function class that returns Object to see whether we can use references
  * Change enums to static class members
  * Replace direct access to FieldOperation members by getters & setters
@@ -9,17 +8,19 @@
 !* Add "Unsupported Elements" category ==> allow to use unsupported elements anyway
 		--> can still look at (if it applies) the modified/read fields
 
-!!!filter_from_ip_option in ip_filter_parser.cpp creates Filter(ip_proto, 6); for UDP
-
 TODO:
 	* add ID to all elements
 	* add pointer->element in Write operations
-	* Check inport assignments for non-active ports
 	* Compile tests with autotools
+	* Identify comments in active lines of the Hyper-NF language
+	* Make IPSynthesizer IPRwriter's child and extend properly
+	* Direct both directions of a proxy/NAT to the same IPClassifier
 	* Use m4/hypernf.m4 to apply system checks (e.g., CXX compiler, CLICK, DPDK) and alleviate configure.ac
  
 ###################
 # Element support #
 ###################
 	* DecIPTTL -> MULTICAST keyword
-	* IPRewriter options 
+	* IPRewriter options
+	* IPOutCombo
+	* ARPResponder/ARPQuerier

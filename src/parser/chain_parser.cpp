@@ -154,7 +154,7 @@ ChainParser::build_nf_dag(const std::string &nf_name, const unsigned short &posi
 	Router *router = this->nf_configuration[position];
 
 	if ( !router ) {
-		error_chatter(this->log, "Network Function object is invalid");
+		error_chatter(this->log, "\tNetwork Function object is invalid");
 		return TO_BOOL(NO_MEM_AVAILABLE);
 	}
 
@@ -207,15 +207,22 @@ ChainParser::build_nf_dag(const std::string &nf_name, const unsigned short &posi
 		ElementVertex *u = NULL;
 
 		// Turn this Click element into a Vertex for our DAG
-		if ( !nf_graph->contains(e->eindex()) )
+		if ( !nf_graph->contains(e->eindex()) ) {
 			u = new ElementVertex(e, e->class_name(), e->eindex());
-		else
+		}
+		else {
 			u = static_cast<ElementVertex*> ( nf_graph->get_vertex_by_position(e->eindex()) );
+		}
 
 		// This element has some implicit configuration arguments coming from auxiliary elements.
 		if ( implicit_conf_mappings.find(e->eindex()) != implicit_conf_mappings.end() ) {
-			// Only an IPRewriter can be such an element
-			assert(e->class_name() == std::string("IPRewriter"));
+			// Only stateful Click rewriters can be such elements
+			assert( 
+				(e->class_name() == std::string("IPRewriter"))  || 
+				(e->class_name() == std::string("UDPRewriter")) || 
+				(e->class_name() == std::string("TCPRewriter")) || 
+				(e->class_name() == std::string("IPSynthesizer"))
+			);
 			u->set_implicit_configuration(implicit_port_mappings[e->eindex()], implicit_conf_mappings[e->eindex()]);
 		}
 

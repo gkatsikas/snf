@@ -643,10 +643,9 @@ Condition::to_str(void) const {
 // TrafficClass
 //////////////////////////////////////////////////////////////////////////////////////////////////////
 TrafficClass::TrafficClass() : m_output_iface(), m_nf_of_output_iface(), m_filters(),
-								m_write_conditions(), m_drop_broadcasts(false),
-								m_ip_gw_options(false), m_ip_fragmenter(false),
+								m_write_conditions(), m_calc_checksum(false),
 								m_ether_encap_conf(), m_element_path(), m_operation(),
-								m_stateful_input_port(0) {}
+								m_post_operations(), m_stateful_input_port(0) {}
 
 bool
 TrafficClass::is_discarded(void) const {
@@ -660,109 +659,76 @@ TrafficClass::is_source_nated(void) {
 	return (src_port && src_port->m_type==WriteSF);
 }
 
+/*
+ * Add a post-routing element to the list of elements to be synthesized
+ * by Hyper-NF's IPSytnhesizer.
+ */
+void
+TrafficClass::add_post_routing_operation(const ElementType& et) {
+	// These elements modify part of the header, checksum(s) need(s)
+	// to be re-calculated.
+	if ( 	(et == FixIPSrc) || (et == IPGWOptions) || 
+			(et == DecIPTTL) || (et == IPOutputCombo) ) {
+		this->m_calc_checksum = true;
+	}
+
+	if ( ! this->has_post_routing_operation(et) ) {
+		this->m_post_operations.push_back(et);
+	}
+}
+
+/*
+ * Check if a given element is present in the post-modification
+ * pipeline of a traffic class. If so, an appropriate parameter
+ * can be given to the IPSynthesizer in order to integrate this
+ * element internally.
+ */
+bool
+TrafficClass::has_post_routing_operation(const ElementType& et) {
+	return exists_in_vector(this->m_post_operations, et);
+}
+
+/*
+ * Retrieve all the post-routing operations of a traffic class
+ */
+std::vector<ElementType>
+TrafficClass::get_post_routing_operations(void) {
+	return this->m_post_operations;
+}
+
+/*
+ * Here we explicitely apply only a discard operation.
+ * Other operations are kept in data structures that 
+ * are used to configure the IPSynthesizer (which
+ * synthesizes these operations internally).
+ */
 std::string
-TrafficClass::synthesize_chain(unsigned short &direction) {
-	std::string output;
+TrafficClass::post_routing_pipeline(void) {
 	if ( this->is_discarded() ) {
-		output = "Discard();";
+		return "Discard();";
 	}
-	else {
-		if ( m_drop_broadcasts ) {
-			output += "DropBroadcasts() -> ";
-		}
+	return "";
+}
 
-		if ( m_ip_gw_options ) {
-			output += "IPGWOptions($ipAddr" + std::to_string(direction) + ") -> ";
+/*
+ * Returns the configuration of the IPSynthesizer.
+ * This configuration encodes the post-routing operations
+ * to be synthesized.
+ */
+std::string
+TrafficClass::post_routing_synthesis_configuration(void) {
+	unsigned short counter = 0;
+	std::string output;
+	for (auto &pr : this->m_post_operations) {
+		output += ElementToKeyword.at(pr) + " true";
+		if ( counter < (this->m_post_operations.size()-1) ) {
+			output += ", ";
 		}
-
-		if ( m_ip_fragmenter ) {
-			output += "IPFragmenter($mtuSize) -> ";
-		}
-		/*
-		if(m_stateful) {
-			output += "["+std::to_string(m_stateful_input_port)+"]"+m_stateful->get_name()+";";
-		}
-		else {
-			output += "[0]IPRewriter(";
-			
-			std::string ipsrc, tpsrc, tpdst;
-
-			FieldOperation* field_op = m_operation.get_field_op(ip_src);
-			if(field_op) {
-				if(field_op->m_type == Write) {
-					ipsrc = ntoa(field_op->m_value[0]);
-				}
-				else {
-					FANCY_BUG(tc_log, "Expected write operation");
-				}
-			}
-			else{
-				ipsrc = "-";
-			}
-	
-			field_op = m_operation.get_field_op(tp_src_port);
-			if(field_op) {
-				if(field_op->m_type == Write) {
-					tpsrc = std::to_string(field_op->m_value[0]);
-				}
-				else {
-					FANCY_BUG(tc_log, "Expected write operation, got "+m_operation.to_str());
-				}
-			}
-			else{
-				tpsrc = "-";
-			}
-			
-			field_op = m_operation.get_field_op(tp_dst_port);
-			if(field_op) {
-				if(field_op->m_type == Write) {
-					tpdst = std::to_string(field_op->m_value[0]);
-				}
-				else {
-					FANCY_BUG(tc_log, "Expected write operation, got "+m_operation.to_str());
-				}
-			}
-			else{
-				tpdst = "-";
-			}
-	
-			field_op = m_operation.get_field_op(ip_dst);
-			if(field_op) {
-				//TODO: add support for load balancing
-				if(field_op->m_type == Write) {
-					output += ipsrc+" "+tpsrc+" "+ntoa(field_op->m_value[0])+" "+tpdst+" ";
-				}
-				else if (field_op->m_type == WriteLB) {
-					std::string rr_output = "RoundRobinIPMapper(";
-					for (auto &ip : field_op->m_lb_values) {
-						rr_output += ipsrc+" "+tpsrc+" "+ntoa(ip)+" "+tpdst+", ";
-					}
-					rr_output[rr_output.size()-2] = ')';
-					output += rr_output;
-				}
-				else {
-					FANCY_BUG(tc_log, "Expected write operation, got "+m_operation.to_str());
-				}
-			}
-			else{
-				output += ipsrc+" "+tpsrc+" "+"- "+tpdst+" ";
-			}
-			output += ");";
-		}
-
-		//field_op = m_operation.get_field_op(mtu);
-		//if(field_op) {
-		//	synthesized_chain.push_back(std::shared_ptr<ClickElement>(new ClickElement(DropBroadcasts,
-		//									std::to_string(field_op->m_value[0]) )));
-		//}
-
-		//if(m_ether_encap_conf.empty()) {
-		//	FANCY_BUG(tc_log, "Empty EtherEncap configuration");
-		//}
-		//synthesized_chain.push_back(std::shared_ptr<ClickElement>(new ClickElement(EtherEncap,m_ether_encap_conf)));
-		//synthesized_chain.push_back(m_element_path.back());
-		*/
+		counter++;
 	}
+
+	if ( this->m_calc_checksum )
+		output += ", CALC_CHECKSUM true";
 
 	return output;
 }
@@ -825,15 +791,16 @@ TrafficClass::add_element(std::shared_ptr<ClickElement> element, const int port,
 	int nb_none_filters = 0;
 	(this->m_element_path).push_back(element);
 
-	if (element->get_type() == DropBroadcasts) {
-		this->m_drop_broadcasts = true;
+	// Post-routing operations are kept in a map
+	if ( 	(element->get_type() == DropBroadcasts) ||
+			(element->get_type() == IPGWOptions)    ||
+			(element->get_type() == FixIPSrc)       ||
+			(element->get_type() == DecIPTTL)       ||
+			(element->get_type() == IPOutputCombo)  ||
+			(element->get_type() == IPFragmenter) ) {
+		this->add_post_routing_operation(element->get_type());
 	}
-	else if (element->get_type() == IPGWOptions) {
-		this->m_ip_gw_options = true;
-	}
-	else if (element->get_type() == IPFragmenter) {
-		this->m_ip_fragmenter = true;
-	}
+	// Interface configuration
 	else if ( 	(element->get_type() == EtherEncap) || 
 				(element->get_type() == StoreEtherAddress)) {
 		this->m_ether_encap_conf = element->get_configuration();

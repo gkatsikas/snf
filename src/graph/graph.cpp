@@ -35,7 +35,7 @@ Graph::~Graph() {
 	this->in_degrees.clear();
 	this->vertices.clear();
 
-	debug_chatter(this->log, "\tGraph destroyed");
+	debug_chatter(this->log, "\tGraph deleted");
 }
 
 /*

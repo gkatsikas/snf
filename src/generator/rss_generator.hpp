@@ -106,6 +106,11 @@ class RSSGenerator : public Generator {
 		 */
 		std::unordered_map< unsigned short, std::vector <unsigned short> > cpu_layout;
 
+		/*
+		 * Flag that denotes wheter we use FastClick or regular Click.
+		 */
+		bool              fast_click;
+
 	public:
 		/*
 		 * Public API for RSSGenerator
@@ -239,8 +244,8 @@ class RSSGenerator : public Generator {
 		 * Based on the input configuration, build a map of cores assigned to
 		 * sockets
 		 */
-		void           build_cpu_layout    (void);
-		void           print_cpu_layout    (void);
+		void build_cpu_layout(void);
+		void print_cpu_layout(void);
 
 		/*
 		 * Ask the CPU layout for the list of cores that belong to the same
@@ -255,6 +260,12 @@ class RSSGenerator : public Generator {
 		 * A global way of naming NIC descriptors
 		 */
 		std::string get_nic_desc_for_queue(const unsigned short &nic_no, const std::string &mode);
+
+		/*
+		 * Based on the ClickType selected by the user, generate the respective
+		 * piece of code for I/O (i.e., Click or FastClick).
+		 */
+		std::string get_io_classes_by_type(void) const;
 };
 
 #endif

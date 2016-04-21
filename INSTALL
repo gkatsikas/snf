@@ -27,11 +27,17 @@ To build Hyper-NF with Click-DPDK support run:
 			RTE_TARGET=<your-dpdk-target> \
 			--with-click=<path-to-your-click-folder> \
 			--enable-dpdk=yes
-Example (with more verbosity but no debug messages):
+
+Example for Standard Click (with more verbosity but no debug messages):
+	./configure \
+			--with-click=/opt/click \
+			--enable-dpdk=no --enable-debug=no --enable-verbose=yes
+
+Example for Click-DPDK (with more verbosity but no debug messages):
 	./configure \
 			RTE_SDK=/opt/dpdk \
 			RTE_TARGET=x86_64-native-linuxapp-gcc \
-			--with-click=/opt/click-dpdk \
+			--with-click=/opt/click-hypernf-dpdk \
 			--enable-dpdk=yes --enable-debug=no --enable-verbose=yes
 
 INSTALL

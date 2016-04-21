@@ -17,21 +17,24 @@ OUTPUT_FOLDER           = ./results/osdi16/routers
 #OUTPUT_FILE             = synth_router_9.click
 OUTPUT_FILE             = synth_router_10.click
 
+# CLICK_TYPE options: Click, FastClick
+CLICK_TYPE              = Click
+
 HARDWARE_CLASSIFICATION = true
-# Options: RSS-Hashing, Flow-Director, OpenFlow
-HARDWARE_CLASSIFICATION_FORMAT = RSS-Hashing
+# HARDWARE_CLASSIFICATION_FORMAT options: RSSHashing, FlowDirector, OpenFlow
+HARDWARE_CLASSIFICATION_FORMAT = RSSHashing
 
 NUMA                    = true
 CPU_SOCKETS             = 2
-CPU_CORES               = 16
+CPU_CORES               = 6
 NUMBER_OF_NICS          = 2
 NIC_HW_QUEUES           = 16
 PROCESSING_LAYER        = L3
-# Options:
+RSS_AGGRESSIVE_PINNING  = true
+# IO_MODE options:
 #  1. SingleCore   (One core does only I/O across all queues of a NIC; other cores do only processing)
 #  2. ShareNothing (One core/queue does both I/O and processing for this queue)
 IO_MODE                 = ShareNothing
-RSS_AGGRESSIVE_PINNING  = true
 
 ##############################################################################################
 #######

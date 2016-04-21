@@ -33,9 +33,10 @@
  */
 ParserConfiguration::ParserConfiguration(const std::string &config_file)
 										: GenericConfiguration(config_file) {
-	this->nf_chain   = new Graph();
-	this->nf_domains = new Graph();
-	this->properties = NULL;
+	this->nf_chain     = new Graph();
+	this->nf_domains   = new Graph();
+	this->properties   = NULL;
+	this->chain_length = 0;
 	def_chatter(this->log, "\tParser Configuration constructed");
 }
 
@@ -124,9 +125,12 @@ ParserConfiguration::parse_generic_properties(void) {
 	bool hw_classification      = false;
 	bool rss_aggressive_pinning = false;
 
+	std::string click_type_label;
 	std::string hardware_classification_label;
 	std::string proc_layer_label;
 	std::string io_mode_label;
+
+	ClickType          click_type           = DEFAULT_CLICK_TYPE;
 	TrafficClassFormat traffic_class_format = DEFAULT_TC_FORMAT;
 	ProcessingLayer    proc_layer           = DEFAULT_PROC_LAYER;
 	IOMode             io_mode              = DEFAULT_IO_MODE;
@@ -144,7 +148,8 @@ ParserConfiguration::parse_generic_properties(void) {
 
 		if ( ! directory_exists(output_folder) ) {
 			if ( ! create_directory_path(output_folder) ) {
-				error_chatter(this->log, "\tUnable to create output folder: " << output_folder);
+				error_chatter(this->log, "\tUnable to create output folder: " 
+											<< output_folder);
 				return ERROR;
 			}
 			def_chatter(this->log, "\tCreated output folder: " << output_folder);
@@ -162,7 +167,8 @@ ParserConfiguration::parse_generic_properties(void) {
 
 		// Careful, you might lose your previously synthesized chain!
 		if ( file_exists(output_filename) ) {
-			warn_chatter(this->log, "\tOutput file " << output_filename << " exists and will be overwritten");
+			warn_chatter(this->log, "\tOutput file " << output_filename 
+									<< " exists and will be overwritten");
 		}
 
 		// Remove the extension because we might generate files different extensions.
@@ -180,8 +186,34 @@ ParserConfiguration::parse_generic_properties(void) {
 	}
 	catch (...) {
 		warn_chatter(this->log, 
-			"\tOutput file name for Hyper-NF configuration is missing. Default: " << output_filename
+			"\tOutput file name for Hyper-NF configuration is missing. Default: " 
+			<< output_filename
 		);
+	}
+
+	//////////////////////////////////////////
+	// Method to process traffic in Hyper-NF.
+	try {
+		click_type_label = (std::string&) get_value(
+			"GENERIC", "CLICK_TYPE"
+		);
+	}
+	catch (...) {
+		click_type_label = "Click";
+		warn_chatter(this->log, 
+			"\tClick type is missing. Default is " + click_type_to_label(click_type)
+		);
+	}
+
+	// Check the given layer against a dictionary of supported layers.
+	try {
+		click_type = ClickLabelToType.at(click_type_label);
+	}
+	catch (...) {
+		error_chatter(this->log, 
+			"\tUnknown Click type. Choose [Click, FastClick]"
+		);
+		return TO_BOOL(WRONG_INPUT_ARGS);
 	}
 
 	//////////////////////////////////////////
@@ -259,7 +291,7 @@ ParserConfiguration::parse_generic_properties(void) {
 		try {
 			traffic_class_format = TCLabelToFormat.at(hardware_classification_label);
 
-			if ( traffic_class_format == Click ) {
+			if ( traffic_class_format == ClickIPClassifier ) {
 				error_chatter(this->log, "\tChoose [RSS-Hashing, Flow-Director, OpenFlow]");
 				error_chatter(this->log, "\tFor purely software-based Hyper-NF disable HW classification");
 				return TO_BOOL(WRONG_INPUT_ARGS);
@@ -326,8 +358,6 @@ ParserConfiguration::parse_generic_properties(void) {
 
 		// You cannot have more sockets than cores, be serious
 		assert (cpu_sockets_no <= cpu_cores_no);
-		// Each socket contains an even number of cores and number of sockets is even too.
-		assert (cpu_cores_no % cpu_sockets_no == 0);
 
 		// E. # of hardware queues in the NIC
 		try {
@@ -350,10 +380,11 @@ ParserConfiguration::parse_generic_properties(void) {
 
 	// Allocate the properties object after all the configuration is applied.
 	this->properties = new Properties(
-		output_folder, output_filename, hw_classification,
-		traffic_class_format, proc_layer, io_mode, numa, 
+		numa, hw_classification, click_type, 
+		traffic_class_format, proc_layer, io_mode, 
 		cpu_sockets_no, cpu_cores_no, number_of_nics,
-		nic_hw_queues_no, rss_aggressive_pinning
+		nic_hw_queues_no, rss_aggressive_pinning,
+		output_folder, output_filename
 	);
 
 	return DONE;
@@ -401,7 +432,8 @@ ParserConfiguration::parse_topology(const std::string &nf_topo) {
 		return TO_BOOL(CHAIN_PARSING_PROBLEM);
 	}
 
-	for (boost::tokenizer<boost::char_separator<char>>::iterator line=expressions.begin(); line!=expressions.end(); ++line) {
+	for (boost::tokenizer<boost::char_separator<char>>::iterator line=expressions.begin(); 
+			line!=expressions.end(); ++line) {
 		// Each statement is in the form NF_X[interface] -> [interface]NF_Y
 		// The delimiter is a string. If I don't find '->' I quit!
 		if ( line->find("->") == std::string::npos ) {
@@ -425,7 +457,8 @@ ParserConfiguration::parse_topology(const std::string &nf_topo) {
 		unsigned short tokens = 0;
 		std::vector<std::string>  ifaces;
 		std::vector<ChainVertex*> vertices;
-		for (boost::tokenizer<boost::char_separator<char>>::iterator elem=connections.begin(); elem!=connections.end (); ++elem) {
+		for (boost::tokenizer<boost::char_separator<char>>::iterator elem=connections.begin(); 
+				elem!=connections.end (); ++elem) {
 			// One more check does not harm
 			if ( tokens > 1 ) {
 				this->usage("\tInvalid interface specification.",
@@ -484,7 +517,9 @@ ParserConfiguration::parse_topology(const std::string &nf_topo) {
 			}
 
 			// Check if this NF is already inserted
-			ChainVertex *v = static_cast<ChainVertex*> (this->nf_chain->get_vertex_by_position(position));
+			ChainVertex *v = static_cast<ChainVertex*> (
+				this->nf_chain->get_vertex_by_position(position)
+			);
 
 			// Create one
 			if ( !v ) {
@@ -519,7 +554,8 @@ ParserConfiguration::parse_topology(const std::string &nf_topo) {
 			return TO_BOOL(CHAIN_PARSING_PROBLEM);
 		}
 
-		// Now that eveything is read properly, associate the interface names with the NF names in the InterfaceMap
+		// Now that eveything is read properly, associate the interface names 
+		// with the NF names in the InterfaceMap
 		vertices.at(0)->add_chain_interface_pair(ifaces[0], "", vertices.at(1)->get_name());
 		vertices.at(1)->add_chain_interface_pair(ifaces[1], "", vertices.at(0)->get_name());
 
@@ -529,12 +565,13 @@ ParserConfiguration::parse_topology(const std::string &nf_topo) {
 
 	// Check if the elements given in the [NF] section of the property file, correspond to the
 	// elements that form the chain in the [NF_TOPO] section.
-	// If no error has occured by now and there are unloaded NFs, they are simply ignored because the formulated chain
-	// is valid.
+	// If no error has occured by now and there are unloaded NFs, they are simply ignored 
+	// because the formulated chain is valid.
 	unsigned short graph_elements = this->nf_chain->get_vertices_no();
 
 	if ( elements_in_property > graph_elements ) {
-		this->usage("\tThere are " + std::to_string(elements_in_property - graph_elements) + " unloaded NFs", 
+		this->usage("\tThere are " + std::to_string(elements_in_property - graph_elements) + 
+					" unloaded NFs", 
 					"\tGo to [NF_TOPO]->TOPOLOGY and make sure that you complete the pipeline properly.");
 		return TO_BOOL(CHAIN_PARSING_PROBLEM);
 	}
@@ -544,6 +581,9 @@ ParserConfiguration::parse_topology(const std::string &nf_topo) {
 					"\tGo to [NF_TOPO]->TOPOLOGY and make sure that you complete the pipeline properly.");
 		return TO_BOOL(CHAIN_PARSING_PROBLEM);
 	}
+
+	// Now it is safe to keep the length of the chain
+	this->chain_length = elements_in_property;
 
 	return DONE;
 }
@@ -803,7 +843,7 @@ ParserConfiguration::print_loaded_property_status(void) {
 	}
 
 	// If RSS
-	if ( this->get_properties()->get_traffic_classification_format() == RSS_Hashing ) {
+	if ( this->get_properties()->get_traffic_classification_format() == RSSHashing ) {
 		info_chatter(this->log, "\t" << "       RSS Aggressive Pinning: " <<
 		bool_to_str(this->get_properties()->get_rss_aggressive_pinning()));
 	}

@@ -77,6 +77,11 @@ class SoftGenerator : public Generator {
 		bool generate_write_and_output_part_of_synthesis(
 			std::stringstream &config_stream
 		);
+
+		/*
+		 * Generate code for I/O depending on the Click mode (i.e., Standard or DPDK)
+		 */
+		std::string get_io_classes_by_type(void) const;
 };
 
 #endif

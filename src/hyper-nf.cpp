@@ -138,11 +138,10 @@ identify_code_generator(
 
 	if ( has_hw_classification ) {
 		#ifdef HAVE_DPDK
-
 			switch (tc_format) {
-				case RSS_Hashing:
+				case RSSHashing:
 					return new RSSGenerator         (std::move(synthesizer));
-				case Flow_Director:
+				case FlowDirector:
 					//return new FlowDirectorGenerator(std::move(synthesizer));
 				case OpenFlow:
 					//return new OpenFlowGenerator    (std::move(synthesizer));
@@ -157,6 +156,7 @@ identify_code_generator(
 	}
 	// Pure software based implementation in Click.
 	else {
+		(void)tc_format;
 		return new SoftGenerator(std::move(synthesizer));
 	}
 }

@@ -54,6 +54,11 @@ class ParserConfiguration : public GenericConfiguration {
 		 */
 		Properties *properties;
 
+		/*
+		 * How many NFs the chain has.
+		 */
+		unsigned short chain_length;
+
 	public:
 		/*
 		 * Constructor that loads the property file by calling the super class
@@ -64,9 +69,10 @@ class ParserConfiguration : public GenericConfiguration {
 		/*
 		 * Setters & Getters
 		 */
-		inline Graph*      get_chain        (void) { return this->nf_chain;   };
-		inline Graph*      get_chain_domains(void) { return this->nf_domains; };
-		inline Properties* get_properties   (void) { return this->properties; };
+		inline Graph*         get_chain        (void) { return this->nf_chain;     };
+		inline unsigned short get_chain_length (void) { return this->chain_length; };
+		inline Graph*         get_chain_domains(void) { return this->nf_domains;   };
+		inline Properties*    get_properties   (void) { return this->properties;   };
 
 		/*
 		 * Implements load_property_file (abstract method in the super class)

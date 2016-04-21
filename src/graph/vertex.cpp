@@ -33,7 +33,7 @@ Vertex::Vertex(const std::string &name, const unsigned short &pos, const VertexT
 }
 
 Vertex::~Vertex() {
-	debug_chatter(this->log, "\tVertex destroyed");
+	debug_chatter(this->log, "\tVertex deleted");
 }
 
 Vertex::Vertex(const Vertex &v) : 
@@ -51,8 +51,8 @@ Vertex& Vertex::operator=(Vertex &v) {
 
 void
 Vertex::print_info(void) {
-	info_chatter(this->log, "===     NF Name: " << this->name);
-	info_chatter(this->log, "=== NF Position: " << this->position);
+	info_chatter(this->log, "===       NF Name: " << this->name);
+	info_chatter(this->log, "===   NF Position: " << this->position);
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -112,7 +112,7 @@ ChainVertex::add_entry_interface_key(const std::string &iface) {
 void
 ChainVertex::add_entry_interface_pair(const std::string &iface, const std::string &mac, const std::string &domain) {
 	if ( iface.empty() ) {
-		error_chatter(this->log, "Key (Interface) given is empty");
+		error_chatter(this->log, "\tKey (Interface) given is empty");
 		return;
 	}
 	this->entry_interfaces[iface] = {mac, domain};
@@ -128,7 +128,7 @@ ChainVertex::add_chain_interface_key(const std::string &iface) {
 void
 ChainVertex::add_chain_interface_pair(const std::string &iface, const std::string &mac, const std::string &nf) {
 	if ( iface.empty() ) {
-		error_chatter(this->log, "Key (Interface) given is empty");
+		error_chatter(this->log, "\tKey (Interface) given is empty");
 		return;
 	}
 	this->chain_interfaces[iface] = {mac, nf};
@@ -218,7 +218,7 @@ ChainVertex::print_entry_interface_map(void) {
 					", [MAC: " << mac << ", Domain: " << kv.second.second << "] ]");
 	}
 	if ( this->entry_interfaces.size() == 0 ) {
-		info_chatter(this->log, "\tEmpty");
+		debug_chatter(this->log, "\tEmpty");
 	}
 
 	#endif
@@ -234,7 +234,7 @@ ChainVertex::print_chain_interface_map(void) {
 					", [MAC: " << mac << ", NF: " << kv.second.second << "] ]");
 	}
 	if ( this->chain_interfaces.size() == 0 ) {
-		info_chatter(this->log, "\tEmpty");
+		debug_chatter(this->log, "\tEmpty");
 	}
 
 	#endif

@@ -40,7 +40,9 @@ struct ConsolidatedTc {
 	std::string    m_out_iface_conf;
 	std::string    m_operation;
 	std::string    m_pattern;
-	std::string    m_chain;
+	// Elements between IPClassifier-IPSynthesizer
+	// (usually none exists because they are all synthesized)
+	std::string    m_interm_chain;
 	unsigned short m_input_port;
 	std::string    m_stateful;
 	
@@ -80,22 +82,29 @@ class Synthesizer {
 		/*
 		 * Generated synthesized paths.
 		 * A traffic class specification associated with an input interface.
-		 * |--> {FromDevice --> IPClassifier --> IPRewriter} paths.
+		 * |--> {FromDevice --> IPClassifier --> IPSynthesizer} paths.
 		 */
 		std::unordered_map< std::string, std::unordered_map<std::string, ConsolidatedTc> > 
 							tc_per_input_iface;
 
 		/*
 		 * A map of output interfaces associated with stateful rewrite operations.
-		 * |--> {IPRewriter --> ToDevice} paths.
+		 * |--> {IPSynthesizer --> ToDevice} paths.
 		 */
-		std::unordered_map< std::string, std::shared_ptr<StatefulSynthesizer> > 
+		std::map< std::string, std::shared_ptr<StatefulSynthesizer> > 
 							st_oper_per_out_iface;
 		/*
 		 * The configuration of these interfaces
 		 */
 		std::unordered_map< std::string, std::string > 
 							st_oper_per_out_iface_conf;
+
+		/*
+		 * The set of synthesized operations to be applied before leaving an
+		 * interface
+		 */
+		std::unordered_map< std::string, std::string > 
+							synth_oper_per_out_iface;
 
 		/*
 		 * A vector with the discrete interfaces of the final chain.
@@ -143,13 +152,17 @@ class Synthesizer {
 				get_tc_per_input_iface(void) {
 			return this->tc_per_input_iface;
 		};
-		inline std::unordered_map< std::string, std::shared_ptr<StatefulSynthesizer> > 
+		inline std::map< std::string, std::shared_ptr<StatefulSynthesizer> > 
 				get_stateful_rewriter_per_output_iface(void) {
 			return this->st_oper_per_out_iface;
 		};
 		inline std::string get_stateful_rewriter_per_output_iface_conf(
 				const std::string &key) {
 			return this->st_oper_per_out_iface_conf[key];
+		};
+		inline std::string get_synthesized_config_per_output_iface(
+				const std::string &key) {
+			return this->synth_oper_per_out_iface[key];
 		};
 		inline std::set < std::pair<std::string, std::string> > get_hyper_nf_ifaces(void) {
 			return this->hyper_nf_ifaces;

@@ -215,12 +215,6 @@ uint32_t    aton (const std::string &address);
 std::string ntoa (uint32_t address);
 
 /*
- * Memory helpers
- */
-bool allocateMemory(void **memoryBuffer, size_t size);
-bool releaseMemory (void **memoryBuffer);
-
-/*
  * Extract numbers from strings
  */
 const std::string get_number_from_string(std::string const &str);
@@ -231,9 +225,16 @@ const std::string get_number_from_string(std::string const &str);
 const std::string bool_to_str(const bool b);
 
 /*
- * Convert a string to boolean
+ * Convert a string to boolean or integer
  */
 bool str_to_bool(const std::string &s);
+int  str_to_int (const std::string &s);
+
+/*
+ * Memory helpers
+ */
+bool allocateMemory(void **memoryBuffer, size_t size);
+bool releaseMemory (void **memoryBuffer);
 
 /*
  * Check if directory exists

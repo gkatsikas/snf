@@ -29,9 +29,27 @@
 
 #include "../synthesizer/synthesizer.hpp"
 
+static const std::string InputClassName  = "Input";
+static const std::string OutputClassName = "Output";
+
 class Generator {
 
 	protected:
+		/*
+		 * Logger instance
+		 */
+		Logger             log;
+
+		/*
+		 * The object that provides the Hyper-NF configuration we want to generate.
+		 */
+		Synthesizer        *synthesizer;
+
+		/*
+		 * Pointer to the input properties class
+		 */
+		Properties         *input_properties;
+
 		/*
 		 * Generate the synthesis as a combination of Intel-RSS rules for the NIC
 		 * and Click code that runs per hardware queue.
@@ -39,11 +57,17 @@ class Generator {
 		bool               hw_classification;
 
 		/*
+		 * The variance of Click we base Hyper-NF upon.
+		 * We support Click and FastClick.
+		 */
+		ClickType          click_type;
+
+		/*
 		 * If hardware_classification is set, one of the following formats are valid:
 		 * |--> RSS-Hashing
 		 * |--> FlowDirector
 		 * |--> OpenFlow
-		 * Otherwise, Click is the standard way.
+		 * Otherwise, ClickIPClassifier is the standard way.
 		 */
 		TrafficClassFormat traffic_classification_format;
 
@@ -63,21 +87,6 @@ class Generator {
 		 */
 		std::string        soft_configuration_filename;
 
-		/*
-		 * The object that provides the Hyper-NF configuration we want to generate.
-		 */
-		Synthesizer        *synthesizer;
-
-		/*
-		 * Pointer to the input properties class
-		 */
-		Properties         *input_properties;
-
-		/*
-		 * Logger instance
-		 */
-		Logger             log;
-
 	public:
 		/*
 		 * Public API for the Generator
@@ -90,7 +99,7 @@ class Generator {
 		 * |--> Hardware-assisted, RSS-based Hyper-NF
 		 * |--> Hardware-assisted, OpenFlow-based Hyper-NF
 		 * |--> Hardware-assisted, Flow Director-based Hyper-NF
-		 * |--> All-in-Software Hyper-NF (Click)
+		 * |--> All-in-Software Hyper-NF (ClickIPClassifier)
 		 */
 		virtual bool      generate_equivalent_configuration(const bool to_file=true) = 0;
 

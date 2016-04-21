@@ -25,6 +25,9 @@
 
 #include "helpers.hpp"
 
+//////////////////////////////////////////////////////////////////////////
+// String manipulation functions
+//////////////////////////////////////////////////////////////////////////
 /*
  * String helpers
  */
@@ -227,6 +230,50 @@ ntoa(uint32_t address) {
 }
 
 /*
+ * Extract numbers from strings
+ */
+const std::string
+get_number_from_string(std::string const &str) {
+	std::size_t const n = str.find_first_of("0123456789");
+	if ( n != std::string::npos ) {
+		std::size_t const m = str.find_first_not_of("0123456789", n);
+		return str.substr(n, m != std::string::npos ? m-n : m);
+	}
+	return std::string();
+}
+
+/*
+ * Convert a boolean to string
+ */
+const std::string
+bool_to_str(const bool b) {
+	std::ostringstream ss;
+	ss << std::boolalpha << b;
+	return ss.str();
+}
+
+/*
+ * Convert a string to boolean
+ */
+bool
+str_to_bool(const std::string &s) {
+	bool b;
+	std::istringstream(s) >> std::boolalpha >> b;
+	return b;
+}
+
+/*
+ * Convert a string to integer
+ */
+int
+str_to_int(const std::string &s) {
+	return atoi(s.c_str());
+}
+
+//////////////////////////////////////////////////////////////////////////
+// Memory-related functions
+//////////////////////////////////////////////////////////////////////////
+/*
  * Allocate a buffer with size defined by the second argument.
  * Initialize and return(by ref) the allocated buffer or return NULL.
  */
@@ -261,39 +308,9 @@ releaseMemory(void **memoryBuffer) {
 	}
 }
 
-/*
- * Extract numbers from strings
- */
-const std::string
-get_number_from_string(std::string const &str) {
-	std::size_t const n = str.find_first_of("0123456789");
-	if ( n != std::string::npos ) {
-		std::size_t const m = str.find_first_not_of("0123456789", n);
-		return str.substr(n, m != std::string::npos ? m-n : m);
-	}
-	return std::string();
-}
-
-/*
- * Convert a boolean to string
- */
-const std::string
-bool_to_str(const bool b) {
-	std::ostringstream ss;
-	ss << std::boolalpha << b;
-	return ss.str();
-}
-
-/*
- * Convert a string to boolean
- */
-bool
-str_to_bool(const std::string &s) {
-	bool b;
-	std::istringstream(s) >> std::boolalpha >> b;
-	return b;
-}
-
+//////////////////////////////////////////////////////////////////////////
+// Filesystem-related functions
+//////////////////////////////////////////////////////////////////////////
 /*
  * Check if directory exists
  */

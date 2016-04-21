@@ -30,7 +30,7 @@
 Generator::Generator(Synthesizer *synth) {
 	this->log.set_logger_file(__FILE__);
 	if ( !synth ) {
-		FANCY_BUG(this->log, "Generator: Invalid Synthesizer object");
+		FANCY_BUG(this->log, "\tGenerator: Invalid Synthesizer object");
 	}
 
 	this->synthesizer      = synth;
@@ -40,6 +40,7 @@ Generator::Generator(Synthesizer *synth) {
 								->get_properties();
 
 	this->hw_classification             = this->input_properties->has_hardware_classification();
+	this->click_type                    = this->input_properties->get_click_type();
 	this->traffic_classification_format = this->input_properties->get_traffic_classification_format();
 	this->proc_layer                    = this->input_properties->get_processing_layer();
 	this->basic_configuration_filename  = this->input_properties->get_output_filename();
@@ -60,7 +61,7 @@ Generator::get_output_files_list_str(void) {
 	// A single configuration file is produced if we are in Click or RSS mode.
 	if  ( 
 		(!this->hw_classification) || 
-		((tc_format != Flow_Director) && (tc_format != OpenFlow))
+		((tc_format != FlowDirector) && (tc_format != OpenFlow))
 	)
 		return all_out_files;
 
@@ -69,9 +70,9 @@ Generator::get_output_files_list_str(void) {
 	// Some hardware classification options generate additional configuration files
 	if ( this->hw_classification ) {
 		switch (tc_format) {
-			case Click:
-			case RSS_Hashing:
-			case Flow_Director:
+			case ClickIPClassifier:
+			case RSSHashing:
+			case FlowDirector:
 				extension = ".flowdirector";
 				break;
 			case OpenFlow:

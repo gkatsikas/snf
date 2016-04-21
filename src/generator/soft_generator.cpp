@@ -60,13 +60,17 @@ SoftGenerator::generate_all_in_soft_configuration(const bool &to_file) {
 	std::map < std::string, std::string > nic_to_ip_classifier;
 
 	// Step 2: Construct the path of Click elements that will lead each 
-	// modified (i.e., rewritten by Click IPRewriter already) traffic 
-	// class out of Click. This path of elements follows IPRewriter.
+	// modified (i.e., rewritten by Click IPSynthesizer already) traffic 
+	// class out of Click. This path of elements follows IPSynthesizer.
 	if ( ! this->generate_write_and_output_part_of_synthesis(config_stream) ) {
 		return TO_BOOL(CODE_GENERATION_PROBLEM);
 	}
 
-	this->synthesizer->print_hyper_nf_ifaces_to_nics();
+	def_chatter(this->log, "\tGenerate Write & Output Parts...");
+
+	#ifdef DEBUG_MODE
+		this->synthesizer->print_hyper_nf_ifaces_to_nics();
+	#endif
 
 	// Step 3: Construct the IPClassifier(s) and the path of Click elements
 	// that lead to all its/their traffic classes.
@@ -76,6 +80,8 @@ SoftGenerator::generate_all_in_soft_configuration(const bool &to_file) {
 		return TO_BOOL(CODE_GENERATION_PROBLEM);
 	}
 
+	def_chatter(this->log, "\tGenerate Read Part...");
+
 	// Step 4: Construct the input Click elements that capture incoming traffic 
 	// to be sent to the Classifiers.
 	if ( ! this->generate_input_part_of_synthesis(
@@ -83,6 +89,8 @@ SoftGenerator::generate_all_in_soft_configuration(const bool &to_file) {
 			nic_to_ip_classifier) ) {
 		return TO_BOOL(CODE_GENERATION_PROBLEM);
 	}
+
+	def_chatter(this->log, "\tGenerate Input Part...");
 
 	// The generated Click configuration will be written to a file
 	if ( to_file ) {
@@ -115,6 +123,14 @@ SoftGenerator::generate_static_configuration(std::stringstream &config_stream) {
 		config_stream << "AddressInfo(dev" << i << " $macAddr" << i << " $ipAddr"<< i << ");" << std::endl; 
 	}
 	config_stream << std::endl;
+
+	// This is a class that handles packet I/O.
+	std::string io_click_class = this->get_io_classes_by_type();
+
+	config_stream << "///////////////////////////////////////////////////////////////" << std::endl;
+	config_stream << "// Classes for handling and scheduling packet I/O"               << std::endl;
+	config_stream << "///////////////////////////////////////////////////////////////" << std::endl;
+	config_stream << io_click_class << std::endl;
 }
 
 /*
@@ -141,23 +157,19 @@ SoftGenerator::generate_input_part_of_synthesis(
 		std::string ipc_name = it.second;
 
 		#ifdef HAVE_DPDK
-		config_stream << 	"FromDPDKDevice(" << nic
-							<< ", BURST $burst, NDESC $rxNdesc) -> " 
-							<< decap << " -> " 
-							#ifdef  DEBUG_MODE
-							<< "IPPrint(NIC" + nic + ", LENGTH true, TTL true) -> "
-							#endif
-							<< ipc_name << ";"
-							<< std::endl;
+			config_stream 	<< InputClassName << "(" << nic
+							<< ", $burst, $rxNdesc, $ioCore"
+							<< nic << ") -> ";
 		#else
-		config_stream << 	"FromDevice(" << nic
-							<< ", SNAPLEN $mtuSize, PROMISC true, METHOD $ioMethod, SNIFFER false) -> " 
-							<< decap << " -> " 
-							#ifdef  DEBUG_MODE
-							<< "IPPrint(NIC" + nic + ", LENGTH true, TTL true) -> "
-							#endif
-							<< ipc_name << ";" << std::endl;
+			config_stream 	<< InputClassName << "($iface" << nic
+							<< ", $burst, $mtuSize, $ioCore"
+							<< nic << ") -> ";
 		#endif
+		config_stream 	<< decap << " -> " 
+						#ifdef  DEBUG_MODE
+						<< "IPPrint(NIC" + nic + ", LENGTH true, TTL true) -> "
+						#endif
+						<< ipc_name << ";" << std::endl;
 
 		driven_nics.push_back(nic);
 	}
@@ -169,29 +181,28 @@ SoftGenerator::generate_input_part_of_synthesis(
 	// There are interfaces that sit behind proxies
 	// These interfaces can access the chain only in-response
 	// to already initiated traffic request from inside.
+	// We currently disable them but they should technically fall
+	// into the same Classifier and stateful rewriter as the other 
+	// direction.
 	for ( auto &pair_if : this->synthesizer->get_hyper_nf_ifaces() ) {
-
 		std::string nic = this->synthesizer->get_nic_of_hyper_nf_iface(pair_if);
 
-		if( exists_in_vector(driven_nics, nic) ) continue;
+		if ( exists_in_vector(driven_nics, nic) ) continue;
 
 		#ifdef HAVE_DPDK
-		config_stream << 	"FromDPDKDevice(" << nic
-							<< ", BURST $burst, NDESC $rxNdesc) -> " 
-							<< decap << " -> " 
-							#ifdef  DEBUG_MODE
-							<< "IPPrint(NIC" + nic + ", LENGTH true, TTL true) -> "
-							#endif
-							<< "Discard();" << std::endl;
+			config_stream 	<< InputClassName << "(" << nic
+							<< ", $burst, $rxNdesc, $ioCore"
+							<< nic << ") -> ";
 		#else
-		config_stream << 	"FromDevice(" << nic
-							<< ", SNAPLEN $mtuSize, PROMISC true, METHOD $ioMethod, SNIFFER false) -> " 
-							<< decap << " -> " 
-							#ifdef  DEBUG_MODE
-							<< "IPPrint(NIC" + nic + ", LENGTH true, TTL true) -> "
-							#endif
-							<< "Discard();" << std::endl;
+			config_stream 	<< InputClassName << "($iface" << nic
+							<< ", $burst, $mtuSize, $ioCore"
+							<< nic << ") -> ";
 		#endif
+		config_stream	<< decap << " -> " 
+						#ifdef  DEBUG_MODE
+						<< "IPPrint(NIC" + nic + ", LENGTH true, TTL true) -> "
+						#endif
+						<< "Discard();" << std::endl;
 	}
 
 	return DONE;
@@ -208,7 +219,6 @@ SoftGenerator::generate_read_part_of_synthesis(
 	config_stream << "///////////////////////////////////////////////////////////////" << std::endl;
 	config_stream << "// The read-part of the synthesized Hyper-NF code"               << std::endl;
 	config_stream << "///////////////////////////////////////////////////////////////" << std::endl;
-	config_stream << std::endl;
 
 	unsigned short ipc_no = 0;
 
@@ -230,11 +240,12 @@ SoftGenerator::generate_read_part_of_synthesis(
 		config_stream << std::endl;
 
 		std::string key;
-		#ifdef HAVE_DPDK
+		key = std::to_string(ipc_no);
+		/*#ifdef HAVE_DPDK
 			key = std::to_string(ipc_no);
 		#else
 			key = it.first;
-		#endif
+		#endif*/
 
 		nic_to_ip_classifier[key] = ipc_name;
 
@@ -252,13 +263,13 @@ SoftGenerator::generate_write_and_output_part_of_synthesis(std::stringstream &co
 	config_stream << "///////////////////////////////////////////////////////////////" << std::endl;
 	config_stream << "// The write and output parts of the synthesized Hyper-NF code"  << std::endl;
 	config_stream << "///////////////////////////////////////////////////////////////" << std::endl;
-	config_stream << std::endl;
 
 	int cur_hyper_nf_iface = -1;
+	std::string ip_modifier = "IPSynthesizer";
 
 	// Costruct the path of Click elements that will lead this modified
-	// (i.e., rewritten by Click IPRewriter already) traffic class out 
-	// of Click. This set of elements follows IPRewriter.
+	// (i.e., rewritten by Click IPSynthesizer already) traffic class out 
+	// of Click. This set of elements follows IPSynthesizer.
 	for ( auto &it : this->synthesizer->get_stateful_rewriter_per_output_iface() ) {
 
 		std::string out_nf_and_iface = it.first;
@@ -269,59 +280,76 @@ SoftGenerator::generate_write_and_output_part_of_synthesis(std::stringstream &co
 		std::string iface = token[1];
 
 		// Hyper-NF's configuration to be filled below
-		std::string hyper_nf_iface = out_nf_and_iface;    // Initialized here, might change below
+		std::string hyper_nf_iface;
 		std::string hyper_nf_encap_conf;
-		std::string hyper_nf_to_device;
+		std::string hyper_nf_synth_conf = 
+			this->synthesizer->get_synthesized_config_per_output_iface(out_nf_and_iface);
+		std::stringstream hyper_nf_to_device;
 
 		// The stateful Rewriter of this path
 		auto rewriter = it.second;
 
-		// Get the DAG's vertex that corresponds to this NF
-		ChainVertex *this_nf = static_cast<ChainVertex*> (
-			this->synthesizer->get_chain_parser()->get_chain_graph()->get_chain()->get_vertex_by_name(nf)
-		);
+		// Check what's going on at this output interface
+		#ifdef  DEBUG_MODE
+			hyper_nf_encap_conf = "IPPrint(LENGTH true, TTL true) -> ";
+		#endif
 
 		// This interface is the very first one
-		if ( (nf == "NF_1") && this_nf->has_entry_interface(iface) ) {
-			#ifdef HAVE_DPDK
-				hyper_nf_iface = std::to_string(0);
-			#endif
-
-			hyper_nf_encap_conf = (this->proc_layer == L3)? \
-						"EtherEncap(0x0800, $macAddr0, $gwMACAddr0)" : 
-						"StoreEtherAddress($gwMACAddr0, dst)";
+		unsigned short chain_len = 
+			this->synthesizer->get_chain_parser()->get_chain_graph()->get_chain_length();
+		std::string last_nf = "NF_" + std::to_string(chain_len);
+		// This interface is the very first one
+		if ( nf != last_nf ) {
+			if ( cur_hyper_nf_iface <= 0 ) {
+				cur_hyper_nf_iface = 0;
+			}
 		}
-		else {
-			#ifdef HAVE_DPDK
-				if ( cur_hyper_nf_iface < 0 ) {
-					cur_hyper_nf_iface = 1;
-				}
-				hyper_nf_iface = std::to_string(cur_hyper_nf_iface++);
-			#endif
 
-			hyper_nf_encap_conf = (this->proc_layer == L3)? \
-						"EtherEncap(0x0800, $macAddr1, $gwMACAddr1)" : 
-						"StoreEtherAddress($gwMACAddr1, dst)";
-		}
+		hyper_nf_iface = std::to_string(cur_hyper_nf_iface);
+		#ifdef HAVE_DPDK
+			hyper_nf_to_device << OutputClassName << "(" << hyper_nf_iface;
+		#else
+			hyper_nf_to_device << OutputClassName << "($iface" << hyper_nf_iface;
+		#endif
+
+		hyper_nf_encap_conf += (this->proc_layer == L3)? \
+			"EtherEncap(0x0800, $macAddr"   + std::to_string(cur_hyper_nf_iface) + 
+			", $gwMACAddr" + std::to_string(cur_hyper_nf_iface) + ")" : 
+			"StoreEtherAddress($gwMACAddr"  + std::to_string(cur_hyper_nf_iface) + 
+			", dst)";
 
 		// If --enable-dpdk=yes, a FromDPDKDevice is used instead of regular FromDevice
 		#ifdef HAVE_DPDK
-			hyper_nf_to_device = "ToDPDKDevice(" + hyper_nf_iface + ", BURST $burst, NDESC $txNdesc, IQUEUE $queueSize, TIMEOUT -1);";
+			hyper_nf_to_device 	<< ", $queueSize, $burst, $txNdesc, $ioCore"
+								<< cur_hyper_nf_iface << ");";
 		#else
-			std::string iface_config = 	hyper_nf_iface + ", " + 
-										this->synthesizer->get_stateful_rewriter_per_output_iface_conf(out_nf_and_iface);
-			hyper_nf_to_device = "Queue($queueSize) -> ToDevice(" + iface_config + ", BURST $burst, METHOD $ioMethod);";
+			/*std::string iface_config = 	"," + 
+										this->synthesizer->get_stateful_rewriter_per_output_iface_conf(
+											out_nf_and_iface
+										);
+			hyper_nf_to_device 	<< iface_config */
+			hyper_nf_to_device 	<< ", $queueSize, $burst, $ioMethod, $ioCore"
+								<< cur_hyper_nf_iface << ");";
 		#endif
 
 		config_stream 	<< "/** Stateful Path going to: " << out_nf_and_iface << " **/" << std::endl;
-		config_stream 	<< rewriter->get_name() << " :: IPRewriter(" << rewriter->compute_conf() 
-						<< "DEC_IP_TTL true, CALC_CHECKSUM true);" << std::endl;
+		config_stream 	<< rewriter->get_name() << " :: " << ip_modifier << "(" 
+						<< rewriter->compute_conf();
+
+		
+		config_stream 	<< hyper_nf_synth_conf
+						<< ", CAPACITY 100000, MTU $mtuSize, IPADDR $ipAddr"
+						<< cur_hyper_nf_iface << ");" << std::endl;
 
 		// Only a Hyper-NF interface will take a ToDevice element.
 		if ( this->synthesizer->is_hyper_nf_iface(nf, iface) ) {
 			this->synthesizer->add_nic_of_hyper_nf_iface( std::make_pair(nf, iface), hyper_nf_iface );
 			config_stream 	<< rewriter->get_name() << "[" << rewriter->get_outbound_port()
-							<< "] -> " << hyper_nf_encap_conf << " -> " + hyper_nf_to_device << std::endl;
+							<< "] -> " << hyper_nf_encap_conf << " -> " << hyper_nf_to_device.str() 
+							<< std::endl;
+
+			debug_chatter(this->log, "\tHyper-NF function " << nf << " with iface: " << iface);
+			cur_hyper_nf_iface++;
 		}
 		// Be careful, some interfaces that appear here are internal. These need to be discarded.
 		else {
@@ -341,4 +369,54 @@ SoftGenerator::generate_write_and_output_part_of_synthesis(std::stringstream &co
 	}
 
 	return DONE;
+}
+
+std::string 
+SoftGenerator::get_io_classes_by_type(void) const {
+	#ifdef HAVE_DPDK
+		return ""
+"elementclass "+ InputClassName +" {\n"
+"	// Module's arguments\n"
+"	$iface, $burst, $rxNdesc, $ioCore |\n\n"
+"	// Read from DPDK interface\n"
+"	nicIn :: FromDPDKDevice($iface, BURST $burst, NDESC $rxNdesc);\n\n"
+"	// Pin the input element of this device to a specific core\n"
+"	StaticThreadSched(nicIn $ioCore);\n\n"
+"	// Packet is received by the attached interface (I)\n"
+"	nicIn -> output;\n"
+"}\n\n"
+"elementclass "+ OutputClassName +" {\n"
+"	// Module's arguments\n"
+"	$iface, $queueSize, $burst, $txNdesc, $ioCore |\n\n"
+"	// Write to the interface\n"
+"	nicOut :: ToDPDKDevice($iface, BURST $burst, NDESC $txNdesc, IQUEUE $queueSize, TIMEOUT -1);\n\n"
+"	// Pin the output element of this device to a specific core\n"
+"	StaticThreadSched(nicOut $ioCore);\n\n"
+"	// Packet is received by the attached pipeline (O); sent it out\n"
+"	input -> nicOut;\n"
+"}\n";
+	// Standard Click mode
+	#else
+		return ""
+"elementclass "+ InputClassName +" {\n"
+"	// Module's arguments\n"
+"	$iface, $burst, $mtuSize, $ioCore |\n\n"
+"	// Read from DPDK interface\n"
+"	nicIn :: FromDevice($iface, BURST $burst, SNAPLEN $mtuSize, PROMISC true, METHOD $ioMethod, SNIFFER false);\n\n"
+"	// Pin the input element of this device to a specific core\n"
+"	StaticThreadSched(nicIn $ioCore);\n\n"
+"	// Packet is received by the attached interface (I)\n"
+"	nicIn -> output;\n"
+"}\n\n"
+"elementclass "+ OutputClassName +" {\n"
+"	// Module's arguments\n"
+"	$iface, $queueSize, $burst, $ioMethod, $ioCore |\n\n"
+"	// Write to the interface\n"
+"	nicOut :: Queue($queueSize) -> ToDevice($iface, BURST $burst, METHOD $ioMethod);\n\n"
+"	// Pin the output element of this device to a specific core\n"
+"	StaticThreadSched(nicOut $ioCore);\n\n"
+"	// Packet is received by the attached pipeline (O); sent it out\n"
+"	input -> nicOut;\n"
+"}\n";
+	#endif
 }
