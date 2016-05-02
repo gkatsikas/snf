@@ -417,14 +417,6 @@ ParserConfiguration::parse_topology(const std::string &nf_topo) {
 	// Split the map into rows
 	boost::tokenizer<boost::char_separator<char>> expressions(nf_topo, con_sep);
 
-	// What the user specified in [NF_MODULES must be reflected in [NF_TOPO] TOPOLOGY variable
-	if ( std::distance(expressions.begin(), expressions.end()) != (elements_in_property-1) ) {
-		this->usage("\tMismatch between the number of modules in [NF_MODULES] and "
-					"the number of chained modules in [NF_TOPO]->TOPOLOGY",
-					"\tTip: A chain of 2 NFs in a row must be connected: NF_1[ifaceX]->[ifaceY]NF_2;");
-		return TO_BOOL(NO_MEM_AVAILABLE);
-	}
-
 	// Check for colon-separated expressions
 	if ( expressions.begin() == expressions.end() ) {
 		this->usage("\tChained modules are not colon-separated (;) or do not exist",
@@ -556,8 +548,13 @@ ParserConfiguration::parse_topology(const std::string &nf_topo) {
 
 		// Now that eveything is read properly, associate the interface names 
 		// with the NF names in the InterfaceMap
-		vertices.at(0)->add_chain_interface_pair(ifaces[0], "", vertices.at(1)->get_name());
-		vertices.at(1)->add_chain_interface_pair(ifaces[1], "", vertices.at(0)->get_name());
+		std::string from_nf    = vertices.at(0)->get_name();
+		std::string to_nf      = vertices.at(1)->get_name();
+		std::string from_iface = ifaces[0];
+		std::string to_iface   = ifaces[1];
+
+		vertices.at(0)->add_chain_interface_pair(from_iface, "", to_nf,   to_iface);
+		vertices.at(1)->add_chain_interface_pair(to_iface,   "", from_nf, from_iface);
 
 		// Finally, add the edge to the graph
 		this->nf_chain->add_edge( std::move(vertices.at(0)), std::move(vertices.at(1)), 0 );

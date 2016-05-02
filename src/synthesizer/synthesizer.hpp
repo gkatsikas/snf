@@ -220,9 +220,14 @@ namespace TrafficBuilder {
 	void traffic_class_builder_dfs(
 		Graph                         *graph,
 		NF_Map<NFGraph*>              nf_chain,
+		std::vector<unsigned short>   nfs_traversed,
 		unsigned short                nf_position,
 		std::shared_ptr<ClickElement> elem,
 		std::string                   nf_conf
+	);
+
+	std::string retrieve_lb_patterns_from_st_element(
+		ElementVertex *ev
 	);
 
 }

@@ -70,6 +70,7 @@ static const uint32_t elem_start = __LINE__;
 	EL(Paint) \
 	EL(PaintTee) \
 	EL(Print) \
+	EL(IPPrint) \
 	EL(Counter) \
 	EL(AverageCounter) \
 	EL(Discard) \

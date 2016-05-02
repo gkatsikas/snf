@@ -158,6 +158,11 @@ Synthesizer::build_traffic_classes(void) {
 		ChainVertex *cv = static_cast<ChainVertex*>(v);
 		unsigned short nf_position = cv->get_position();
 
+		// Vector that accumulates all the NFs seen across a path
+		// so as to avoid looping around the chain forever.
+		std::vector<unsigned short> nfs_traversed;
+		nfs_traversed.push_back(nf_position);
+
 		// The Click DAG of this NF
 		NFGraph* nf_graph = this->get_chain_parser()->get_nf_graph_at(nf_position);
 		if ( !nf_graph )
@@ -179,10 +184,11 @@ Synthesizer::build_traffic_classes(void) {
 			def_chatter(this->log, "\t" << elem_name << "(" << interface << ")");
 
 			// Go DFS until the end of life
-			std::shared_ptr<ClickElement> ep(new ClickElement(endpoint));
+			std::shared_ptr<ClickElement> ep( new ClickElement(endpoint) );
 			TrafficBuilder::traffic_class_builder_dfs(
 				this->get_chain_parser()->get_chain_graph()->get_chain(),
 				this->get_chain_parser()->get_nf_graphs(),
+				nfs_traversed,
 				nf_position,
 				ep,
 				interface
@@ -214,7 +220,6 @@ Synthesizer::build_traffic_classes(void) {
 						std::string nf_of_tc_out_iface = tc.get_nf_of_output_iface();
 						std::string tc_out_iface = tc.get_output_iface();
 
-						// FIXME: Multiple directions may exist
 						/*unsigned short direction;
 						if ( is_hyper_nf_iface( nf_of_tc_out_iface, tc_out_iface) && (nf_of_tc_out_iface == "NF_1") ) {
 							direction = 0;
@@ -417,6 +422,7 @@ void
 TrafficBuilder::traffic_class_builder_dfs(
 	Graph                         *graph,
 	NF_Map<NFGraph*>              nf_chain,
+	std::vector<unsigned short>   nfs_traversed,
 	unsigned short                nf_position,
 	std::shared_ptr<ClickElement> elem,
 	std::string                   nf_iface) {
@@ -429,23 +435,25 @@ TrafficBuilder::traffic_class_builder_dfs(
 
 	// We reached an Output vertex and need to find for a connection with a following NF
 	if ( adjacency_list.at(nf_vertex).size() == 0 ) {
+
+		// Let's see who 's next
+		unsigned short next_nf_position = nf_vertex->get_glue_nf_position();
+		//warn_chatter(log, "\t\t Glue NF position " << next_nf_position);
+
 		// We are looking for an endpoint Outpout element with different configuration (aka interface)
 		// Otherwise a loop will be created
 		if ( (nf_vertex->is_endpoint()) && (nf_vertex->get_interface() != nf_iface) ) {
 			def_chatter(log, "\t\t ----->  ENDPOINT " << nf_vertex->get_name() << "(" << nf_vertex->get_interface() << ")");
 			return;
 		}
-		// A way to continue in the chain
-		else if ( (! nf_vertex->is_endpoint()) && (nf_vertex->get_interface() != nf_iface) ) {
+		// A way to continue in the chain.
+		// Initial position must be always different from the next position
+		// to avoid looping around the same NFs
+		else if ( 	(! nf_vertex->is_endpoint()) && (nf_vertex->get_interface() != nf_iface) && 
+					 !exists_in_vector(nfs_traversed, next_nf_position) ) {
 			// Give me the 'good' paths
 			if ( (nf_vertex->get_class() != "Discard") ) {
-				unsigned short next_nf_position = nf_vertex->get_glue_nf_position();
 				std::string next_nf_iface = nf_vertex->get_glue_iface();
-
-				def_chatter  (log, "\t\t -----> JUMP FROM " << nf_vertex->get_name() 
-									<< "(" << nf_vertex->get_interface() << ")");
-				debug_chatter(log, "\t\t -----> NEXT POS: " << next_nf_position 
-									<< " at iface " << next_nf_iface);
 
 				// Change context, move to next graph
 				// 1. Change adjacency list
@@ -453,18 +461,22 @@ TrafficBuilder::traffic_class_builder_dfs(
 
 				// 2. Change vertex pointer to the first element of the next NF
 				bool found = false;
-				for ( ElementVertex* input_elem : nf_chain[next_nf_position]->get_vertices_by_stage(VertexType::Input) ) {
+				for ( ElementVertex *input_elem : nf_chain[next_nf_position]->get_vertices_by_stage(VertexType::Input) ) {
 					if ( input_elem->get_interface() == next_nf_iface ) {
+						info_chatter  (log, "\t\t -----> JUMP FROM " << nf_vertex->get_name()
+									<< "(" << nf_vertex->get_interface() << ")"
+									<< " -----> TO " << input_elem->get_class()
+									<<  "(" << input_elem->get_interface() << ")"
+									<< ", Next Position: " << next_nf_position);
 						nf_vertex = input_elem;
-						found = true;
-						def_chatter(log, "\t\t ----->        TO " << nf_vertex->get_class() 
-										<<  "(" << nf_vertex->get_interface() << ")");
+						found     = true;
+
 						break;
 					}
 				}
 
 				if ( !found ) {
-					error_chatter(log, "\t\t Unable to find next jump ");
+					error_chatter(log, "\t\t Unable to find next jump");
 				}
 
 				// 3. Change origin interface using the interface of the new vertex
@@ -472,6 +484,9 @@ TrafficBuilder::traffic_class_builder_dfs(
 
 				// 4. Change NF postion in the Chain DAG
 				nf_position = next_nf_position;
+
+				// 5. Add this NF to the list of traversed NFs so as not to come back again (for this path).
+				nfs_traversed.push_back(next_nf_position);
 			}
 			// A path that leads to the cliff
 			else {
@@ -480,7 +495,7 @@ TrafficBuilder::traffic_class_builder_dfs(
 			}
 		}
 		// Do not chain because a loop will be created
-		else if ( nf_vertex->get_interface() == nf_iface ) {
+		else if ( (nf_vertex->get_interface() == nf_iface) || exists_in_vector(nfs_traversed, next_nf_position) ) {
 			def_chatter(log, "\t\t ----->      LOOP " << nf_vertex->get_name() << "(" 
 								<< nf_vertex->get_interface() << ")");
 			return;
@@ -492,21 +507,11 @@ TrafficBuilder::traffic_class_builder_dfs(
 		}
 	}
 
-	int count = 0;
+	unsigned int count = 0;
 	for ( auto &neighbour : adjacency_list.at(nf_vertex) ) {
-
-		// A way to get an IPMapper's patterns when you encounter IPRewriter
-		/*ElementVertex *ev = (ElementVertex*) neighbour.second;
-		if ( ev->get_name() == std::string("IPRewriter") ) {
-			warn_chatter(log, "\t\tFound: " << ev->get_name());
-			warn_chatter(log, "\t\t\t with conf: " << ev->get_configuration());
-			for (auto &pair : *(ev->get_implicit_configuration()) ) {
-				warn_chatter(log, "\t\t\t Port: " << pair.first << " maps to patterns: ");
-				for (auto &pattern : pair.second ) {
-					warn_chatter(log, "\t\t\t    " << pattern);
-				}
-			}
-		}*/
+		// A way to get an IPMapper's patterns when you encounter a stateful element
+		//ElementVertex *ev = static_cast<ElementVertex*> (neighbour.second);
+		//std::string lb_patterns = TrafficBuilder::retrieve_lb_patterns_from_st_element(ev);
 
 		std::shared_ptr<ClickElement> child(
 			new ClickElement( static_cast<ElementVertex*> (neighbour.second), neighbour.first )
@@ -515,6 +520,33 @@ TrafficBuilder::traffic_class_builder_dfs(
 		elem->set_child(child, count++);
 
 		// Unvisited node --> recursion
-		traffic_class_builder_dfs(graph, nf_chain, nf_position, child, nf_iface);
+		traffic_class_builder_dfs(graph, nf_chain, nfs_traversed, nf_position, child, nf_iface);
 	}
+}
+
+std::string
+TrafficBuilder::retrieve_lb_patterns_from_st_element(ElementVertex *ev) {
+	Logger log(__FILE__);
+	std::string el_class = ev->get_class();
+
+	if (	(el_class != std::string("IPAddrRewriter"))  || (el_class != std::string("IPAddrPairRewriter")) ||
+			(el_class != std::string("IPRewriter"))      || (el_class != std::string("IPSynthesizer"))      ||
+			(el_class != std::string("UDPRewriter"))     || (el_class != std::string("TCPRewriter"))        ||
+			(el_class != std::string("ICMPPingRewriter")) ) {
+		return "";
+	}
+	
+	def_chatter(log, "\t\tFound: " << el_class);
+	def_chatter(log, "\t\t\t with conf: " << ev->get_configuration());
+
+	std::string patterns;
+	for ( auto &pair : *(ev->get_implicit_configuration()) ) {
+		def_chatter(log, "\t\t\t Port: " << pair.first << " maps to patterns: ");
+		for ( auto &pattern : pair.second ) {
+			def_chatter(log, "\t\t\t    " << pattern);
+			patterns += pattern + "\n";
+		}
+	}
+
+	return patterns;
 }

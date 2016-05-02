@@ -748,7 +748,7 @@ filters_from_substr(char **position, char *end) {
 
 std::vector<PacketFilter>
 filters_from_ipfilter_line(const std::string &line) {
-	if ( !line.size() ) {
+	if ( line.empty() ) {
 		error_chatter(ip_par_lg, "\tEmpty IPFilter configuration");
 		exit(CLICK_PARSING_PROBLEM);
 

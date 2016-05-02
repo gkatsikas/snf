@@ -124,6 +124,11 @@ class Generator {
 		inline Synthesizer*       get_synthesizer                 (void) {
 			return this->synthesizer;
 		};
+
+		void generate_indicative_chain_parameters(
+			unsigned short &hyper_nf_ifaces_no,
+			std::stringstream &config_stream
+		);
 };
 
 #endif

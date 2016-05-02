@@ -221,7 +221,8 @@ ChainParser::build_nf_dag(const std::string &nf_name, const unsigned short &posi
 				(e->class_name() == std::string("IPRewriter"))  || 
 				(e->class_name() == std::string("UDPRewriter")) || 
 				(e->class_name() == std::string("TCPRewriter")) || 
-				(e->class_name() == std::string("IPSynthesizer"))
+				(e->class_name() == std::string("IPSynthesizer")) ||
+				(e->class_name() == std::string("ICMPPingRewriter"))
 			);
 			u->set_implicit_configuration(implicit_port_mappings[e->eindex()], implicit_conf_mappings[e->eindex()]);
 		}
@@ -409,30 +410,31 @@ ChainParser::verify_and_connect_nfs(const std::string &nf_name, const unsigned s
 				if ( type == VertexType::Input )
 					seen_chain_ifaces++;
 
-				// ---> IMPORNTANT
+				// ---> IMPORTANT
 				// For Output chain inerfaces (e.g. ToDevice(eth1) in NF_1[eth1] -> NF_2)
 				// set a pointer to the first input element of the next NF.
 				if ( type == VertexType::Output ) {
-
 					def_chatter(this->log, "\t" << nf_name << " --> " << el_name << "(" << interface << ")");
 
-					std::string next_nf_name = this_nf->get_nf_from_chain_interface(interface);
+					// Find the next hop information
+					std::string next_nf_name  = this_nf->get_next_nf_from_chain_interface   (interface);
+					std::string next_nf_iface = this_nf->get_next_iface_from_chain_interface(interface);
 					ChainVertex *next_nf = static_cast<ChainVertex*> (chain_graph->get_vertex_by_name(next_nf_name));
 					unsigned short next_nf_position = next_nf->get_position();
-					std::string next_nf_iface = next_nf->get_iface_from_chain_nf(nf_name);
-					//def_chatter(this->log, "\tNext NF is " << next_nf_name << " at position: " << next_nf_position 
-					//		<< " and iface: " << next_nf_iface);
+					debug_chatter(this->log, "\tNext NF is " 	<< next_nf_name << " at position: " 
+																<< next_nf_position << " and iface: " 
+																<< next_nf_iface);
 
 					NFGraph *next_nf_graph = this->nf_dag[next_nf_position];
 
-					ElementVertex* next_jump = this->find_input_element_of_nf(next_nf_graph, next_nf_iface);
-					if ( next_jump == NULL ) {
-						error_chatter(this->log, "There is no connection between " << nf_name << " and " 
-							<< next_nf_name << ". Element not found");
-						return TO_BOOL(NO_MEM_AVAILABLE);
+					ElementVertex *next_jump = this->find_input_element_of_nf(next_nf_graph, next_nf_iface);
+					if ( ! next_jump ) {
+						error_chatter(this->log, "There is no connection between " << nf_name 
+													<< " and " << next_nf_name << ". Element not found");
+						return TO_BOOL(CHAIN_PARSING_PROBLEM);
 					}
-					def_chatter(this->log, "\t\t Goes to " << next_nf_name << " --> " << next_jump->get_class() 
-						<< "(" << next_nf_iface << ")");
+					def_chatter(this->log, "\t\t Goes to " 	<< next_nf_name << " --> " << next_jump->get_class() 
+															<< "(" << next_nf_iface << ")");
 
 					// Create the link between the Output vertex of this NF and the Input vertex of the next one
 					element->set_glue_info(next_nf_position, next_nf_iface);
@@ -495,7 +497,7 @@ ChainParser::verify_and_connect_nfs(const std::string &nf_name, const unsigned s
  */
 ElementVertex*
 ChainParser::find_input_element_of_nf(NFGraph *next_nf_graph, const std::string &target_interface) {
-	if ( !next_nf_graph )
+	if ( ! next_nf_graph )
 		return NULL;
 
 	// Get all the input elements of this NF
@@ -503,13 +505,14 @@ ChainParser::find_input_element_of_nf(NFGraph *next_nf_graph, const std::string 
 
 	// Search for the Input element with this interface
 	for ( auto &element : input_elements ) {
-		//std::string name = element->get_name();
-		//std::string el_class = element->get_class();
+		std::string name          = element->get_name();
 		std::string configuration = element->get_configuration();
 
 		// Configuration might contain e.g. BURST burst_size after the interface.
 		// We don't want it.
 		std::string interface = configuration.substr(0, configuration.find(","));
+
+		debug_chatter(this->log, "\tNext element " << name << " with conf " << configuration);
 
 		if ( interface == target_interface )
 			return element;

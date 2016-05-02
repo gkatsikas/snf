@@ -23,8 +23,9 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>
  */
 
+#include <map>
 #include <memory>
-#include <unordered_map>
+//#include <unordered_map>
 
 #include "../logger/logger.hpp"
 #include "../shared/helpers.hpp"
@@ -106,9 +107,18 @@ class Vertex {
 };
 
 /*
- * A map between Interface names and MAC addresses
+ * A map between (Interface, MAC) -> (Entry Domain)
  */
-using InterfaceMap = std::unordered_map<std::string, std::pair<std::string, std::string>>;
+using EntryInterfaceMap = std::map<
+	std::pair<std::string, std::string>, std::string
+>;
+
+/*
+ * A map between (Interface, MAC) -> (NextNF, Interface)
+ */
+using NFLinkage    = std::map< 
+	std::pair<std::string, std::string>, std::pair<std::string, std::string>
+>;
 
 /*
  * The Chain graph contains an associated source code filename per vertex
@@ -119,17 +129,17 @@ class ChainVertex : public Vertex {
 		/*
 		 * The path of the NF implementation file of this node
 		 */
-		std::string  source_code_path;
+		std::string       source_code_path;
 
 		/*
 		 * Stores the interfaces of a NF that connect it to the outside world.
 		 */
-		InterfaceMap entry_interfaces;
+		EntryInterfaceMap entry_interfaces;
 
 		/*
 		 * Stores the interfaces of a NF that connect it to the rest of the chain.
 		 */
-		InterfaceMap chain_interfaces;
+		NFLinkage         chain_interfaces;
 
 	public:
 		ChainVertex (const std::string &path, const std::string &name, 
@@ -142,33 +152,40 @@ class ChainVertex : public Vertex {
 		/*
 		 * Setters & Getters
 		 */
-		bool has_entry_interface     (const std::string &iface) const;
-		bool has_chain_interface     (const std::string &iface) const;
+		bool has_entry_interface      (const std::string &iface) const;
+		bool has_chain_interface      (const std::string &iface) const;
 
-		void add_entry_interface_key (const std::string &iface);
-		void add_entry_interface_pair(const std::string &iface, const std::string &mac, const std::string &domain);
-		void add_chain_interface_key (const std::string &iface);
-		void add_chain_interface_pair(const std::string &iface, const std::string &mac, const std::string &nf);
+		void add_entry_interface_key  (const std::string &iface, std::string mac="");
+		void add_entry_interface_pair (
+			const std::string &iface, const std::string &mac, 
+			const std::string &domain
+		);
+		void add_chain_interface_key  (const std::string &iface, std::string mac="");
+		void add_chain_interface_pair (
+			const std::string &iface, const std::string &mac,
+			const std::string &next_nf, const std::string &next_iface
+		);
 
-		std::string    get_mac_from_entry_interface   (const std::string &iface)  const;
-		std::string    get_domain_from_entry_interface(const std::string &iface)  const;
-		std::string    get_iface_from_entry_domain    (const std::string &domain) const;
+		std::string    get_mac_from_entry_interface       (const std::string &iface);
+		std::string    get_domain_from_entry_interface    (const std::string &iface);
+		std::string    get_iface_from_entry_domain        (const std::string &domain);
 
-		std::string    get_mac_from_chain_interface   (const std::string &iface)  const;
-		std::string    get_nf_from_chain_interface    (const std::string &iface)  const;
-		std::string    get_iface_from_chain_nf        (const std::string &nf)     const;
+		std::string    get_mac_from_chain_interface       (const std::string &iface);
+		std::string    get_next_nf_from_chain_interface   (const std::string &iface);
+		std::string    get_next_iface_from_chain_interface(const std::string &iface);
+		std::string    get_chain_iface_from_nf            (const std::string &nf);
 
-		unsigned short get_interfaces_no              (void) const;
-		unsigned short get_entry_interfaces_no        (void) const;
-		unsigned short get_chain_interfaces_no        (void) const;
-		std::string    get_source_code_path           (void) const;
+		std::string    get_source_code_path               (void) const;
+		unsigned short get_interfaces_no                  (void) const;
+		unsigned short get_entry_interfaces_no            (void) const;
+		unsigned short get_chain_interfaces_no            (void) const;
 
 		/*
 		 * Debugging
 		 */
-		void           print_info               (void);
-		void           print_chain_interface_map(void);
-		void           print_entry_interface_map(void);
+		void print_info               (void);
+		void print_chain_interface_map(void);
+		void print_entry_interface_map(void);
 };
 
 #endif

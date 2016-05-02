@@ -145,6 +145,7 @@ ClickElement::ClickElement(
 		case Paint:
 		case PaintTee:
 		case Print:
+		case IPPrint:
 		case AverageCounter: {
 			OutputClass port(0);
 			this->add_output_class(port);
@@ -308,23 +309,24 @@ ClickElement::parse_ip_filter(const std::string &configuration) {
 			FANCY_BUG(this->log, "\tEmpty classifying rule in IPFilter element");
 		}
 		std::string rule = rules[i].substr(rules[i].find_first_not_of("\n\t "), rules[i].size());
+		debug_chatter(this->log, "\t[Rule: " << rule);
 
 		size_t first_space = rule.find(' ');
-		std::string behaviour = rule.substr(0,first_space);
+		std::string behaviour = rule.substr(0, first_space);
 		int16_t output = -1;
-		if (!behaviour.compare("allow")) {
+		if ( !behaviour.compare("allow") ) {
 			output = 0;
 		}
 		else if (behaviour.find_first_not_of("0123456789") == std::string::npos) {
 			output = atoi(behaviour.c_str());
 		}
-		else if(behaviour.compare("deny")  && behaviour.compare("drop")) {
-			FANCY_BUG(this->log, "\tUnknown action for IP Filter: "+behaviour);
+		else if (behaviour.compare("deny") && behaviour.compare("drop") ) {
+			FANCY_BUG(this->log, "\tUnknown action for IP Filter: " + behaviour);
 		}
 		std::vector<PacketFilter> outputs = filters_from_ipfilter_line( rules[i].substr(
 									first_space+1,rule.size() - first_space - 1));
 
-		if (output==-1) {
+		if (output == -1) {
 			to_discard.insert(to_discard.end(), outputs.begin(), outputs.end());
 		}
 		else {

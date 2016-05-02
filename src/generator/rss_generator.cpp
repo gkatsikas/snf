@@ -205,6 +205,9 @@ RSSGenerator::generate_static_configuration(std::stringstream &config_stream) {
 	unsigned short hyper_ifaces_no = (this->synthesizer->get_hyper_nf_ifaces_no() <= this->number_of_nics ) ? 
 		this->number_of_nics : this->synthesizer->get_hyper_nf_ifaces_no();
 
+	// Chain parameters
+	this->generate_indicative_chain_parameters(hyper_ifaces_no, config_stream);
+
 	// Device configuration
 	for (unsigned short i=0 ; i<hyper_ifaces_no ; i++) {
 		config_stream << "AddressInfo(dev" << i << " $macAddr" << i << " $ipAddr"<< i << ");" << std::endl; 
@@ -323,9 +326,9 @@ RSSGenerator::replicate_input_part_of_synthesis(
 							#endif
 							<< action.str() << ";" << std::endl;
 		}
-
-		config_stream << std::endl;	
 	}
+
+	config_stream << std::endl;
 
 	return DONE;
 }
@@ -456,7 +459,7 @@ RSSGenerator::replicate_write_and_output_part_of_synthesis(
 	std::string ip_modifier = "IPSynthesizer";
 	if ( fast_click ) {
 		this->rss_queues = 1;
-		ip_modifier = "IPRewriter";
+		//ip_modifier = "IPRewriter";
 	}
 
 	// Costruct the path of Click elements that will lead each modified
@@ -550,20 +553,21 @@ RSSGenerator::replicate_write_and_output_part_of_synthesis(
 			config_stream 	<< rewriter_name_of_queue << " :: " << ip_modifier 
 							<< "(" << rewriter->compute_conf();
 
+			config_stream 	<< hyper_nf_synth_conf
+								<< ", CAPACITY 1000000, MTU $mtuSize, IPADDR $ipAddr"
+								<< cur_hyper_nf_iface << ");" << std::endl;
+			
 			std::stringstream out_str;
 			if ( this->fast_click ) {
-				config_stream 	<< ");" << std::endl;
+				out_str << OutputClassName << "(" << hyper_nf_iface << ", $queueSize);" << std::endl;
 			}
 			else {
-				config_stream 	<< hyper_nf_synth_conf
-								<< ", CAPACITY 100000, MTU $mtuSize, IPADDR $ipAddr"
-								<< cur_hyper_nf_iface << ");" << std::endl;
 				out_str << " " << output_fd << std::left  << std::setw(2) << queue << " :: ";
+				out_str << OutputClassName << "(" << hyper_nf_iface << ", " 
+						<< std::right << std::setw(2) << queue
+						<< ", $queueSize, $burst, $txNdesc, " 
+						<< core_modulo << ");" << std::endl;
 			}
-			out_str << OutputClassName << "(" << hyper_nf_iface << ", " 
-					<< std::right << std::setw(2) << queue
-					<< ", $queueSize, $burst, $txNdesc, " 
-					<< core_modulo << ");" << std::endl;
 
 			// Only a Hyper-NF interface will take a ToDevice element.
 			if ( this->synthesizer->is_hyper_nf_iface(nf, iface) ) {
@@ -753,15 +757,22 @@ RSSGenerator::assign_nic_queues_to_cores(
 		if ( (this->rss_queues <= 1) && (! this->fast_click) ) {
 			config_stream 	<< input_nic_desc << std::left << std::setw(2) << queue 
 							<< " :: FromDPDKDevice(" << nic_no 
-							<< ", BURST $burst, NDESC $rxNdesc);" << std::endl;
+							<< ", BURST $burstIn, NDESC $rxNdesc);" << std::endl;
 		}
 		// Define a Click-DPDK input element per queue per NIC
 		else {
-			config_stream 	<< input_nic_desc << std::left << std::setw(2) << queue 
-							<< " :: " << InputClassName << "(" << nic_no << ", " 
-							<< std::right << std::setw(2) << queue 
-							<< ", $burst, $rxNdesc, " 
-							<< core_modulo << ");" << std::endl;
+			if ( this->fast_click ) {
+				config_stream 	<< input_nic_desc << std::left << std::setw(2) << queue 
+								<< " :: " << InputClassName << "(" << nic_no
+								<< ", $burstIn);" << std::endl;
+			}
+			else {
+				config_stream 	<< input_nic_desc << std::left << std::setw(2) << queue 
+								<< " :: " << InputClassName << "(" << nic_no << ", " 
+								<< std::right << std::setw(2) << queue 
+								<< ", $burst, $rxNdesc, " 
+								<< core_modulo << ");" << std::endl;
+			}
 		}
 
 		// Append the vector of descriptors that will be assigned to this IPClassifier
@@ -771,7 +782,6 @@ RSSGenerator::assign_nic_queues_to_cores(
 		in_nic_desc_to_core[input_nic_desc + std::to_string(queue)] = core_modulo;
 		core_no += this->cores_step;
 	}
-	config_stream << std::endl;
 
 	classifier_to_nic_desc[ipcl_name] = nic_descs;
 
@@ -789,22 +799,24 @@ RSSGenerator::scheduling(
 		>                                               &classifier_repl_to_rewriter_repl,
 		std::stringstream                               &config_stream) {
 
+	if ( this->fast_click ) {
+		return DONE;
+	}
+
+	// Fast-Click handles the pinning internally
 	config_stream << "///////////////////////////////////////////////////////////////" << std::endl;
 	config_stream << "// Pin the Hyper-NF pipelines"                                   << std::endl;
 	config_stream << "///////////////////////////////////////////////////////////////" << std::endl;
-
 	config_stream << "StaticThreadSched(" << std::endl;
-
+	
 	// Schedule the I/O descriptors
-	if ( ! this->fast_click ) {
-		if ( ! this->static_path_scheduling(in_nic_desc_to_core, config_stream, "") ) {
-			return TO_BOOL(CODE_GENERATION_PROBLEM);
-		}
-		if ( ! this->static_path_scheduling(out_nic_desc_to_core, config_stream, "") ) {
-			return TO_BOOL(CODE_GENERATION_PROBLEM);
-		}
+	if ( ! this->static_path_scheduling(in_nic_desc_to_core, config_stream, "") ) {
+		return TO_BOOL(CODE_GENERATION_PROBLEM);
 	}
-
+	if ( ! this->static_path_scheduling(out_nic_desc_to_core, config_stream, "") ) {
+		return TO_BOOL(CODE_GENERATION_PROBLEM);
+	}
+	
 	// Schedule paths between IPClassifiers and IPSynthesizers (Core Hyper-NF processing)
 	// 
 	if ( this->rss_aggressive_pinning ) {
@@ -998,17 +1010,17 @@ RSSGenerator::get_io_classes_by_type(void) const {
 		return ""
 "elementclass "+ InputClassName +" {\n"
 "	// Module's arguments\n"
-"	$iface, $queueNo, $burst, $rxNdesc, $ioCore |\n\n"
+"	$iface, $burst |\n\n"
 "	// Read from DPDK interface\n"
-"	nicIn :: FromDPDKDevice($iface, BURST $burst, NDESC $rxNdesc, THREADOFFSET $ioCore, MAXTHREADS 1);\n\n"
+"	nicIn :: FromDPDKDevice($iface, BURST $burst);\n\n"
 "	// Packet is received by the attached interface (I)\n"
 "	nicIn -> output;\n"
 "}\n\n"
 "elementclass "+ OutputClassName +" {\n"
 "	// Module's arguments\n"
-"	$iface, $queueNo, $queueSize, $burst, $txNdesc, $ioCore |\n\n"
+"	$iface, $queueSize |\n\n"
 "	// Write to the interface\n"
-"	nicOut :: ToDPDKDevice($iface, BURST $burst, NDESC $txNdesc, MAXTHREADS 1, MAXQUEUES 16, IQUEUE $queueSize, TIMEOUT -1);\n\n"
+"	nicOut :: ToDPDKDevice($iface, IQUEUE $queueSize);\n\n"
 "	// Packet is received by the attached pipeline (O); sent it out\n"
 "	input -> nicOut;\n"
 "}\n";

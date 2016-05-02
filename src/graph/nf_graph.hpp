@@ -43,8 +43,8 @@ class ElementVertex : public Vertex {
 		std::shared_ptr<Element> click_element;
 
 		/*
-		 * If true, we mark the elements that serve as interfaces between the NF Chain
-		 * and the NFV domains (outside world). It can only be assigned to elements that
+		 * Characterizes an element that serves as an interface between the NF Chain
+		 * and an NFV domain (outside world). It can only be assigned to elements that
 		 * belong to Input or Output VertexType.
 		 * If false and the element is an Input/Output, then this element serves as glue
 		 * between two consecutive NFs.
@@ -61,7 +61,7 @@ class ElementVertex : public Vertex {
 
 		/*
 		 * This member is valid only for elements that use other elements as information source.
-		 * For example an IPRewriter that uses an IPMapper
+		 * For example an IPRewriter that uses an IPMapper.
 		 */
 		std::unordered_map<short, std::vector<std::string>> implicit_configuration;
 

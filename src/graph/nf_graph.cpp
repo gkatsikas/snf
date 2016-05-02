@@ -30,7 +30,7 @@ ElementVertex::ElementVertex(Element *element, const std::string &name,
 							const unsigned short &pos) :
 							Vertex(std::move(name), pos, VertexType::None),
 							click_element(element), _is_endpoint(false) {
-	if ( element->ninputs() == 0 )
+	if      ( element->ninputs()  == 0 )
 		this->type = Input;
 	else if ( element->noutputs() == 0 )
 		this->type = Output;
