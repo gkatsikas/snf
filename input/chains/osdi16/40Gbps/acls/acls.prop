@@ -5,10 +5,10 @@
 #######            properties, default ones will be used, so pay attention.
 #######
 [GENERIC]
-OUTPUT_FOLDER           = ./results/osdi16/20Gbps/acls
-OUTPUT_FILE             = synth_acl_251.click
-#OUTPUT_FILE             = synth_acl_713.click
-#OUTPUT_FILE             = synth_acl_8550.click
+OUTPUT_FOLDER           = ./results/osdi16/40Gbps/acls
+OUTPUT_FILE             = synth_acl_251.click.temp
+#OUTPUT_FILE             = synth_acl_713.click.temp
+#OUTPUT_FILE             = synth_acl_8550.click.temp
 
 # CLICK_TYPE options: Click, FastClick
 CLICK_TYPE              = FastClick
@@ -37,17 +37,17 @@ IO_MODE                 = ShareNothing
 [NF_MODULES]
 
 # ACLs - Paper
-NF_1 = input/chains/osdi16/20Gbps/acls/acl_251/nf1.click
-NF_2 = input/chains/osdi16/20Gbps/acls/acl_251/nf2.click
-NF_3 = input/chains/osdi16/20Gbps/acls/acl_251/nf3.click
+NF_1 = input/chains/osdi16/40Gbps/acls/acl_251/nf1.click
+NF_2 = input/chains/osdi16/40Gbps/acls/acl_251/nf2.click
+NF_3 = input/chains/osdi16/40Gbps/acls/acl_251/nf3.click
 
-#NF_1 = input/chains/osdi16/20Gbps/acls/acl_713/nf1.click
-#NF_2 = input/chains/osdi16/20Gbps/acls/acl_713/nf2.click
-#NF_3 = input/chains/osdi16/20Gbps/acls/acl_713/nf3.click
+#NF_1 = input/chains/osdi16/40Gbps/acls/acl_713/nf1.click
+#NF_2 = input/chains/osdi16/40Gbps/acls/acl_713/nf2.click
+#NF_3 = input/chains/osdi16/40Gbps/acls/acl_713/nf3.click
 
-#NF_1 = input/chains/osdi16/20Gbps/acls/acl_8550/nf1.click
-#NF_2 = input/chains/osdi16/20Gbps/acls/acl_8550/nf2.click
-#NF_3 = input/chains/osdi16/20Gbps/acls/acl_8550/nf3.click
+#NF_1 = input/chains/osdi16/40Gbps/acls/acl_8550/nf1.click
+#NF_2 = input/chains/osdi16/40Gbps/acls/acl_8550/nf2.click
+#NF_3 = input/chains/osdi16/40Gbps/acls/acl_8550/nf3.click
 
 
 #######
@@ -56,12 +56,11 @@ NF_3 = input/chains/osdi16/20Gbps/acls/acl_251/nf3.click
 #######
 [NF_TOPO]
 
-# Singleton Chain (One NF)
-#TOPOLOGY = NF_1[nf1vif1];
-
 # 2-N chained NFs (Uncomment one line per additional NF)
-TOPOLOGY = NF_1[nf1vif1] -> [nf2vif0]NF_2;
-NF_2[nf2vif1] -> [nf3vif0]NF_3;
+TOPOLOGY = NF_1[nf1vif2] -> [nf2vif0]NF_2;
+NF_1[nf1vif3] -> [nf2vif1]NF_2;
+NF_2[nf2vif2] -> [nf3vif0]NF_3;
+NF_2[nf2vif3] -> [nf3vif1]NF_3;
 
 #######
 ####### SECTION 4: In this section you specifiy the entry/end points of the chain.
@@ -71,5 +70,5 @@ NF_2[nf2vif1] -> [nf3vif0]NF_3;
 #######
 [ENTRY_POINTS]
 
-DOMAINS  = [nf1vif0]NF_1
+DOMAINS  = [nf1vif0]NF_1, [nf1vif1]NF_1
 ##############################################################################################

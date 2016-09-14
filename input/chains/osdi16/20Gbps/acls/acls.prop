@@ -6,9 +6,9 @@
 #######
 [GENERIC]
 OUTPUT_FOLDER           = ./results/osdi16/20Gbps/acls
-OUTPUT_FILE             = synth_acl_251.click
-#OUTPUT_FILE             = synth_acl_713.click
-#OUTPUT_FILE             = synth_acl_8550.click
+#OUTPUT_FILE             = synth_acl_251.click.temp
+OUTPUT_FILE             = synth_acl_713.click.temp
+#OUTPUT_FILE             = synth_acl_8550.click.temp
 
 # CLICK_TYPE options: Click, FastClick
 CLICK_TYPE              = FastClick
@@ -37,13 +37,13 @@ IO_MODE                 = ShareNothing
 [NF_MODULES]
 
 # ACLs - Paper
-NF_1 = input/chains/osdi16/20Gbps/acls/acl_251/nf1.click
-NF_2 = input/chains/osdi16/20Gbps/acls/acl_251/nf2.click
-NF_3 = input/chains/osdi16/20Gbps/acls/acl_251/nf3.click
+#NF_1 = input/chains/osdi16/20Gbps/acls/acl_251/nf1.click
+#NF_2 = input/chains/osdi16/20Gbps/acls/acl_251/nf2.click
+#NF_3 = input/chains/osdi16/20Gbps/acls/acl_251/nf3.click
 
-#NF_1 = input/chains/osdi16/20Gbps/acls/acl_713/nf1.click
-#NF_2 = input/chains/osdi16/20Gbps/acls/acl_713/nf2.click
-#NF_3 = input/chains/osdi16/20Gbps/acls/acl_713/nf3.click
+NF_1 = input/chains/osdi16/20Gbps/acls/acl_713/nf1.click
+NF_2 = input/chains/osdi16/20Gbps/acls/acl_713/nf2.click
+NF_3 = input/chains/osdi16/20Gbps/acls/acl_713/nf3.click
 
 #NF_1 = input/chains/osdi16/20Gbps/acls/acl_8550/nf1.click
 #NF_2 = input/chains/osdi16/20Gbps/acls/acl_8550/nf2.click

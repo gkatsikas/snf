@@ -8,14 +8,14 @@
 OUTPUT_FOLDER           = ./results/osdi16/40Gbps/napts
 #OUTPUT_FILE             = synth_napt_1.click
 #OUTPUT_FILE             = synth_napt_2.click
-OUTPUT_FILE             = synth_napt_3.click
+#OUTPUT_FILE             = synth_napt_3.click
 #OUTPUT_FILE             = synth_napt_4.click
 #OUTPUT_FILE             = synth_napt_5.click
 #OUTPUT_FILE             = synth_napt_6.click
 #OUTPUT_FILE             = synth_napt_7.click
 #OUTPUT_FILE             = synth_napt_8.click
 #OUTPUT_FILE             = synth_napt_9.click
-#OUTPUT_FILE             = synth_napt_10.click
+OUTPUT_FILE             = synth_napt_10.click.temp
 
 # CLICK_TYPE options: Click, FastClick
 CLICK_TYPE              = FastClick
@@ -51,9 +51,9 @@ IO_MODE                 = ShareNothing
 #NF_1  = input/chains/osdi16/40Gbps/napts/length_2/nf1.click
 #NF_2  = input/chains/osdi16/40Gbps/napts/length_2/nf2.click
 
-NF_1  = input/chains/osdi16/40Gbps/napts/length_3/nf1.click
-NF_2  = input/chains/osdi16/40Gbps/napts/length_3/nf2.click
-NF_3  = input/chains/osdi16/40Gbps/napts/length_3/nf3.click
+#NF_1  = input/chains/osdi16/40Gbps/napts/length_3/nf1.click
+#NF_2  = input/chains/osdi16/40Gbps/napts/length_3/nf2.click
+#NF_3  = input/chains/osdi16/40Gbps/napts/length_3/nf3.click
 
 #NF_1  = input/chains/osdi16/40Gbps/napts/length_4/nf1.click
 #NF_2  = input/chains/osdi16/40Gbps/napts/length_4/nf2.click
@@ -100,16 +100,16 @@ NF_3  = input/chains/osdi16/40Gbps/napts/length_3/nf3.click
 #NF_8  = input/chains/osdi16/40Gbps/napts/length_9/nf8.click
 #NF_9  = input/chains/osdi16/40Gbps/napts/length_9/nf9.click
 
-#NF_1  = input/chains/osdi16/40Gbps/napts/length_10/nf1.click
-#NF_2  = input/chains/osdi16/40Gbps/napts/length_10/nf2.click
-#NF_3  = input/chains/osdi16/40Gbps/napts/length_10/nf3.click
-#NF_4  = input/chains/osdi16/40Gbps/napts/length_10/nf4.click
-#NF_5  = input/chains/osdi16/40Gbps/napts/length_10/nf5.click
-#NF_6  = input/chains/osdi16/40Gbps/napts/length_10/nf6.click
-#NF_7  = input/chains/osdi16/40Gbps/napts/length_10/nf7.click
-#NF_8  = input/chains/osdi16/40Gbps/napts/length_10/nf8.click
-#NF_9  = input/chains/osdi16/40Gbps/napts/length_10/nf9.click
-#NF_10 = input/chains/osdi16/40Gbps/napts/length_10/nf10.click
+NF_1  = input/chains/osdi16/40Gbps/napts/length_10/nf1.click
+NF_2  = input/chains/osdi16/40Gbps/napts/length_10/nf2.click
+NF_3  = input/chains/osdi16/40Gbps/napts/length_10/nf3.click
+NF_4  = input/chains/osdi16/40Gbps/napts/length_10/nf4.click
+NF_5  = input/chains/osdi16/40Gbps/napts/length_10/nf5.click
+NF_6  = input/chains/osdi16/40Gbps/napts/length_10/nf6.click
+NF_7  = input/chains/osdi16/40Gbps/napts/length_10/nf7.click
+NF_8  = input/chains/osdi16/40Gbps/napts/length_10/nf8.click
+NF_9  = input/chains/osdi16/40Gbps/napts/length_10/nf9.click
+NF_10 = input/chains/osdi16/40Gbps/napts/length_10/nf10.click
 
 
 #######
@@ -128,18 +128,18 @@ NF_2[nf2vif2] -> [nf3vif0]NF_3;
 NF_2[nf2vif3] -> [nf3vif1]NF_3;
 NF_3[nf3vif2] -> [nf4vif0]NF_4;
 NF_3[nf3vif3] -> [nf4vif1]NF_4;
-#NF_4[nf4vif2] -> [nf5vif0]NF_5;
-#NF_4[nf4vif3] -> [nf5vif1]NF_5;
-#NF_5[nf5vif2] -> [nf6vif0]NF_6;
-#NF_5[nf5vif3] -> [nf6vif1]NF_6;
-#NF_6[nf6vif2] -> [nf7vif0]NF_7;
-#NF_6[nf6vif3] -> [nf7vif1]NF_7;
-#NF_7[nf7vif2] -> [nf8vif0]NF_8;
-#NF_7[nf7vif3] -> [nf8vif1]NF_8;
-#NF_8[nf8vif2] -> [nf9vif0]NF_9;
-#NF_8[nf8vif3] -> [nf9vif1]NF_9;
-#NF_9[nf9vif2] -> [nf10vif0]NF_10;
-#NF_9[nf9vif3] -> [nf10vif1]NF_10;
+NF_4[nf4vif2] -> [nf5vif0]NF_5;
+NF_4[nf4vif3] -> [nf5vif1]NF_5;
+NF_5[nf5vif2] -> [nf6vif0]NF_6;
+NF_5[nf5vif3] -> [nf6vif1]NF_6;
+NF_6[nf6vif2] -> [nf7vif0]NF_7;
+NF_6[nf6vif3] -> [nf7vif1]NF_7;
+NF_7[nf7vif2] -> [nf8vif0]NF_8;
+NF_7[nf7vif3] -> [nf8vif1]NF_8;
+NF_8[nf8vif2] -> [nf9vif0]NF_9;
+NF_8[nf8vif3] -> [nf9vif1]NF_9;
+NF_9[nf9vif2] -> [nf10vif0]NF_10;
+NF_9[nf9vif3] -> [nf10vif1]NF_10;
 
 
 #######

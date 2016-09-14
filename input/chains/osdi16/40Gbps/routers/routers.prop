@@ -15,7 +15,7 @@ OUTPUT_FOLDER           = ./results/osdi16/40Gbps/routers
 #OUTPUT_FILE             = synth_router_7.click
 #OUTPUT_FILE             = synth_router_8.click
 #OUTPUT_FILE             = synth_router_9.click
-OUTPUT_FILE             = synth_router_10.click
+OUTPUT_FILE             = synth_router_10.click.temp
 
 # CLICK_TYPE options: Click, FastClick
 CLICK_TYPE              = FastClick
