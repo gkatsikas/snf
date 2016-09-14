@@ -4,8 +4,8 @@
 /*
  * openflow_generator.hpp
  * 
- * Class for exporting a hardware-assisted Hyper-NF configuration.
- * Hyper-NF's global, chain classifier (i.e., ``read-part of synthesis) is 
+ * Class for exporting a hardware-assisted SNF configuration.
+ * SNF's global, chain classifier (i.e., ``read-part of synthesis) is 
  * translated into a set of OpenFlow v1.3 rules that can be deployed to either
  * a hardware or software-based OpenFlow v1.3 switch.
  * The switch will apply tags (VLAN) to the different traffic classes
@@ -68,7 +68,7 @@ class OpenFlowGenerator : public Generator {
 		/*
 		 * Implements the abstract method of parent Generator class by calling the
 		 * private generate_openflow_split_pipelines method below.
-		 * This method generates a hardware-assisted Hyper-NF configuration based 
+		 * This method generates a hardware-assisted SNF configuration based 
 		 * on OpenFlow, Click-DPDK, and RSS.
 		 */
 		bool generate_equivalent_configuration(const bool to_file=true);
@@ -76,7 +76,7 @@ class OpenFlowGenerator : public Generator {
 	private:
 
 		/*
-		 * Hardware-assisted, OpenFlow-based Hyper-NF:
+		 * Hardware-assisted, OpenFlow-based SNF:
 		 *    OpenFlow v1.3 rules are generated to spit the traffic classes 
 		 *    in an OpenFlow-based switch.
 		 *    Packets are tagged by the switch and then dispatched to one or 

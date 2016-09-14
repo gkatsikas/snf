@@ -2,7 +2,7 @@
 ##============================================================================
 ##        Name: profile.sh
 ##   Copyright: KTH ICT CoS Network Systems Lab
-## Description: Starts GNU Debugger to profile the NF Synthesizer
+## Description: Starts GNU Debugger to profile the SNF
 ##       Usage: In conjunction with valgrind.sh
 ##============================================================================
 
@@ -35,7 +35,7 @@ if [[ $# != 1 ]]; then
 	usage
 fi
 
-# The Hyper-NF executable
+# The SNF executable
 executable=$1
 file_exists $executable
 

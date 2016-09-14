@@ -4,7 +4,7 @@
 /*
  * rss_generator.hpp
  * 
- * Class for exporting a hardware-assisted Hyper-NF configuration.
+ * Class for exporting a hardware-assisted SNF configuration.
  * A Click-DPDK module is generated with the following properties:
  * |-> Receive-side Scaling (RSS) mechanism to read packets from different
  *     hardware queues of the NIC, using one FromDPDKDevice element per queue.
@@ -54,8 +54,8 @@ class RSSGenerator : public Generator {
 		bool              numa;
 
 		/*
-		 * The NICs to be (potentially) used by multi-core Hyper-NF.
-		 * In fact, Hyper-NF can use up to this number, depending on the input chain.
+		 * The NICs to be (potentially) used by multi-core SNF.
+		 * In fact, SNF can use up to this number, depending on the input chain.
 		 */
 		unsigned short    number_of_nics;
 
@@ -89,7 +89,7 @@ class RSSGenerator : public Generator {
 		/*
 		 * Instead of simply attaching FromDPDKDevice elements to different NIC queues (and cores)
 		 * Follow the paths of each FromDPDKDevice descriptor and pin elements along these paths.
-		 * This might not always increase the throughput of Hyper-NF as inter-core communication
+		 * This might not always increase the throughput of SNF as inter-core communication
 		 * might be increased without any reason.
 		 */
 		bool              rss_aggressive_pinning;
@@ -121,14 +121,14 @@ class RSSGenerator : public Generator {
 		/*
 		 * Implements the abstract method of parent Generator class by calling the
 		 * private generate_rss_cloned_pipelines method below.
-		 * This method generates a hardware-assisted Hyper-NF configuration based 
+		 * This method generates a hardware-assisted SNF configuration based 
 		 * on Click-DPDK and RSS.
 		 */
 		bool generate_equivalent_configuration(const bool to_file=true);
 
 	private:
 		/*
-		 * Hardware-assisted, RSS-based Hyper-NF:
+		 * Hardware-assisted, RSS-based SNF:
 		 *    RSS-Hashing in the NIC splits traffic at will (based on fields that we specify).
 		 *    Then, a Click-DPDK configuration is reading packets from different queues, 
 		 *    schedules threads from multiple cores on these queues, and clones the chain 
@@ -144,7 +144,7 @@ class RSSGenerator : public Generator {
 		);
 
 		/*
-		 * Clone the input, read, write, and output parts of a Hyper-NF 
+		 * Clone the input, read, write, and output parts of a SNF 
 		 * chain across multiple CPU cores.
 		 */
 		bool replicate_input_part_of_synthesis(

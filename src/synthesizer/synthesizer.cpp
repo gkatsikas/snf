@@ -119,8 +119,8 @@ ConsolidatedTc::get_path_to_rewriter_after_classifier(const std::string &at_queu
 //////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 Synthesizer::Synthesizer(ChainParser *cp) : tc_per_input_iface(), st_oper_per_out_iface(), 
-											st_oper_per_out_iface_conf(), hyper_nf_ifaces(),
-											hyper_nf_ifaces_to_nics() {
+											st_oper_per_out_iface_conf(), snf_ifaces(),
+											snf_ifaces_to_nics() {
 	this->log.set_logger_file(__FILE__);
 	if ( !cp ) {
 		FANCY_BUG(this->log, "\tSynthesizer: Invalid Parser object");
@@ -195,9 +195,9 @@ Synthesizer::build_traffic_classes(void) {
 			);
 
 			// A chain interface in always internal, hence we keep only the externals;
-			// Those are part of the final Hyper-NF configuration.
+			// Those are part of the final SNF configuration.
 			if ( ! cv->has_chain_interface(interface) ) {
-				this->hyper_nf_ifaces.insert( std::make_pair(cv->get_name(), interface) );
+				this->snf_ifaces.insert( std::make_pair(cv->get_name(), interface) );
 			}
 
 			std::string key = cv->get_name() + "-" + interface;
@@ -221,7 +221,7 @@ Synthesizer::build_traffic_classes(void) {
 						std::string tc_out_iface = tc.get_output_iface();
 
 						/*unsigned short direction;
-						if ( is_hyper_nf_iface( nf_of_tc_out_iface, tc_out_iface) && (nf_of_tc_out_iface == "NF_1") ) {
+						if ( is_snf_iface( nf_of_tc_out_iface, tc_out_iface) && (nf_of_tc_out_iface == "NF_1") ) {
 							direction = 0;
 						}
 						else {
@@ -297,11 +297,11 @@ Synthesizer::synthesize_stateful(void) {
 }
 
 /*
- * Check whether an interface belongs to the interfaces' list of the final Hyper-NF chain.
+ * Check whether an interface belongs to the interfaces' list of the final SNF chain.
  */
 bool
-Synthesizer::is_hyper_nf_iface(const std::string& nf, const std::string& iface) {
-	for (auto &it : this->hyper_nf_ifaces )
+Synthesizer::is_snf_iface(const std::string& nf, const std::string& iface) {
+	for (auto &it : this->snf_ifaces )
 		if ( (it.first == nf) && (it.second == iface) )
 			return true;
 
@@ -309,32 +309,32 @@ Synthesizer::is_hyper_nf_iface(const std::string& nf, const std::string& iface) 
 }
 
 /*
- * Get the number of interfaces of the final Hyper-NF chain.
+ * Get the number of interfaces of the final SNF chain.
  */
 unsigned short
-Synthesizer::get_hyper_nf_ifaces_no(void) {
-	return this->hyper_nf_ifaces.size();
+Synthesizer::get_snf_ifaces_no(void) {
+	return this->snf_ifaces.size();
 }
 
 /*
- * Given a Hyper-NF, retrieve the associated NIC.
+ * Given a SNF, retrieve the associated NIC.
  */
 std::string
-Synthesizer::get_nic_of_hyper_nf_iface(std::pair<std::string, std::string> nf_iface) {
+Synthesizer::get_nic_of_snf_iface(std::pair<std::string, std::string> nf_iface) {
 	if ( nf_iface.first.empty() || nf_iface.second.empty() ) return "";
-	if ( exists_in_map(this->hyper_nf_ifaces_to_nics, nf_iface) ) {
-		return this->hyper_nf_ifaces_to_nics[nf_iface];
+	if ( exists_in_map(this->snf_ifaces_to_nics, nf_iface) ) {
+		return this->snf_ifaces_to_nics[nf_iface];
 	}
 	return "";
 }
 
 /*
- * Given a NIC of the system, retrieve the Hyper-NF iface associated with this NIC.
+ * Given a NIC of the system, retrieve the SNF iface associated with this NIC.
  */
 std::pair<std::string, std::string>
-Synthesizer::get_hyper_nf_iface_of_nic(std::string nic) {
+Synthesizer::get_snf_iface_of_nic(std::string nic) {
 	if ( nic.empty() ) return std::make_pair("", "");
-	for (auto &it : this->hyper_nf_ifaces_to_nics ) {
+	for (auto &it : this->snf_ifaces_to_nics ) {
 		if ( it.second == nic ) return it.first;
 	}
 	return std::make_pair("", "");
@@ -344,18 +344,18 @@ Synthesizer::get_hyper_nf_iface_of_nic(std::string nic) {
  * Add a mapping of a pair of (NF_X, nfxvify) --> NIC
  */
 void
-Synthesizer::add_nic_of_hyper_nf_iface(std::pair<std::string, std::string> nf_iface, std::string nic) {
+Synthesizer::add_nic_of_snf_iface(std::pair<std::string, std::string> nf_iface, std::string nic) {
 	if ( nf_iface.first.empty() || nf_iface.second.empty() || nic.empty() ) return;
-	this->hyper_nf_ifaces_to_nics[nf_iface] = nic;
+	this->snf_ifaces_to_nics[nf_iface] = nic;
 }
 
 
 /*
- * Print the interfaces (and NFs that possess those interfaces) of the final Hyper-NF chain.
+ * Print the interfaces (and NFs that possess those interfaces) of the final SNF chain.
  */
 void
-Synthesizer::print_hyper_nf_ifaces(void) {
-	for (auto &it : this->hyper_nf_ifaces ) {
+Synthesizer::print_snf_ifaces(void) {
+	for (auto &it : this->snf_ifaces ) {
 		info_chatter (this->log, "\t[Network Function: "
 						<< std::right << std::setw(5)  << it.first
 						<< ", Iface: " 
@@ -365,11 +365,11 @@ Synthesizer::print_hyper_nf_ifaces(void) {
 }
 
 /*
- * Print the (NF, interface) associated with the NICs of the final Hyper-NF chain.
+ * Print the (NF, interface) associated with the NICs of the final SNF chain.
  */
 void
-Synthesizer::print_hyper_nf_ifaces_to_nics(void) {
-	for (auto &it : this->hyper_nf_ifaces_to_nics ) {
+Synthesizer::print_snf_ifaces_to_nics(void) {
+	for (auto &it : this->snf_ifaces_to_nics ) {
 		info_chatter (this->log, "\t[Network Function: " 
 						<< std::right << std::setw(5)  << it.first.first
 						<< ", Iface: " 

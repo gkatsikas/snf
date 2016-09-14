@@ -4,7 +4,7 @@
 /*
  * filter.hpp
  * 
- * Definition of the Hyper-NF traffic class filter on a packet's
+ * Definition of the SNF traffic class filter on a packet's
  * header space.
  *
  * Copyright (c) 2015-2016 KTH Royal Institute of Technology
@@ -221,7 +221,7 @@ class TrafficClass {
 
 		/*
 		 * Add a post-routing element to the list of elements to be synthesized
-		 * by Hyper-NF's IPSytnhesizer.
+		 * by SNF's IPSytnhesizer.
 		 */
 		void add_post_routing_operation(const ElementType& et);
 

@@ -5,7 +5,7 @@
  * hex_filter_parser.hpp
  * 
  * Definition of the methods that parse the hexadecimal filters of 
- * Hyper-NF's traffic classes.
+ * SNF's traffic classes.
  *
  * Copyright (c) 2015-2016 KTH Royal Institute of Technology
  * Copyright (c) 2015-2016 Georgios Katsikas, Marcel Enguehard

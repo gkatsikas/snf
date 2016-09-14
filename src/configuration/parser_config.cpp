@@ -118,8 +118,8 @@ ParserConfiguration::load_property_file(void) {
 bool
 ParserConfiguration::parse_generic_properties(void) {
 	// Apply the default configuration in case something goes wrong.
-	std::string output_folder  (DEFAULT_HYPER_NF_OUT_FOLDER);
-	std::string output_filename(output_folder + DEFAULT_HYPER_NF_CONF_NAME);
+	std::string output_folder  (DEFAULT_SNF_OUT_FOLDER);
+	std::string output_filename(output_folder + DEFAULT_SNF_CONF_NAME);
 
 	bool numa                   = true;
 	bool hw_classification      = false;
@@ -186,13 +186,13 @@ ParserConfiguration::parse_generic_properties(void) {
 	}
 	catch (...) {
 		warn_chatter(this->log, 
-			"\tOutput file name for Hyper-NF configuration is missing. Default: " 
+			"\tOutput file name for SNF configuration is missing. Default: " 
 			<< output_filename
 		);
 	}
 
 	//////////////////////////////////////////
-	// Method to process traffic in Hyper-NF.
+	// Method to process traffic in SNF.
 	try {
 		click_type_label = (std::string&) get_value(
 			"GENERIC", "CLICK_TYPE"
@@ -217,7 +217,7 @@ ParserConfiguration::parse_generic_properties(void) {
 	}
 
 	//////////////////////////////////////////
-	// Method to process traffic in Hyper-NF.
+	// Method to process traffic in SNF.
 	try {
 		proc_layer_label = (std::string&) get_value(
 			"GENERIC", "PROCESSING_LAYER"
@@ -293,7 +293,7 @@ ParserConfiguration::parse_generic_properties(void) {
 
 			if ( traffic_class_format == ClickIPClassifier ) {
 				error_chatter(this->log, "\tChoose [RSS-Hashing, Flow-Director, OpenFlow]");
-				error_chatter(this->log, "\tFor purely software-based Hyper-NF disable HW classification");
+				error_chatter(this->log, "\tFor purely software-based SNF disable HW classification");
 				return TO_BOOL(WRONG_INPUT_ARGS);
 			}
 		}

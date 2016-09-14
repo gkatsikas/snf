@@ -1,7 +1,7 @@
 // -*- c-basic-offset: 4 -*-
 /* filter.cpp
  * 
- * Implementation of Hyper-NF's traffic class filter.
+ * Implementation of SNF's traffic class filter.
  *
  * Copyright (c) 2015-2016 KTH Royal Institute of Technology
  * Copyright (c) 2015-2016 Georgios Katsikas, Marcel Enguehard
@@ -661,7 +661,7 @@ TrafficClass::is_source_nated(void) {
 
 /*
  * Add a post-routing element to the list of elements to be synthesized
- * by Hyper-NF's IPSytnhesizer.
+ * by SNF's IPSytnhesizer.
  */
 void
 TrafficClass::add_post_routing_operation(const ElementType& et) {

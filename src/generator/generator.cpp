@@ -1,9 +1,9 @@
 // -*- c-basic-offset: 4 -*-
 /* generator.cpp
  * 
- * Export a runnable, Hyper-NF configuration.
+ * Export a runnable, SNF configuration.
  * The input parameters will drive the Generator to either create
- * a fully software-based Hyper-NF or a hardware-assisted one.
+ * a fully software-based SNF or a hardware-assisted one.
  *
  * Copyright (c) 2015-2016 KTH Royal Institute of Technology
  * Copyright (c) 2015-2016 Georgios Katsikas, Marcel Enguehard
@@ -80,13 +80,13 @@ Generator::get_output_files_list_str(void) {
 		}
 	}
 
-	info_chatter(this->log, "Ifaces: " << this->synthesizer->get_hyper_nf_ifaces_no());
+	info_chatter(this->log, "Ifaces: " << this->synthesizer->get_snf_ifaces_no());
 
 	all_out_files += "\n";
 
-	// Output files (one per interface) to host the Flow director commands of each Hyper-NF interface.
+	// Output files (one per interface) to host the Flow director commands of each SNF interface.
 	unsigned short iface_counter = 0;
-	for ( auto &it : this->synthesizer->get_hyper_nf_ifaces() ) {
+	for ( auto &it : this->synthesizer->get_snf_ifaces() ) {
 		std::string nf    = it.first;
 		std::string iface = it.second;
 		std::string hdwr_file = this->basic_configuration_filename + "_" + nf + "_" + iface + extension;
@@ -95,7 +95,7 @@ Generator::get_output_files_list_str(void) {
 		++iface_counter;
 
 		// Still have interfaces left
-		if ( iface_counter < this->synthesizer->get_hyper_nf_ifaces_no()) {
+		if ( iface_counter < this->synthesizer->get_snf_ifaces_no()) {
 			all_out_files += "\n";
 		}
 	}
@@ -104,15 +104,15 @@ Generator::get_output_files_list_str(void) {
 }
 
 void
-Generator::generate_indicative_chain_parameters(unsigned short &hyper_nf_ifaces_no, std::stringstream &config_stream) {
+Generator::generate_indicative_chain_parameters(unsigned short &snf_ifaces_no, std::stringstream &config_stream) {
 
-	if ( hyper_nf_ifaces_no < 4 ) {
+	if ( snf_ifaces_no < 4 ) {
 		return;
 	}
 
 	config_stream << "define(" << std::endl;
 
-	for (unsigned short i=0 ; i<hyper_nf_ifaces_no ; i++) {
+	for (unsigned short i=0 ; i<snf_ifaces_no ; i++) {
 		if ( i == 0 ) {
 			config_stream << "\t$iface0         0,"                 << std::endl;
 			config_stream << "\t$macAddr0       ec:f4:bb:d5:fe:08," << std::endl;
@@ -156,7 +156,7 @@ Generator::generate_indicative_chain_parameters(unsigned short &hyper_nf_ifaces_
 		config_stream << std::endl;
 	}
 
-	config_stream << "\t$gwPort         " << std::to_string(hyper_nf_ifaces_no-1) << "," << std::endl;
+	config_stream << "\t$gwPort         " << std::to_string(snf_ifaces_no-1) << "," << std::endl;
 	config_stream << std::endl;
 	config_stream << "\t$queueSize      1024," << std::endl;
 	config_stream << "\t$mtuSize        9000," << std::endl;

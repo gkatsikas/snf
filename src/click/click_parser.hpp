@@ -1,9 +1,9 @@
 #ifndef _CLICK_PARSER_HPP_
 #define _CLICK_PARSER_HPP_
 
-/* 
+/*
  * click_parser.hpp
- * 
+ *
  * Header file to declare parse_configuration function and its custom wrapper.
  *
  * Copyright (c) 1999-2000 Massachusetts Institute of Technology

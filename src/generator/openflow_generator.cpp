@@ -1,7 +1,7 @@
 // -*- c-basic-offset: 4 -*-
 /* openflow_generator.cpp
  * 
- * Export a runnable, Hyper-NF configuration that implements the 
+ * Export a runnable, SNF configuration that implements the 
  * NFV chain in a distributed, hardware-assisted fashion.
  * The conditional part of the chain (i.e., read and classify flows)
  * is exported to an OpenFlow v1.3 switch. The switch encodes the traffic
@@ -33,12 +33,12 @@
 #include "openflow_generator.hpp"
 
 OpenFlowGenerator::OpenFlowGenerator(Synthesizer *synth) : Generator(synth) {
-	def_chatter(this->log, "\tOpenFlow-based Hyper-NF generator constructed");
+	def_chatter(this->log, "\tOpenFlow-based SNF generator constructed");
 }
 
 OpenFlowGenerator::~OpenFlowGenerator() {
 	delete this->synthesizer;
-	def_chatter(this->log, "\tOpenFlow-based Hyper-NF generator deleted");
+	def_chatter(this->log, "\tOpenFlow-based SNF generator deleted");
 }
 
 /*
@@ -50,7 +50,7 @@ OpenFlowGenerator::generate_equivalent_configuration(const bool to_file) {
 }
 
 /*
- * Hardware-assisted, OpenFlow-based Hyper-NF:
+ * Hardware-assisted, OpenFlow-based SNF:
  *    OpenFlow v1.3 rules are generated to spit the traffic classes 
  *    in an OpenFlow-based switch.
  *    Packets are tagged by the switch and then dispatched to one or 

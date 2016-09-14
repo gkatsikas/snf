@@ -1,7 +1,7 @@
-Hyper-NF: Synthesizing High-Performance NFV Chains
+SNF: Synthesizing High-Performance NFV Chains
 ======
 
-A framework to turn a chain of Click-based network functions (NFs) into a sythesized Hyper-NF.
+A framework to turn a chain of Click-based network functions (NFs) into a sythesized SNF.
 
 ## Requirements
   * C++11 (e.g. apt-get install build-essential)
@@ -14,17 +14,17 @@ A framework to turn a chain of Click-based network functions (NFs) into a sythes
   * `apt-get install valgrind`
 
 ## Steps
-#### Hyper-NF
-  * `git clone git@bitbucket.org:nslab/hyper-nf.git`
-  * `cd hyper-nf/`
-  * export HYPER_NF_HOME=`pwd`
+#### SNF
+  * `git clone git@bitbucket.org:nslab/snf.git`
+  * `cd snf/`
+  * export SNF_HOME=`pwd`
   * `cd ../`
 
 #### Click
   * `git clone https://github.com/kohler/click.git`
   * `cd ./click`
   * export CLICK_HOME=`pwd`
-  * `patch -p0 < ${HYPER_NF_HOME}/click-hyper-nf-v1.patch`
+  * `patch -p1 < ${SNF_HOME}/src/click/click-snf-v4.patch`
     * Normal Click (User + Kernel-space):
 		`./configure 	--enable-user-multithread --enable-multithread --enable-ip6 --enable-nanotimestamp
 				--enable-intel-cpu --enable-analysis --enable-ipsec --enable-local --enable-simple
@@ -46,25 +46,25 @@ A framework to turn a chain of Click-based network functions (NFs) into a sythes
   * `make elemlist`
   * `make install` (uses default prefix=/usr/local/)
 
-#### Hyper-NF
-  * `cd ${HYPER_NF_HOME}`
-  * Build Hyper-NF accoring to INSTALL:
+#### SNF
+  * `cd ${SNF_HOME}`
+  * Build SNF accoring to INSTALL
   * Modify ./input/property_file accordingly to create the chains you wish
   * Write your own Click configurations and put them into input/nf_repo
     * Make sure that input/nf_repo/ contains the Click configurations you specify in the property_file
     * You can use our test Click implementations
-  * `./run.sh <hyper-nf-exec> <your property file>` will load the property file and generate the synthesized chain in the specified folder ().
+  * `./run.sh <snf-exec> <your property file>` will load the property file and generate the synthesized chain in the specified folder ().
 
-#### Test the Hyper-NF chain:
+#### Test the SNF chain:
   * Machine 1: `pkt-gen -i netmap:em1 -f rx -a 0 -n 100000000`
   * Machine 2:
-    * Normal: `click <path-to-hyper-nf.click>`
-    * DPDK: `click -c ff -n 1 --proc-type=primary -v -- <path-to-dpdk-hyper-nf.click>`
+    * Normal: `click <path-to-snf.click>`
+    * DPDK: `click -c ff -n 1 --proc-type=primary -v -- <path-to-dpdk-snf.click>`
   * Machine 3: `pkt-gen -i netmap:em1 -f tx -c 0 -S ec:f4:bb:d5:fe:d0 -D ec:f4:bb:d5:fe:d0 -n 100000000 -R 9000000 -l 64`
 
-#### Multi-core Hyper-NF
-There are various ways to deploy Hyper-NF across multiple cores. We currently support Click-DPDK using RSS as follows:
-  * Build Hyper-NF with DPDK support following the steps above.
+#### Multi-core SNF
+There are various ways to deploy SNF across multiple cores. We currently support Click-DPDK using RSS as follows:
+  * Build SNF with DPDK support following the steps above.
   * Input a set of Click-based NFs, even if they do not use Click-DPDK I/O.
   * In the [GENERIC] section of the input property file set:
     * HARDWARE_CLASSIFICATION = true
@@ -72,9 +72,9 @@ There are various ways to deploy Hyper-NF across multiple cores. We currently su
     * CPU_SOCKETS   = <M> (M is the number of the target machine's sockets)
     * CPU_CORES     = <N> (N is the total number of CPU cores on this machine)
     * NIC_HW_QUEUES = <K> (K is the number of hardware queues in your NIC. Indicatively, this number should be adhusted to the number of available cores above)
-  * Run Hyper-NF and check the folder OUTPUT_FOLDER for a file OUTPUT_FILE.click as specified in the property file.
-  * You will see a synthesized Hyper-NF chain, replicated across all the requested queues. Each queue has a dedicated thread that is statically assigned to a CPU core,
-hence your Hyper-NF chain can read packets form all these queues and execute the chain pipeline in parallel.
+  * Run SNF and check the folder OUTPUT_FOLDER for a file OUTPUT_FILE.click as specified in the property file.
+  * You will see a synthesized SNF chain, replicated across all the requested queues. Each queue has a dedicated thread that is statically assigned to a CPU core,
+hence your SNF chain can read packets form all these queues and execute the chain pipeline in parallel.
   * Underneath this system, Click-DPDK I/O uses Receiver Side Scaling (RSS) to hash incoming packets to all the queues. See the RSS section below.
 
 ##### Receiver Side Scaling (RSS)

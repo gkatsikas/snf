@@ -1,5 +1,5 @@
 dnl
-dnl HYPERNF_CHECK_CXX
+dnl SNF_CHECK_CXX
 dnl Verifies that C++11 is installed
 dnl
 
@@ -22,11 +22,11 @@ AC_COMPILE_IFELSE([AC_LANG_SOURCE(
 
 
 dnl
-dnl HYPERNF_CHECK_LIBPCAP
+dnl SNF_CHECK_LIBPCAP
 dnl Finds header files and libraries for libpcap.
 dnl
 
-AC_DEFUN([HYPERNF_CHECK_LIBPCAP], [
+AC_DEFUN([SNF_CHECK_LIBPCAP], [
 
 	dnl header files
 
@@ -135,11 +135,11 @@ Can't find -lpthread and/or <pthread.h>.
 )
 
 dnl
-dnl HYPERNF_CHECK_CLICK
+dnl SNF_CHECK_CLICK
 dnl Finds header files for netmap.
 dnl
 
-AC_DEFUN([HYPERNF_CHECK_CLICK], [
+AC_DEFUN([SNF_CHECK_CLICK], [
 	AC_ARG_WITH([click],
 		[AS_HELP_STRING([--path-to-click], [Click path [/opt/click/]])],
 		[click_path=$withval], [click_path=/opt/click/])

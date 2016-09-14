@@ -111,7 +111,7 @@ class Synthesizer {
 		 * E.g., (NF_1, nf1vif0)
 		 */
 		std::set < std::pair<std::string, std::string> > 
-							hyper_nf_ifaces;
+							snf_ifaces;
 
 		/*
 		 * A vector with the discrete interfaces of the final chain
@@ -119,7 +119,7 @@ class Synthesizer {
 		 * E.g., (NF_1, nf1vif0) --> NIC 0
 		 */
 		std::map < std::pair<std::string, std::string>, std::string >
-							hyper_nf_ifaces_to_nics;
+							snf_ifaces_to_nics;
 
 		/*
 		 * Logger instance
@@ -164,32 +164,32 @@ class Synthesizer {
 				const std::string &key) {
 			return this->synth_oper_per_out_iface[key];
 		};
-		inline std::set < std::pair<std::string, std::string> > get_hyper_nf_ifaces(void) {
-			return this->hyper_nf_ifaces;
+		inline std::set < std::pair<std::string, std::string> > get_snf_ifaces(void) {
+			return this->snf_ifaces;
 		};
 		inline std::map < std::pair<std::string, std::string>, std::string > 
-				get_hyper_nf_ifaces_to_nics     (void) {
-			return this->hyper_nf_ifaces_to_nics;
+				get_snf_ifaces_to_nics     (void) {
+			return this->snf_ifaces_to_nics;
 		};
 		inline ChainParser* get_chain_parser(void) { return this->parser; };
 
-		bool is_hyper_nf_iface (
+		bool is_snf_iface (
 			const std::string &nf, const std::string &iface
 		);
-		unsigned short get_hyper_nf_ifaces_no   (void);
-		std::string    get_nic_of_hyper_nf_iface(
+		unsigned short get_snf_ifaces_no   (void);
+		std::string    get_nic_of_snf_iface(
 			std::pair<std::string, std::string> nf_iface
 		);
-		std::pair<std::string, std::string> get_hyper_nf_iface_of_nic(
+		std::pair<std::string, std::string> get_snf_iface_of_nic(
 			std::string nic			
 		);
 
-		void add_nic_of_hyper_nf_iface(
+		void add_nic_of_snf_iface(
 			std::pair<std::string, std::string> nf_iface, std::string nic
 		);
 		
-		void print_hyper_nf_ifaces        (void);
-		void print_hyper_nf_ifaces_to_nics(void);
+		void print_snf_ifaces        (void);
+		void print_snf_ifaces_to_nics(void);
 
 		/*
 		 * Traverse the NF DAGs, jump from NF to NF until you reach an

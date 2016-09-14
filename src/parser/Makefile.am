@@ -2,7 +2,7 @@
 noinst_LIBRARIES = libchainparser.a
 
 #####################################################################################
-# Chain Parser (Hyper-DAG)
+# Chain Parser (Synthesized-DAG)
 libchainparser_a_SOURCES  = chain_parser.cpp \
 							chain_parser.hpp
 # Linked with

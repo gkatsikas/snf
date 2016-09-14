@@ -2,7 +2,7 @@
 # Process this file with autoconf to produce a configure script.
 
 AC_PREREQ([2.69])
-AC_INIT([Hyper-NF], [0.9.0], [katsikas@kth.se])
+AC_INIT([SNF], [0.9.0], [katsikas@kth.se])
 
 AC_CONFIG_HEADERS([config.h])
 AC_CONFIG_AUX_DIR([build-aux])
@@ -32,8 +32,8 @@ AC_PROG_MAKE_SET
 ##  Check for headers, defs needed at compile time                            ##
 ################################################################################
 # Consistency check: is source code present?
-AC_CONFIG_SRCDIR([src/main.cpp])
-AC_CONFIG_SRCDIR([src/parser/chain_parser.hpp.hpp])
+AC_CONFIG_SRCDIR([src/snf.cpp])
+AC_CONFIG_SRCDIR([src/parser/chain_parser.hpp])
 AC_CONFIG_SRCDIR([src/synthesizer/synthesizer.hpp])
 AC_CONFIG_SRCDIR([src/traffic_class_builder/filter.hpp])
 
@@ -76,8 +76,8 @@ AC_CHECK_LIB([dl],      [dlopen])
 AC_CHECK_LIB([pcap],    [pcap_open_live])
 AC_CHECK_LIB([pthread], [pthread_create])
 
-# Click is key part of Hyper-NF
-AC_CHECK_LIB([click],   [main])
+# Click is key part of SNF
+AC_CHECK_LIB([click], [main])
 AC_TRY_CPP([#include<click/routervisitor.hh>], , AC_MSG_ERROR([Cannot find click/routervisitor.hh.]))
 ################################################################################
 
@@ -145,7 +145,11 @@ AC_ARG_WITH(
 AC_MSG_CHECKING([for Click])
 
 if test -d "$click_path"; then
-	:
+#	:
+	AC_MSG_NOTICE([
+===============================================
+Found $click_path for Click.
+===============================================])
 else
 	AC_MSG_ERROR([
 ===============================================
@@ -216,7 +220,7 @@ AC_SUBST(CLICK_INCLUDES)
 
 AC_MSG_CHECKING([whether to enable DPDK])
 
-# Use --enable-dpdk=yes to build Hyper-NF with DPDK support
+# Use --enable-dpdk=yes to build SNF with DPDK support
 AC_ARG_ENABLE(
 	[dpdk],
 	[AS_HELP_STRING([--enable-dpdk], [use DPDK (def=no)])],

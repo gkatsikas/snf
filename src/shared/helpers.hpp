@@ -25,7 +25,7 @@
 
 /* 
  * The auto-generated header contains useful flags that
- * guide the bindings of Hyper-NF.
+ * guide the bindings of SNF.
  */
 #ifdef HAVE_CONFIG_H
 #include "../../config.h"

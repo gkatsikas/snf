@@ -1,545 +1,3 @@
-diff --git a/elements/analysis/storeicmptimeseqrecord.cc b/elements/analysis/storeicmptimeseqrecord.cc
-new file mode 100644
-index 0000000..75f35f6
---- /dev/null
-+++ b/elements/analysis/storeicmptimeseqrecord.cc
-@@ -0,0 +1,158 @@
-+/*
-+Programmer: Georgios Katsikas
-+ * Copyright (c) 2016 
-+
-+ * Permission is hereby granted, free of charge, to any person obtaining a
-+ * copy of this software and associated documentation files (the "Software"),
-+ * to deal in the Software without restriction, subject to the conditions
-+ * listed in the Click LICENSE file. These conditions include: you must
-+ * preserve this copyright notice, and you cannot mention the copyright
-+ * holders in advertising related to the Software without their permission.
-+ * The Software is provided WITHOUT ANY WARRANTY, EXPRESS OR IMPLIED. This
-+ * notice is a summary of the Click LICENSE file; the license in that file is
-+ * legally binding.
-+*/
-+
-+#include <click/config.h>
-+#include "storeicmptimeseqrecord.hh"
-+#include <click/glue.hh>
-+#include <clicknet/ip.h>
-+#include <clicknet/ip6.h>
-+#include <clicknet/icmp.h>
-+#include <clicknet/tcp.h>
-+#include <click/args.hh>
-+#include <click/error.hh>
-+
-+
-+
-+CLICK_DECLS
-+
-+/*
-+ */
-+StoreICMPTimeSeqRecord::StoreICMPTimeSeqRecord() {
-+	_count = 0;
-+	_delta = 0;
-+	_offset = 0;
-+}
-+
-+
-+
-+int StoreICMPTimeSeqRecord::configure(Vector<String> &conf, ErrorHandler *errh) {
-+	if (Args(conf, this, errh)
-+		.read_mp("OFFSET", _offset)
-+		.read("DELTA", _delta)
-+		.complete() < 0)
-+		return -1;
-+	return 0;
-+}
-+
-+// This is the tricky bit.  We can't rely on any headers being
-+// filled out if elements like CheckIPHeader have not been called
-+// so we should just access the raw data and cast wisely
-+Packet* StoreICMPTimeSeqRecord::simple_action(Packet *packet) {
-+	WritablePacket *p = packet->uniqueify();
-+	Timestamp       tnow;
-+	click_icmp     *icmph = 0;
-+	PData          *pData;
-+	uint32_t        csum = 0;
-+	uint32_t        offset = _offset;
-+
-+	// the packet is shared and we can't modify it without screwing
-+	// things up
-+	if (!p) {
-+	// If uniqueify() fails, packet itself is garbage and has been deleted
-+		click_chatter("Non-Writable Packet!");
-+		return 0;
-+	}
-+
-+	// get the first two words of the IP header to see what it is to determine how to proceed further
-+	if (p->length() < offset + sizeof(uint32_t) * 2) {
-+		p->kill();
-+		return 0;
-+	}
-+
-+	// here need to get to the right offset.  The IP header can be of variable length due to options
-+	// also, the header might be IPv4 of IPv6
-+	u_char version = p->data()[offset] >> 4;
-+	if (version == 0x04) {
-+		const click_ip *ip = reinterpret_cast<const click_ip *>(p->data() + offset);
-+		offset += ip->ip_hl << 2;
-+	}
-+	else if (version == 0x06) {
-+		// IPv6 header is
-+		const click_ip6 *ip6 = reinterpret_cast<const click_ip6 *>(p->data() + offset);
-+		if (ip6->ip6_nxt == 0x01) { // ICMP is the next header
-+			offset += sizeof(click_ip6);
-+		}
-+		else { // the next header is not ICMP so stop now
-+			p->kill();
-+			return 0;
-+		}
-+	}
-+	else {
-+		click_chatter("Unknown IP version!");
-+		p->kill();
-+		return 0;
-+	}
-+
-+	if (p->length() < offset + sizeof(click_icmp) + sizeof(PData)) {
-+		//click_chatter("Packet is too short");
-+		p->kill();
-+		return 0;
-+	}
-+
-+	// eth, IP, headers must be bypassed with a correct offset
-+	icmph = (click_icmp*)(p->data() + offset);
-+	pData = (PData*)((char*)icmph + sizeof(click_icmp));
-+	csum = icmph->icmp_cksum;
-+
-+	// we use incremental checksum computation to patch up the checksum after
-+	// the payload will get modified
-+	_count++;
-+	if (_delta) {
-+		Timestamp ts1(ntohl(pData->data[0]), Timestamp::nsec_to_subsec(ntohl(pData->data[1])));
-+		Timestamp diff = Timestamp::now() - ts1;
-+
-+		//click_chatter("Seq %d Time Diff sec: %d usec: %d\n", ntohl(pData->seq_num), diff.sec(), diff.nsec());
-+		pData->data[2] = htonl(diff.sec());
-+		pData->data[3] = htonl(diff.nsec());
-+		csum += click_in_cksum((const unsigned char*)(pData->data + 2), 2 * sizeof(uint32_t));
-+	}
-+	else {
-+		tnow = Timestamp::now();
-+
-+		// subtract the previous contribution from CHECKSUM in case PData values are non-zero
-+		csum -= click_in_cksum((const unsigned char*)pData, sizeof(PData));
-+		pData->seq_num = htonl(_count);
-+		pData->data[0] = htonl(tnow.sec());
-+		pData->data[1] = htonl(tnow.nsec());
-+		pData->data[2] = 0;
-+		pData->data[3] = 0;
-+		csum += click_in_cksum((const unsigned char*)pData, sizeof(PData));
-+	}
-+
-+	csum = (0xFFFF & csum) + ((0xFFFF0000 & csum) >> 16);
-+	csum = (csum != 0xFFFF) ? csum : 0;
-+
-+	// now that we modified the packet it is time to fix up the
-+	// csum of the header.
-+	icmph->icmp_cksum = (uint16_t)csum;
-+
-+	return p;
-+}
-+
-+
-+int StoreICMPTimeSeqRecord::reset_handler(const String &, Element *e, void *, ErrorHandler *) {
-+	StoreICMPTimeSeqRecord *t = (StoreICMPTimeSeqRecord *) e;
-+
-+	t->_count = 0;
-+	return 0;
-+}
-+
-+void StoreICMPTimeSeqRecord::add_handlers() {
-+	add_data_handlers("count", Handler::f_read, &_count);
-+	add_write_handler("reset", reset_handler);
-+}
-+
-+CLICK_ENDDECLS
-+EXPORT_ELEMENT(StoreICMPTimeSeqRecord)
-diff --git a/elements/analysis/storeicmptimeseqrecord.hh b/elements/analysis/storeicmptimeseqrecord.hh
-new file mode 100644
-index 0000000..977d683
---- /dev/null
-+++ b/elements/analysis/storeicmptimeseqrecord.hh
-@@ -0,0 +1,108 @@
-+// -*- c-basic-offset: 4 -*-
-+/*
-+Programmer: Georgios Katsikas
-+ * Copyright (c) 2016 
-+
-+ * Permission is hereby granted, free of charge, to any person obtaining a
-+ * copy of this software and associated documentation files (the "Software"),
-+ * to deal in the Software without restriction, subject to the conditions
-+ * listed in the Click LICENSE file. These conditions include: you must
-+ * preserve this copyright notice, and you cannot mention the copyright
-+ * holders in advertising related to the Software without their permission.
-+ * The Software is provided WITHOUT ANY WARRANTY, EXPRESS OR IMPLIED. This
-+ * notice is a summary of the Click LICENSE file; the license in that file is
-+ * legally binding.
-+*/
-+#ifndef CLICK_STOREICMPTIMESEQRECORD_HH
-+#define CLICK_STOREICMPTIMESEQRECORD_HH
-+#include <click/element.hh>
-+
-+CLICK_DECLS
-+
-+/*
-+=c
-+
-+StoreICMPTimeSeqRecord([I<keywords> OFFSET, DELTA])
-+
-+=s timestamps
-+
-+=d
-+
-+StoreICMPTimeSeqRecord element can be handy when computing end-to-end ICMP packet
-+delays.  The element embeds a timestamp and a sequence number into a packet and
-+adjusts the checksum of the ICMP packet.  Once the initial timestamp has been
-+placed into the payload of the ICMP packet, a time difference can be computed
-+once a packet passes through another StoreICMPTimeSeqRecord element.  The data can be
-+accessed by examining the packet payload (e.g., do a tcpdump and then do post
-+processing of the data).  The element uses partial checksums to speed up the
-+processing.  The element works with IPv4 and IPv6 packets. In case of IPv6,
-+it assumes that the next header field is ICMP.  If this is not the case, the
-+element will discard the packet.
-+
-+Packet payload found after the ICMP header.  Note, the ICMP payload must be at least
-+22 bytes long.  The values will be stored in network byte order.
-+
-+uint32_t seq_num
-+uint32_t initial_second
-+uint32_t initial_nano_second
-+uint32_t difference_second
-+uint32_t difference_nano_second
-+
-+Keyword arguments are:
-+
-+=over 2
-+
-+=item OFFSET
-+
-+Number of bytes to offset from the beginning of the packet where the IPv4/6 header can be found.
-+If raw Ethernet packets are fed into this element, then OFFSET needs to be 14.
-+
-+=item DELTA
-+
-+Determines which time values are set. If DELTA is false (the default), then the initial_second
-+and initial_nano_second values are set to the current time, and the difference values are set to 0.
-+If DELTA is true, then the initial values are left as is, and the difference values are set to
-+the difference between the current time and the packet's initial time.
-+
-+=back
-+
-+=e
-+    src :: RatedSource(\<00>, LENGTH 22, RATE 1, LIMIT 100)
-+        -> ICMPIPEncap(10.0.1.1, 20.0.0.2)
-+        -> EtherEncap(0x0800, 00:04:23:D0:93:63, 00:17:cb:0d:f8:db)
-+        -> StoreICMPTimeSeqRecord(OFFSET 14, DELTA false)
-+        -> DelayShaper(100msec)
-+        -> StoreICMPTimeSeqRecord(OFFSET 14, DELTA true)
-+        -> ToDump("dump.dmp");
-+*/
-+class StoreICMPTimeSeqRecord : public Element {
-+	public:
-+		StoreICMPTimeSeqRecord() CLICK_COLD;
-+
-+		const char *class_name() const	{ return "StoreICMPTimeSeqRecord"; }
-+		const char *port_count() const	{ return PORTS_1_1; }
-+
-+		void add_handlers() CLICK_COLD;
-+		int  configure(Vector<String> &conf, ErrorHandler *errh) CLICK_COLD;
-+
-+		Packet *simple_action(Packet *);
-+
-+		// packet data payload access struct
-+		// Header | PDATA | rest of data
-+		// This comes out to 22 bytes which will fit into the smallest Ethernet frame
-+		struct PData {
-+			uint32_t seq_num;
-+			uint32_t data[4];
-+		};
-+
-+	private:
-+		unsigned long _count;
-+		bool          _delta;  // if true put in_timestamp else out_timestamp
-+		uint32_t      _offset; //how much to shift to get to the IPv4/v6 header
-+
-+		static String read_handler(Element *, void *) CLICK_COLD;
-+		static int    reset_handler(const String &, Element *, void *, ErrorHandler *);
-+};
-+
-+CLICK_ENDDECLS
-+#endif
-diff --git a/elements/analysis/storetcptimeseqrecord.cc b/elements/analysis/storetcptimeseqrecord.cc
-new file mode 100644
-index 0000000..50fe1f8
---- /dev/null
-+++ b/elements/analysis/storetcptimeseqrecord.cc
-@@ -0,0 +1,153 @@
-+/*
-+Programmer: Georgios Katsikas
-+ * Copyright (c) 2016 
-+
-+ * Permission is hereby granted, free of charge, to any person obtaining a
-+ * copy of this software and associated documentation files (the "Software"),
-+ * to deal in the Software without restriction, subject to the conditions
-+ * listed in the Click LICENSE file. These conditions include: you must
-+ * preserve this copyright notice, and you cannot mention the copyright
-+ * holders in advertising related to the Software without their permission.
-+ * The Software is provided WITHOUT ANY WARRANTY, EXPRESS OR IMPLIED. This
-+ * notice is a summary of the Click LICENSE file; the license in that file is
-+ * legally binding.
-+*/
-+
-+#include <click/config.h>
-+#include "storetcptimeseqrecord.hh"
-+#include <click/glue.hh>
-+#include <clicknet/ip.h>
-+#include <clicknet/ip6.h>
-+#include <clicknet/tcp.h>
-+#include <click/args.hh>
-+#include <click/error.hh>
-+
-+CLICK_DECLS
-+
-+/*
-+ */
-+StoreTCPTimeSeqRecord::StoreTCPTimeSeqRecord() {
-+	_count = 0;
-+	_delta = 0;
-+	_offset = 0;
-+}
-+
-+int StoreTCPTimeSeqRecord::configure(Vector<String> &conf, ErrorHandler *errh) {
-+	if (Args(conf, this, errh)
-+		.read_mp("OFFSET", _offset)
-+		.read("DELTA", _delta)
-+		.complete() < 0)
-+		return -1;
-+	return 0;
-+}
-+
-+// This is the tricky bit.  We can't rely on any headers being
-+// filled out if elements like CheckIPHeader have not been called
-+// so we should just access the raw data and cast wisely
-+Packet* StoreTCPTimeSeqRecord::simple_action(Packet *packet) {
-+	WritablePacket *p = packet->uniqueify();
-+	Timestamp      tnow;
-+	click_tcp      *tcph = 0;
-+	PData          *pData;
-+	uint32_t       csum = 0;
-+	uint32_t       offset = _offset;
-+
-+	// the packet is shared and we can't modify it without screwing
-+	// things up
-+	if (!p) {
-+	// If uniqueify() fails, packet itself is garbage and has been deleted
-+		click_chatter("Non-Writable Packet!");
-+		return 0;
-+	}
-+
-+	// get the first two words of the IP header to see what it is to determine how to proceed further
-+	if (p->length() < offset + sizeof(uint32_t) * 2) {
-+		p->kill();
-+		return 0;
-+	}
-+
-+	// here need to get to the right offset.  The IP header can be of variable length due to options
-+	// also, the header might be IPv4 of IPv6
-+	u_char version = p->data()[offset] >> 4;
-+	if (version == 0x04) {
-+		const click_ip *ip = reinterpret_cast<const click_ip *>(p->data() + offset);
-+		offset += ip->ip_hl << 2;
-+	}
-+	else if (version == 0x06) {
-+		// IPv6 header is
-+		const click_ip6 *ip6 = reinterpret_cast<const click_ip6 *>(p->data() + offset);
-+		if (ip6->ip6_nxt == 0x06) { // TCP is the next header
-+			offset += sizeof(click_ip6);
-+		}
-+		else { // the next header is not TCP so stop now
-+			p->kill();
-+			return 0;
-+		}
-+	}
-+	else {
-+		click_chatter("Unknown IP version!");
-+		p->kill();
-+		return 0;
-+	}
-+
-+	if (p->length() < offset + sizeof(click_tcp) + sizeof(PData)) {
-+		//click_chatter("Packet is too short");
-+		p->kill();
-+		return 0;
-+	}
-+
-+	// eth, IP, headers must be bypassed with a correct offset
-+	tcph = (click_tcp*)(p->data() + offset);
-+	pData = (PData*)((char*)tcph + sizeof(click_tcp));
-+	csum = tcph->th_sum;
-+
-+	// we use incremental checksum computation to patch up the checksum after
-+	// the payload will get modified
-+	_count++;
-+	if (_delta) {
-+		Timestamp ts1(ntohl(pData->data[0]), Timestamp::nsec_to_subsec(ntohl(pData->data[1])));
-+		Timestamp diff = Timestamp::now() - ts1;
-+
-+		//click_chatter("Seq %d Time Diff sec: %d usec: %d\n", ntohl(pData->seq_num), diff.sec(), diff.nsec());
-+		pData->data[2] = htonl(diff.sec());
-+		pData->data[3] = htonl(diff.nsec());
-+		csum += click_in_cksum((const unsigned char*)(pData->data + 2), 2 * sizeof(uint32_t));
-+	}
-+	else {
-+		tnow = Timestamp::now();
-+
-+		// subtract the previous contribution from CHECKSUM in case PData values are non-zero
-+		csum -= click_in_cksum((const unsigned char*)pData, sizeof(PData));
-+		pData->seq_num = htonl(_count);
-+		pData->data[0] = htonl(tnow.sec());
-+		pData->data[1] = htonl(tnow.nsec());
-+		pData->data[2] = 0;
-+		pData->data[3] = 0;
-+		csum += click_in_cksum((const unsigned char*)pData, sizeof(PData));
-+	}
-+
-+	csum = (0xFFFF & csum) + ((0xFFFF0000 & csum) >> 16);
-+	csum = (csum != 0xFFFF) ? csum : 0;
-+
-+	// now that we modified the packet it is time to fix up the
-+	// csum of the header.
-+	tcph->th_sum = (uint16_t)csum;
-+
-+	return p;
-+}
-+
-+
-+int StoreTCPTimeSeqRecord::reset_handler(const String &, Element *e, void *, ErrorHandler *) {
-+	StoreTCPTimeSeqRecord *t = (StoreTCPTimeSeqRecord *) e;
-+
-+	t->_count = 0;
-+	return 0;
-+}
-+
-+void StoreTCPTimeSeqRecord::add_handlers() {
-+	add_data_handlers("count", Handler::f_read, &_count);
-+	add_write_handler("reset", reset_handler);
-+}
-+
-+CLICK_ENDDECLS
-+EXPORT_ELEMENT(StoreTCPTimeSeqRecord)
-diff --git a/elements/analysis/storetcptimeseqrecord.hh b/elements/analysis/storetcptimeseqrecord.hh
-new file mode 100644
-index 0000000..5aa8883
---- /dev/null
-+++ b/elements/analysis/storetcptimeseqrecord.hh
-@@ -0,0 +1,99 @@
-+// -*- c-basic-offset: 4 -*-
-+/*
-+Programmer: Georgios Katsikas
-+ * Copyright (c) 2016 
-+
-+ * Permission is hereby granted, free of charge, to any person obtaining a
-+ * copy of this software and associated documentation files (the "Software"),
-+ * to deal in the Software without restriction, subject to the conditions
-+ * listed in the Click LICENSE file. These conditions include: you must
-+ * preserve this copyright notice, and you cannot mention the copyright
-+ * holders in advertising related to the Software without their permission.
-+ * The Software is provided WITHOUT ANY WARRANTY, EXPRESS OR IMPLIED. This
-+ * notice is a summary of the Click LICENSE file; the license in that file is
-+ * legally binding.
-+*/
-+#ifndef CLICK_STORETCPTIMESEQRECORD_HH
-+#define CLICK_STORETCPTIMESEQRECORD_HH
-+#include <click/element.hh>
-+
-+CLICK_DECLS
-+
-+/*
-+=c
-+
-+StoreTCPTimeSeqRecord([I<keywords> OFFSET, DELTA])
-+
-+=s timestamps
-+
-+=d
-+
-+StoreTCPTimeSeqRecord element can be handy when computing end-to-end TCP packet
-+delays.  The element embeds a timestamp and a sequence number into a packet and
-+adjusts the checksum of the TCP packet.  Once the initial timestamp has been
-+placed into the payload of the TCP packet, a time difference can be computed
-+once a packet passes through another StoreTCPTimeSeqRecord element.  The data can be
-+accessed by examining the packet payload (e.g., do a tcpdump and then do post
-+processing of the data).  The element uses partial checksums to speed up the
-+processing.  The element works with IPv4 and IPv6 packets. In case of IPv6,
-+it assumes that the next header field is TCP.  If this is not the case, the
-+element will discard the packet.
-+
-+Packet payload found after the TCP header.  Note, the TCP payload must be at least
-+22 bytes long.  The values will be stored in network byte order.
-+
-+uint32_t seq_num
-+uint32_t initial_second
-+uint32_t initial_nano_second
-+uint32_t difference_second
-+uint32_t difference_nano_second
-+
-+Keyword arguments are:
-+
-+=over 2
-+
-+=item OFFSET
-+
-+Number of bytes to offset from the beginning of the packet where the IPv4/6 header can be found.
-+If raw Ethernet packets are fed into this element, then OFFSET needs to be 14.
-+
-+=item DELTA
-+
-+Determines which time values are set. If DELTA is false (the default), then the initial_second
-+and initial_nano_second values are set to the current time, and the difference values are set to 0.
-+If DELTA is true, then the initial values are left as is, and the difference values are set to
-+the difference between the current time and the packet's initial time.
-+
-+=back
-+*/
-+class StoreTCPTimeSeqRecord : public Element {
-+	public:
-+		StoreTCPTimeSeqRecord() CLICK_COLD;
-+
-+		const char *class_name() const	{ return "StoreTCPTimeSeqRecord"; }
-+		const char *port_count() const	{ return PORTS_1_1; }
-+
-+		void add_handlers() CLICK_COLD;
-+		int  configure(Vector<String> &conf, ErrorHandler *errh) CLICK_COLD;
-+
-+		Packet *simple_action(Packet *);
-+
-+		// packet data payload access struct
-+		// Header | PDATA | rest of data
-+		// This comes out to 22 bytes which will fit into the smallest Ethernet frame
-+		struct PData {
-+			uint32_t seq_num;
-+			uint32_t data[4];
-+		};
-+
-+	private:
-+		unsigned long _count;
-+		bool          _delta;  // if true put in_timestamp else out_timestamp
-+		uint32_t      _offset; //how much to shift to get to the IPv4/v6 header
-+
-+		static String read_handler(Element *, void *) CLICK_COLD;
-+		static int    reset_handler(const String &, Element *, void *, ErrorHandler *);
-+};
-+
-+CLICK_ENDDECLS
-+#endif
 diff --git a/elements/icmp/icmprewriter.cc b/elements/icmp/icmprewriter.cc
 index 28de1db..e780844 100644
 --- a/elements/icmp/icmprewriter.cc
@@ -616,7 +74,7 @@ index 4ae7236..598ef64 100644
      Vector<MapEntry> _maps;
      unsigned _annos;
  
-+    // Hyper-NF: Make the Checksum calculation optional
++    // SNF: Make the Checksum calculation optional
 +    bool _calc_checksum;
 +
      void rewrite_packet(WritablePacket *, click_ip *, click_udp *,
@@ -664,7 +122,7 @@ index cdc8dca..86e1a78 100644
 +	// Decrement
 +	ip->ip_ttl --;
 +
-+	// Hyper-NF: Do not calculate IP checksum if you are requested to do so
++	// SNF: Do not calculate IP checksum if you are requested to do so
 +	if ( !_calc_checksum )
 +		return q;
  
@@ -686,7 +144,7 @@ index b2ff703..7f5aa4a 100644
      bool _active;
      bool _multicast;
  
-+    // Hyper-NF: Make the Checksum calculation optional
++    // SNF: Make the Checksum calculation optional
 +    bool _calc_checksum;
  };
  
@@ -710,7 +168,7 @@ index 05ac76f..7b43032 100644
  	p->set_anno_u8(annos >> 2, _reply_anno);
 -    update_csum(&iph->ip_sum, direction, _ip_csum_delta);
 +
-+    // Hyper-NF: Allow to skip IP checksum calculation
++    // SNF: Allow to skip IP checksum calculation
 +    if ( calc_checksum ) {
 +	update_csum(&iph->ip_sum, direction, _ip_csum_delta);
 +    }
@@ -721,7 +179,7 @@ index 05ac76f..7b43032 100644
      else if (iph->ip_p == IP_PROTO_TCP && p->transport_length() >= 18) {
  	click_tcp *tcph = p->tcp_header();
 -	update_csum(&tcph->th_sum, direction, _udp_csum_delta);
-+	// Hyper-NF extension: Allow to skip TCP checksum calculation
++	// SNF extension: Allow to skip TCP checksum calculation
 +	if ( calc_checksum ) {
 +		update_csum(&tcph->th_sum, direction, _udp_csum_delta);
 +	}
@@ -730,7 +188,7 @@ index 05ac76f..7b43032 100644
 -	if (udph->uh_sum)	// 0 checksum is no checksum
 -	    update_csum(&udph->uh_sum, direction, _udp_csum_delta);
 +	if (udph->uh_sum) {	// 0 checksum is no checksum
-+	    // Hyper-NF extension: Allow to skip UDP checksum calculation
++	    // SNF extension: Allow to skip UDP checksum calculation
 +	    if ( calc_checksum ) {
 +	    	update_csum(&udph->uh_sum, direction, _udp_csum_delta);
 +	    }
@@ -779,7 +237,7 @@ index 868513e..773f0b9 100644
      }
 -    update_csum(&iph->ip_sum, direction, _ip_csum_delta);
 +
-+    // Hyper-NF: Allow to skip IP checksum calculation
++    // SNF: Allow to skip IP checksum calculation
 +    if ( calc_checksum ) {
 +	    update_csum(&iph->ip_sum, direction, _ip_csum_delta);
 +    }
@@ -790,7 +248,7 @@ index 868513e..773f0b9 100644
      else if (iph->ip_p == IP_PROTO_TCP && p->transport_length() >= 18) {
  	click_tcp *tcph = p->tcp_header();
 -	update_csum(&tcph->th_sum, direction, _udp_csum_delta);
-+	// Hyper-NF extension: Allow to skip TCP checksum calculation
++	// SNF extension: Allow to skip TCP checksum calculation
 +	if ( calc_checksum ) {
 +		update_csum(&tcph->th_sum, direction, _udp_csum_delta);
 +	}
@@ -799,7 +257,7 @@ index 868513e..773f0b9 100644
 -	if (udph->uh_sum)	// 0 checksum is no checksum
 -	    update_csum(&udph->uh_sum, direction, _udp_csum_delta);
 +	if (udph->uh_sum) {	// 0 checksum is no checksum
-+	    // Hyper-NF extension: Allow to skip UDP checksum calculation
++	    // SNF extension: Allow to skip UDP checksum calculation
 +	    if ( calc_checksum ) {
 +	    	update_csum(&udph->uh_sum, direction, _udp_csum_delta);
 +	    }
@@ -839,7 +297,7 @@ index beafd02..fa1a584 100644
      { "vers", IPFilter::FIELD_VERSION },
 -    { "win", IPFilter::FIELD_TCP_WIN }
 +    { "win", IPFilter::FIELD_TCP_WIN },
-+    /* Fields IP_SRC and IP_DST added for HyperNF */
++    /* Fields IP_SRC and IP_DST added for SNF */
 +    { "src", IPFilter::FIELD_IP_SRC},
 +    { "dst", IPFilter::FIELD_IP_DST}
  };
@@ -849,7 +307,7 @@ index beafd02..fa1a584 100644
         case FIELD_TTL: sa << "ip ttl"; break;
         case FIELD_TCP_WIN: sa << "tcp win"; break;
         case FIELD_ICMP_TYPE: sa << "icmp type"; break;
-+       /* Fields IP_SRC and IP_DST added for HyperNF */
++       /* Fields IP_SRC and IP_DST added for SNF */
 +       case FIELD_IP_SRC: sa << "ip src"; break;
 +       case FIELD_IP_DST: sa << "ip dst"; break;
         default:
@@ -865,7 +323,7 @@ index 25b63af..ddaffee 100644
  	FIELD_TCP_WIN = (TYPE_FIELD | (IP_PROTO_TCP << FIELD_PROTO_SHIFT) | ((14*8) << FIELD_OFFSET_SHIFT) | 15),
 -	FIELD_ICMP_TYPE = (TYPE_FIELD | (IP_PROTO_ICMP << FIELD_PROTO_SHIFT) | (0 << FIELD_OFFSET_SHIFT) | 7)
 +	FIELD_ICMP_TYPE = (TYPE_FIELD | (IP_PROTO_ICMP << FIELD_PROTO_SHIFT) | (0 << FIELD_OFFSET_SHIFT) | 7),
-+        /* Fields IP_SRC and IP_DST added for HyperNF */
++        /* Fields IP_SRC and IP_DST added for SNF */
 +        FIELD_IP_SRC = (TYPE_FIELD | ((12*8) << FIELD_OFFSET_SHIFT) | 31),
 +        FIELD_IP_DST = (TYPE_FIELD | ((16*8) << FIELD_OFFSET_SHIFT) | 31),
      };
@@ -879,7 +337,7 @@ index 50e3f34..f002f82 100644
  
  //
  // IPRewriterBase
-+// Hyper-NF extension: Set the checksum calculation parameter to true by default
++// SNF extension: Set the checksum calculation parameter to true by default
  //
  
  IPRewriterBase::IPRewriterBase()
@@ -892,7 +350,7 @@ index 50e3f34..f002f82 100644
  	.read("GUARANTEE", SecondsArg(), _timeouts[1])
  	.read("REAP_INTERVAL", SecondsArg(), _gc_interval_sec)
  	.read("REAP_TIME", Args::deprecated, SecondsArg(), _gc_interval_sec)
-+	// Hyper-NF extra arguments
++	// SNF extra arguments
 +	.read("CALC_CHECKSUM", _calc_checksum)
 +	.read("DEC_IP_TTL", _dec_ip_ttl)
  	.consume() < 0)
@@ -906,11 +364,11 @@ index b7ced3a..3d68abb 100644
      uint32_t _gc_interval_sec;
      Timer _gc_timer;
  
-+    // Hyper-NF extension: Read one extra input argument to allow
++    // SNF extension: Read one extra input argument to allow
 +    // skipping IP/TCP/UDP checksum calculation
 +    bool _calc_checksum;
 +
-+    // Hyper-NF extension: IP Rewriter can possibly decrement IP TTL field
++    // SNF extension: IP Rewriter can possibly decrement IP TTL field
 +    bool _dec_ip_ttl;
 +
      enum {
@@ -945,7 +403,7 @@ index 966382c..329036a 100644
  	p->set_anno_u8(annos >> 2, _reply_anno);
 -    update_csum(&iph->ip_sum, direction, _ip_csum_delta);
 +
-+    // Hyper-NF: Allow to skip IP checksum calculation
++    // SNF: Allow to skip IP checksum calculation
 +    if ( calc_checksum ) {
 +	update_csum(&iph->ip_sum, direction, _ip_csum_delta);
 +    }
@@ -958,7 +416,7 @@ index 966382c..329036a 100644
  	tcph->th_dport = revflow.sport();
 -	update_csum(&tcph->th_sum, direction, _udp_csum_delta);
 +
-+	// Hyper-NF extension: Allow to skip TCP checksum calculation
++	// SNF extension: Allow to skip TCP checksum calculation
 +	if ( calc_checksum ) {
 +		update_csum(&tcph->th_sum, direction, _udp_csum_delta);
 +	}
@@ -969,7 +427,7 @@ index 966382c..329036a 100644
 -	if (udph->uh_sum)	// 0 checksum is no checksum
 -	    update_csum(&udph->uh_sum, direction, _udp_csum_delta);
 +	if (udph->uh_sum) {	// 0 checksum is no checksum
-+	    // Hyper-NF extension: Allow to skip UDP checksum calculation
++	    // SNF extension: Allow to skip UDP checksum calculation
 +	    if ( calc_checksum ) {
 +	    	update_csum(&udph->uh_sum, direction, _udp_csum_delta);
 +	    }
@@ -1007,9 +465,9 @@ index 0bc909b..77fee27 100644
  #include <click/router.hh>
  CLICK_DECLS
  
-+// Hyper-NF: A statically-specified byte position in the packet annotation area
-+//           used by Hyper-NF to encode the path of a flow across several NATs
-+#define HYPER_NF_LABEL_POS 47
++// SNF: A statically-specified byte position in the packet annotation area
++//           used by SNF to encode the path of a flow across several NATs
++#define SNF_LABEL_POS 47
 +
  IPRewriter::IPRewriter()
      : _udp_map(0)
@@ -1028,7 +486,7 @@ index 0bc909b..77fee27 100644
  IPRewriterEntry *
  IPRewriter::add_flow(int ip_p, const IPFlowID &flowid,
 -		     const IPFlowID &rewritten_flowid, int input)
-+		     const IPFlowID &rewritten_flowid, int input, int hyper_nf_label)
++		     const IPFlowID &rewritten_flowid, int input, int snf_label)
  {
      if (ip_p == IP_PROTO_TCP)
  	return TCPRewriter::add_flow(ip_p, flowid, rewritten_flowid, input);
@@ -1036,15 +494,15 @@ index 0bc909b..77fee27 100644
      if (!(data = _udp_allocator.allocate()))
  	return 0;
  
-+    // Hyper-NF: If your packet has been arrived annotated, hyper_nf_label is zero or positive.
++    // SNF: If your packet has been arrived annotated, snf_label is zero or positive.
 +    // This means that the reverse output to be installed in the map table must get the value of
-+    // hyper_nf_label.
++    // snf_label.
      IPRewriterInput *rwinput = &_input_specs[input];
 +
 +    // We have something to give you!!! A different reverse port
-+    if ( hyper_nf_label != -1 ) {
++    if ( snf_label != -1 ) {
 +	//printf("---->  ROUTPUT before: %d\n", rwinput->routput);
-+	rwinput->routput = hyper_nf_label;
++	rwinput->routput = snf_label;
 +	//printf("---->  ROUTPUT  after: %d\n", rwinput->routput);
 +    }
 +
@@ -1055,7 +513,7 @@ index 0bc909b..77fee27 100644
  	return;
      }
  
-+    // Hyper-NF: Decrement IP TTL!
++    // SNF: Decrement IP TTL!
 +    // Do it here, before jumping to either UDP or TCP
 +    if ( _dec_ip_ttl ) {
 +	// Safe decrement
@@ -1073,22 +531,22 @@ index 0bc909b..77fee27 100644
 +	}
 +    }
 +
-+    // Hyper-NF: Read a specific position in the annotation area
++    // SNF: Read a specific position in the annotation area
 +    // If set, this position tells you how to route the packet on
 +    // the reverse outport specified by the value (the NAT's table
 +    // routput must be set accordingly in method IPRewriter::add_flow)
 +    // If not set, it must have a value 255 in order to use the standard
 +    // port allocation of this element
-+    int hyper_nf_label = (uint8_t) p->anno_u8(HYPER_NF_LABEL_POS);
++    int snf_label = (uint8_t) p->anno_u8(SNF_LABEL_POS);
 +    // There is no annotation, behave normally
-+    if ( hyper_nf_label == 255 ) {
-+	hyper_nf_label = -1;
++    if ( snf_label == 255 ) {
++	snf_label = -1;
 +    }
 +    else {
-+	//printf("\n----> Routing annotation: %d\n", hyper_nf_label);
++	//printf("\n----> Routing annotation: %d\n", snf_label);
 +	// Check whether the given label is in the range of ports of this element
-+	if ( this->noutputs() < (hyper_nf_label+1) ) {
-+		//printf("----> Invalid routing annotation: %d. Element has only %d output ports\n", hyper_nf_label, this->noutputs());
++	if ( this->noutputs() < (snf_label+1) ) {
++		//printf("----> Invalid routing annotation: %d. Element has only %d output ports\n", snf_label, this->noutputs());
 +		return;
 +	}
 +    }
@@ -1107,7 +565,7 @@ index 0bc909b..77fee27 100644
 -	if (result == rw_addmap)
 -	    m = IPRewriter::add_flow(iph->ip_p, flowid, rewritten_flowid, port);
 +	if (result == rw_addmap) {
-+	    m = IPRewriter::add_flow(iph->ip_p, flowid, rewritten_flowid, port, hyper_nf_label);
++	    m = IPRewriter::add_flow(iph->ip_p, flowid, rewritten_flowid, port, snf_label);
 +	    /*printf("---->        IP Proto: %d\n", iph->ip_p);
 +	    printf("---->        Src   IP: %s\n", m->flowid().saddr().s().c_str());
 +	    printf("---->        Src Port: %d\n", htons(m->flowid().sport()));
@@ -1115,7 +573,7 @@ index 0bc909b..77fee27 100644
 +	    printf("---->        Dst Port: %d\n", htons(m->flowid().dport()));
 +	    printf("---->       Direction: %s\n", m->direction()? "Response":"Forward");
 +	    printf("----> Forward Outport: %d\n", m->output());
-+	    printf("----> Reverse Outport: %d\n", hyper_nf_label);*/
++	    printf("----> Reverse Outport: %d\n", snf_label);*/
 +	}
  	if (!m) {
  	    checked_output_push(result, p);
@@ -1147,7 +605,7 @@ index 0bc909b..77fee27 100644
  	    udpmf->change_expiry(_heap, false, now_j + udp_flow_timeout(udpmf));
      }
  
-+    // Hyper-NF: Check the output port before the final push
++    // SNF: Check the output port before the final push
 +    //printf("----> Output Port: %d\n", m->output());
 +
      output(m->output()).push(p);
@@ -1162,10 +620,10 @@ index 50fb742..c9f2e95 100644
  	    return 0;
      }
 +
-+    // Hyper-NF: Interface for add flow changed to accommodate label-based lookup in the map table
++    // SNF: Interface for add flow changed to accommodate label-based lookup in the map table
      IPRewriterEntry *add_flow(int ip_p, const IPFlowID &flowid,
 -			      const IPFlowID &rewritten_flowid, int input);
-+			      const IPFlowID &rewritten_flowid, int input, int hyper_nf_label);
++			      const IPFlowID &rewritten_flowid, int input, int snf_label);
 +
      void destroy_flow(IPRewriterFlow *flow);
      click_jiffies_t best_effort_expiry(const IPRewriterFlow *flow) {
@@ -1191,7 +649,7 @@ index 6e10003..242a384 100644
 -		  uint16_t *csum_begin = reinterpret_cast<uint16_t *>(begin_opt + ((opt + 2 - begin_opt) & ~1));
 -		  for (uint16_t *csum = csum_begin; reinterpret_cast<uint8_t *>(csum) < end_sack; csum++)
 -		      csum_delta += ~*csum & 0xFFFF;
-+		  // Hyper-NF extension: Allow to skip TCP checksum calculation
++		  // SNF extension: Allow to skip TCP checksum calculation
 +		  uint16_t *csum_begin= 0;
 +		  if ( calc_checksum ) {
 +		  	// develop initial checksum value
@@ -1210,7 +668,7 @@ index 6e10003..242a384 100644
 -		  for (uint16_t *csum = csum_begin; reinterpret_cast<uint8_t *>(csum) < end_sack; csum++)
 -		      csum_delta += *csum;
 -		  break;
-+		  // Hyper-NF extension: Allow to skip TCP checksum calculation
++		  // SNF extension: Allow to skip TCP checksum calculation
 +		  if ( calc_checksum ) {
 +			  // finish off csum_delta calculation
 +			  for (uint16_t *csum = csum_begin; reinterpret_cast<uint8_t *>(csum) < end_sack; csum++)
@@ -1225,7 +683,7 @@ index 6e10003..242a384 100644
  
    done:
 -    if (csum_delta) {
-+    // Hyper-NF extension: Allow to skip TCP checksum calculation
++    // SNF extension: Allow to skip TCP checksum calculation
 +    if (csum_delta && !calc_checksum) {
  	uint32_t sum = (~tcph->th_sum & 0xFFFF) + csum_delta;
  	sum = (sum & 0xFFFF) + (sum >> 16);
@@ -1245,7 +703,7 @@ index 6e10003..242a384 100644
  	p->set_anno_u8(annos >> 2, _reply_anno);
 -    update_csum(&iph->ip_sum, direction, _ip_csum_delta);
 +
-+    // Hyper-NF extension: Allow to skip IP checksum calculation
++    // SNF extension: Allow to skip IP checksum calculation
 +    if ( calc_checksum ) {
 +	update_csum(&iph->ip_sum, direction, _ip_csum_delta);
 +    }
@@ -1258,7 +716,7 @@ index 6e10003..242a384 100644
      tcph->th_dport = revflow.sport();
 -    update_csum(&tcph->th_sum, direction, _udp_csum_delta);
 +
-+    // Hyper-NF extension: Allow to skip TCP checksum calculation
++    // SNF extension: Allow to skip TCP checksum calculation
 +    if ( calc_checksum ) {
 +	update_csum(&tcph->th_sum, direction, _udp_csum_delta);
 +    }
@@ -1271,7 +729,7 @@ index 6e10003..242a384 100644
  	uint32_t newval = htonl(new_seq(direction, ntohl(tcph->th_seq)));
 -	click_update_in_cksum(&tcph->th_sum, tcph->th_seq >> 16, newval >> 16);
 -	click_update_in_cksum(&tcph->th_sum, tcph->th_seq, newval);
-+	// Hyper-NF extension: Allow to skip TCP checksum calculation
++	// SNF extension: Allow to skip TCP checksum calculation
 +	if ( calc_checksum ) {
 +		click_update_in_cksum(&tcph->th_sum, tcph->th_seq >> 16, newval >> 16);
 +		click_update_in_cksum(&tcph->th_sum, tcph->th_seq, newval);
@@ -1283,7 +741,7 @@ index 6e10003..242a384 100644
  	uint32_t newval = htonl(new_ack(direction, ntohl(tcph->th_ack)));
 -	click_update_in_cksum(&tcph->th_sum, tcph->th_ack >> 16, newval >> 16);
 -	click_update_in_cksum(&tcph->th_sum, tcph->th_ack, newval);
-+	// Hyper-NF extension: Allow to skip TCP checksum calculation
++	// SNF extension: Allow to skip TCP checksum calculation
 +	if ( calc_checksum ) {
 +		click_update_in_cksum(&tcph->th_sum, tcph->th_ack >> 16, newval >> 16);
 +		click_update_in_cksum(&tcph->th_sum, tcph->th_ack, newval);
@@ -1349,7 +807,7 @@ index b3d0f62..5033e07 100644
  	p->set_anno_u8(annos >> 2, _reply_anno);
 -    update_csum(&iph->ip_sum, direction, _ip_csum_delta);
 +
-+    // Hyper-NF: Allow to skip IP checksum calculation
++    // SNF: Allow to skip IP checksum calculation
 +    if ( calc_checksum ) {
 +    	update_csum(&iph->ip_sum, direction, _ip_csum_delta);
 +    }
@@ -1363,7 +821,7 @@ index b3d0f62..5033e07 100644
 -	if (p->transport_length() >= 18)
 -	    update_csum(&reinterpret_cast<click_tcp *>(udph)->th_sum, direction, _udp_csum_delta);
 +	if (p->transport_length() >= 18) {
-+	    // Hyper-NF: Allow to skip UDP checksum calculation
++	    // SNF: Allow to skip UDP checksum calculation
 +	    if ( calc_checksum ) {
 +	    	update_csum(&reinterpret_cast<click_tcp *>(udph)->th_sum, direction, _udp_csum_delta);
 +	    }
@@ -1373,7 +831,7 @@ index b3d0f62..5033e07 100644
 -	    // 0 checksum is no checksum
 -	    update_csum(&udph->uh_sum, direction, _udp_csum_delta);
 +	if (p->transport_length() >= 8 && udph->uh_sum) {
-+	    // Hyper-NF: Allow to skip UDP checksum calculation
++	    // SNF: Allow to skip UDP checksum calculation
 +	    if ( calc_checksum ) {
 +	    	// 0 checksum is no checksum
 +	    	update_csum(&udph->uh_sum, direction, _udp_csum_delta);
@@ -1414,7 +872,7 @@ index dc83606..87a7b68 100644
  
 -    int initialize(ErrorHandler* errh);
 +    /*
-+     * Hyper-NF Modification to prevent Click from initializing the elements in this call.
++     * SNF Modification to prevent Click from initializing the elements in this call.
 +     * We simply want to have the Click DAG populated with all the elements and connections.
 +     * The 2nd argument is set to false by default. This is how normal Click calls the function
 +     * so it does not affect normal Click executions.
@@ -1428,28 +886,13 @@ index dc83606..87a7b68 100644
  
      Router* _next_router;
  
-+    // Hyper-NF extension: If set to true, the router's elements are not initialized
++    // SNF extension: If set to true, the router's elements are not initialized
 +    // Router::initialize() and ~Router() use this field to properly set and reset the router
 +    bool _do_not_initialize;
 +
  #if CLICK_LINUXMODULE
      Vector<struct module*> _modules;
  #endif
-diff --git a/lib/driver.cc b/lib/driver.cc
-index 0b4ac0f..01a8b70 100644
---- a/lib/driver.cc
-+++ b/lib/driver.cc
-@@ -527,8 +527,9 @@ click_read_router(String filename, bool is_expr, ErrorHandler *errh, bool initia
-     l->end_parse(cookie);
- 
-     // initialize if requested
-+    bool initialize_only_dag = false;
-     if (initialize)
--	if (errh->nerrors() > before || router->initialize(errh) < 0) {
-+	if (errh->nerrors() > before || router->initialize(errh, initialize_only_dag) < 0) {
- 	    delete router;
- 	    return 0;
- 	}
 diff --git a/lib/router.cc b/lib/router.cc
 index d345236..cd11e0d 100644
 --- a/lib/router.cc
@@ -1502,7 +945,7 @@ index d345236..cd11e0d 100644
  
 +    //////////////////////////////////////////////////////////////////////////////
 +    /*
-+     * Hyper-NF modification to prevent the initialization of Click elements
++     * SNF modification to prevent the initialization of Click elements
 +     * It happens only when the boolean argument is true. Default is false.
 +     */
 +    //////////////////////////////////////////////////////////////////////////////
@@ -1515,18 +958,3 @@ index d345236..cd11e0d 100644
  #if CLICK_DMALLOC
      CLICK_DMALLOC_REG("iHoo");
  #endif
-diff --git a/userlevel/click.cc b/userlevel/click.cc
-index a5e01cc..63f1cbb 100644
---- a/userlevel/click.cc
-+++ b/userlevel/click.cc
-@@ -388,8 +388,9 @@ parse_configuration(const String &text, bool text_is_expr, bool hotswap,
-   if (hotswap && click_router && click_router->initialized())
-       router->set_hotswap_router(click_router);
- 
-+  bool initialize_only_dag = false;
-   if (errh->nerrors() == before_errors
--      && router->initialize(errh) >= 0)
-+      && router->initialize(errh, initialize_only_dag) >= 0)
-     return router;
-   else {
-     delete router;

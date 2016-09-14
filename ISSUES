@@ -12,16 +12,17 @@ BUG:
 	* FromDevice leads to incorrect classifier
 
 TODO:
+	* if Click prefix != /usr/local/bin SNF compilation fails because it cannot detect the custom Click path
 	* add ID to all elements
 	* add pointer->element in Write operations
 	* Compile tests with autotools
-	* Identify comments in active lines of the Hyper-NF language
+	* Identify comments in active lines of the SNF language
 	* Make IPSynthesizer IPRwriter's child and extend properly
 	* Direct both directions of a proxy/NAT to the same IPClassifier
 	* IPSynthesizer should batch packets even if they are fragmented by the internal IPFragmenter
 	* 3rd pattern of Synthesizer does not have keyword
 	* Empty classifiers are generated in case of stateful chains with more than 2 interfaces
-	* Use m4/hypernf.m4 to apply system checks (e.g., CXX compiler, CLICK, DPDK) and alleviate configure.ac
+	* Use m4/snf.m4 to apply system checks (e.g., CXX compiler, CLICK, DPDK) and alleviate configure.ac
  
 ###################
 # Element support #

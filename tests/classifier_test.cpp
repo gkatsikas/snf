@@ -30,7 +30,7 @@ int main () {
 	test_tc.intersect_filter(Filter(ip_dst,aton("200.0.0.2")));
 	test_tc.intersect_filter(Filter(tp_dst_port, 1234));
 	test_tc.intersect_filter(Filter(ip_proto,17));
-	
+
 	while (size < MAX_NUMBER_CLASSES) {
 		for(size_t i=0; i<3; i++) {
 			myfile.open(

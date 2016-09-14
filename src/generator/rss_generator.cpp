@@ -1,7 +1,7 @@
 // -*- c-basic-offset: 4 -*-
 /* rss_generator.cpp
  * 
- * Export a runnable, hardware-assisted Hyper-NF configuration that 
+ * Export a runnable, hardware-assisted SNF configuration that 
  * exploits the hardware queues of modern NICs together with the 
  * powerful processing capacities of multi-core architectures, to 
  * parallelize NFV chain deployments.
@@ -46,11 +46,11 @@ RSSGenerator::RSSGenerator(Synthesizer *synth) : Generator(synth) {
 		this->print_cpu_layout();
 	#endif
 
-	def_chatter(this->log, "\tHardware-assisted (RSS), multi-core Hyper-NF Generator constructed");
+	def_chatter(this->log, "\tHardware-assisted (RSS), multi-core SNF Generator constructed");
 }
 
 RSSGenerator::~RSSGenerator() {
-	def_chatter(this->log, "\tHardware-assisted (RSS), multi-core Hyper-NF Generator deleted");
+	def_chatter(this->log, "\tHardware-assisted (RSS), multi-core SNF Generator deleted");
 }
 
 /*
@@ -62,7 +62,7 @@ RSSGenerator::generate_equivalent_configuration(const bool to_file) {
 }
 
 /*
- * Hardware-assisted, RSS-based Hyper-NF:
+ * Hardware-assisted, RSS-based SNF:
  *    RSS-Hashing in the NIC splits traffic at will (based on fields that we specify).
  *    Then, a Click-DPDK configuration is reading packets from different queues, schedules threads
  *    from multiple cores on these queues, and clones the chain across all of them.
@@ -74,7 +74,7 @@ RSSGenerator::generate_rss_cloned_pipelines(const bool &to_file) {
 	std::stringstream config_stream;
 
 	#ifdef  DEBUG_MODE
-		this->synthesizer->print_hyper_nf_ifaces();
+		this->synthesizer->print_snf_ifaces();
 	#endif
 
 	// Maps between a NIC queue's descriptor and a CPU core to handle its packets.
@@ -104,7 +104,7 @@ RSSGenerator::generate_rss_cloned_pipelines(const bool &to_file) {
 	>                                                           classifier_repl_to_rewriter_repl;
 
 	// Step 1: Write some static information about the interfaces'
-	// addressing of the Hyper-NF configuration.
+	// addressing of the SNF configuration.
 	this->generate_static_configuration(config_stream);
 
 	// Step 2: Encode the connection map between classifiers and rewriters
@@ -129,7 +129,7 @@ RSSGenerator::generate_rss_cloned_pipelines(const bool &to_file) {
 	def_chatter(this->log, "\tGenerate Write & Output Parts...");
 
 	#ifdef DEBUG_MODE
-		this->synthesizer->print_hyper_nf_ifaces_to_nics();
+		this->synthesizer->print_snf_ifaces_to_nics();
 	#endif
 
 	// Step 5: Construct the IPClassifier(s) and the path of Click elements
@@ -164,7 +164,7 @@ RSSGenerator::generate_rss_cloned_pipelines(const bool &to_file) {
 				in_nic_desc_to_core, out_nic_desc_to_core, classifier_to_core, 
 				classifier_repl_to_rewriter_repl, config_stream) ) {
 
-		error_chatter(this->log, "\tFailed to schedule Hyper-NF");
+		error_chatter(this->log, "\tFailed to schedule SNF");
 		return TO_BOOL(CODE_GENERATION_PROBLEM);
 	}
 
@@ -202,14 +202,14 @@ RSSGenerator::generate_rss_cloned_pipelines(const bool &to_file) {
 void
 RSSGenerator::generate_static_configuration(std::stringstream &config_stream) {
 
-	unsigned short hyper_ifaces_no = (this->synthesizer->get_hyper_nf_ifaces_no() <= this->number_of_nics ) ? 
-		this->number_of_nics : this->synthesizer->get_hyper_nf_ifaces_no();
+	unsigned short snf_ifaces_no = (this->synthesizer->get_snf_ifaces_no() <= this->number_of_nics ) ? 
+		this->number_of_nics : this->synthesizer->get_snf_ifaces_no();
 
 	// Chain parameters
-	this->generate_indicative_chain_parameters(hyper_ifaces_no, config_stream);
+	this->generate_indicative_chain_parameters(snf_ifaces_no, config_stream);
 
 	// Device configuration
-	for (unsigned short i=0 ; i<hyper_ifaces_no ; i++) {
+	for (unsigned short i=0 ; i<snf_ifaces_no ; i++) {
 		config_stream << "AddressInfo(dev" << i << " $macAddr" << i << " $ipAddr"<< i << ");" << std::endl; 
 	}
 	config_stream << std::endl;
@@ -225,7 +225,7 @@ RSSGenerator::generate_static_configuration(std::stringstream &config_stream) {
 }
 
 /*
- * Clone the input part of a Hyper-NF chain across multiple hardware queues
+ * Clone the input part of a SNF chain across multiple hardware queues
  * (associated with different CPU cores) on a NIC.
  */
 bool
@@ -238,13 +238,13 @@ RSSGenerator::replicate_input_part_of_synthesis(
 		std::map < std::string,    unsigned short >           &classifier_to_core) {
 
 	config_stream << "///////////////////////////////////////////////////////////////" << std::endl;
-	config_stream << "// The input-part of the synthesized Hyper-NF code"              << std::endl;
+	config_stream << "// The input-part of the synthesized SNF code"              << std::endl;
 	config_stream << "///////////////////////////////////////////////////////////////" << std::endl;
 
 	// Multiple FromDPDKDevice, one per hardware queue
 	debug_chatter(this->log, "\tTarget System has " << this->cpu_sockets_no 
 								<< " sockets with " << this->cores_per_socket << " CPU cores/socket");
-	for (unsigned short i=0; i < this->synthesizer->get_hyper_nf_ifaces_no() ; i++) {
+	for (unsigned short i=0; i < this->synthesizer->get_snf_ifaces_no() ; i++) {
 		if ( !this->assign_nic_queues_to_cores(
 				in_nic_desc_to_core, classifier_to_nic_desc,
 				config_stream, i, nic_to_classifier[i]) ) {
@@ -334,7 +334,7 @@ RSSGenerator::replicate_input_part_of_synthesis(
 }
 
 /*
- * Clone the read part of a Hyper-NF chain across multiple input elements (aka cores).
+ * Clone the read part of a SNF chain across multiple input elements (aka cores).
  */
 bool
 RSSGenerator::replicate_read_part_of_synthesis(
@@ -346,7 +346,7 @@ RSSGenerator::replicate_read_part_of_synthesis(
 		>                                                     &classifier_repl_to_rewriter_repl) {
 
 	config_stream << "///////////////////////////////////////////////////////////////" << std::endl;
-	config_stream << "// The read-part of the synthesized Hyper-NF code"               << std::endl;
+	config_stream << "// The read-part of the synthesized SNF code"               << std::endl;
 	config_stream << "///////////////////////////////////////////////////////////////" << std::endl;
 
 	unsigned short ipc_no = 0;
@@ -439,7 +439,7 @@ RSSGenerator::replicate_read_part_of_synthesis(
 }
 
 /*
- * Clone the write and output parts of a Hyper-NF chain.
+ * Clone the write and output parts of a SNF chain.
  */
 bool
 RSSGenerator::replicate_write_and_output_part_of_synthesis(
@@ -449,10 +449,10 @@ RSSGenerator::replicate_write_and_output_part_of_synthesis(
 					std::pair< std::string, unsigned short> > &classifier_repl_to_rewriter) {
 
 	config_stream << "///////////////////////////////////////////////////////////////" << std::endl;
-	config_stream << "// The write and output parts of the synthesized Hyper-NF code"  << std::endl;
+	config_stream << "// The write and output parts of the synthesized SNF code"  << std::endl;
 	config_stream << "///////////////////////////////////////////////////////////////" << std::endl;
 
-	int cur_hyper_nf_iface     = -1;
+	int cur_snf_iface     = -1;
 	unsigned short core_no     = 0;
 	unsigned short core_modulo = 0;
 
@@ -474,10 +474,10 @@ RSSGenerator::replicate_write_and_output_part_of_synthesis(
 		std::string nf    = token[0];
 		std::string iface = token[1];
 
-		// Hyper-NF's configuration to be filled below
-		std::string hyper_nf_iface = out_nf_and_iface;    // Initialized here, might change below
-		std::string hyper_nf_encap_conf;
-		std::string hyper_nf_synth_conf = 
+		// SNF's configuration to be filled below
+		std::string snf_iface = out_nf_and_iface;    // Initialized here, might change below
+		std::string snf_encap_conf;
+		std::string snf_synth_conf = 
 			this->synthesizer->get_synthesized_config_per_output_iface(out_nf_and_iface);
 
 		// The stateful Rewriter of this path
@@ -496,7 +496,7 @@ RSSGenerator::replicate_write_and_output_part_of_synthesis(
 
 		// Check what's going on at this output interface
 		#ifdef  DEBUG_MODE
-			hyper_nf_encap_conf = "IPPrint(LENGTH true, TTL true) -> ";
+			snf_encap_conf = "IPPrint(LENGTH true, TTL true) -> ";
 		#endif
 
 		// This interface is the very first one
@@ -508,24 +508,24 @@ RSSGenerator::replicate_write_and_output_part_of_synthesis(
 			core_no = 0;
 		}
 		else {
-			if ( cur_hyper_nf_iface <= 0 ) {
-				cur_hyper_nf_iface = 0;
+			if ( cur_snf_iface <= 0 ) {
+				cur_snf_iface = 0;
 			}
 			// The pinning at the exit of the chain should be the reverse of the entry pinning.
 			// Cores form the same socket must handle both I and O.
 			// E.g., If packets --> NIC 0 [Core 0] --> Processing --> [Core 0] NIC 1 --> out
-			core_no = ( (cur_hyper_nf_iface % this->cpu_sockets_no) % 2 == 0 ) ? 1:0;
+			core_no = ( (cur_snf_iface % this->cpu_sockets_no) % 2 == 0 ) ? 1:0;
 		}
 
-		hyper_nf_iface = std::to_string(cur_hyper_nf_iface);
-		hyper_nf_encap_conf += (this->proc_layer == L3)? \
-			"EtherEncap(0x0800, $macAddr"   + hyper_nf_iface + 
-			", $gwMACAddr" + hyper_nf_iface + ")" : 
-			"StoreEtherAddress($gwMACAddr"  + hyper_nf_iface + 
+		snf_iface = std::to_string(cur_snf_iface);
+		snf_encap_conf += (this->proc_layer == L3)? \
+			"EtherEncap(0x0800, $macAddr"   + snf_iface + 
+			", $gwMACAddr" + snf_iface + ")" : 
+			"StoreEtherAddress($gwMACAddr"  + snf_iface + 
 			", dst)";
 
 		// The Click instance name that corresponds to a ToDPDPDevice object.
-		std::string output_fd = this->get_nic_desc_for_queue(atoi(hyper_nf_iface.c_str()), "out");
+		std::string output_fd = this->get_nic_desc_for_queue(atoi(snf_iface.c_str()), "out");
 
 		if ( this->io_mode == SingleCore ) {
 			core_modulo = core_no;
@@ -553,37 +553,37 @@ RSSGenerator::replicate_write_and_output_part_of_synthesis(
 			config_stream 	<< rewriter_name_of_queue << " :: " << ip_modifier 
 							<< "(" << rewriter->compute_conf();
 
-			config_stream 	<< hyper_nf_synth_conf
+			config_stream 	<< snf_synth_conf
 								<< ", CAPACITY 1000000, MTU $mtuSize, IPADDR $ipAddr"
-								<< cur_hyper_nf_iface << ");" << std::endl;
+								<< cur_snf_iface << ");" << std::endl;
 			
 			std::stringstream out_str;
 			if ( this->fast_click ) {
-				out_str << OutputClassName << "(" << hyper_nf_iface << ", $queueSize);" << std::endl;
+				out_str << OutputClassName << "(" << snf_iface << ", $queueSize);" << std::endl;
 			}
 			else {
 				out_str << " " << output_fd << std::left  << std::setw(2) << queue << " :: ";
-				out_str << OutputClassName << "(" << hyper_nf_iface << ", " 
+				out_str << OutputClassName << "(" << snf_iface << ", " 
 						<< std::right << std::setw(2) << queue
 						<< ", $queueSize, $burst, $txNdesc, " 
 						<< core_modulo << ");" << std::endl;
 			}
 
-			// Only a Hyper-NF interface will take a ToDevice element.
-			if ( this->synthesizer->is_hyper_nf_iface(nf, iface) ) {
+			// Only a SNF interface will take a ToDevice element.
+			if ( this->synthesizer->is_snf_iface(nf, iface) ) {
 
-				this->synthesizer->add_nic_of_hyper_nf_iface( std::make_pair(nf, iface), hyper_nf_iface );
+				this->synthesizer->add_nic_of_snf_iface( std::make_pair(nf, iface), snf_iface );
 
 				if ( (this->rss_queues <= 1) && (! this->fast_click) ) {
 					config_stream 	<< rewriter_name_of_queue << "[" << rewriter->get_outbound_port()
-									<< "] -> " + hyper_nf_encap_conf + " -> "
+									<< "] -> " + snf_encap_conf + " -> "
 									<< output_fd
-									<< " :: ToDPDKDevice(" << hyper_nf_iface
+									<< " :: ToDPDKDevice(" << snf_iface
 									<< ", BURST $burst, NDESC $txNdesc, IQUEUE $queueSize, TIMEOUT -1);" << std::endl;
 				}
 				else {
 					config_stream 	<< rewriter_name_of_queue << "[" << rewriter->get_outbound_port()
-									<< "] -> " + hyper_nf_encap_conf + " -> " << out_str.str();
+									<< "] -> " + snf_encap_conf + " -> " << out_str.str();
 				}
 
 				std::string queue_conf = ( (this->rss_queues <= 1) && (! this->fast_click) ) ? 
@@ -610,9 +610,9 @@ RSSGenerator::replicate_write_and_output_part_of_synthesis(
 		}
 
 		// Keep track of the interfaces
-		if ( this->synthesizer->is_hyper_nf_iface(nf, iface) ) {
-			debug_chatter(this->log, "\tHyper-NF function " << nf << " with iface: " << iface);
-			cur_hyper_nf_iface++;
+		if ( this->synthesizer->is_snf_iface(nf, iface) ) {
+			debug_chatter(this->log, "\tSNF " << nf << " with iface: " << iface);
+			cur_snf_iface++;
 		}
 
 	}
@@ -636,7 +636,7 @@ RSSGenerator::construct_classifier_to_rewriter_map(
 
 	unsigned short ipc_no = 0;
 
-	// One Classifier per Hyper-NF interface
+	// One Classifier per SNF interface
 	for ( auto &it : this->synthesizer->get_tc_per_input_iface() ) {
 
 		// The group of traffic classes of this Classifier is the value of the map
@@ -805,7 +805,7 @@ RSSGenerator::scheduling(
 
 	// Fast-Click handles the pinning internally
 	config_stream << "///////////////////////////////////////////////////////////////" << std::endl;
-	config_stream << "// Pin the Hyper-NF pipelines"                                   << std::endl;
+	config_stream << "// Pin the SNF pipelines"                                   << std::endl;
 	config_stream << "///////////////////////////////////////////////////////////////" << std::endl;
 	config_stream << "StaticThreadSched(" << std::endl;
 	
@@ -817,7 +817,7 @@ RSSGenerator::scheduling(
 		return TO_BOOL(CODE_GENERATION_PROBLEM);
 	}
 	
-	// Schedule paths between IPClassifiers and IPSynthesizers (Core Hyper-NF processing)
+	// Schedule paths between IPClassifiers and IPSynthesizers (Core SNF processing)
 	// 
 	if ( this->rss_aggressive_pinning ) {
 		//warn_chatter(this->log,	"\tAggressive pinning of potentially stateful paths...");

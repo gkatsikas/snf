@@ -1,8 +1,8 @@
 // -*- c-basic-offset: 4 -*-
 /*
- * hyper-nf.cpp
+ * snf.cpp
  *
- * Bootstraps Hyper-NF, a Click-based NFV Chain Synthesizer.
+ * Bootstraps SNF, a Click-based NFV Chain Synthesizer.
  *
  * Copyright (c) 2015-2016 KTH Royal Institute of Technology
  * Copyright (c) 2015-2016 Georgios Katsikas, Marcel Enguehard
@@ -31,7 +31,7 @@
 #include "synthesizer/synthesizer.hpp"
 
 /*
- * User guide to start Hyper-NF
+ * User guide to start SNF
  */
 void
 usage(Logger &main_log, const char* program) {
@@ -44,7 +44,7 @@ usage(Logger &main_log, const char* program) {
  */
 void
 version_report(const std::string &version) {
-	std::cout << "Hyper-NF "+ version + "\n" << std::endl;
+	std::cout << "SNF "+ version + "\n" << std::endl;
 	std::cout << "Copyright (C) 2015-2016 Georgios Katsikas, Marcel Enguehard.\n\
 Copyright (C) 2015-2016 KTH Royal Institute of Technology.\n\
 \n\
@@ -101,13 +101,13 @@ parse_arguments(
 				break;
 			}
 		}
-		// Hyper-NF version
+		// SNF version
 		else if ( strcmp(*cmd_args, "-v") == 0 ) {
 
 			#ifdef VERSION
 				*version = " v." + std::string(VERSION);
 			#else
-				error_chatter(main_log, "Hyper-NF version not available. Autoconf bug");
+				error_chatter(main_log, "SNF version not available. Autoconf bug");
 				exit(FAILURE);
 			#endif
 
@@ -162,7 +162,7 @@ identify_code_generator(
 }
 
 /*
- * Hyper-NF's bootstrapping function
+ * SNF's bootstrapping function
  */
 int
 main(int argc, char **argv) {
@@ -179,7 +179,7 @@ main(int argc, char **argv) {
 
 	// Check input arguments validity
 	parse_arguments(argc, argv, main_log, &property_file, &version);
-	info_chatter(main_log, "Hyper-NF" + version + ": A synthesizer of Click-based chained Network Functions");
+	info_chatter(main_log, "SNF" + version + ": A synthesizer of Click-based chained Network Functions");
 
 	//////////////////////////////////// Load property file ///////////////////////////////////
 	ParserConfiguration *pcf = NULL;
@@ -187,7 +187,7 @@ main(int argc, char **argv) {
 	info_chatter(main_log, "");
 	info_chatter(main_log, "+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+");
 	task_exec_time = measure<>::execution( [&]() {
-		info_chatter(main_log, "Hyper-NF Chain Loader... ");
+		info_chatter(main_log, "SNF Chain Loader... ");
 		pcf = new ParserConfiguration(property_file);
 		def_chatter(main_log, "\tProperty file: " << property_file);
 		if ( !(exit_status=pcf->load_property_file()) ) {
@@ -209,7 +209,7 @@ main(int argc, char **argv) {
 	info_chatter(main_log, "");
 	info_chatter(main_log, "+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+");
 	task_exec_time = measure<>::execution( [&]() {
-		info_chatter(main_log, "Hyper-NF Chain Parser... ");
+		info_chatter(main_log, "SNF Chain Parser... ");
 		try {
 			parser = new ChainParser(std::move(pcf));
 		}
@@ -249,7 +249,7 @@ main(int argc, char **argv) {
 	info_chatter(main_log, "");
 	info_chatter(main_log, "+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+");
 	task_exec_time = measure<>::execution( [&]() {
-		info_chatter(main_log, "Hyper-NF Traffic Class Builder... ");
+		info_chatter(main_log, "SNF Traffic Class Builder... ");
 		try {
 			synthesizer = new Synthesizer(std::move(parser));
 		}
@@ -276,7 +276,7 @@ main(int argc, char **argv) {
 	info_chatter(main_log, "");
 	info_chatter(main_log, "+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+");
 	task_exec_time = measure<>::execution( [&]() {
-		info_chatter(main_log, "Hyper-NF Synthesizer... ");
+		info_chatter(main_log, "SNF Synthesizer... ");
 		if ( !(exit_status=synthesizer->synthesize_stateful()) ) {
 			delete synthesizer;
 			exit(exit_status);
@@ -289,14 +289,14 @@ main(int argc, char **argv) {
 
 	total_exec_time += task_exec_time;
 
-	////////////////////////////// Generate Hyper-NF Configuration ////////////////////////////
+	////////////////////////////// Generate SNF Configuration ////////////////////////////
 	Generator *generator = NULL;
 	std::string output_files;
 
 	info_chatter(main_log, "");
 	info_chatter(main_log, "+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+");
 	task_exec_time = measure<>::execution( [&]() {
-		info_chatter(main_log, "Hyper-NF Generator... ");
+		info_chatter(main_log, "SNF Generator... ");
 		try {
 			generator = identify_code_generator(
 				main_log, 
@@ -321,7 +321,7 @@ main(int argc, char **argv) {
 			exit(exit_status);
 		}
 		
-		// Fetch the file(s) where Hyper-NF has generated the chain's configuration
+		// Fetch the file(s) where SNF has generated the chain's configuration
 		output_files = generator->get_output_files_list_str();
 	});
 	info_chatter(main_log, task_exec_time << "  microseconds");
@@ -341,7 +341,7 @@ main(int argc, char **argv) {
 	info_chatter(main_log, "");
 	info_chatter(main_log, "+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+");
 	task_exec_time = measure<>::execution( [&]()	{
-		info_chatter(main_log, "Hyper-NF Harvester... ");
+		info_chatter(main_log, "SNF Harvester... ");
 		delete generator;
 	});
 	info_chatter(main_log, task_exec_time << "  microseconds");
@@ -353,7 +353,7 @@ main(int argc, char **argv) {
 
 	info_chatter(main_log, "");
 	note_chatter(main_log, "\t=================================================================================");
-	note_chatter(main_log, "\t==== Hyper-NF Configuration in: " + output_files);
+	note_chatter(main_log, "\t==== SNF Configuration in: " + output_files);
 	note_chatter(main_log, "\t==== Total Execution Time: " << float(total_exec_time)/1000 <<	 " milliseconds");
 	note_chatter(main_log, "\t=================================================================================");
 

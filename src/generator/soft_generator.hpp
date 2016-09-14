@@ -4,7 +4,7 @@
 /*
  * soft_generator.hpp
  * 
- * Class for exporting a pure software-based Hyper-NF configuration based on Click.
+ * Class for exporting a pure software-based SNF configuration based on Click.
  *
  * Copyright (c) 2015-2016 KTH Royal Institute of Technology
  * Copyright (c) 2015-2016 Georgios Katsikas, Marcel Enguehard
@@ -44,7 +44,7 @@ class SoftGenerator : public Generator {
 		/*
 		 * Implements the abstract method of parent Generator class by calling the
 		 * private generate_all_in_soft_configuration method below.
-		 * This method generates an All-in-Software Hyper-NF configuration based on Click.
+		 * This method generates an All-in-Software SNF configuration based on Click.
 		 */
 		bool generate_equivalent_configuration (const bool to_file=true);
 
@@ -64,7 +64,7 @@ class SoftGenerator : public Generator {
 
 		/*
 		 * Generate the input, read, write, and output parts of 
-		 * a Hyper-NF chain.
+		 * a SNF chain.
 		 */
 		bool generate_input_part_of_synthesis  (
 			std::stringstream                     &config_stream,

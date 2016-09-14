@@ -9,7 +9,7 @@
 *.click
 #/*.click
 **/.deps/
-src/hypernf
+src/snf
 Makefile
 autom4te*
 build-aux

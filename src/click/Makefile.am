@@ -2,7 +2,7 @@
 noinst_LIBRARIES = libclickparser.a
 
 #####################################################################################
-# The Click wrapper of Hyper-NF
+# The Click wrapper of SNF
 libclickparser_a_SOURCES  = click_parser.cpp \
 							click_parser.hpp \
 							$(top_builddir)/src/logger/logger.hpp

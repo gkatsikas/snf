@@ -582,7 +582,7 @@ index cdc8dca..86e1a78 100644
 +	// Decrement
 +	ip->ip_ttl --;
 +
-+	// Hyper-NF: Do not calculate IP checksum if you are requested to do so
++	// SNF: Do not calculate IP checksum if you are requested to do so
 +	if ( !_calc_checksum )
 +		return q;
  
@@ -604,7 +604,7 @@ index b2ff703..7f5aa4a 100644
      bool _active;
      bool _multicast;
  
-+    // Hyper-NF: Make the Checksum calculation optional
++    // SNF: Make the Checksum calculation optional
 +    bool _calc_checksum;
  };
  
@@ -619,7 +619,7 @@ index beafd02..fa1a584 100644
      { "vers", IPFilter::FIELD_VERSION },
 -    { "win", IPFilter::FIELD_TCP_WIN }
 +    { "win", IPFilter::FIELD_TCP_WIN },
-+    /* Fields IP_SRC and IP_DST added for HyperNF */
++    /* Fields IP_SRC and IP_DST added for SNF */
 +    { "src", IPFilter::FIELD_IP_SRC},
 +    { "dst", IPFilter::FIELD_IP_DST}
  };
@@ -629,7 +629,7 @@ index beafd02..fa1a584 100644
         case FIELD_TTL: sa << "ip ttl"; break;
         case FIELD_TCP_WIN: sa << "tcp win"; break;
         case FIELD_ICMP_TYPE: sa << "icmp type"; break;
-+       /* Fields IP_SRC and IP_DST added for HyperNF */
++       /* Fields IP_SRC and IP_DST added for SNF */
 +       case FIELD_IP_SRC: sa << "ip src"; break;
 +       case FIELD_IP_DST: sa << "ip dst"; break;
         default:
@@ -645,7 +645,7 @@ index 25b63af..ddaffee 100644
  	FIELD_TCP_WIN = (TYPE_FIELD | (IP_PROTO_TCP << FIELD_PROTO_SHIFT) | ((14*8) << FIELD_OFFSET_SHIFT) | 15),
 -	FIELD_ICMP_TYPE = (TYPE_FIELD | (IP_PROTO_ICMP << FIELD_PROTO_SHIFT) | (0 << FIELD_OFFSET_SHIFT) | 7)
 +	FIELD_ICMP_TYPE = (TYPE_FIELD | (IP_PROTO_ICMP << FIELD_PROTO_SHIFT) | (0 << FIELD_OFFSET_SHIFT) | 7),
-+        /* Fields IP_SRC and IP_DST added for HyperNF */
++        /* Fields IP_SRC and IP_DST added for SNF */
 +        FIELD_IP_SRC = (TYPE_FIELD | ((12*8) << FIELD_OFFSET_SHIFT) | 31),
 +        FIELD_IP_DST = (TYPE_FIELD | ((16*8) << FIELD_OFFSET_SHIFT) | 31),
      };
@@ -661,7 +661,7 @@ index dc83606..87a7b68 100644
  
 -    int initialize(ErrorHandler* errh);
 +    /*
-+     * Hyper-NF Modification to prevent Click from initializing the elements in this call.
++     * SNF Modification to prevent Click from initializing the elements in this call.
 +     * We simply want to have the Click DAG populated with all the elements and connections.
 +     * The 2nd argument is set to false by default. This is how normal Click calls the function
 +     * so it does not affect normal Click executions.
@@ -675,7 +675,7 @@ index dc83606..87a7b68 100644
  
      Router* _next_router;
  
-+    // Hyper-NF extension: If set to true, the router's elements are not initialized
++    // SNF extension: If set to true, the router's elements are not initialized
 +    // Router::initialize() and ~Router() use this field to properly set and reset the router
 +    bool _do_not_initialize;
 +
@@ -749,7 +749,7 @@ index d345236..cd11e0d 100644
  
 +    //////////////////////////////////////////////////////////////////////////////
 +    /*
-+     * Hyper-NF modification to prevent the initialization of Click elements
++     * SNF modification to prevent the initialization of Click elements
 +     * It happens only when the boolean argument is true. Default is false.
 +     */
 +    //////////////////////////////////////////////////////////////////////////////

@@ -2,7 +2,7 @@
 noinst_LIBRARIES = 	libgenerator.a
 
 #####################################################################################
-# Abstract Hyper-NF Code Generator
+# Abstract SNF Code Generator
 libgenerator_a_SOURCES      = 	generator.cpp \
 								generator.hpp \
 								soft_generator.cpp \

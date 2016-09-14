@@ -2,7 +2,7 @@
 /* operation.cpp
  * 
  * Implementation of the class that encodes the packet operations
- * to be applied to Hyper-NF's traffic classes.
+ * to be applied to SNF's traffic classes.
  *
  * Copyright (c) 2015-2016 KTH Royal Institute of Technology
  * Copyright (c) 2015-2016 Georgios Katsikas, Marcel Enguehard

@@ -4,7 +4,7 @@
 /*
  * click_tree.hpp
  * 
- * Definition of Hyper-NF's traffic class tree.
+ * Definition of SNF's traffic class tree.
  *
  * Copyright (c) 2015-2016 KTH Royal Institute of Technology
  * Copyright (c) 2015-2016 Georgios Katsikas, Marcel Enguehard

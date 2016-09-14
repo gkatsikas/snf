@@ -3,7 +3,7 @@
 ##============================================================================
 ##        Name: valgrind.sh
 ##   Copyright: KTH ICT CoS Network Systems Lab
-## Description: Starts valgring to profile the NF Synthesizer
+## Description: Starts valgring to profile the SNF
 ##============================================================================
 
 ERROR=1
@@ -35,7 +35,7 @@ if [[ $# != 2 ]]; then
 	usage
 fi
 
-# The Hyper-NF executable
+# The SNF executable
 executable=$1
 file_exists $executable
 

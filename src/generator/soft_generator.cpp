@@ -1,7 +1,7 @@
 // -*- c-basic-offset: 4 -*-
 /* soft_generator.cpp
  * 
- * Export a runnable, software-based (Click) only Hyper-NF configuration.
+ * Export a runnable, software-based (Click) only SNF configuration.
  *
  * Copyright (c) 2015-2016 KTH Royal Institute of Technology
  * Copyright (c) 2015-2016 Georgios Katsikas, Marcel Enguehard
@@ -23,11 +23,11 @@
 #include "soft_generator.hpp"
 
 SoftGenerator::SoftGenerator(Synthesizer *synth) : Generator(synth) {
-	def_chatter(this->log, "\tSoftware-based, single-core Hyper-NF generator constructed");
+	def_chatter(this->log, "\tSoftware-based, single-core SNF generator constructed");
 }
 
 SoftGenerator::~SoftGenerator() {
-	def_chatter(this->log, "\tSoftware-based, single-core Hyper-NF generator deleted");
+	def_chatter(this->log, "\tSoftware-based, single-core SNF generator deleted");
 }
 
 /*
@@ -49,11 +49,11 @@ SoftGenerator::generate_all_in_soft_configuration(const bool &to_file) {
 	std::stringstream config_stream;
 
 	#ifdef DEBUG_MODE
-		this->synthesizer->print_hyper_nf_ifaces();
+		this->synthesizer->print_snf_ifaces();
 	#endif
 
 	// Step 1: Write some static information about the interfaces'
-	// addressing of the Hyper-NF configuration.
+	// addressing of the SNF configuration.
 	this->generate_static_configuration(config_stream);
 
 	// A map between a NIC and the IPClassifier to handle its packets.
@@ -69,7 +69,7 @@ SoftGenerator::generate_all_in_soft_configuration(const bool &to_file) {
 	def_chatter(this->log, "\tGenerate Write & Output Parts...");
 
 	#ifdef DEBUG_MODE
-		this->synthesizer->print_hyper_nf_ifaces_to_nics();
+		this->synthesizer->print_snf_ifaces_to_nics();
 	#endif
 
 	// Step 3: Construct the IPClassifier(s) and the path of Click elements
@@ -119,7 +119,7 @@ SoftGenerator::generate_all_in_soft_configuration(const bool &to_file) {
 
 void
 SoftGenerator::generate_static_configuration(std::stringstream &config_stream) {
-	for (unsigned short i = 0 ; i < this->synthesizer->get_hyper_nf_ifaces_no() ; i++) {
+	for (unsigned short i = 0 ; i < this->synthesizer->get_snf_ifaces_no() ; i++) {
 		config_stream << "AddressInfo(dev" << i << " $macAddr" << i << " $ipAddr"<< i << ");" << std::endl; 
 	}
 	config_stream << std::endl;
@@ -134,7 +134,7 @@ SoftGenerator::generate_static_configuration(std::stringstream &config_stream) {
 }
 
 /*
- * Generate the input part of a Hyper-NF chain.
+ * Generate the input part of a SNF chain.
  */
 bool
 SoftGenerator::generate_input_part_of_synthesis(
@@ -142,7 +142,7 @@ SoftGenerator::generate_input_part_of_synthesis(
 		std::map < std::string, std::string > &nic_to_ip_classifier) {
 
 	config_stream << "///////////////////////////////////////////////////////////////" << std::endl;
-	config_stream << "// The input-part of the synthesized Hyper-NF code"              << std::endl;
+	config_stream << "// The input-part of the synthesized SNF code"              << std::endl;
 	config_stream << "///////////////////////////////////////////////////////////////" << std::endl;
 
 	std::string decap = (this->proc_layer == L3)? \
@@ -174,7 +174,7 @@ SoftGenerator::generate_input_part_of_synthesis(
 		driven_nics.push_back(nic);
 	}
 
-	if ( driven_nics.size() == this->synthesizer->get_hyper_nf_ifaces_no() ) {
+	if ( driven_nics.size() == this->synthesizer->get_snf_ifaces_no() ) {
 		return DONE;
 	}
 
@@ -184,8 +184,8 @@ SoftGenerator::generate_input_part_of_synthesis(
 	// We currently disable them but they should technically fall
 	// into the same Classifier and stateful rewriter as the other 
 	// direction.
-	for ( auto &pair_if : this->synthesizer->get_hyper_nf_ifaces() ) {
-		std::string nic = this->synthesizer->get_nic_of_hyper_nf_iface(pair_if);
+	for ( auto &pair_if : this->synthesizer->get_snf_ifaces() ) {
+		std::string nic = this->synthesizer->get_nic_of_snf_iface(pair_if);
 
 		if ( exists_in_vector(driven_nics, nic) ) continue;
 
@@ -209,7 +209,7 @@ SoftGenerator::generate_input_part_of_synthesis(
 }
 
 /*
- * Generate the read part of a Hyper-NF chain.
+ * Generate the read part of a SNF chain.
  */
 bool
 SoftGenerator::generate_read_part_of_synthesis(
@@ -217,7 +217,7 @@ SoftGenerator::generate_read_part_of_synthesis(
 		std::map < std::string, std::string > &nic_to_ip_classifier) {
 
 	config_stream << "///////////////////////////////////////////////////////////////" << std::endl;
-	config_stream << "// The read-part of the synthesized Hyper-NF code"               << std::endl;
+	config_stream << "// The read-part of the synthesized SNF code"               << std::endl;
 	config_stream << "///////////////////////////////////////////////////////////////" << std::endl;
 
 	unsigned short ipc_no = 0;
@@ -256,15 +256,15 @@ SoftGenerator::generate_read_part_of_synthesis(
 }
 
 /*
- * Generate the write and output parts of a Hyper-NF chain.
+ * Generate the write and output parts of a SNF chain.
  */
 bool
 SoftGenerator::generate_write_and_output_part_of_synthesis(std::stringstream &config_stream) {
 	config_stream << "///////////////////////////////////////////////////////////////" << std::endl;
-	config_stream << "// The write and output parts of the synthesized Hyper-NF code"  << std::endl;
+	config_stream << "// The write and output parts of the synthesized SNF code"  << std::endl;
 	config_stream << "///////////////////////////////////////////////////////////////" << std::endl;
 
-	int cur_hyper_nf_iface = -1;
+	int cur_snf_iface = -1;
 	std::string ip_modifier = "IPSynthesizer";
 
 	// Costruct the path of Click elements that will lead this modified
@@ -279,19 +279,19 @@ SoftGenerator::generate_write_and_output_part_of_synthesis(std::stringstream &co
 		std::string nf    = token[0];
 		std::string iface = token[1];
 
-		// Hyper-NF's configuration to be filled below
-		std::string hyper_nf_iface;
-		std::string hyper_nf_encap_conf;
-		std::string hyper_nf_synth_conf = 
+		// SNF's configuration to be filled below
+		std::string snf_iface;
+		std::string snf_encap_conf;
+		std::string snf_synth_conf = 
 			this->synthesizer->get_synthesized_config_per_output_iface(out_nf_and_iface);
-		std::stringstream hyper_nf_to_device;
+		std::stringstream snf_to_device;
 
 		// The stateful Rewriter of this path
 		auto rewriter = it.second;
 
 		// Check what's going on at this output interface
 		#ifdef  DEBUG_MODE
-			hyper_nf_encap_conf = "IPPrint(LENGTH true, TTL true) -> ";
+			snf_encap_conf = "IPPrint(LENGTH true, TTL true) -> ";
 		#endif
 
 		// This interface is the very first one
@@ -300,36 +300,36 @@ SoftGenerator::generate_write_and_output_part_of_synthesis(std::stringstream &co
 		std::string last_nf = "NF_" + std::to_string(chain_len);
 		// This interface is the very first one
 		if ( nf != last_nf ) {
-			if ( cur_hyper_nf_iface <= 0 ) {
-				cur_hyper_nf_iface = 0;
+			if ( cur_snf_iface <= 0 ) {
+				cur_snf_iface = 0;
 			}
 		}
 
-		hyper_nf_iface = std::to_string(cur_hyper_nf_iface);
+		snf_iface = std::to_string(cur_snf_iface);
 		#ifdef HAVE_DPDK
-			hyper_nf_to_device << OutputClassName << "(" << hyper_nf_iface;
+			snf_to_device << OutputClassName << "(" << snf_iface;
 		#else
-			hyper_nf_to_device << OutputClassName << "($iface" << hyper_nf_iface;
+			snf_to_device << OutputClassName << "($iface" << snf_iface;
 		#endif
 
-		hyper_nf_encap_conf += (this->proc_layer == L3)? \
-			"EtherEncap(0x0800, $macAddr"   + std::to_string(cur_hyper_nf_iface) + 
-			", $gwMACAddr" + std::to_string(cur_hyper_nf_iface) + ")" : 
-			"StoreEtherAddress($gwMACAddr"  + std::to_string(cur_hyper_nf_iface) + 
+		snf_encap_conf += (this->proc_layer == L3)? \
+			"EtherEncap(0x0800, $macAddr"   + std::to_string(cur_snf_iface) + 
+			", $gwMACAddr" + std::to_string(cur_snf_iface) + ")" : 
+			"StoreEtherAddress($gwMACAddr"  + std::to_string(cur_snf_iface) + 
 			", dst)";
 
 		// If --enable-dpdk=yes, a FromDPDKDevice is used instead of regular FromDevice
 		#ifdef HAVE_DPDK
-			hyper_nf_to_device 	<< ", $queueSize, $burst, $txNdesc, $ioCore"
-								<< cur_hyper_nf_iface << ");";
+			snf_to_device 	<< ", $queueSize, $burst, $txNdesc, $ioCore"
+								<< cur_snf_iface << ");";
 		#else
 			/*std::string iface_config = 	"," + 
 										this->synthesizer->get_stateful_rewriter_per_output_iface_conf(
 											out_nf_and_iface
 										);
-			hyper_nf_to_device 	<< iface_config */
-			hyper_nf_to_device 	<< ", $queueSize, $burst, $ioMethod, $ioCore"
-								<< cur_hyper_nf_iface << ");";
+			snf_to_device 	<< iface_config */
+			snf_to_device 	<< ", $queueSize, $burst, $ioMethod, $ioCore"
+								<< cur_snf_iface << ");";
 		#endif
 
 		config_stream 	<< "/** Stateful Path going to: " << out_nf_and_iface << " **/" << std::endl;
@@ -337,19 +337,19 @@ SoftGenerator::generate_write_and_output_part_of_synthesis(std::stringstream &co
 						<< rewriter->compute_conf();
 
 		
-		config_stream 	<< hyper_nf_synth_conf
+		config_stream 	<< snf_synth_conf
 						<< ", CAPACITY 100000, MTU $mtuSize, IPADDR $ipAddr"
-						<< cur_hyper_nf_iface << ");" << std::endl;
+						<< cur_snf_iface << ");" << std::endl;
 
-		// Only a Hyper-NF interface will take a ToDevice element.
-		if ( this->synthesizer->is_hyper_nf_iface(nf, iface) ) {
-			this->synthesizer->add_nic_of_hyper_nf_iface( std::make_pair(nf, iface), hyper_nf_iface );
+		// Only a SNF interface will take a ToDevice element.
+		if ( this->synthesizer->is_snf_iface(nf, iface) ) {
+			this->synthesizer->add_nic_of_snf_iface( std::make_pair(nf, iface), snf_iface );
 			config_stream 	<< rewriter->get_name() << "[" << rewriter->get_outbound_port()
-							<< "] -> " << hyper_nf_encap_conf << " -> " << hyper_nf_to_device.str() 
+							<< "] -> " << snf_encap_conf << " -> " << snf_to_device.str() 
 							<< std::endl;
 
-			debug_chatter(this->log, "\tHyper-NF function " << nf << " with iface: " << iface);
-			cur_hyper_nf_iface++;
+			debug_chatter(this->log, "\tSNF " << nf << " with iface: " << iface);
+			cur_snf_iface++;
 		}
 		// Be careful, some interfaces that appear here are internal. These need to be discarded.
 		else {

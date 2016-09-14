@@ -3,7 +3,7 @@
 ##============================================================================
 ##        Name: run.sh
 ##   Copyright: KTH ICT CoS Network Systems Lab
-## Description: Starts Hyper-NF with or without the GNU Debugger.
+## Description: Starts SNF with or without the GNU Debugger.
 ##============================================================================
 
 ERROR=1
@@ -36,7 +36,7 @@ if [[ ($# != 2) && ($# != 3) ]]; then
 	usage
 fi
 
-# The Hyper-NF executable
+# The SNF executable
 executable=$1
 file_exists $executable
 

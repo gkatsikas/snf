@@ -1,7 +1,7 @@
 // -*- c-basic-offset: 4 -*-
 /* click_element.cpp
  * 
- * Implementation of Hyper-NF's traffic class node.
+ * Implementation of SNF's traffic class node.
  *
  * Copyright (c) 2015-2016 KTH Royal Institute of Technology
  * Copyright (c) 2015-2016 Georgios Katsikas, Marcel Enguehard

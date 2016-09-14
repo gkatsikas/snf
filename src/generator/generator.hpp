@@ -4,7 +4,7 @@
 /*
  * generator.hpp
  * 
- * Class declaration for exporting a runnable Hyper-NF configuration.
+ * Class declaration for exporting a runnable SNF configuration.
  *
  * Copyright (c) 2015-2016 KTH Royal Institute of Technology
  * Copyright (c) 2015-2016 Georgios Katsikas, Marcel Enguehard
@@ -41,7 +41,7 @@ class Generator {
 		Logger             log;
 
 		/*
-		 * The object that provides the Hyper-NF configuration we want to generate.
+		 * The object that provides the SNF configuration we want to generate.
 		 */
 		Synthesizer        *synthesizer;
 
@@ -57,7 +57,7 @@ class Generator {
 		bool               hw_classification;
 
 		/*
-		 * The variance of Click we base Hyper-NF upon.
+		 * The variance of Click we base SNF upon.
 		 * We support Click and FastClick.
 		 */
 		ClickType          click_type;
@@ -72,7 +72,7 @@ class Generator {
 		TrafficClassFormat traffic_classification_format;
 
 		/*
-		 * Hyper-NF can process traffic at L2 and L3
+		 * SNF can process traffic at L2 and L3
 		 * Input confguration can set this accordingly.
 		 */
 		ProcessingLayer    proc_layer;
@@ -96,10 +96,10 @@ class Generator {
 
 		/*
 		 * Generate a new configuration that depends on the user input.
-		 * |--> Hardware-assisted, RSS-based Hyper-NF
-		 * |--> Hardware-assisted, OpenFlow-based Hyper-NF
-		 * |--> Hardware-assisted, Flow Director-based Hyper-NF
-		 * |--> All-in-Software Hyper-NF (ClickIPClassifier)
+		 * |--> Hardware-assisted, RSS-based SNF
+		 * |--> Hardware-assisted, OpenFlow-based SNF
+		 * |--> Hardware-assisted, Flow Director-based SNF
+		 * |--> All-in-Software SNF (ClickIPClassifier)
 		 */
 		virtual bool      generate_equivalent_configuration(const bool to_file=true) = 0;
 
@@ -126,7 +126,7 @@ class Generator {
 		};
 
 		void generate_indicative_chain_parameters(
-			unsigned short &hyper_nf_ifaces_no,
+			unsigned short &snf_ifaces_no,
 			std::stringstream &config_stream
 		);
 };

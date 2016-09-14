@@ -1,7 +1,7 @@
 // -*- c-basic-offset: 4 -*-
 /* flow_director_generator.cpp
  * 
- * Export a runnable, Hyper-NF configuration that implements the 
+ * Export a runnable, SNF configuration that implements the 
  * NFV chain in a distributed, hardware-assisted fashion.
  * The conditional part of the chain (i.e., read and classify flows)
  * is exported to a programmable NIC. The NIC encodes the traffic
@@ -32,11 +32,11 @@
 #include "flow_director_generator.hpp"
 
 FlowDirectorGenerator::FlowDirectorGenerator(Synthesizer *synth) : Generator(synth) {
-	def_chatter(this->log, "\tFlow Director-based Hyper-NF generator constructed");
+	def_chatter(this->log, "\tFlow Director-based SNF generator constructed");
 }
 
 FlowDirectorGenerator::~FlowDirectorGenerator() {
-	def_chatter(this->log, "\tFlow Director-based Hyper-NF generator deleted");
+	def_chatter(this->log, "\tFlow Director-based SNF generator deleted");
 }
 
 /*
@@ -48,7 +48,7 @@ FlowDirectorGenerator::generate_equivalent_configuration(const bool to_file) {
 }
 
 /*
- * Hardware-assisted, OpenFlow-based Hyper-NF:
+ * Hardware-assisted, OpenFlow-based SNF:
  *    Flow Director commands are generated to split the traffic based on specific field values.
  *    Each Click-DPDK configuration implements a subset of the chain.
  */
@@ -66,10 +66,10 @@ FlowDirectorGenerator::generate_flow_director_split_pipelines(const bool &to_fil
 
 		//all_out_files = "\t\t\t\t\t\t\t\t|--> " + this->soft_configuration_filename + "\n";
 
-		// Output files (one per interface) to host the Flow director commands of each Hyper-NF interface.
+		// Output files (one per interface) to host the Flow director commands of each SNF interface.
 		/*hard_out_file = new std::ofstream*[nic_classifiers_no];
 		unsigned short i = 0;
-		for ( auto &it : this->synthesizer->get_hyper_nf_ifaces() ) {
+		for ( auto &it : this->synthesizer->get_snf_ifaces() ) {
 			std::string nf = it.first;
 			std::string iface = it.second;
 
@@ -96,7 +96,7 @@ FlowDirectorGenerator::generate_flow_director_split_pipelines(const bool &to_fil
 		//hard_out_file->close();
 		//delete soft_out_file;
 
-		//for (unsigned short i = 0 ; i < this->get_hyper_nf_ifaces_no() ; i++) {
+		//for (unsigned short i = 0 ; i < this->get_snf_ifaces_no() ; i++) {
 		//	hard_out_file[i]->close();
 		//	delete hard_out_file[i];
 		//}
@@ -109,7 +109,7 @@ FlowDirectorGenerator::generate_flow_director_split_pipelines(const bool &to_fil
 }
 
 /*
- * Dump ethtool configuration for the NICs involved in a Hyper-NF.
+ * Dump ethtool configuration for the NICs involved in a SNF.
  */
 bool
 FlowDirectorGenerator::generate_flow_director_configuration(

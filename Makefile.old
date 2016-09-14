@@ -13,7 +13,7 @@ OBJS =  helpers.o chameleon.o vertex.o segment_list.o operation.o \
 		output_class.o click_tree.o parser_config.o chain_parser.o \
 		synthesizer.o stateful_synthesizer.o
 
-EXECUTABLE = hyper-nf
+EXECUTABLE = snf
 
 CLASS_TEST = class_test
 
@@ -27,7 +27,7 @@ CLICK_ELEMENT_OBJS = $(shell find /opt/click/userlevel/ ! -name "click.o" ! -nam
 DPDK_OBJS = $(shell find /opt/dpdk/x86_64-native-linuxapp-gcc/lib/ -name "*.a")
 
 ### Final compilation rule
-hyper_nf: $(OBJS) main.o
+snf: $(OBJS) main.o
 	$(CC) $(LFLAGS) $(OBJS) main.o  $(CLICK_ELEMENT_OBJS) -o $(EXECUTABLE) $(LIBS)
 
 dpdk: $(OBJS) main.o

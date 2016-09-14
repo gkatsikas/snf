@@ -4,8 +4,8 @@
 /*
  * flow_director_generator.hpp
  * 
- * Class for exporting a hardware-assisted Hyper-NF configuration.
- * Hyper-NF's global, chain classifier (i.e., ``read-part of synthesis) is 
+ * Class for exporting a hardware-assisted SNF configuration.
+ * SNF's global, chain classifier (i.e., ``read-part of synthesis) is 
  * translated into a set of NIC-specific rules using the FlowDirector API.
  * Each rule associates the matching packets with a particular CPU core
  * that will undertakes their processing.
@@ -54,7 +54,7 @@ class FlowDirectorGenerator : public Generator {
 		/*
 		 * Implements the abstract method of parent Generator class by calling the
 		 * private generate_flow_director_split_pipelines method below.
-		 * This method generates a hardware-assisted Hyper-NF configuration based 
+		 * This method generates a hardware-assisted SNF configuration based 
 		 * on FlowDirector and Click-DPDK.
 		 */
 		bool generate_equivalent_configuration     (const bool to_file=true);
@@ -62,14 +62,14 @@ class FlowDirectorGenerator : public Generator {
 	private:
 
 		/*
-		 * Hardware-assisted, OpenFlow-based Hyper-NF:
+		 * Hardware-assisted, OpenFlow-based SNF:
 		 *    Flow Director commands are generated to split the traffic based on specific field values.
 		 *    Each Click-DPDK configuration implements a subset of the chain.
 		 */
 		bool generate_flow_director_split_pipelines(const bool &to_file);
 
 		/*
-		 * Dump ethtool configuration for the NICs involved in a Hyper-NF.
+		 * Dump ethtool configuration for the NICs involved in a SNF.
 		 */
 		bool generate_flow_director_configuration(
 			std::ofstream  **hw_out_file,
