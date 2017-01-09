@@ -79,10 +79,12 @@ Filter::Filter(HeaderField field, uint32_t lower_value, uint32_t upper_value)
 Filter
 Filter::get_filter_from_v4_prefix(HeaderField field, uint32_t value, uint32_t prefix)
 {
-	if ( prefix > 32 )
+	if ( prefix > 32 ) {
 		FANCY_BUG(tc_log, "\tNetwork prefix higher than 32");
-	else if ( prefix==32 )
+	}
+	else if ( prefix==32 ) {
 		return Filter(field, value);
+	}
 
 	uint32_t translation = 32 - prefix;
 	uint32_t lower_limit = value & (0xffffffff << translation);
@@ -169,8 +171,9 @@ Filter::get_filter_from_ipclass_pattern(HeaderField field, const std::string &ar
 					}
 					break;
 				case '!':
-					if (args[1]!='=')
+					if (args[1]!='=') {
 						FANCY_BUG(tc_log, "\tWrong argument in IPFilter: " + args + "\n\tExpected '='");
+					}
 					else {
 						f = Filter(field);
 						f.differentiate(Filter(field, to_uint(args.substr(2,args.size()-2))));
