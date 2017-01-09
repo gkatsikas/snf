@@ -1,6 +1,6 @@
 // -*- c-basic-offset: 4 -*-
 /* generic_config.cpp
- *
+ * 
  * Implementation of methods that read input parameters.
  *
  * Copyright (c) 2015-2016 KTH Royal Institute of Technology
@@ -10,12 +10,12 @@
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
- *
+ * 
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- *
+ * 
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>
  */
@@ -26,8 +26,7 @@
 // Character [ is missing because it can begin a new section
 static std::string forbidden = "`~!@#$%%^&*()_-+=]{};'\\:\"|,./<>?1234567890";
 
-GenericConfiguration::GenericConfiguration(const std::string &config_file)
-{
+GenericConfiguration::GenericConfiguration(const std::string &config_file) {
 	this->log.set_logger_file(__FILE__);
 
 	if ( ! file_exists(config_file) ) {
@@ -39,15 +38,13 @@ GenericConfiguration::GenericConfiguration(const std::string &config_file)
 	this->load_in_memory();
 }
 
-GenericConfiguration::~GenericConfiguration()
-{
+GenericConfiguration::~GenericConfiguration() {
 	if ( !content.empty() )
 		content.clear();
 }
 
 void
-GenericConfiguration::load_in_memory(void)
-{
+GenericConfiguration::load_in_memory(void) {
 	std::ifstream file(this->filename);
 
 	std::string line;
@@ -91,7 +88,7 @@ GenericConfiguration::load_in_memory(void)
 
 		// Read more lines, if they do not contain new properties
 		this->read_multi_line(file, value, lines_to_skip);
-
+		
 		// Rewind back to the original position if the next line is not the continuation of this one.
 		// We want to properly parse that new line.
 		if ( lines_to_skip == 0 ) {
@@ -114,8 +111,8 @@ GenericConfiguration::load_in_memory(void)
  * Return the value string updated.
  */
 void
-GenericConfiguration::read_multi_line(std::ifstream &file, std::string &value, unsigned short &lines_to_skip)
-{
+GenericConfiguration::read_multi_line(std::ifstream &file, std::string &value, unsigned short &lines_to_skip) {
+
 	std::string line;
 	lines_to_skip = 0;
 
@@ -125,7 +122,7 @@ GenericConfiguration::read_multi_line(std::ifstream &file, std::string &value, u
 		if ( pos_equal != std::string::npos ) return;
 		if ( line[0] == '[' ) return;
 
-		//if ( (line[0] == '#') || (line[0] == ';') || (! line.length()) ||
+		//if ( (line[0] == '#') || (line[0] == ';') || (! line.length()) || 
 		//	((line[0] == '/') && (line[1] == '/')) ) {
 		if ( forbidden.find(line[0]) != std::string::npos ) {
 			lines_to_skip++;
@@ -140,8 +137,8 @@ GenericConfiguration::read_multi_line(std::ifstream &file, std::string &value, u
 
 Chameleon const&
 GenericConfiguration::get_value(
-		std::string const &section, std::string const &entry) const
-{
+		std::string const &section, std::string const &entry) const {
+
 	std::map<std::string, Chameleon>::const_iterator ci = content.find(section + '/' + entry);
 
 	if (ci == content.end())
@@ -152,8 +149,8 @@ GenericConfiguration::get_value(
 
 Chameleon const&
 GenericConfiguration::get_value(
-	std::string const &section, std::string const &entry, int value)
-{
+	std::string const &section, std::string const &entry, int value) {
+
 	try {
 		return get_value(section, entry);
 	}
@@ -164,8 +161,8 @@ GenericConfiguration::get_value(
 
 Chameleon const&
 GenericConfiguration::get_value(
-	std::string const &section, std::string const &entry, unsigned short value)
-{
+	std::string const &section, std::string const &entry, unsigned short value) {
+
 	try {
 		return get_value(section, entry);
 	}
@@ -176,8 +173,8 @@ GenericConfiguration::get_value(
 
 Chameleon const&
 GenericConfiguration::get_value(
-	std::string const &section, std::string const &entry, bool value)
-{
+	std::string const &section, std::string const &entry, bool value) {
+
 	try {
 		return get_value(section, entry);
 	}
@@ -188,8 +185,8 @@ GenericConfiguration::get_value(
 
 Chameleon const&
 GenericConfiguration::get_value(
-	std::string const &section, std::string const &entry, double value)
-{
+	std::string const &section, std::string const &entry, double value) {
+
 	try {
 		return get_value(section, entry);
 	}
@@ -200,8 +197,8 @@ GenericConfiguration::get_value(
 
 Chameleon const&
 GenericConfiguration::get_value(
-	std::string const &section, std::string const &entry, std::string const& value)
-{
+	std::string const &section, std::string const &entry, std::string const& value) {
+
 	try {
 		return get_value(section, entry);
 	}
@@ -211,8 +208,7 @@ GenericConfiguration::get_value(
 }
 
 unsigned short int
-GenericConfiguration::count_section_elements(std::string const &section)
-{
+GenericConfiguration::count_section_elements(std::string const &section) {
 	unsigned short int counter = 0;
 
 	for(auto const &entry : content) {

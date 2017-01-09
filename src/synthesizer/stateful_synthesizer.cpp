@@ -1,6 +1,6 @@
 // -*- c-basic-offset: 4 -*-
 /* stateful_synthesizer.cpp
- *
+ * 
  * Implementation of stateful operations' synthesis.
  *
  * Copyright (c) 2015-2016 KTH Royal Institute of Technology
@@ -10,12 +10,12 @@
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
- *
+ * 
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- *
+ * 
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>
  */
@@ -29,17 +29,16 @@
 
 int StatefulSynthesizer::count = 0;
 
-StatefulSynthesizer::StatefulSynthesizer()
-	: m_name("iprw" + std::to_string(count++)), m_outbound_port(0)
-{
+StatefulSynthesizer::StatefulSynthesizer() : 
+		m_name("iprw" + std::to_string(count++)), 
+		m_outbound_port(0) {
 	this->log.set_logger_file(__FILE__);
 }
 
 unsigned short
 StatefulSynthesizer::add_traffic_class(
-	const struct ConsolidatedTc &tc,
-	const std::string &src_iface)
-{
+		const struct ConsolidatedTc &tc,
+		const std::string &src_iface) {
 	std::string confLine = tc.m_operation;
 
 	unsigned short idx = this->m_input_port_to_iface.size();
@@ -50,8 +49,7 @@ StatefulSynthesizer::add_traffic_class(
 }
 
 std::string
-StatefulSynthesizer::compute_conf(void)
-{
+StatefulSynthesizer::compute_conf(void) {
 	std::string output;
 
 	for(auto &it : this->m_input_port_to_iface) {
@@ -86,13 +84,11 @@ StatefulSynthesizer::compute_conf(void)
 }
 
 std::string
-StatefulSynthesizer::get_name(void) const
-{
+StatefulSynthesizer::get_name(void) const {
 	return this->m_name;
 }
 
 unsigned short
-StatefulSynthesizer::get_outbound_port(void) const
-{
+StatefulSynthesizer::get_outbound_port(void) const {
 	return this->m_outbound_port;
 }

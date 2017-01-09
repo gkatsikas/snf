@@ -3,9 +3,9 @@
 
 /*
  * flow_director_generator.hpp
- *
+ * 
  * Class for exporting a hardware-assisted SNF configuration.
- * SNF's global, chain classifier (i.e., ``read-part of synthesis) is
+ * SNF's global, chain classifier (i.e., ``read-part of synthesis) is 
  * translated into a set of NIC-specific rules using the FlowDirector API.
  * Each rule associates the matching packets with a particular CPU core
  * that will undertakes their processing.
@@ -19,12 +19,12 @@
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
- *
+ * 
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- *
+ * 
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>
  */
@@ -54,7 +54,7 @@ class FlowDirectorGenerator : public Generator {
 		/*
 		 * Implements the abstract method of parent Generator class by calling the
 		 * private generate_flow_director_split_pipelines method below.
-		 * This method generates a hardware-assisted SNF configuration based
+		 * This method generates a hardware-assisted SNF configuration based 
 		 * on FlowDirector and Click-DPDK.
 		 */
 		bool generate_equivalent_configuration     (const bool to_file=true);

@@ -48,8 +48,7 @@ static Router *click_router = NULL;
 static Master *click_master = NULL;
 
 void
-ClickCleaner::cleanup(Clp_Parser *clp, const bool &clean_all)
-{
+ClickCleaner::cleanup(Clp_Parser *clp, const bool &clean_all) {
 	if ( clp )
 		Clp_DeleteParser(clp);
 
@@ -66,8 +65,7 @@ ClickCleaner::cleanup(Clp_Parser *clp, const bool &clean_all)
 }
 
 Router*
-parse_configuration(const String &text, const bool &text_is_expr, ErrorHandler *errh)
-{
+parse_configuration(const String &text, const bool &text_is_expr, ErrorHandler *errh) {
 	int before_errors = errh->nerrors();
 	Router *router = click_read_router(text, text_is_expr, errh, false, click_master);
 
@@ -92,8 +90,8 @@ parse_configuration(const String &text, const bool &text_is_expr, ErrorHandler *
 }
 
 bool
-generate_flat_configuration(char **output_file, const short &position)
-{
+generate_flat_configuration(char **output_file, const short &position) {
+
 	if ( !click_router )
 		return CLICK_PARSING_PROBLEM;
 
@@ -123,8 +121,7 @@ generate_flat_configuration(char **output_file, const short &position)
 }
 
 Router*
-input_a_click_configuration (const char *click_source_configuration)
-{
+input_a_click_configuration (const char *click_source_configuration) {
 	// Important function that exports the Click elements
 	click_static_initialize();
 

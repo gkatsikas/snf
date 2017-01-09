@@ -57,8 +57,7 @@ namespace ClickCleaner {
  * Generate an equivalent Click configuration with flattened statements
  */
 bool
-generate_flat_configuration
-(
+generate_flat_configuration(
 	const char **output_file,
 	const short position = -1
 );
@@ -69,8 +68,7 @@ generate_flat_configuration
  * instantiation is commented
  */
 Router*
-parse_configuration
-(
+parse_configuration(
 	const String &text,
 	const bool   &text_is_expr,
 	ErrorHandler *errh
@@ -81,8 +79,7 @@ parse_configuration
  * function. We wrote this funciton to integrate the parser into our framework.
  */
 Router*
-input_a_click_configuration
-(
+input_a_click_configuration(
 	const char *click_source_configuration
 );
 

@@ -1,7 +1,7 @@
 // -*- c-basic-offset: 4 -*-
 /* synthesizer.cpp
- *
- * Combine read and write operations together to compose an optimized,
+ * 
+ * Combine read and write operations together to compose an optimized, 
  * single-read single-write Click configuration.
  *
  * Copyright (c) 2015-2016 KTH Royal Institute of Technology
@@ -11,12 +11,12 @@
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
- *
+ * 
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- *
+ * 
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>
  */
@@ -30,8 +30,7 @@
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Synthesis of ``Read'' operations
-ConsolidatedTc::ConsolidatedTc()
-	:
+ConsolidatedTc::ConsolidatedTc() :
 	m_nf_of_out_iface(),
 	m_out_iface      (),
 	m_out_iface_conf (),
@@ -39,29 +38,25 @@ ConsolidatedTc::ConsolidatedTc()
 	m_pattern        (),
 	m_interm_chain   (),
 	m_input_port     (256),
-	m_stateful       ()
-{
+	m_stateful       () {
 
 }
 
 ConsolidatedTc::ConsolidatedTc(
 		const std::string &nf_of_out_iface, const std::string &out_iface,
 		const std::string &out_iface_conf,  const std::string &op,
-		const std::string &int_chain)
-	:
+		const std::string &int_chain) :
 	m_nf_of_out_iface(nf_of_out_iface),
 	m_out_iface      (out_iface),
 	m_out_iface_conf (out_iface_conf),
 	m_operation      (op),
 	m_interm_chain   (int_chain),
-	m_input_port     (256)
-{
+	m_input_port     (256) {
 
 }
 
 bool
-ConsolidatedTc::add_tc(const TrafficClass &tc, const TrafficClassFormat &tc_format)
-{
+ConsolidatedTc::add_tc(const TrafficClass &tc, const TrafficClassFormat &tc_format) {
 	Logger m_lg(__FILE__);
 
 	switch (tc_format) {
@@ -95,21 +90,18 @@ ConsolidatedTc::add_tc(const TrafficClass &tc, const TrafficClassFormat &tc_form
 }
 
 void
-ConsolidatedTc::set_stateful_rewriter(std::shared_ptr<StatefulSynthesizer> st_synth, unsigned short input_port)
-{
+ConsolidatedTc::set_stateful_rewriter(std::shared_ptr<StatefulSynthesizer> st_synth, unsigned short input_port) {
 	this->m_stateful = st_synth->get_name();
 	this->m_input_port = input_port;
 }
 
 unsigned short
-ConsolidatedTc::get_input_port(void)
-{
+ConsolidatedTc::get_input_port(void) {
 	return this->m_input_port;
 }
 
 std::string
-ConsolidatedTc::get_stateful_rewriter(const std::string &at_queue, const bool &with_inport)
-{
+ConsolidatedTc::get_stateful_rewriter(const std::string &at_queue, const bool &with_inport) {
 	// Return the rewriter with its port
 	if ( with_inport )
 		return (boost::format("[%2d]%s%s") % this->m_input_port % this->m_stateful % at_queue ).str();
@@ -118,8 +110,7 @@ ConsolidatedTc::get_stateful_rewriter(const std::string &at_queue, const bool &w
 }
 
 std::string
-ConsolidatedTc::get_path_to_rewriter_after_classifier(const std::string &at_queue, const bool &with_the_rewriter)
-{
+ConsolidatedTc::get_path_to_rewriter_after_classifier(const std::string &at_queue, const bool &with_the_rewriter) {
 	if ( with_the_rewriter )
 		return this->m_interm_chain + this->get_stateful_rewriter(at_queue, true);
 	return this->m_interm_chain;
@@ -127,26 +118,22 @@ ConsolidatedTc::get_path_to_rewriter_after_classifier(const std::string &at_queu
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-Synthesizer::Synthesizer(ChainParser *cp)
-	:
-	tc_per_input_iface(), st_oper_per_out_iface(),
-	st_oper_per_out_iface_conf(), snf_ifaces(),
-	snf_ifaces_to_nics()
-{
+Synthesizer::Synthesizer(ChainParser *cp) : tc_per_input_iface(), st_oper_per_out_iface(), 
+											st_oper_per_out_iface_conf(), snf_ifaces(),
+											snf_ifaces_to_nics() {
 	this->log.set_logger_file(__FILE__);
 	if ( !cp ) {
 		FANCY_BUG(this->log, "\tSynthesizer: Invalid Parser object");
 	}
 
 	this->parser = cp;
-	this->traffic_classification_format =
+	this->traffic_classification_format = 
 		this->parser->get_chain_graph()->get_properties()->get_traffic_classification_format();
 
 	def_chatter(this->log, "\tSynthesizer constructed");
 }
 
-Synthesizer::~Synthesizer()
-{
+Synthesizer::~Synthesizer() {
 	delete this->parser;
 	def_chatter(this->log, "\tSynthesizer deleted");
 }
@@ -157,13 +144,12 @@ Synthesizer::~Synthesizer()
  * the synthesis.
  */
 bool
-Synthesizer::build_traffic_classes(void)
-{
+Synthesizer::build_traffic_classes(void) {
 	info_chatter(this->log, "");
 	info_chatter(this->log, "==============================================================================");
 	info_chatter(this->log, "Build Traffic Classes ...");
 
-	// The output format of a traffic class
+	// The output format of a traffic class must 
 	TrafficClassFormat tc_format = this->traffic_classification_format;
 
 	// Get all NFs, one-by-one
@@ -210,8 +196,9 @@ Synthesizer::build_traffic_classes(void)
 
 			// A chain interface in always internal, hence we keep only the externals;
 			// Those are part of the final SNF configuration.
-			if ( ! cv->has_chain_interface(interface) )
+			if ( ! cv->has_chain_interface(interface) ) {
 				this->snf_ifaces.insert( std::make_pair(cv->get_name(), interface) );
+			}
 
 			std::string key = cv->get_name() + "-" + interface;
 			ClickTree ct(ep);
@@ -260,8 +247,9 @@ Synthesizer::build_traffic_classes(void)
 						return exit_status;
 					}
 				}
-				else
+				else {
 					discarded_tc++;
+				}
 			}
 
 			if ( discarded_tc == all_tc ) {
@@ -282,8 +270,7 @@ Synthesizer::build_traffic_classes(void)
  * Synthesizes ``Write'' operations by calling stateful_synthesizer.
  */
 bool
-Synthesizer::synthesize_stateful(void)
-{
+Synthesizer::synthesize_stateful(void) {
 	for (auto &it : this->tc_per_input_iface) {
 		for(auto &tc : it.second) {
 			// The NF name with the output interface name is the combined key.
@@ -291,7 +278,7 @@ Synthesizer::synthesize_stateful(void)
 
 			// Create space for the path of elements and the interface's configuration
 			if ( this->st_oper_per_out_iface.find(out_nf_and_iface) == this->st_oper_per_out_iface.end()) {
-				this->st_oper_per_out_iface[out_nf_and_iface] = std::shared_ptr<StatefulSynthesizer> (
+				this->st_oper_per_out_iface[out_nf_and_iface] = std::shared_ptr<StatefulSynthesizer> ( 
 					new StatefulSynthesizer()
 				);
 				this->st_oper_per_out_iface_conf[out_nf_and_iface] = tc.second.m_out_iface_conf;
@@ -313,11 +300,11 @@ Synthesizer::synthesize_stateful(void)
  * Check whether an interface belongs to the interfaces' list of the final SNF chain.
  */
 bool
-Synthesizer::is_snf_iface(const std::string& nf, const std::string& iface)
-{
+Synthesizer::is_snf_iface(const std::string& nf, const std::string& iface) {
 	for (auto &it : this->snf_ifaces )
 		if ( (it.first == nf) && (it.second == iface) )
 			return true;
+
 	return false;
 }
 
@@ -325,8 +312,7 @@ Synthesizer::is_snf_iface(const std::string& nf, const std::string& iface)
  * Get the number of interfaces of the final SNF chain.
  */
 unsigned short
-Synthesizer::get_snf_ifaces_no(void)
-{
+Synthesizer::get_snf_ifaces_no(void) {
 	return this->snf_ifaces.size();
 }
 
@@ -334,11 +320,11 @@ Synthesizer::get_snf_ifaces_no(void)
  * Given a SNF, retrieve the associated NIC.
  */
 std::string
-Synthesizer::get_nic_of_snf_iface(std::pair<std::string, std::string> nf_iface)
-{
+Synthesizer::get_nic_of_snf_iface(std::pair<std::string, std::string> nf_iface) {
 	if ( nf_iface.first.empty() || nf_iface.second.empty() ) return "";
-	if ( exists_in_map(this->snf_ifaces_to_nics, nf_iface) )
+	if ( exists_in_map(this->snf_ifaces_to_nics, nf_iface) ) {
 		return this->snf_ifaces_to_nics[nf_iface];
+	}
 	return "";
 }
 
@@ -346,8 +332,7 @@ Synthesizer::get_nic_of_snf_iface(std::pair<std::string, std::string> nf_iface)
  * Given a NIC of the system, retrieve the SNF iface associated with this NIC.
  */
 std::pair<std::string, std::string>
-Synthesizer::get_snf_iface_of_nic(std::string nic)
-{
+Synthesizer::get_snf_iface_of_nic(std::string nic) {
 	if ( nic.empty() ) return std::make_pair("", "");
 	for (auto &it : this->snf_ifaces_to_nics ) {
 		if ( it.second == nic ) return it.first;
@@ -359,8 +344,7 @@ Synthesizer::get_snf_iface_of_nic(std::string nic)
  * Add a mapping of a pair of (NF_X, nfxvify) --> NIC
  */
 void
-Synthesizer::add_nic_of_snf_iface(std::pair<std::string, std::string> nf_iface, std::string nic)
-{
+Synthesizer::add_nic_of_snf_iface(std::pair<std::string, std::string> nf_iface, std::string nic) {
 	if ( nf_iface.first.empty() || nf_iface.second.empty() || nic.empty() ) return;
 	this->snf_ifaces_to_nics[nf_iface] = nic;
 }
@@ -370,13 +354,12 @@ Synthesizer::add_nic_of_snf_iface(std::pair<std::string, std::string> nf_iface, 
  * Print the interfaces (and NFs that possess those interfaces) of the final SNF chain.
  */
 void
-Synthesizer::print_snf_ifaces(void)
-{
-	for (auto &it __attribute__((unused)) : this->snf_ifaces ) {
+Synthesizer::print_snf_ifaces(void) {
+	for (auto &it : this->snf_ifaces ) {
 		info_chatter (this->log, "\t[Network Function: "
-			<< std::right << std::setw(5)  << it.first
-			<< ", Iface: "
-			<< std::right << std::setw(8) << it.second
+						<< std::right << std::setw(5)  << it.first
+						<< ", Iface: " 
+						<< std::right << std::setw(8) << it.second 
 		);
 	}
 }
@@ -385,21 +368,19 @@ Synthesizer::print_snf_ifaces(void)
  * Print the (NF, interface) associated with the NICs of the final SNF chain.
  */
 void
-Synthesizer::print_snf_ifaces_to_nics(void)
-{
-	for (auto &it __attribute__((unused)) : this->snf_ifaces_to_nics ) {
-		info_chatter (this->log, "\t[Network Function: "
-			<< std::right << std::setw(5)  << it.first.first
-			<< ", Iface: "
-			<< std::right << std::setw(8) << it.first.second
-			<< "] --> NIC: " << it.second
+Synthesizer::print_snf_ifaces_to_nics(void) {
+	for (auto &it : this->snf_ifaces_to_nics ) {
+		info_chatter (this->log, "\t[Network Function: " 
+						<< std::right << std::setw(5)  << it.first.first
+						<< ", Iface: " 
+						<< std::right << std::setw(8) << it.first.second 
+						<< "] --> NIC: " << it.second
 		);
 	}
 }
 
 void
-Synthesizer::test_traffic_class_builder(void)
-{
+Synthesizer::test_traffic_class_builder(void) {
 	setvbuf(stdout, NULL, _IONBF, 0);
 
 	std::string routing_table = "10/8 0,192.168.5/24 1,0/0 2";
@@ -427,8 +408,9 @@ Synthesizer::test_traffic_class_builder(void)
 	ttl->set_child(discard,0);
 	ClickTree tree(fixip);
 
-	for (auto &it : tree.get_traffic_classes())
+	for (auto &it : tree.get_traffic_classes()) {
 		std::cout<<it.to_str();
+	}
 }
 
 /*
@@ -443,8 +425,8 @@ TrafficBuilder::traffic_class_builder_dfs(
 	std::vector<unsigned short>   nfs_traversed,
 	unsigned short                nf_position,
 	std::shared_ptr<ClickElement> elem,
-	std::string                   nf_iface)
-{
+	std::string                   nf_iface) {
+
 	Logger log(__FILE__);
 	ElementVertex *nf_vertex = elem->get_ev();
 
@@ -467,8 +449,8 @@ TrafficBuilder::traffic_class_builder_dfs(
 		// A way to continue in the chain.
 		// Initial position must be always different from the next position
 		// to avoid looping around the same NFs
-		else if ( (! nf_vertex->is_endpoint()) && (nf_vertex->get_interface() != nf_iface) &&
-			 !exists_in_vector(nfs_traversed, next_nf_position) ) {
+		else if ( 	(! nf_vertex->is_endpoint()) && (nf_vertex->get_interface() != nf_iface) && 
+					 !exists_in_vector(nfs_traversed, next_nf_position) ) {
 			// Give me the 'good' paths
 			if ( (nf_vertex->get_class() != "Discard") ) {
 				std::string next_nf_iface = nf_vertex->get_glue_iface();
@@ -482,10 +464,10 @@ TrafficBuilder::traffic_class_builder_dfs(
 				for ( ElementVertex *input_elem : nf_chain[next_nf_position]->get_vertices_by_stage(VertexType::Input) ) {
 					if ( input_elem->get_interface() == next_nf_iface ) {
 						info_chatter  (log, "\t\t -----> JUMP FROM " << nf_vertex->get_name()
-								<< "(" << nf_vertex->get_interface() << ")"
-								<< " -----> TO " << input_elem->get_class()
-								<<  "(" << input_elem->get_interface() << ")"
-								<< ", Next Position: " << next_nf_position);
+									<< "(" << nf_vertex->get_interface() << ")"
+									<< " -----> TO " << input_elem->get_class()
+									<<  "(" << input_elem->get_interface() << ")"
+									<< ", Next Position: " << next_nf_position);
 						nf_vertex = input_elem;
 						found     = true;
 
@@ -493,8 +475,9 @@ TrafficBuilder::traffic_class_builder_dfs(
 					}
 				}
 
-				if ( !found )
+				if ( !found ) {
 					error_chatter(log, "\t\t Unable to find next jump");
+				}
 
 				// 3. Change origin interface using the interface of the new vertex
 				nf_iface = next_nf_iface;
@@ -507,18 +490,18 @@ TrafficBuilder::traffic_class_builder_dfs(
 			}
 			// A path that leads to the cliff
 			else {
-				def_chatter(log, "\t\t ----->      DROP " << nf_vertex->get_name() << "("
+				def_chatter(log, "\t\t ----->      DROP " << nf_vertex->get_name() << "(" 
 									<< nf_vertex->get_interface() << ")");
 			}
 		}
 		// Do not chain because a loop will be created
 		else if ( (nf_vertex->get_interface() == nf_iface) || exists_in_vector(nfs_traversed, next_nf_position) ) {
-			def_chatter(log, "\t\t ----->      LOOP " << nf_vertex->get_name() << "("
+			def_chatter(log, "\t\t ----->      LOOP " << nf_vertex->get_name() << "(" 
 								<< nf_vertex->get_interface() << ")");
 			return;
 		}
 		else {
-			def_chatter(log, "\t\t ----->       BUG " << nf_vertex->get_name() << "("
+			def_chatter(log, "\t\t ----->       BUG " << nf_vertex->get_name() << "(" 
 								<< nf_vertex->get_interface() << ")");
 			return;
 		}
@@ -542,8 +525,7 @@ TrafficBuilder::traffic_class_builder_dfs(
 }
 
 std::string
-TrafficBuilder::retrieve_lb_patterns_from_st_element(ElementVertex *ev)
-{
+TrafficBuilder::retrieve_lb_patterns_from_st_element(ElementVertex *ev) {
 	Logger log(__FILE__);
 	std::string el_class = ev->get_class();
 
@@ -553,7 +535,7 @@ TrafficBuilder::retrieve_lb_patterns_from_st_element(ElementVertex *ev)
 			(el_class != std::string("ICMPPingRewriter")) ) {
 		return "";
 	}
-
+	
 	def_chatter(log, "\t\tFound: " << el_class);
 	def_chatter(log, "\t\t\t with conf: " << ev->get_configuration());
 

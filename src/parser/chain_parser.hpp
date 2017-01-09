@@ -3,7 +3,7 @@
 
 /*
  * chain_parser.hpp
- *
+ * 
  * Class declaration for parsing and stitching Click configurations.
  *
  * Copyright (c) 2015-2016 KTH Royal Institute of Technology
@@ -13,12 +13,12 @@
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
- *
+ * 
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- *
+ * 
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>
  */
@@ -68,7 +68,7 @@ class ChainParser {
 		 */
 		bool load_nf(
 			const std::string &nf_name,
-			const std::string &nf_source,
+			const std::string &nf_source, 
 			const unsigned short &position
 		);
 
@@ -95,7 +95,7 @@ class ChainParser {
 		 * Given a position in the chain and an output interface, we want to find the Click element of the next NF in
 		 * the chain. Essentially this function is a glue between two connected NFs.
 		 */
-		ElementVertex *find_input_element_of_nf(
+		ElementVertex* find_input_element_of_nf(
 			NFGraph *next_nf_graph,
 			const std::string &target_interface
 		);
@@ -128,9 +128,9 @@ class ChainParser {
 		/*
 		 * Setters & Getters
 		 */
-		inline ParserConfiguration *get_chain_graph(void) { return this->chain_graph; };
+		inline ParserConfiguration* get_chain_graph(void) { return this->chain_graph; };
 		inline NF_Map<NFGraph*>     get_nf_graphs  (void) { return this->nf_dag;      };
-		inline NFGraph             *get_nf_graph_at(const unsigned short &position) {
+		inline NFGraph*             get_nf_graph_at(const unsigned short &position) {
 			return this->nf_dag[position];
 		};
 

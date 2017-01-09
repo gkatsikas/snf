@@ -26,18 +26,18 @@ A framework to turn a chain of Click-based network functions (NFs) into a sythes
   * export CLICK_HOME=`pwd`
   * `patch -p1 < ${SNF_HOME}/src/click/click-snf-v4.patch`
     * Normal Click (User + Kernel-space):
-		`./configure    --enable-user-multithread --enable-multithread --enable-ip6 --enable-nanotimestamp \
-				--enable-intel-cpu --enable-analysis --enable-ipsec --enable-local --enable-simple \
+		`./configure 	--enable-user-multithread --enable-multithread --enable-ip6 --enable-nanotimestamp
+				--enable-intel-cpu --enable-analysis --enable-ipsec --enable-local --enable-simple
 				--enable-etherswitch --enable-all-elements`
     * Click-Netmap (User-space only, after building Netmap):
-		`./configure    --with-netmap=${NETMAP_DIR}/sys --enable-multithread \
+		`./configure     --with-netmap=${NETMAP_DIR}/sys --enable-multithread \
 				--disable-linuxmodule --enable-intel-cpu --enable-user-multithread \
 				--verbose --enable-select=poll CFLAGS="-O3" CXXFLAGS="-std=gnu++11 -O3" \
 				--disable-dynamic-linking --enable-poll --enable-bound-port-transfer \
 				--enable-local --enable-nanotimestamp --enable-ipsec --enable-analysis \
 				--enable-ip6 --enable-simple --enable-etherswitch`
     * Click-DPDK (User-space only, after building DPDK 2.1.0 or 2.2.0):
-		`./configure    RTE_SDK=${DPDK_DIR} RTE_TARGET=x86_64-native-linuxapp-gcc --enable-multithread \
+		`./configure     RTE_SDK=${DPDK_DIR} RTE_TARGET=x86_64-native-linuxapp-gcc --enable-multithread \
 				--disable-linuxmodule --enable-intel-cpu --enable-user-multithread \
 				--verbose CFLAGS="-g -O3" CXXFLAGS="-g -std=gnu++11 -O3" \
 				--disable-dynamic-linking --enable-poll --enable-bound-port-transfer \
@@ -48,22 +48,22 @@ A framework to turn a chain of Click-based network functions (NFs) into a sythes
 
 #### SNF
   * `cd ${SNF_HOME}`
-  * Build SNF according to INSTALL
+  * Build SNF accoring to INSTALL
   * Modify ./input/property_file accordingly to create the chains you wish
   * Write your own Click configurations and put them into input/nf_repo
     * Make sure that input/nf_repo/ contains the Click configurations you specify in the property_file
     * You can use our test Click implementations
-  * `./run.sh <snf-exec> <your property file>` will load the property file and generate the synthesized chain in the specified folder (property file).
+  * `./run.sh <snf-exec> <your property file>` will load the property file and generate the synthesized chain in the specified folder ().
 
 #### Test the SNF chain:
   * Machine 1: `pkt-gen -i netmap:em1 -f rx -a 0 -n 100000000`
   * Machine 2:
-     * Normal: `click <path-to-snf.click>`
-     *   DPDK: `click -c ff -n 1 --proc-type=primary -v -- <path-to-dpdk-snf.click>`
+    * Normal: `click <path-to-snf.click>`
+    * DPDK: `click -c ff -n 1 --proc-type=primary -v -- <path-to-dpdk-snf.click>`
   * Machine 3: `pkt-gen -i netmap:em1 -f tx -c 0 -S ec:f4:bb:d5:fe:d0 -D ec:f4:bb:d5:fe:d0 -n 100000000 -R 9000000 -l 64`
 
 #### Multi-core SNF
-There are various ways to deploy SNF across multiple cores. We currently support Click-DPDK and FastClick using RSS as follows:
+There are various ways to deploy SNF across multiple cores. We currently support Click-DPDK using RSS as follows:
   * Build SNF with DPDK support following the steps above.
   * Input a set of Click-based NFs, even if they do not use Click-DPDK I/O.
   * In the [GENERIC] section of the input property file set:
@@ -74,11 +74,11 @@ There are various ways to deploy SNF across multiple cores. We currently support
     * NIC_HW_QUEUES = <K> (K is the number of hardware queues in your NIC. Indicatively, this number should be adhusted to the number of available cores above)
   * Run SNF and check the folder OUTPUT_FOLDER for a file OUTPUT_FILE.click as specified in the property file.
   * You will see a synthesized SNF chain, replicated across all the requested queues. Each queue has a dedicated thread that is statically assigned to a CPU core,
-hence your SNF chain can read packets from all of these queues and execute the chain pipeline in parallel.
-  * Underneath this system, Click-DPDK I/O uses Receive-Side Scaling (RSS) to hash incoming packets to different hardware queues. See the RSS section below.
+hence your SNF chain can read packets form all these queues and execute the chain pipeline in parallel.
+  * Underneath this system, Click-DPDK I/O uses Receiver Side Scaling (RSS) to hash incoming packets to all the queues. See the RSS section below.
 
-##### Receive-Side Scaling (RSS)
-Click-DPDK or FastClick use RSS by default. The default hash function is specified in the lib/dpdkdevice.cc file using struct rte_eth_conf.
+##### Receiver Side Scaling (RSS)
+Click-DPDK uses RSS by default. The default hash function is specified in the lib/dpdkdevice.cc file using struct rte_eth_conf.
 This data structure contains a member structure struct rte_eth_rxmode rxmode which in turn contains a field mq_mode (multi-queue mode in the receiver) that is set to ETH_MQ_RX_RSS (RSS in on).
 The RSS configuration can be adjusted by modifying rx_adv_conf.rss_conf.rss_key (NULL by default) and rx_adv_conf.rss_conf.rss_hf (ETH_RSS_IP by default).
 This configuration means that the IP address field is used in the hash function to split the packets.
@@ -86,22 +86,22 @@ To explore other possibilities in DPDK, refer to ${DPDK_DIR}/lib/librte_ether/rt
 An important property we might want to explore is how to run RSS in symmetric mode.
 
 ##### Symmetric RSS (Source is http://galsagie.github.io/2015/02/26/dpdk-tips-1/)
-It is very important in networking applications to have the same CPU handling both sides of a connection, also called symmetrical flow.
-Many networking applications operate on a per-flow basis, and you don't want this information being shared between two CPUs.
-This might potentially introduce locking, which might hurt the performance.
-An RSS mechanism usually uses the Toeplitz hash function. This function takes two inputs: the static hash key and the tuples which are extracted from each packet.
+It is very important in networking applications to have the same CPU handle two sides of the connection, what is called symmetrical flow.
+Many networking applications need to save information about the connection, and you dont want this information shared between two CPU’s.
+This introduces locking which is bad performance wise.
+RSS algorithm is usually using the Toeplitz hash function. This function takes two inputs: the static hash key and the tuples which are extracted from the packet.
 The problem is that the default hash key that is used in DPDK (and is the recommended key from Microsoft) does not distribute symmetrical flows to the same CPU.
-For example, if we have the following packet {src ip=1.1.1.1, dst ip=2.2.2.2, src port=123, dst port=88}, then the symmetrical packet {src ip=2.2.2.2, dst ip=1.1.1.1,
+For example if we have the following packet {src ip=1.1.1.1, dst ip=2.2.2.2, src port=123, dst port=88} then the symmetrical packet {src ip=2.2.2.2, dst ip=1.1.1.1,
 src port=88, dst port=123} might not have the same hash result.
-One can achieve symmetric hashing by changing the hash key (which as I showed earlier can be changed in DPDK configuration), such that the first 32 bits of the key need
+One can achieve symmetric RSS by changing the hash key (which as i showed earlier can be changed in DPDK configuration) such that the first 32 bits of the key need
 to be identical to the second 32 bits, and the 16 bits afterwards should be identical to the next 16 bits.
-Using that key we achieve symmetrical RSS. The problem is that this scheme might lead to bad traffic distribution among the different cores.
+Using that key achieve symmetrical RSS, the problem is that changing this leads to bad distribution of the traffic between the different cores.
 
 But fear not! as there is a solution to this problem.
 A group of smart people found that there is a specific hash key which gives you both symmetrical flow distribution and a uniform one which is same with the default key)
 You can read about it in their published paper (http://www.ndsl.kaist.edu/~kyoungsoo/papers/TR-symRSS.pdf).
 Some tests have been done to check the uniform distribution of this key with random IP traffic and found it to be good (and symmetrical).
-The hash key (in case you don't want to read the document) is:
+The hash key (in case you dont want to read the document) is:
 static uint8_t symmetric_hashkey[40] = {
 	0x6D, 0x5A, 0x6D, 0x5A, 0x6D, 0x5A, 0x6D, 0x5A, 0x6D, 0x5A, 0x6D, 0x5A, 0x6D, 0x5A, 0x6D, 0x5A, 0x6D, 0x5A, 0x6D, 0x5A,
 	0x6D, 0x5A, 0x6D, 0x5A, 0x6D, 0x5A, 0x6D, 0x5A, 0x6D, 0x5A, 0x6D, 0x5A, 0x6D, 0x5A, 0x6D, 0x5A, 0x6D, 0x5A, 0x6D, 0x5A

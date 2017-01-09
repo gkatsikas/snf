@@ -3,7 +3,7 @@
 
 /*
  * generic_config.hpp
- *
+ * 
  * Input Parameters' configuration library
  *
  * Copyright (c) 2015-2016 KTH Royal Institute of Technology
@@ -13,12 +13,12 @@
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
- *
+ * 
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- *
+ * 
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>
  */
@@ -66,28 +66,22 @@ class GenericConfiguration {
 		 */
 		void read_multi_line(std::ifstream &file, std::string &value, unsigned short &lines_to_skip);
 
-		Chameleon const& get_value
-		(
+		Chameleon const& get_value(
 			std::string const &section, std::string const &entry
 		) const;
-		Chameleon const& get_value
-		(
+		Chameleon const& get_value(
 			std::string const &section, std::string const &entry, int value
 		);
-		Chameleon const& get_value
-		(
+		Chameleon const& get_value(
 			std::string const &section, std::string const &entry, unsigned short value
 		);
-		Chameleon const& get_value
-		(
+		Chameleon const& get_value(
 			std::string const &section, std::string const &entry, bool value
 		);
-		Chameleon const& get_value
-		(
+		Chameleon const& get_value(
 			std::string const &section, std::string const &entry, double value
 		);
-		Chameleon const& get_value
-		(
+		Chameleon const& get_value(
 			std::string const &section, std::string const &entry, std::string const &value
 		);
 

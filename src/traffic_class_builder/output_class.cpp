@@ -1,7 +1,7 @@
 // -*- c-basic-offset: 4 -*-
 /* output_class.cpp
- *
- * Implementation of the class that maps traffic class filters
+ * 
+ * Implementation of the class that maps traffic class filters 
  * to packet operations.
  *
  * Copyright (c) 2015-2016 KTH Royal Institute of Technology
@@ -11,18 +11,18 @@
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
- *
+ * 
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- *
+ * 
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>
  */
 
 #include <cstdlib>
-#include <iostream>
+#include <iostream> 
 
 #include "output_class.hpp"
 #include "../shared/helpers.hpp"
@@ -30,21 +30,19 @@
 // The logger of this module
 Logger oc_log(__FILE__);
 
-OutputClass::OutputClass(int port_nb)
-	: m_port_number(port_nb), m_next_input_port(0), m_child(new ClickElement(No_elem, ""))
-{
-
-}
+OutputClass::OutputClass (int port_nb) : m_port_number(port_nb), m_next_input_port(0), 
+	m_child(new ClickElement(No_elem, "")) {}
 
 OutputClass
-OutputClass::port_from_lookup_rule(std::string &rule, Filter &parsed_rules)
-{
+OutputClass::port_from_lookup_rule(std::string &rule, Filter &parsed_rules) {
+
 	std::vector<std::string> decomposed_rule = split(rule," \t\n");
 	int nb_arg = decomposed_rule.size();
 
-	if ( nb_arg>3 || nb_arg<2 )
+	if ( nb_arg>3 || nb_arg<2 ) {
 		FANCY_BUG(oc_log, "\tWrong lookup format: " << rule);
-
+	}
+	
 	uint32_t port_nb = atoi(decomposed_rule[nb_arg-1].c_str());
 	std::vector<std::string> address_and_mask = split(decomposed_rule[0],"/");
 	Filter f;
@@ -61,7 +59,7 @@ OutputClass::port_from_lookup_rule(std::string &rule, Filter &parsed_rules)
 	}
 
  	debug_chatter(oc_log, "\tFrom lookup rule \""+rule+"\" we created: "+f.to_str());
-
+ 
 	f.differentiate(parsed_rules);
 	parsed_rules.unite(f);
 
@@ -71,11 +69,12 @@ OutputClass::port_from_lookup_rule(std::string &rule, Filter &parsed_rules)
 }
 
 std::pair<OutputClass,OutputClass>
-OutputClass::output_class_from_pattern(std::vector<std::string> &pattern)
-{
+OutputClass::output_class_from_pattern(std::vector<std::string> &pattern) {
+
 	// IPRewriter supported pattern: pattern SADDR SPORT DADDR DPORT FOUTPUT ROUTPUT
-	if( pattern.size() != 7 )
+	if( pattern.size() != 7 ) {
 		FANCY_BUG(oc_log, "\tIncorrect pattern size");
+	}
 
 	uint32_t unmodified_port_nb = atoi(pattern[6].c_str());
 	uint32_t modified_port_nb   = atoi(pattern[5].c_str());
@@ -94,7 +93,7 @@ OutputClass::output_class_from_pattern(std::vector<std::string> &pattern)
 		if ( split_pattern.size() == 1 ){
 			foutput.add_field_op({Write,tp_src_port,(uint32_t) atoi(pattern[2].c_str())});
 		}
-		else if ( split_pattern.size() == 2 ) {
+		else if( split_pattern.size() == 2 ) {
 			OperationType op_type = WriteSF;
 			switch (split_pattern[1][split_pattern[1].size()-1]) {
 				case '#':
@@ -164,25 +163,24 @@ OutputClass::output_class_from_pattern(std::vector<std::string> &pattern)
 }
 
 void
-OutputClass::add_filter(const HeaderField &field, const Filter &filter)
-{
-	if ( this->m_filter.find(field) != m_filter.end() )
+OutputClass::add_filter(const HeaderField &field, const Filter &filter) {
+	if ( this->m_filter.find(field) != m_filter.end() ) {
 		FANCY_BUG(oc_log, "\tTrying to add filter on already filtered field in OutputPort");
+	}
 	this->m_filter[field] = filter;
 }
 
 void
-OutputClass::add_field_op(const FieldOperation &field_op)
-{
+OutputClass::add_field_op(const FieldOperation &field_op) {
 	(this->m_operation).add_field_op(field_op);
 }
 
 std::string
-OutputClass::to_str(void) const
-{
+OutputClass::to_str(void) const {
 	std::string output = "======== Begin Output Class ========\nFilters:\n";
-	for(auto &it : this->m_filter)
+	for(auto &it : this->m_filter) {
 		output += ("\t"+it.second.to_str()+"\n");
+	}
 	output += m_operation.to_str();
 	output += "========= End Output Class =========\n";
 
@@ -190,50 +188,42 @@ OutputClass::to_str(void) const
 }
 
 void
-OutputClass::set_filter(const PacketFilter &filter)
-{
+OutputClass::set_filter(const PacketFilter &filter) {
 	this->m_filter = filter;
 }
 
 void
-OutputClass::set_port_number(const int &port_number)
-{
+OutputClass::set_port_number(const int &port_number) {
 	this->m_port_number = port_number;
 }
 
 void
-OutputClass::set_operation(const Operation &op)
-{
+OutputClass::set_operation(const Operation &op) {
 	this->m_operation = op;
 }
 
 void
-OutputClass::set_child(std::shared_ptr<ClickElement> &child, int next_input_port)
-{
+OutputClass::set_child(std::shared_ptr<ClickElement> &child, int next_input_port) {
 	this->m_child = child;
 	this->m_next_input_port = next_input_port;
 }
 
 const Operation&
-OutputClass::get_operation(void) const
-{
+OutputClass::get_operation(void) const {
 	return this->m_operation;
 }
 
 int
-OutputClass::get_port_number(void) const
-{
+OutputClass::get_port_number(void) const {
 	return this->m_port_number;
 }
 
 std::shared_ptr<ClickElement>
-OutputClass::get_child(void) const
-{
+OutputClass::get_child(void) const {
 	return this->m_child;
 }
 
 PacketFilter
-OutputClass::get_filter(void) const
-{
+OutputClass::get_filter(void) const {
 	return this->m_filter;
 }

@@ -27,11 +27,11 @@ CLICK_ELEMENT_OBJS = $(shell find /opt/click/userlevel/ ! -name "click.o" ! -nam
 DPDK_OBJS = $(shell find /opt/dpdk/x86_64-native-linuxapp-gcc/lib/ -name "*.a")
 
 ### Final compilation rule
-snf: $(OBJS) snf.o
-	$(CC) $(LFLAGS) $(OBJS) snf.o  $(CLICK_ELEMENT_OBJS) -o $(EXECUTABLE) $(LIBS)
+snf: $(OBJS) main.o
+	$(CC) $(LFLAGS) $(OBJS) main.o  $(CLICK_ELEMENT_OBJS) -o $(EXECUTABLE) $(LIBS)
 
-dpdk: $(OBJS) snf.o
-	$(CC) $(LFLAGS) $(OBJS) snf.o  $(CLICK_ELEMENT_OBJS) $(DPDK_OBJS) -o $(EXECUTABLE) $(LIBS)
+dpdk: $(OBJS) main.o
+	$(CC) $(LFLAGS) $(OBJS) main.o  $(CLICK_ELEMENT_OBJS) $(DPDK_OBJS) -o $(EXECUTABLE) $(LIBS)
 	
 class_test: $(OBJS) classifier_test.o
 	$(CC) $(LFLAGS) $(OBJS) $(CLICK_ELEMENT_OBJS) classifier_test.o -o $(CLASS_TEST) $(LIBS)
@@ -40,8 +40,8 @@ class_test: $(OBJS) classifier_test.o
 classifier_test.o: ./tests/classifier_test.cpp filter.o helpers.o
 	$(CC) $(CFLAGS) ./tests/classifier_test.cpp
 	
-snf.o: ./src/snf.cpp ./src/synthesizer/synthesizer.hpp ./src/logger/logger.hpp
-	$(CC) $(CFLAGS) ./src/snf.cpp
+main.o: ./src/main.cpp ./src/synthesizer/synthesizer.hpp ./src/logger/logger.hpp
+	$(CC) $(CFLAGS) ./src/main.cpp
 
 helpers.o: ./src/shared/helpers.cpp ./src/shared/helpers.hpp
 	$(CC) $(CFLAGS) ./src/shared/helpers.cpp

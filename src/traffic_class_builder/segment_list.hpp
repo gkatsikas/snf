@@ -3,7 +3,7 @@
 
 /*
  * segment_list.hpp
- *
+ * 
  * Definition of a disjoint list of segments to be used for
  * the construction of complex traffic class filters.
  *
@@ -14,12 +14,12 @@
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
- *
+ * 
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- *
+ * 
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>
  */
@@ -52,20 +52,20 @@ class DisjointSegmentList {
 		static std::shared_ptr<SegmentNode> copy_list    (std::shared_ptr<SegmentNode> old_list);
 		static void                         destroy_list (std::shared_ptr<SegmentNode> &node);
 		static std::shared_ptr<SegmentNode> unify        (
-			std::shared_ptr<SegmentNode> &container,
-			const std::shared_ptr<SegmentNode> &to_add
+															std::shared_ptr<SegmentNode> &container,
+															const std::shared_ptr<SegmentNode> &to_add
 		);
 		static std::shared_ptr<SegmentNode> differentiate(
-			std::shared_ptr<SegmentNode> &container,
-			const std::shared_ptr<SegmentNode> &to_substract
+															std::shared_ptr<SegmentNode> &container,
+															const std::shared_ptr<SegmentNode> &to_substract
 		);
 		static std::shared_ptr<SegmentNode> intersect    (
-			std::shared_ptr<SegmentNode> &container,
-			const std::shared_ptr<SegmentNode> &to_intersect
+															std::shared_ptr<SegmentNode> &container,
+															const std::shared_ptr<SegmentNode> &to_intersect
 		);
 		static bool                         include      (
-			const std::shared_ptr<SegmentNode> &container,
-			const std::shared_ptr<SegmentNode> &containee
+															const std::shared_ptr<SegmentNode> &container,
+															const std::shared_ptr<SegmentNode> &containee
 		);
 
 	public:

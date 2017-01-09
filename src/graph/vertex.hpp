@@ -3,7 +3,7 @@
 
 /*
  * vertex.hpp
- *
+ * 
  * Defines a graph vertex.
  *
  * Copyright (c) 2015-2016 KTH Royal Institute of Technology
@@ -13,12 +13,12 @@
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
- *
+ * 
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- *
+ * 
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>
  */
@@ -116,7 +116,7 @@ using EntryInterfaceMap = std::map<
 /*
  * A map between (Interface, MAC) -> (NextNF, Interface)
  */
-using NFLinkage    = std::map<
+using NFLinkage    = std::map< 
 	std::pair<std::string, std::string>, std::pair<std::string, std::string>
 >;
 
@@ -142,9 +142,9 @@ class ChainVertex : public Vertex {
 		NFLinkage         chain_interfaces;
 
 	public:
-		ChainVertex (const std::string &path, const std::string &name,
-				const unsigned short &pos, const VertexType &type) :
-				Vertex(std::move(name), pos, type), source_code_path(std::move(path)) {};
+		ChainVertex (const std::string &path, const std::string &name, 
+					const unsigned short &pos, const VertexType &type) :
+					Vertex(std::move(name), pos, type), source_code_path(std::move(path)) {};
 		~ChainVertex() {};
 		ChainVertex (const ChainVertex &cv);
 		ChainVertex& operator=(ChainVertex &cv);
@@ -157,7 +157,7 @@ class ChainVertex : public Vertex {
 
 		void add_entry_interface_key  (const std::string &iface, std::string mac="");
 		void add_entry_interface_pair (
-			const std::string &iface, const std::string &mac,
+			const std::string &iface, const std::string &mac, 
 			const std::string &domain
 		);
 		void add_chain_interface_key  (const std::string &iface, std::string mac="");

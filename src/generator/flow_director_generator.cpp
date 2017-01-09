@@ -1,15 +1,15 @@
 // -*- c-basic-offset: 4 -*-
 /* flow_director_generator.cpp
- *
- * Export a runnable, SNF configuration that implements the
+ * 
+ * Export a runnable, SNF configuration that implements the 
  * NFV chain in a distributed, hardware-assisted fashion.
  * The conditional part of the chain (i.e., read and classify flows)
  * is exported to a programmable NIC. The NIC encodes the traffic
- * classes using FlowDirector filters and sends the matching packets to
+ * classes using FlowDirector filters and sends the matching packets to 
  * different CPU cores.
- * Each core is then assigned with a pipeline that modifies the
+ * Each core is then assigned with a pipeline that modifies the 
  * corresponding traffic class accordingly.
- * This processing model is totally distributed because each core's pipeline is
+ * This processing model is totally distributed because each core's pipeline is 
  * different; we do not replicate the pipeline of the entire chain).
  *
  * Copyright (c) 2015-2016 KTH Royal Institute of Technology
@@ -19,25 +19,23 @@
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
- *
+ * 
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- *
+ * 
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>
  */
 
 #include "flow_director_generator.hpp"
 
-FlowDirectorGenerator::FlowDirectorGenerator(Synthesizer *synth) : Generator(synth)
-{
+FlowDirectorGenerator::FlowDirectorGenerator(Synthesizer *synth) : Generator(synth) {
 	def_chatter(this->log, "\tFlow Director-based SNF generator constructed");
 }
 
-FlowDirectorGenerator::~FlowDirectorGenerator()
-{
+FlowDirectorGenerator::~FlowDirectorGenerator() {
 	def_chatter(this->log, "\tFlow Director-based SNF generator deleted");
 }
 
@@ -45,8 +43,7 @@ FlowDirectorGenerator::~FlowDirectorGenerator()
  * Method that abstracts the input-dependent code generation process.
  */
 bool
-FlowDirectorGenerator::generate_equivalent_configuration(const bool to_file)
-{
+FlowDirectorGenerator::generate_equivalent_configuration(const bool to_file) {
 	return this->generate_flow_director_split_pipelines(to_file);
 }
 
@@ -56,8 +53,8 @@ FlowDirectorGenerator::generate_equivalent_configuration(const bool to_file)
  *    Each Click-DPDK configuration implements a subset of the chain.
  */
 bool
-FlowDirectorGenerator::generate_flow_director_split_pipelines(const bool &to_file)
-{
+FlowDirectorGenerator::generate_flow_director_split_pipelines(const bool &to_file) {
+
 	//std::ofstream  *soft_out_file  = NULL;
 	//std::ofstream  **hard_out_file = NULL;
 	//std::streambuf *def_cout       = NULL;
@@ -77,7 +74,7 @@ FlowDirectorGenerator::generate_flow_director_split_pipelines(const bool &to_fil
 			std::string iface = it.second;
 
 			std::pair<std::string, std::string> comb_key = std::make_pair(nf, iface);
-			this->hrdw_configuration_per_nic[comb_key] =
+			this->hrdw_configuration_per_nic[comb_key] = 
 				this->basic_configuration_filename + "_" + nf + "_" + iface + ".flowdir";
 			//std::cout << this->hrdw_configuration_per_nic[comb_key] << std::endl;
 
@@ -118,8 +115,8 @@ bool
 FlowDirectorGenerator::generate_flow_director_configuration(
 		std::ofstream  **hw_out_file,
 		unsigned short &nics_no,
-		std::streambuf *def_cout)
-{
+		std::streambuf *def_cout) {
+
 	for (unsigned short nic = 0 ; nic < nics_no ; nic++) {
 		// Move cout to the files where we write the hardware configuration
 		def_cout = std::cout.rdbuf(hw_out_file[nic]->rdbuf());

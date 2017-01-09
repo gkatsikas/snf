@@ -3,7 +3,7 @@
 
 /*
  * parser_config.hpp
- *
+ * 
  * Defines the parsing mechanisms that feed the NF Synthesizer.
  * Represents a NF chain as a digraph of interconnected NFs while
  * another digraph shows the connectivity of this chain with
@@ -16,12 +16,12 @@
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
- *
+ * 
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- *
+ * 
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>
  */
@@ -32,7 +32,7 @@
  #include "../graph/graph.hpp"
 
 /*
- * Class that loads the NF chain configuration from a
+ * Class that loads the NF chain configuration from a 
  * property file and builds the graph of the chain.
  */
 class ParserConfiguration : public GenericConfiguration {
@@ -69,10 +69,10 @@ class ParserConfiguration : public GenericConfiguration {
 		/*
 		 * Setters & Getters
 		 */
-		inline Graph         *get_chain        (void) { return this->nf_chain;     };
+		inline Graph*         get_chain        (void) { return this->nf_chain;     };
 		inline unsigned short get_chain_length (void) { return this->chain_length; };
-		inline Graph         *get_chain_domains(void) { return this->nf_domains;   };
-		inline Properties    *get_properties   (void) { return this->properties;   };
+		inline Graph*         get_chain_domains(void) { return this->nf_domains;   };
+		inline Properties*    get_properties   (void) { return this->properties;   };
 
 		/*
 		 * Implements load_property_file (abstract method in the super class)
@@ -104,7 +104,7 @@ class ParserConfiguration : public GenericConfiguration {
 		/*
 		 * Create a chain vertex node that represents a NF as part of a DAG
 		 */
-		ChainVertex *fill_chain_vertex(const std::string &nf, int &position);
+		ChainVertex* fill_chain_vertex(const std::string &nf, int &position);
 
 		/*
 		 * Check whether the formulated graph of the chain is acyclic

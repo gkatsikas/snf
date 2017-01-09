@@ -3,7 +3,7 @@
 
 /*
  * click_element.hpp
- *
+ * 
  * Definition of SNF's traffic class node.
  *
  * Copyright (c) 2015-2016 KTH Royal Institute of Technology
@@ -13,12 +13,12 @@
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
- *
+ * 
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- *
+ * 
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>
  */
@@ -47,11 +47,11 @@ class ClickElement {
 		Logger log;
 
 		ClickElement (
-			ElementType type, const std::string &configuration, ElementVertex *ev,
-			short input_port=0,
+			ElementType type, const std::string &configuration, ElementVertex *ev, 
+			short input_port=0, 
 			std::unordered_map<short, std::vector<std::string> > *extra_conf = nullptr
 		);
-
+	
 		static std::shared_ptr<ClickElement> discard_elem_ptr;
 
 		// Configuration parsing functions
@@ -67,9 +67,9 @@ class ClickElement {
 		void parse_set_vlan_anno_configuration(const std::string &configuration);
 		void parse_ip_fragmenter_configuration(const std::string &configuration);
 		void parse_ip_rewriter                (const std::string &configuration,
-							short input_port,
-							std::unordered_map<short,
-							std::vector<std::string>> *extra_conf);
+												short input_port,
+												std::unordered_map<short, 
+												std::vector<std::string>> *extra_conf);
 
 		void add_output_class  (OutputClass &output_class);
 		void configuration_fail(void);
@@ -98,7 +98,7 @@ class ClickElement {
 		std::string get_nf_name(void) const;
 
 		std::string to_str     (void) const;
-
+		
 		static ElementType type_from_name(const std::string &name);
 };
 

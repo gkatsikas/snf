@@ -11,12 +11,12 @@
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
- *
+ * 
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- *
+ * 
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>
  */
@@ -30,18 +30,11 @@
 #include "generator/flow_director_generator.hpp"
 #include "synthesizer/synthesizer.hpp"
 
-#ifdef HAVE_DPDK
-bool dpdk_enabled = false;
-#else
-bool dpdk_enabled = true;
-#endif
-
 /*
  * User guide to start SNF
  */
 void
-usage(Logger &main_log, const char* program)
-{
+usage(Logger &main_log, const char* program) {
 	error_chatter(main_log, "Usage: " << program << " -p [propertyFile] [-v]");
 	exit(WRONG_INPUT_ARGS);
 }
@@ -50,8 +43,7 @@ usage(Logger &main_log, const char* program)
  * Version report and license
  */
 void
-version_report(const std::string &version)
-{
+version_report(const std::string &version) {
 	std::cout << "SNF "+ version + "\n" << std::endl;
 	std::cout << "Copyright (C) 2015-2016 Georgios Katsikas, Marcel Enguehard.\n\
 Copyright (C) 2015-2016 KTH Royal Institute of Technology.\n\
@@ -76,25 +68,26 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>" << std::en
  */
 void
 parse_arguments(
-	int         cmd_args_no,
-	char        **cmd_args,
-	Logger      &main_log,
-	std::string *property_file,
-	std::string *version)
-{
+		int         cmd_args_no,
+		char        **cmd_args,
+		Logger      &main_log,
+		std::string *property_file,
+		std::string *version) {
+
 	const char *program = cmd_args[0];
 
 	// Check number of arguments
-	if ( 	(cmd_args_no != 2) &&
-		(cmd_args_no != 3) &&
-		(cmd_args_no != 4) ) {
+	if ( 	(cmd_args_no != 2) && 
+			(cmd_args_no != 3) && 
+			(cmd_args_no != 4) ) {
 		usage(main_log, program);
 	}
 
 	// Parse arguments
-	while ( *cmd_args ) {
+	while ( *cmd_args )	{
 		// Property file
-		if ( strcmp(*cmd_args, "-p") == 0 ) {
+		if ( strcmp(*cmd_args, "-p") == 0 )	{
+
 			if (cmd_args_no == 2) {
 				usage(main_log, program);
 			}
@@ -110,6 +103,7 @@ parse_arguments(
 		}
 		// SNF version
 		else if ( strcmp(*cmd_args, "-v") == 0 ) {
+
 			#ifdef VERSION
 				*version = " v." + std::string(VERSION);
 			#else
@@ -137,11 +131,11 @@ parse_arguments(
  */
 Generator*
 identify_code_generator(
-	Logger                   &main_log,
-	Synthesizer              *synthesizer,
-	const bool               &has_hw_classification,
-	const TrafficClassFormat &tc_format)
-{
+		Logger                   &main_log,
+		Synthesizer              *synthesizer,
+		const bool               &has_hw_classification,
+		const TrafficClassFormat &tc_format) {
+
 	if ( has_hw_classification ) {
 		#ifdef HAVE_DPDK
 			switch (tc_format) {
@@ -171,8 +165,7 @@ identify_code_generator(
  * SNF's bootstrapping function
  */
 int
-main(int argc, char **argv)
-{
+main(int argc, char **argv) {
 	setvbuf(stdout, NULL, _IONBF, 0);
 
 	std::string property_file;
@@ -243,6 +236,11 @@ main(int argc, char **argv)
 	info_chatter(main_log, "");
 	///////////////////////////////////////////////////////////////////////////////////////////
 
+
+
+
+	//exit(exit_status);
+
 	total_exec_time += task_exec_time;
 
 	/////////////////////////////////// Build Traffic Classes /////////////////////////////////
@@ -287,7 +285,7 @@ main(int argc, char **argv)
 	info_chatter(main_log, task_exec_time << "  microseconds");
 	info_chatter(main_log, "+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+");
 	info_chatter(main_log, "");
-	///////////////////////////////////////////////////////////////////////////////////////////
+	///////////////////////////////////////////////////////////////////////////////////////////	
 
 	total_exec_time += task_exec_time;
 
@@ -301,7 +299,7 @@ main(int argc, char **argv)
 		info_chatter(main_log, "SNF Generator... ");
 		try {
 			generator = identify_code_generator(
-				main_log,
+				main_log, 
 				std::move(synthesizer),
 				pcf->get_properties()->has_hardware_classification(),
 				pcf->get_properties()->get_traffic_classification_format()
@@ -322,7 +320,7 @@ main(int argc, char **argv)
 			delete generator;
 			exit(exit_status);
 		}
-
+		
 		// Fetch the file(s) where SNF has generated the chain's configuration
 		output_files = generator->get_output_files_list_str();
 	});

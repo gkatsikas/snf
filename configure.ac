@@ -145,7 +145,11 @@ AC_ARG_WITH(
 AC_MSG_CHECKING([for Click])
 
 if test -d "$click_path"; then
-	:
+#	:
+	AC_MSG_NOTICE([
+===============================================
+Found $click_path for Click.
+===============================================])
 else
 	AC_MSG_ERROR([
 ===============================================

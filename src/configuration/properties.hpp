@@ -3,12 +3,12 @@
 
 /*
  * properties.hpp
- *
+ * 
  * Defines generic properties that drive the synthesis.
  * Among them, the output folder and filename where SNF
- * will generate the results, whether SNF will produce a
+ * will generate the results, whether SNF will produce a 
  * pure software or a hardware assisted synthesis. If the latter
- * is selected, the number of CPU sockets, cores, NIC hardware
+ * is selected, the number of CPU sockets, cores, NIC hardware 
  * queues the type of CPU architecture are requested.
  *
  * Copyright (c) 2015-2016 KTH Royal Institute of Technology
@@ -18,12 +18,12 @@
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
- *
+ * 
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- *
+ * 
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>
  */
@@ -100,7 +100,7 @@ const std::unordered_map<std::string, TrafficClassFormat> TCLabelToFormat = {
  * Possible traffic processing layers
  * |--> L2: Ethernet headers are not stripped.
             A pointer (OFFSET 14 bytes) moves processing to IP layer.
- * |--> L3: Ethernet headers are stripped, IP packets are processed,
+ * |--> L3: Ethernet headers are stripped, IP packets are processed, 
             and EtherEncap turns them back to frames.
  */
 enum ProcessingLayer {
@@ -122,7 +122,7 @@ const std::unordered_map<std::string, ProcessingLayer> ProcLayerToNumber = {
 
 /*
  * Possible traffic processing layers
- * |--> SingleCore:   One core does only I/O across all queues of a NIC;
+ * |--> SingleCore:   One core does only I/O across all queues of a NIC; 
  *                    other cores (in the same socket) do only processing.
  *                    Involves inter-core communication (via the shared cache).
  * |--> ShareNothing: One core/queue does both I/O and processing for this queue.
@@ -176,8 +176,8 @@ class Properties {
 		 *      Benefits come form parallel processing.
 		 * |--> FlowDirector: Assigns traffic to cores based on concrete Flow Director rules.
 		 * |--> OpenFlow: Trasform a traffic class into OpenFlow rules that can be injected
-		 *      into a software switch (e.g., OVS). Then the switch will send each traffic
-		 *      class to a different virtual interfaces
+		 *      into a software switch (e.g., OVS). Then the switch will send each traffic 
+		 *      class to a different virtual interface.
 		 * Otherwise, ClickIPClassifier is the standard, all-in-software way.
 		 */
 		TrafficClassFormat traffic_classification_format;
@@ -191,10 +191,10 @@ class Properties {
 		/*
 		 * The way that the multi-core SNF performs packet I/O.
 		 * |--> In SingleCore mode one core per NIC is dedicated to do only this task.
-		 *      In NUMA architectures, the reamining cores in the same socket exchange
+		 *      In NUMA architectures, the reamining cores in the same socket exchange 
 		 *      packets via the LLC to do the processing.
-		 * |--> In ShareNothing mode, one core reads, processes, and writes packets in
-		 *      one queue. This does not involve inter-core communication if we use
+		 * |--> In ShareNothing mode, one core reads, processes, and writes packets in 
+		 *      one queue. This does not involve inter-core communication if we use 
 		 *      symmetric RSS to assign both directions of a flow to the same core.
 		 */
 		IOMode             io_mode;
@@ -271,15 +271,15 @@ class Properties {
 		Properties(
 			const bool &nm, const bool &hw_class, const ClickType cl_t,
 			const TrafficClassFormat &tc_format, const ProcessingLayer &p_layer,
-			const IOMode &io_md, const unsigned short &sockets_no,
-			const unsigned short &cores_no, const unsigned short &nics_no,
-			const unsigned short &nic_queues, const bool &rss_aggr_pin,
-			const std::string &out_fold, const std::string &out_file):
+			const IOMode &io_md, const unsigned short &sockets_no, 
+			const unsigned short &cores_no, const unsigned short &nics_no, 
+			const unsigned short &nic_queues, const bool &rss_aggr_pin, 
+			const std::string &out_fold, const std::string &out_file): 
 			numa(nm), hardware_classification(hw_class), click_type(cl_t),
-			traffic_classification_format(tc_format), proc_layer(p_layer),
-			io_mode(io_md), cpu_sockets_no(sockets_no), cpu_cores_no(cores_no),
-			number_of_nics(nics_no), nic_hw_queues_no(nic_queues),
-			rss_aggressive_pinning(rss_aggr_pin), output_folder(out_fold),
+			traffic_classification_format(tc_format), proc_layer(p_layer), 
+			io_mode(io_md), cpu_sockets_no(sockets_no), cpu_cores_no(cores_no), 
+			number_of_nics(nics_no), nic_hw_queues_no(nic_queues), 
+			rss_aggressive_pinning(rss_aggr_pin), output_folder(out_fold), 
 			output_filename(out_file)
 			{};
 
@@ -290,8 +290,7 @@ class Properties {
 		inline bool               has_hardware_classification      (void) const { return this->hardware_classification; };
 
 		inline ClickType          get_click_type                   (void) const { return this->click_type; };
-		inline TrafficClassFormat get_traffic_classification_format(void) const
-		{
+		inline TrafficClassFormat get_traffic_classification_format(void) const {
 			return this->traffic_classification_format;
 		};
 		inline ProcessingLayer    get_processing_layer      (void) const { return this->proc_layer;             };
@@ -309,63 +308,50 @@ class Properties {
 		/*
 		 * Setters (Basic sanity check)
 		 */
-		inline void set_numa                         (const bool &nm)
-		{
+		inline void set_numa                         (const bool &nm)       {
 			this->numa = nm;
 		}
-		inline void set_hardware_classification      (const bool &hw_class)
-		{
+		inline void set_hardware_classification      (const bool &hw_class) {
 			this->hardware_classification = hw_class;
 		}
-		inline void set_click_type                   (const ClickType &cl_t)
-		{
+		inline void set_click_type                   (const ClickType &cl_t) {
 			this->click_type = cl_t;
 		}
-		inline void set_traffic_classification_format(const TrafficClassFormat &tc_format)
-		{
+		inline void set_traffic_classification_format(const TrafficClassFormat &tc_format) {
 			this->traffic_classification_format = tc_format;
 		}
-		inline void set_processing_layer             (const ProcessingLayer &p_layer)
-		{
+		inline void set_processing_layer             (const ProcessingLayer &p_layer) {
 			assert ( (p_layer == L2) || (p_layer == L3) );
 			this->proc_layer = p_layer;
 		}
-		inline void set_io_mode                      (const IOMode &io_md)
-		{
+		inline void set_io_mode                      (const IOMode &io_md) {
 			assert ( (io_md == SingleCore) || (io_md == ShareNothing) );
 			this->io_mode = io_md;
 		}
-		inline void set_cpu_cores_no                 (const unsigned short &cores_no)
-		{
+		inline void set_cpu_cores_no                 (const unsigned short &cores_no)   {
 			assert ( (cores_no > 0) && (cores_no < MAX_CPU_CORES_NO) );
 			this->cpu_cores_no = cores_no;
 		}
-		inline void set_cpu_sockets_no               (const unsigned short &sockets_no)
-		{
+		inline void set_cpu_sockets_no               (const unsigned short &sockets_no) {
 			assert ( (sockets_no > 0) && (sockets_no < MAX_CPU_SOCKETS_NO) );
 			this->cpu_sockets_no = sockets_no;
 		}
-		inline void set_number_of_nics               (const unsigned short &nics_no)
-		{
+		inline void set_number_of_nics               (const unsigned short &nics_no) {
 			assert ( (nics_no > 0) );
 			this->number_of_nics = nics_no;
 		}
-		inline void set_nic_hw_queues_no             (const unsigned short &nic_queues)
-		{
+		inline void set_nic_hw_queues_no             (const unsigned short &nic_queues) {
 			assert ( (nic_queues > 0) && (nic_queues < MAX_NIC_HW_QUEUES_NO) );
 			if ( nic_queues == 0 ) return;
 			this->nic_hw_queues_no = nic_queues;
 		}
-		inline void set_rss_aggressive_pinning       (const bool &rss_aggr_pin)
-		{
+		inline void set_rss_aggressive_pinning       (const bool &rss_aggr_pin) {
 			this->rss_aggressive_pinning = rss_aggr_pin;
 		}
-		inline void set_output_folder                (const std::string &out_fold)
-		{
+		inline void set_output_folder                (const std::string &out_fold) {
 			this->output_folder   = out_fold;
 		}
-		inline void set_output_filename              (const std::string &out_file)
-		{
+		inline void set_output_filename              (const std::string &out_file) {
 			this->output_filename = out_file;
 		}
 };
@@ -373,8 +359,7 @@ class Properties {
 /*
  * Translate Click enum type to text.
  */
-inline const std::string click_type_to_label(const ClickType &cl_t)
-{
+inline const std::string click_type_to_label(const ClickType &cl_t) {
 	switch (cl_t) {
 		case Click:
 			return std::string("Click");
@@ -388,8 +373,7 @@ inline const std::string click_type_to_label(const ClickType &cl_t)
 /*
  * Translate the traffic classification enum type to text.
  */
-inline const std::string tc_to_label(const TrafficClassFormat &tc_format)
-{
+inline const std::string tc_to_label(const TrafficClassFormat &tc_format) {
 	switch (tc_format) {
 		case ClickIPClassifier:
 			return std::string("ClickIPClassifier");
@@ -407,8 +391,7 @@ inline const std::string tc_to_label(const TrafficClassFormat &tc_format)
 /*
  * Translate the processing layer enum type to text.
  */
-inline const std::string proc_layer_to_label(const ProcessingLayer &p_layer)
-{
+inline const std::string proc_layer_to_label(const ProcessingLayer &p_layer) {
 	switch (p_layer) {
 		case L2:
 			return std::string("L2");
@@ -422,8 +405,7 @@ inline const std::string proc_layer_to_label(const ProcessingLayer &p_layer)
 /*
  * Translate the I/O mode enum type to text.
  */
-inline const std::string io_mode_to_label(const IOMode &io_md)
-{
+inline const std::string io_mode_to_label(const IOMode &io_md) {
 	switch (io_md) {
 		case SingleCore:
 			return std::string("SingleCore");

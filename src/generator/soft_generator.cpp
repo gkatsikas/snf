@@ -1,6 +1,6 @@
 // -*- c-basic-offset: 4 -*-
 /* soft_generator.cpp
- *
+ * 
  * Export a runnable, software-based (Click) only SNF configuration.
  *
  * Copyright (c) 2015-2016 KTH Royal Institute of Technology
@@ -10,25 +10,23 @@
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
- *
+ * 
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- *
+ * 
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>
  */
 
 #include "soft_generator.hpp"
 
-SoftGenerator::SoftGenerator(Synthesizer *synth) : Generator(synth)
-{
+SoftGenerator::SoftGenerator(Synthesizer *synth) : Generator(synth) {
 	def_chatter(this->log, "\tSoftware-based, single-core SNF generator constructed");
 }
 
-SoftGenerator::~SoftGenerator()
-{
+SoftGenerator::~SoftGenerator() {
 	def_chatter(this->log, "\tSoftware-based, single-core SNF generator deleted");
 }
 
@@ -36,8 +34,7 @@ SoftGenerator::~SoftGenerator()
  * Method that abstracts the input-dependent code generation process.
  */
 bool
-SoftGenerator::generate_equivalent_configuration(const bool to_file)
-{
+SoftGenerator::generate_equivalent_configuration(const bool to_file) {
 	return this->generate_all_in_soft_configuration(to_file);
 }
 
@@ -46,8 +43,7 @@ SoftGenerator::generate_equivalent_configuration(const bool to_file)
  * The configuration must achieve equivalent functionality with the initial one.
  */
 bool
-SoftGenerator::generate_all_in_soft_configuration(const bool &to_file)
-{
+SoftGenerator::generate_all_in_soft_configuration(const bool &to_file) {
 	std::ofstream  *out_file = NULL;
 	std::streambuf *def_cout = NULL;
 	std::stringstream config_stream;
@@ -63,11 +59,12 @@ SoftGenerator::generate_all_in_soft_configuration(const bool &to_file)
 	// A map between a NIC and the IPClassifier to handle its packets.
 	std::map < std::string, std::string > nic_to_ip_classifier;
 
-	// Step 2: Construct the path of Click elements that will lead each
-	// modified (i.e., rewritten by Click IPSynthesizer already) traffic
+	// Step 2: Construct the path of Click elements that will lead each 
+	// modified (i.e., rewritten by Click IPSynthesizer already) traffic 
 	// class out of Click. This path of elements follows IPSynthesizer.
-	if ( ! this->generate_write_and_output_part_of_synthesis(config_stream) )
+	if ( ! this->generate_write_and_output_part_of_synthesis(config_stream) ) {
 		return TO_BOOL(CODE_GENERATION_PROBLEM);
+	}
 
 	def_chatter(this->log, "\tGenerate Write & Output Parts...");
 
@@ -85,7 +82,7 @@ SoftGenerator::generate_all_in_soft_configuration(const bool &to_file)
 
 	def_chatter(this->log, "\tGenerate Read Part...");
 
-	// Step 4: Construct the input Click elements that capture incoming traffic
+	// Step 4: Construct the input Click elements that capture incoming traffic 
 	// to be sent to the Classifiers.
 	if ( ! this->generate_input_part_of_synthesis(
 			config_stream,
@@ -114,17 +111,17 @@ SoftGenerator::generate_all_in_soft_configuration(const bool &to_file)
 		delete out_file;
 	}
 
-	def_chatter(this->log,	"\tSuccessfully generated the NF chain synthesis to: \n" <<
-				"\t\t\t\t\t\t\t|--> " << this->soft_configuration_filename);
+	def_chatter(this->log,	"\tSuccessfully generated the NF chain synthesis to: \n" << 
+							"\t\t\t\t\t\t\t|--> " << this->soft_configuration_filename);
 
 	return DONE;
 }
 
 void
-SoftGenerator::generate_static_configuration(std::stringstream &config_stream)
-{
-	for (unsigned short i = 0 ; i < this->synthesizer->get_snf_ifaces_no() ; i++)
-		config_stream << "AddressInfo(dev" << i << " $macAddr" << i << " $ipAddr"<< i << ");" << std::endl;
+SoftGenerator::generate_static_configuration(std::stringstream &config_stream) {
+	for (unsigned short i = 0 ; i < this->synthesizer->get_snf_ifaces_no() ; i++) {
+		config_stream << "AddressInfo(dev" << i << " $macAddr" << i << " $ipAddr"<< i << ");" << std::endl; 
+	}
 	config_stream << std::endl;
 
 	// This is a class that handles packet I/O.
@@ -142,15 +139,15 @@ SoftGenerator::generate_static_configuration(std::stringstream &config_stream)
 bool
 SoftGenerator::generate_input_part_of_synthesis(
 		std::stringstream                     &config_stream,
-		std::map < std::string, std::string > &nic_to_ip_classifier)
-{
+		std::map < std::string, std::string > &nic_to_ip_classifier) {
+
 	config_stream << "///////////////////////////////////////////////////////////////" << std::endl;
-	config_stream << "// The input-part of the synthesized SNF code"                   << std::endl;
+	config_stream << "// The input-part of the synthesized SNF code"              << std::endl;
 	config_stream << "///////////////////////////////////////////////////////////////" << std::endl;
 
 	std::string decap = (this->proc_layer == L3)? \
-				"Strip(14) -> MarkIPHeader()" :
-				"MarkIPHeader(OFFSET 14)";
+						"Strip(14) -> MarkIPHeader()" : 
+						"MarkIPHeader(OFFSET 14)";
 
 	std::vector< std::string > driven_nics;
 
@@ -159,32 +156,33 @@ SoftGenerator::generate_input_part_of_synthesis(
 		std::string nic      = it.first;
 		std::string ipc_name = it.second;
 
-	#ifdef HAVE_DPDK
-		config_stream 	<< InputClassName << "(" << nic
-				<< ", $burst, $rxNdesc, $ioCore"
-				<< nic << ") -> ";
-	#else
-		config_stream 	<< InputClassName << "($iface" << nic
-				<< ", $burst, $mtuSize, $ioCore"
-				<< nic << ") -> ";
-	#endif
-		config_stream 	<< decap << " -> "
-			#ifdef  DEBUG_MODE
-				<< "IPPrint(NIC" + nic + ", LENGTH true, TTL true) -> "
-			#endif
-				<< ipc_name << ";" << std::endl;
+		#ifdef HAVE_DPDK
+			config_stream 	<< InputClassName << "(" << nic
+							<< ", $burst, $rxNdesc, $ioCore"
+							<< nic << ") -> ";
+		#else
+			config_stream 	<< InputClassName << "($iface" << nic
+							<< ", $burst, $mtuSize, $ioCore"
+							<< nic << ") -> ";
+		#endif
+		config_stream 	<< decap << " -> " 
+						#ifdef  DEBUG_MODE
+						<< "IPPrint(NIC" + nic + ", LENGTH true, TTL true) -> "
+						#endif
+						<< ipc_name << ";" << std::endl;
 
 		driven_nics.push_back(nic);
 	}
 
-	if ( driven_nics.size() == this->synthesizer->get_snf_ifaces_no() )
+	if ( driven_nics.size() == this->synthesizer->get_snf_ifaces_no() ) {
 		return DONE;
+	}
 
 	// There are interfaces that sit behind proxies
 	// These interfaces can access the chain only in-response
 	// to already initiated traffic request from inside.
 	// We currently disable them but they should technically fall
-	// into the same Classifier and stateful rewriter as the other
+	// into the same Classifier and stateful rewriter as the other 
 	// direction.
 	for ( auto &pair_if : this->synthesizer->get_snf_ifaces() ) {
 		std::string nic = this->synthesizer->get_nic_of_snf_iface(pair_if);
@@ -193,18 +191,18 @@ SoftGenerator::generate_input_part_of_synthesis(
 
 		#ifdef HAVE_DPDK
 			config_stream 	<< InputClassName << "(" << nic
-					<< ", $burst, $rxNdesc, $ioCore"
-					<< nic << ") -> ";
+							<< ", $burst, $rxNdesc, $ioCore"
+							<< nic << ") -> ";
 		#else
 			config_stream 	<< InputClassName << "($iface" << nic
-					<< ", $burst, $mtuSize, $ioCore"
-					<< nic << ") -> ";
+							<< ", $burst, $mtuSize, $ioCore"
+							<< nic << ") -> ";
 		#endif
-		config_stream	<< decap << " -> "
-			#ifdef  DEBUG_MODE
-				<< "IPPrint(NIC" + nic + ", LENGTH true, TTL true) -> "
-			#endif
-				<< "Discard();" << std::endl;
+		config_stream	<< decap << " -> " 
+						#ifdef  DEBUG_MODE
+						<< "IPPrint(NIC" + nic + ", LENGTH true, TTL true) -> "
+						#endif
+						<< "Discard();" << std::endl;
 	}
 
 	return DONE;
@@ -216,10 +214,10 @@ SoftGenerator::generate_input_part_of_synthesis(
 bool
 SoftGenerator::generate_read_part_of_synthesis(
 		std::stringstream                     &config_stream,
-		std::map < std::string, std::string > &nic_to_ip_classifier)
-{
+		std::map < std::string, std::string > &nic_to_ip_classifier) {
+
 	config_stream << "///////////////////////////////////////////////////////////////" << std::endl;
-	config_stream << "// The read-part of the synthesized SNF code"                    << std::endl;
+	config_stream << "// The read-part of the synthesized SNF code"               << std::endl;
 	config_stream << "///////////////////////////////////////////////////////////////" << std::endl;
 
 	unsigned short ipc_no = 0;
@@ -243,11 +241,11 @@ SoftGenerator::generate_read_part_of_synthesis(
 
 		std::string key;
 		key = std::to_string(ipc_no);
-	/*#ifdef HAVE_DPDK
-		key = std::to_string(ipc_no);
-	#else
-		key = it.first;
-	#endif*/
+		/*#ifdef HAVE_DPDK
+			key = std::to_string(ipc_no);
+		#else
+			key = it.first;
+		#endif*/
 
 		nic_to_ip_classifier[key] = ipc_name;
 
@@ -261,17 +259,16 @@ SoftGenerator::generate_read_part_of_synthesis(
  * Generate the write and output parts of a SNF chain.
  */
 bool
-SoftGenerator::generate_write_and_output_part_of_synthesis(std::stringstream &config_stream)
-{
+SoftGenerator::generate_write_and_output_part_of_synthesis(std::stringstream &config_stream) {
 	config_stream << "///////////////////////////////////////////////////////////////" << std::endl;
-	config_stream << "// The write and output parts of the synthesized SNF code"       << std::endl;
+	config_stream << "// The write and output parts of the synthesized SNF code"  << std::endl;
 	config_stream << "///////////////////////////////////////////////////////////////" << std::endl;
 
 	int cur_snf_iface = -1;
 	std::string ip_modifier = "IPSynthesizer";
 
 	// Costruct the path of Click elements that will lead this modified
-	// (i.e., rewritten by Click IPSynthesizer already) traffic class out
+	// (i.e., rewritten by Click IPSynthesizer already) traffic class out 
 	// of Click. This set of elements follows IPSynthesizer.
 	for ( auto &it : this->synthesizer->get_stateful_rewriter_per_output_iface() ) {
 
@@ -285,7 +282,7 @@ SoftGenerator::generate_write_and_output_part_of_synthesis(std::stringstream &co
 		// SNF's configuration to be filled below
 		std::string snf_iface;
 		std::string snf_encap_conf;
-		std::string snf_synth_conf =
+		std::string snf_synth_conf = 
 			this->synthesizer->get_synthesized_config_per_output_iface(out_nf_and_iface);
 		std::stringstream snf_to_device;
 
@@ -298,7 +295,7 @@ SoftGenerator::generate_write_and_output_part_of_synthesis(std::stringstream &co
 		#endif
 
 		// This interface is the very first one
-		unsigned short chain_len =
+		unsigned short chain_len = 
 			this->synthesizer->get_chain_parser()->get_chain_graph()->get_chain_length();
 		std::string last_nf = "NF_" + std::to_string(chain_len);
 		// This interface is the very first one
@@ -316,39 +313,40 @@ SoftGenerator::generate_write_and_output_part_of_synthesis(std::stringstream &co
 		#endif
 
 		snf_encap_conf += (this->proc_layer == L3)? \
-			"EtherEncap(0x0800, $macAddr"   + std::to_string(cur_snf_iface) +
-			", $gwMACAddr" + std::to_string(cur_snf_iface) + ")" :
-			"StoreEtherAddress($gwMACAddr"  + std::to_string(cur_snf_iface) +
+			"EtherEncap(0x0800, $macAddr"   + std::to_string(cur_snf_iface) + 
+			", $gwMACAddr" + std::to_string(cur_snf_iface) + ")" : 
+			"StoreEtherAddress($gwMACAddr"  + std::to_string(cur_snf_iface) + 
 			", dst)";
 
 		// If --enable-dpdk=yes, a FromDPDKDevice is used instead of regular FromDevice
 		#ifdef HAVE_DPDK
 			snf_to_device 	<< ", $queueSize, $burst, $txNdesc, $ioCore"
-					<< cur_snf_iface << ");";
+								<< cur_snf_iface << ");";
 		#else
-			/*std::string iface_config = 	"," +
-				this->synthesizer->get_stateful_rewriter_per_output_iface_conf(
-				out_nf_and_iface
-			);
+			/*std::string iface_config = 	"," + 
+										this->synthesizer->get_stateful_rewriter_per_output_iface_conf(
+											out_nf_and_iface
+										);
 			snf_to_device 	<< iface_config */
 			snf_to_device 	<< ", $queueSize, $burst, $ioMethod, $ioCore"
 								<< cur_snf_iface << ");";
 		#endif
 
 		config_stream 	<< "/** Stateful Path going to: " << out_nf_and_iface << " **/" << std::endl;
-		config_stream 	<< rewriter->get_name() << " :: " << ip_modifier << "("
-				<< rewriter->compute_conf();
+		config_stream 	<< rewriter->get_name() << " :: " << ip_modifier << "(" 
+						<< rewriter->compute_conf();
 
+		
 		config_stream 	<< snf_synth_conf
-				<< ", CAPACITY 100000, MTU $mtuSize, IPADDR $ipAddr"
-				<< cur_snf_iface << ");" << std::endl;
+						<< ", CAPACITY 100000, MTU $mtuSize, IPADDR $ipAddr"
+						<< cur_snf_iface << ");" << std::endl;
 
 		// Only a SNF interface will take a ToDevice element.
 		if ( this->synthesizer->is_snf_iface(nf, iface) ) {
 			this->synthesizer->add_nic_of_snf_iface( std::make_pair(nf, iface), snf_iface );
 			config_stream 	<< rewriter->get_name() << "[" << rewriter->get_outbound_port()
-					<< "] -> " << snf_encap_conf << " -> " << snf_to_device.str()
-					<< std::endl;
+							<< "] -> " << snf_encap_conf << " -> " << snf_to_device.str() 
+							<< std::endl;
 
 			debug_chatter(this->log, "\tSNF " << nf << " with iface: " << iface);
 			cur_snf_iface++;
@@ -356,15 +354,15 @@ SoftGenerator::generate_write_and_output_part_of_synthesis(std::stringstream &co
 		// Be careful, some interfaces that appear here are internal. These need to be discarded.
 		else {
 			config_stream 	<< rewriter->get_name() << "[" << rewriter->get_outbound_port()
-					<< "] -> IPPrint(Discarded-Path) "
-					<< "-> Discard();" << std::endl;
+							<< "] -> IPPrint(Discarded-Path) "
+							<< "-> Discard();" << std::endl;
 		}
-
+		
 		// Discarded paths
 		for(unsigned short disc=0; disc<rewriter->get_outbound_port(); disc++) {
-			config_stream 	<< rewriter->get_name() << "[" << disc
-					<< "] -> IPPrint(Discarded-Path) "
-					<< "-> Discard();" << std::endl;
+			config_stream 	<< rewriter->get_name() << "[" << disc 
+							<< "] -> IPPrint(Discarded-Path) "
+							<< "-> Discard();" << std::endl;
 		}
 
 		config_stream << std::endl;
@@ -373,9 +371,8 @@ SoftGenerator::generate_write_and_output_part_of_synthesis(std::stringstream &co
 	return DONE;
 }
 
-std::string
-SoftGenerator::get_io_classes_by_type(void) const
-{
+std::string 
+SoftGenerator::get_io_classes_by_type(void) const {
 	#ifdef HAVE_DPDK
 		return ""
 "elementclass "+ InputClassName +" {\n"
