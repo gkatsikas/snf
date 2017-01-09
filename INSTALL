@@ -19,7 +19,7 @@ This will initialize the required autotools to support the build process.
 To build SNF with basic Click support run:
 	./configure --with-click=<path-to-your-click-folder>
 Example:
-	./configure --with-click=/opt/click
+	./configure --with-click=~/nfv/dpdk/
 
 To build SNF with Click-DPDK support run:
 	./configure \
@@ -30,32 +30,27 @@ To build SNF with Click-DPDK support run:
 
 Example for Standard Click (with more verbosity but no debug messages):
 	./configure \
-			--with-click=/opt/click \
+			--with-click=~/nfv/click \
 			--enable-dpdk=no --enable-debug=no --enable-verbose=yes
 
 Example for Click-DPDK (with more verbosity but no debug messages):
 	./configure \
-			RTE_SDK=/opt/dpdk \
+			RTE_SDK=~/nfv/dpdk \
 			RTE_TARGET=x86_64-native-linuxapp-gcc \
-			--with-click=/opt/click-snf-dpdk/ \
+			--with-click=~/nfv/click \
 			--enable-dpdk=yes --enable-debug=no --enable-verbose=yes
 
 INSTALL
 ---------
 After `configure` stay at the SNF source directory and run:
-	out_bin=<your preferred destination for the SNF binaries, libraries, headers>
-	DESTDIR="$out_bin" make install -j <cpu-cores-no>
-	find "$out_bin"
-
-Example:
-	out_bin="$(pwd)/bin" && DESTDIR="$out_bin" make install -j 16
-	find "$out_bin"
+	./install <your preferred destination for the SNF binaries, libraries, headers>
+	If no argument is given, the local bin directory will be used.
 
 RUN
 ---------
 One can execute the following synthesis examples:
 	./run bin/usr/local/bin/snf input/chains/tests/tests.prop
-	F
+
 	./run bin/usr/local/bin/snf input/chains/osdi16/20Gbps/routers/routers.prop
 	./run bin/usr/local/bin/snf input/chains/osdi16/40Gbps/routers/routers.prop
 
@@ -68,17 +63,12 @@ One can execute the following synthesis examples:
 UN-INSTALL
 ---------
 To un-install SNF change to the SNF source directory and run:
-	out_bin=<your existing folder that contains the SNF binaries, libraries, headers>
-	DESTDIR="$out_bin" make uninstall
-	find "$out_bin"
-Example:
-	out_bin="$(pwd)/bin" && DESTDIR="$out_bin" make uninstall
-	find "$out_bin"
+	./uninstall <your existing folder that contains the SNF binaries, libraries, headers>
+	If no argument is given, the local bin directory will be used.
 
 CLEAN
 ---------
 To clean the repository change to the SNF source directory and run:
-	make clean
 	./clean
 
 REPORT

@@ -1,6 +1,6 @@
 // -*- c-basic-offset: 4 -*-
 /* filter.cpp
- * 
+ *
  * Implementation of SNF's traffic class filter.
  *
  * Copyright (c) 2015-2016 KTH Royal Institute of Technology
@@ -10,12 +10,12 @@
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>
  */
@@ -51,7 +51,8 @@ Filter::Filter(HeaderField field) : Filter(field, 0, UINT32_MAX) {}
 
 Filter::Filter(HeaderField field, uint32_t value) : Filter(field, value, value) {}
 
-Filter::Filter(HeaderField field, short &pos, short &len) {
+Filter::Filter(HeaderField field, short &pos, short &len)
+{
 	if ( field != ambiguous_field ) {
 		FANCY_BUG(tc_log, "\tAmbiguous field is expected");
 	}
@@ -67,8 +68,9 @@ Filter::Filter(HeaderField field, short &pos, short &len) {
 	warn_chatter(tc_log, "\tAmbiguous filter");
 }
 
-Filter::Filter(HeaderField field, uint32_t lower_value, uint32_t upper_value) :
-		m_field(field), m_field_pos(-1), m_field_len(-1), m_filter(), m_to_subtract() {
+Filter::Filter(HeaderField field, uint32_t lower_value, uint32_t upper_value)
+	: m_field(field), m_field_pos(-1), m_field_len(-1), m_filter(), m_to_subtract()
+{
 	if ( lower_value > upper_value ) {
 		FANCY_BUG(tc_log, "\tWeird filter: [" << lower_value << ", " << upper_value << "]");
 	}
@@ -76,26 +78,28 @@ Filter::Filter(HeaderField field, uint32_t lower_value, uint32_t upper_value) :
 }
 
 Filter
-Filter::get_filter_from_v4_prefix(HeaderField field, uint32_t value, uint32_t prefix) {
-
+Filter::get_filter_from_v4_prefix(HeaderField field, uint32_t value, uint32_t prefix)
+{
 	if ( prefix > 32 ) {
 		FANCY_BUG(tc_log, "\tNetwork prefix higher than 32");
 	}
 	else if ( prefix==32 ) {
 		return Filter(field, value);
 	}
+
 	uint32_t translation = 32 - prefix;
 	uint32_t lower_limit = value & (0xffffffff << translation);
 	uint32_t upper_limit = value | (0xffffffff >> prefix);
 	if (lower_limit > upper_limit) {
 		FANCY_BUG(tc_log, "\tWeird filter[" << lower_limit << ", " << upper_limit << "]");
 	}
-	
+
 	return Filter(field, lower_limit, upper_limit);
 }
 
 Filter
-Filter::get_filter_from_v4_prefix_str(HeaderField field, const std::string &prefix_as_str) {
+Filter::get_filter_from_v4_prefix_str(HeaderField field, const std::string &prefix_as_str)
+{
 	debug_chatter(tc_log, "\tParsing: "+prefix_as_str);
 
 	size_t prefix_pos = prefix_as_str.find("/");
@@ -106,8 +110,8 @@ Filter::get_filter_from_v4_prefix_str(HeaderField field, const std::string &pref
 }
 
 Filter
-Filter::get_filter_from_ipclass_pattern(HeaderField field, const std::string &args) {
-
+Filter::get_filter_from_ipclass_pattern(HeaderField field, const std::string &args)
+{
 	//Cases:
 	//1234
 	//1234-5678
@@ -136,8 +140,7 @@ Filter::get_filter_from_ipclass_pattern(HeaderField field, const std::string &ar
 			switch (args[0]) {
 				case '=':
 					if (args.size() < 2 || args[1]!='=') {
-						FANCY_BUG(tc_log, "\tWrong argument in IPFilter: " + args + 
-											"\n\tExpected '='");
+						FANCY_BUG(tc_log, "\tWrong argument in IPFilter: " + args + "\n\tExpected '='");
 					}
 					else {
 						f = Filter(field, to_uint(args.substr(2,args.size()-2)));
@@ -152,8 +155,8 @@ Filter::get_filter_from_ipclass_pattern(HeaderField field, const std::string &ar
 							f = Filter(field, 0, to_uint(args.substr(2,args.size()-2))-1);
 							break;
 						default:
-							FANCY_BUG(tc_log, "\tWrong argument in IPFilter: " + args + 
-												"\n\tExpected one of ' ' or '='");
+							FANCY_BUG(tc_log, "\tWrong argument in IPFilter: " + args +
+									"\n\tExpected one of ' ' or '='");
 					}
 					break;
 				case '>':
@@ -165,14 +168,13 @@ Filter::get_filter_from_ipclass_pattern(HeaderField field, const std::string &ar
 							f = Filter(field, to_uint(args.substr(2,args.size()-2))+1, UINT32_MAX);
 							break;
 						default:
-							FANCY_BUG(tc_log, "\tWrong argument in IPFilter: " + args + 
-												"\n\tExpected one of ' ' or '='");
+							FANCY_BUG(tc_log, "\tWrong argument in IPFilter: " + args +
+									"\n\tExpected one of ' ' or '='");
 					}
 					break;
 				case '!':
 					if (args[1]!='=') {
-						FANCY_BUG(tc_log, "\tWrong argument in IPFilter: " + args + 
-											"\n\tExpected '='");
+						FANCY_BUG(tc_log, "\tWrong argument in IPFilter: " + args + "\n\tExpected '='");
 					}
 					else {
 						f = Filter(field);
@@ -224,7 +226,8 @@ Filter::get_filter_from_ipclass_pattern(HeaderField field, const std::string &ar
 }
 
 Filter
-Filter::get_filter_from_prefix_pattern(HeaderField field, const std::string &args) {
+Filter::get_filter_from_prefix_pattern(HeaderField field, const std::string &args)
+{
 	std::string prefix_chars = "0123456789./";
 	size_t pos = args.find_first_not_of(prefix_chars);
 	Filter f;
@@ -263,12 +266,14 @@ Filter::get_filter_from_prefix_pattern(HeaderField field, const std::string &arg
 }
 
 bool
-Filter::match(uint32_t value) const {
+Filter::match(uint32_t value) const
+{
 	return (m_filter.contains(value) && !m_to_subtract.contains(value));
 }
 
 bool
-Filter::contains(const Filter &filter) const{
+Filter::contains(const Filter &filter) const
+{
 	DisjointSegmentList is_in = filter.m_filter;
 	is_in.substract_seglist(filter.m_to_subtract);
 	DisjointSegmentList contains = m_filter;
@@ -277,19 +282,22 @@ Filter::contains(const Filter &filter) const{
 }
 
 bool
-Filter::is_none(void) const {
+Filter::is_none(void) const
+{
 	return (m_filter.empty() || m_to_subtract.contains_seglist(m_filter));
 }
 
 Filter&
-Filter::translate(uint32_t value, bool forward) {
+Filter::translate(uint32_t value, bool forward)
+{
 	m_filter.translate(value, forward);
 	m_to_subtract.translate(value, forward);
 	return *this;
 }
 
 Filter&
-Filter::unite(const Filter &filter) {
+Filter::unite(const Filter &filter)
+{
 	debug_chatter(tc_log, "unite "+to_str());
 	m_filter.add_seglist(filter.m_filter);
 	m_to_subtract.substract_seglist (filter.m_filter);
@@ -300,7 +308,8 @@ Filter::unite(const Filter &filter) {
 }
 
 Filter&
-Filter::intersect(const Filter &filter) {
+Filter::intersect(const Filter &filter)
+{
 	debug_chatter(tc_log, "intersect " + to_str() + " with " + filter.to_str());
 	m_filter.intersect_seglist(filter.m_filter);
 	m_to_subtract.add_seglist(filter.m_to_subtract);
@@ -308,14 +317,16 @@ Filter::intersect(const Filter &filter) {
 }
 
 Filter&
-Filter::differentiate(const Filter &filter) {
+Filter::differentiate(const Filter &filter)
+{
 	debug_chatter(tc_log, "Differentiate" + to_str());
 	m_to_subtract.add_seglist(filter.m_filter);
 	return *this;
 }
 
 bool
-Filter::operator== (const Filter& rhs) const {
+Filter::operator== (const Filter& rhs) const
+{
 	DisjointSegmentList lhs_dsl = this->m_filter;
 	lhs_dsl.substract_seglist(this->m_to_subtract);
 	DisjointSegmentList rhs_dsl = rhs.m_filter;
@@ -324,13 +335,15 @@ Filter::operator== (const Filter& rhs) const {
 }
 
 void
-Filter::make_none(void) {
+Filter::make_none(void)
+{
 	this->m_filter      = DisjointSegmentList();
 	this->m_to_subtract = DisjointSegmentList();
 }
 
 std::string
-Filter::to_str(void) const{
+Filter::to_str(void) const
+{
 	switch (m_field) {
 		case ip_src:
 		case ip_dst:
@@ -345,7 +358,8 @@ Filter::to_str(void) const{
  * a format understandable by Click's IPClassifier.
  */
 std::string
-Filter::to_ip_classifier_pattern(void) const {
+Filter::to_ip_classifier_pattern(void) const
+{
 	std::string keyword;
 	std::string output;
 
@@ -444,14 +458,14 @@ Filter::to_ip_classifier_pattern(void) const {
 			output += " || ";
 		}
 	}
-	
+
 	output = output.substr(0, output.size()-4); // Removes trailing  " || "
 
 	// Lazy subtraction
 	if ( !m_to_subtract.empty() ) {
 		output  += " && !(";
 		segments = m_to_subtract.get_segments ();
-		
+
 		for  (auto &seg:segments) {
 			//FIXME: handle IP subnets differently
 			if ( seg.first == seg.second ) {
@@ -474,7 +488,8 @@ Filter::to_ip_classifier_pattern(void) const {
  * a format understandable by Flow Director.
  */
 std::string
-Filter::to_flow_director_pattern(void) const {
+Filter::to_flow_director_pattern(void) const
+{
 	std::string keyword;
 	std::string output;
 
@@ -526,10 +541,10 @@ Filter::to_flow_director_pattern(void) const {
  * Algorithm to decompose interval in prefixes: we take the biggest possible prefix
  * containing lower and whose bounds are <= upper, then we keep going on the rest.
  * This would go quicker if we could detect !() patterns.
- */ 
+ */
 std::string
-ip_segment_to_ip_class_pattern(std::string keyword, uint32_t lower, uint32_t upper) {
-
+ip_segment_to_ip_class_pattern(std::string keyword, uint32_t lower, uint32_t upper)
+{
 	std::string output;
 	uint32_t current_low = lower;
 
@@ -562,20 +577,19 @@ ip_segment_to_ip_class_pattern(std::string keyword, uint32_t lower, uint32_t upp
  * a format understandable by Click's IPClassfier element.
  */
 std::string
-Filter::ip_filter_to_ip_classifier_pattern(const std::string &keyword) const {
+Filter::ip_filter_to_ip_classifier_pattern(const std::string &keyword) const
+{
 	std::string output;
 	std::vector<std::pair<uint32_t,uint32_t> > segments = this->m_filter.get_segments();
 
-	if ( segments.empty() ) {
+	if ( segments.empty() )
 		return "none";
-	}
 
-	for (auto &seg:segments) {
+	for (auto &seg:segments)
 		output += ip_segment_to_ip_class_pattern(keyword, seg.first, seg.second)+" || ";
-	}
-	
+
 	output = output.substr(0,output.size()-4);
-	
+
 	if( ! this->m_to_subtract.empty() ) {
 		output += " && !(";
 		segments = this->m_to_subtract.get_segments ();
@@ -589,52 +603,58 @@ Filter::ip_filter_to_ip_classifier_pattern(const std::string &keyword) const {
 }
 
 std::string
-Filter::ip_filter_to_flow_director_pattern(const std::string &keyword) const {
+Filter::ip_filter_to_flow_director_pattern(const std::string &keyword) const
+{
 	std::string output;
 
 	// Get all the segments of the filter
 	std::vector<std::pair<uint32_t,uint32_t> > segments = this->m_filter.get_segments();
-	if ( segments.empty() ) {
+	if ( segments.empty() )
 		return "none";
-	}
 
-	for (auto &seg:segments) {
+	for (auto &seg:segments)
 		output += ip_segment_to_ip_class_pattern(keyword, seg.first, seg.second)+" || ";
-	}
 
 	return output;
 }
 
 HeaderField
-Filter::get_field(void) const{
+Filter::get_field(void) const
+{
 	return this->m_field;
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////
 // Condition
 //////////////////////////////////////////////////////////////////////////////////////////////////////
+Condition::Condition (HeaderField field, std::shared_ptr<ClickElement> elem, Filter filter, FieldOperation op)
+	: m_field(field), m_filter(filter), m_current_write(op), m_element(elem)
+{
 
-Condition::Condition (HeaderField field, std::shared_ptr<ClickElement> elem, Filter filter, FieldOperation op) : 
-						m_field(field), m_filter(filter), m_current_write(op), m_element(elem) {}
+}
 
 bool
-Condition::is_same_write (const FieldOperation &op) const {
+Condition::is_same_write (const FieldOperation &op) const
+{
 	return op == this->m_current_write;
 }
 
 bool
-Condition::intersect(const Filter &filter) {
+Condition::intersect(const Filter &filter)
+{
 	this->m_filter.intersect(filter);
 	return this->m_filter.is_none();
 }
 
 bool
-Condition::is_none(void) const {
+Condition::is_none(void) const
+{
 	return this->m_filter.is_none();
 }
 
 std::string
-Condition::to_str(void) const {
+Condition::to_str(void) const
+{
 	return "\tCondition on " + this->m_element->to_str() + ": " + this->m_filter.to_str();
 }
 
@@ -642,20 +662,27 @@ Condition::to_str(void) const {
 //////////////////////////////////////////////////////////////////////////////////////////////////////
 // TrafficClass
 //////////////////////////////////////////////////////////////////////////////////////////////////////
-TrafficClass::TrafficClass() : m_output_iface(), m_nf_of_output_iface(), m_filters(),
-								m_write_conditions(), m_calc_checksum(false),
-								m_ether_encap_conf(), m_element_path(), m_operation(),
-								m_post_operations(), m_stateful_input_port(0) {}
+TrafficClass::TrafficClass()
+	:
+	m_output_iface(), m_nf_of_output_iface(), m_filters(),
+	m_write_conditions(), m_calc_checksum(false),
+	m_ether_encap_conf(), m_element_path(), m_operation(),
+	m_post_operations(), m_stateful_input_port(0)
+{
 
-bool
-TrafficClass::is_discarded(void) const {
-	return (this->m_element_path.back()->get_type() == Discard ||
-			this->m_element_path.back()->get_type() == Discard_def);
 }
 
 bool
-TrafficClass::is_source_nated(void) {
-	FieldOperation* src_port = m_operation.get_field_op(tp_src_port);
+TrafficClass::is_discarded(void) const
+{
+	return (this->m_element_path.back()->get_type() == Discard ||
+		this->m_element_path.back()->get_type() == Discard_def);
+}
+
+bool
+TrafficClass::is_source_nated(void)
+{
+	FieldOperation *src_port = m_operation.get_field_op(tp_src_port);
 	return (src_port && src_port->m_type==WriteSF);
 }
 
@@ -664,11 +691,12 @@ TrafficClass::is_source_nated(void) {
  * by SNF's IPSytnhesizer.
  */
 void
-TrafficClass::add_post_routing_operation(const ElementType& et) {
+TrafficClass::add_post_routing_operation(const ElementType& et)
+{
 	// These elements modify part of the header, checksum(s) need(s)
 	// to be re-calculated.
-	if ( 	(et == FixIPSrc) || (et == IPGWOptions) || 
-			(et == DecIPTTL) || (et == IPOutputCombo) ) {
+	if ( 	(et == FixIPSrc) || (et == IPGWOptions) ||
+		(et == DecIPTTL) || (et == IPOutputCombo) ) {
 		this->m_calc_checksum = true;
 	}
 
@@ -684,7 +712,8 @@ TrafficClass::add_post_routing_operation(const ElementType& et) {
  * element internally.
  */
 bool
-TrafficClass::has_post_routing_operation(const ElementType& et) {
+TrafficClass::has_post_routing_operation(const ElementType& et)
+{
 	return exists_in_vector(this->m_post_operations, et);
 }
 
@@ -692,21 +721,22 @@ TrafficClass::has_post_routing_operation(const ElementType& et) {
  * Retrieve all the post-routing operations of a traffic class
  */
 std::vector<ElementType>
-TrafficClass::get_post_routing_operations(void) {
+TrafficClass::get_post_routing_operations(void)
+{
 	return this->m_post_operations;
 }
 
 /*
  * Here we explicitely apply only a discard operation.
- * Other operations are kept in data structures that 
+ * Other operations are kept in data structures that
  * are used to configure the IPSynthesizer (which
  * synthesizes these operations internally).
  */
 std::string
-TrafficClass::post_routing_pipeline(void) {
-	if ( this->is_discarded() ) {
+TrafficClass::post_routing_pipeline(void)
+{
+	if ( this->is_discarded() )
 		return "Discard();";
-	}
 	return "";
 }
 
@@ -716,7 +746,8 @@ TrafficClass::post_routing_pipeline(void) {
  * to be synthesized.
  */
 std::string
-TrafficClass::post_routing_synthesis_configuration(void) {
+TrafficClass::post_routing_synthesis_configuration(void)
+{
 	unsigned short counter = 0;
 	std::string output;
 	for (auto &pr : this->m_post_operations) {
@@ -734,7 +765,8 @@ TrafficClass::post_routing_synthesis_configuration(void) {
 }
 
 std::string
-TrafficClass::to_ip_classifier_pattern(void) const {
+TrafficClass::to_ip_classifier_pattern(void) const
+{
 	std::string output;
 	for (auto &it : this->m_filters) {
 		output += "("+it.second.to_ip_classifier_pattern() + ") && ";
@@ -743,7 +775,8 @@ TrafficClass::to_ip_classifier_pattern(void) const {
 }
 
 std::string
-TrafficClass::to_flow_director_pattern(void) const {
+TrafficClass::to_flow_director_pattern(void) const
+{
 	std::string output;
 	for (auto &it : this->m_filters) {
 		output += it.second.to_flow_director_pattern() + " ";
@@ -752,7 +785,8 @@ TrafficClass::to_flow_director_pattern(void) const {
 }
 
 int
-TrafficClass::intersect_filter(const Filter &filter) {
+TrafficClass::intersect_filter(const Filter &filter)
+{
 	HeaderField field = filter.get_field();
 	auto got = this->m_filters.find(field);
 
@@ -762,32 +796,31 @@ TrafficClass::intersect_filter(const Filter &filter) {
 	else {
 		this->m_filters[field].intersect(filter);
 	}
-
 	return (int) (this->m_filters[field].is_none());
 }
 
 int
-TrafficClass::intersect_condition(const Filter &condition, const FieldOperation &operation) {
+TrafficClass::intersect_condition(const Filter &condition, const FieldOperation &operation)
+{
 	HeaderField field = condition.get_field();
 	auto got = this->m_write_conditions.find(field);
 
-	if ( got == this->m_write_conditions.end() || 
+	if ( got == this->m_write_conditions.end() ||
 		!this->m_write_conditions[field].back().is_same_write(operation) ) {
-		
+
 		this->m_write_conditions[field].push_back(
-				Condition(field,this->m_element_path.back(),condition,operation)
+			Condition(field,this->m_element_path.back(),condition,operation)
 		);
 	}
 	else {
 		this->m_write_conditions[field].back().intersect(condition);
 	}
-
 	return (int) this->m_write_conditions[field].back().is_none();
 }
 
 int
-TrafficClass::add_element(std::shared_ptr<ClickElement> element, const int port, unsigned short* wr_op_no) {
-
+TrafficClass::add_element(std::shared_ptr<ClickElement> element, const int port, unsigned short* wr_op_no)
+{
 	int nb_none_filters = 0;
 	(this->m_element_path).push_back(element);
 
@@ -801,8 +834,8 @@ TrafficClass::add_element(std::shared_ptr<ClickElement> element, const int port,
 		this->add_post_routing_operation(element->get_type());
 	}
 	// Interface configuration
-	else if ( 	(element->get_type() == EtherEncap) || 
-				(element->get_type() == StoreEtherAddress)) {
+	else if ( 	(element->get_type() == EtherEncap) ||
+			(element->get_type() == StoreEtherAddress)) {
 		this->m_ether_encap_conf = element->get_configuration();
 	}
 
@@ -818,7 +851,7 @@ TrafficClass::add_element(std::shared_ptr<ClickElement> element, const int port,
 
 		FieldOperation *field_op = this->m_operation.get_field_op(field);
 
-		if (field_op) {
+		if ( field_op ) {
 			uint32_t field_value = field_op->m_value[0];
 			switch (field_op->m_type) {
 				case Write:
@@ -891,13 +924,14 @@ TrafficClass::add_element(std::shared_ptr<ClickElement> element, const int port,
 }
 
 const std::string
-TrafficClass::get_output_iface_conf(void) {
+TrafficClass::get_output_iface_conf(void)
+{
 	if ( ! this->is_discarded() ) {
 		if ( this->m_element_path.size() > 1 ) {
 			std::shared_ptr<ClickElement> todev = this->m_element_path.back();
-			if ( 	(todev->get_type() == ToDevice)     || 
-					(todev->get_type() == ToNetFront)   ||
-					(todev->get_type() == ToDPDKDevice)
+			if ( 	(todev->get_type() == ToDevice)     ||
+				(todev->get_type() == ToNetFront)   ||
+				(todev->get_type() == ToDPDKDevice)
 			) {
 				// Configuration contains interface name and other parameters
 				std::vector<std::string> conf = split( todev->get_configuration(), "," );
@@ -923,15 +957,16 @@ TrafficClass::get_output_iface_conf(void) {
 }
 
 const std::string
-TrafficClass::get_output_iface(void) {
+TrafficClass::get_output_iface(void)
+{
 	std::string iface;
 
 	if ( ! this->is_discarded() ) {
 		if ( this->m_element_path.size() > 1 ) {
 			std::shared_ptr<ClickElement> todev = this->m_element_path.back();
-			if ( 	(todev->get_type() == ToDevice)     || 
-					(todev->get_type() == ToNetFront)   ||
-					(todev->get_type() == ToDPDKDevice)
+			if ( 	(todev->get_type() == ToDevice)     ||
+				(todev->get_type() == ToNetFront)   ||
+				(todev->get_type() == ToDPDKDevice)
 			) {
 				iface = split( todev->get_configuration(), "," )[0];
 				this->set_output_iface(iface);
@@ -953,40 +988,47 @@ TrafficClass::get_output_iface(void) {
 }
 
 std::string
-TrafficClass::get_nf_of_output_iface(void) const {
+TrafficClass::get_nf_of_output_iface(void) const
+{
 	return this->m_nf_of_output_iface;
 }
 
 Operation
-TrafficClass::get_operation(void) const {
+TrafficClass::get_operation(void) const
+{
 	return this->m_operation;
 }
 
 void
 TrafficClass::set_stateful_rewriter(
-		const std::shared_ptr<StatefulSynthesizer> &sf,
-		const unsigned short &port) {
+	const std::shared_ptr<StatefulSynthesizer> &sf,
+	const unsigned short &port)
+{
 	this->m_stateful = sf;
 	this->m_stateful_input_port = port;
 }
 
 void
-TrafficClass::set_output_iface(const std::string &iface) {
+TrafficClass::set_output_iface(const std::string &iface)
+{
 	this->m_output_iface = iface;
 }
 
 void
-TrafficClass::set_output_iface_conf(const std::string &iface_conf) {
+TrafficClass::set_output_iface_conf(const std::string &iface_conf)
+{
 	this->m_output_iface_conf = iface_conf;
 }
 
 void
-TrafficClass::set_nf_of_output_iface(const std::string &nf) {
+TrafficClass::set_nf_of_output_iface(const std::string &nf)
+{
 	this->m_nf_of_output_iface = nf;
 }
 
 std::string
-TrafficClass::to_str(void) const {
+TrafficClass::to_str(void) const
+{
 	std::string output = "\n================= Begin Traffic Class =================\nFilters:";
 	output += this->to_ip_classifier_pattern();
 	output += "\nConditions on Write operations:\n";

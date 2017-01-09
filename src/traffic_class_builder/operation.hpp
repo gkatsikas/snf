@@ -3,7 +3,7 @@
 
 /*
  * operation.hpp
- * 
+ *
  * Definition of the class that encodes the packet operations
  * to be applied to SNF's traffic classes.
  *
@@ -14,12 +14,12 @@
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>
  */
@@ -90,7 +90,7 @@ class Operation {
 		std::string to_str      (void) const;
 		std::string to_iprw_conf(void) const;
 
-		FieldOperation* get_field_op(const HeaderField &field);
+		FieldOperation *get_field_op(const HeaderField &field);
 };
 
 #endif
