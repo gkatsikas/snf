@@ -3,7 +3,7 @@
 
 /*
  * filter.hpp
- * 
+ *
  * Definition of the SNF traffic class filter on a packet's
  * header space.
  *
@@ -14,12 +14,12 @@
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>
  */
@@ -44,8 +44,8 @@
 #define DO_ENUM(e) e,
 
 #define insert_last(container, containee) container.insert(container.end(), \
-															containee.begin(), \
-															containee.end())
+			containee.begin(), \
+			containee.end())
 
 class ClickElement;
 class StatefulSynthesizer;
@@ -102,7 +102,7 @@ class Filter {
 
 	private:
 		HeaderField         m_field;
-		// In case of an ambiguous header field (e.g., DSCP) which is part of a byte, 
+		// In case of an ambiguous header field (e.g., DSCP) which is part of a byte,
 		// we set a specific HeaderField type (position)
 		short               m_field_pos;
 		short               m_field_len;
@@ -191,7 +191,7 @@ class TrafficClass {
 		void set_output_iface      (const std::string &iface);
 		void set_output_iface_conf (const std::string &iface_conf);
 		void set_nf_of_output_iface(const std::string &nf);
-		
+
 		const std::string                    get_output_iface                (void);
 		const std::string                    get_output_iface_conf           (void);
 		std::string                          get_nf_of_output_iface          (void) const;
@@ -207,7 +207,7 @@ class TrafficClass {
 		/*
 		 * A set of trailing Click elements after a traffic class.
 		 * These elements are kept in our internal data structures
-		 * which are used to configure the IPSynthesizer in order 
+		 * which are used to configure the IPSynthesizer in order
 		 * to realize these elements without redundancy.
 		 */
 		std::string post_routing_pipeline(void);
@@ -258,7 +258,7 @@ class TrafficClass {
 		ConditionMap m_write_conditions;
 
 		/*
-		 * Does this traffic class apply modifications that require a checksum to be 
+		 * Does this traffic class apply modifications that require a checksum to be
 		 * calculated?
 		 */
 		bool m_calc_checksum;
@@ -268,7 +268,7 @@ class TrafficClass {
 		 * will convert the IP packets into Ethernet frames.
 		 */
 		std::string m_ether_encap_conf;
-		
+
 		/*
 		 * Path of the class in terms of Click elements
 		 */

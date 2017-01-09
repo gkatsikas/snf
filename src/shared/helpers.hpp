@@ -3,7 +3,7 @@
 
 /*
  * helpers.hpp
- * 
+ *
  * Global helper functions' and variables declarations.
  *
  * Copyright (c) 2015-2016 KTH Royal Institute of Technology
@@ -13,17 +13,17 @@
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>
  */
 
-/* 
+/*
  * The auto-generated header contains useful flags that
  * guide the bindings of SNF.
  */
@@ -50,7 +50,7 @@
  */
 // Ethernet constants (in bytes)
 #define ETHERNET_INTER_FRAME_GAP_LEN 12
-#define ETHERNET_MAC_PREAMBLE_LEN     8 
+#define ETHERNET_MAC_PREAMBLE_LEN     8
 #define ETHERNET_HEADER_LEN          14
 #define ETHERNET_CRC_LEN              4
 
@@ -154,11 +154,11 @@ const std::set<std::string> SUPPORTED_MAPPER_ELEMENTS = {
 // If --enable-verbose=yes, you have additional three logging levels
 #ifdef  VERBOSE_MODE
 	#define   def_chatter(LOG, MSG) LOG 	<< boost::format("[%4d] >> ") % __LINE__ \
-											<< def   << MSG << def << std::endl
+						<< def   << MSG << def << std::endl
 	#define  info_chatter(LOG, MSG) LOG 	<< boost::format("[%4d] >> ") % __LINE__ \
-											<< info  << MSG << def << std::endl
+						<< info  << MSG << def << std::endl
 	#define  warn_chatter(LOG, MSG) LOG 	<< boost::format("[%4d] >> ") % __LINE__ \
-											<< warn  << MSG << def << std::endl
+						<< warn  << MSG << def << std::endl
 #else
 	#define   def_chatter(LOG, MSG) 
 	#define  info_chatter(LOG, MSG) 
@@ -170,9 +170,9 @@ const std::set<std::string> SUPPORTED_MAPPER_ELEMENTS = {
 // When logger is not available we also offer macros for printing without the logger.
 #ifdef  DEBUG_MODE
 	#define debug_chatter(LOG, MSG)	LOG 	<< boost::format("[%4d] >> ") % __LINE__ \
-											<< debug << MSG << def << std::endl
+						<< debug << MSG << def << std::endl
 	#define         DEBUG(MSG) std::cout 	<< boost::format("[%30s][%4d] >> ") %  __FILE__ % __LINE__ << " DEBUG: " \
-											<< MSG   << std::endl
+						<< MSG   << std::endl
 #else
 	#define debug_chatter(LOG, MSG) 
 	#define         DEBUG(MSG) 
@@ -180,17 +180,17 @@ const std::set<std::string> SUPPORTED_MAPPER_ELEMENTS = {
 
 // Notes always appear (Used to print final messages about execution time and output folder)
 #define    note_chatter(LOG, MSG) LOG 		<< boost::format("[%4d] >> ") % __LINE__ \
-											<< note  << MSG << def << std::endl
+						<< note  << MSG << def << std::endl
 
 // Error handling macros (always active)
 #define   error_chatter(LOG, MSG) LOG 		<< boost::format("[%4d] >> ") % __LINE__ \
-											<< error << MSG << def << std::endl											
+						<< error << MSG << def << std::endl
 #define                  BUG(MSG) std::cerr << boost::format("[%30s][%4d] >> ") %  __FILE__ % __LINE__ << " ERROR: " \
-											<< MSG   << std::endl; exit(FAILURE)
+						<< MSG   << std::endl; exit(FAILURE)
 #define MISSING_FEATURE(LOG, MSG) LOG		<< boost::format("[%4d] >> ") % __LINE__ \
-											<< warn  << MSG << def << std::endl; exit(FAILURE)
+						<< warn  << MSG << def << std::endl; exit(FAILURE)
 #define       FANCY_BUG(LOG, MSG) LOG		<< boost::format("[%4d] >> ") % __LINE__ \
-											<< error << MSG << def << std::endl; exit(FAILURE)
+						<< error << MSG << def << std::endl; exit(FAILURE)
 
 /*
  * String helpers
@@ -272,15 +272,16 @@ struct measure {
 };
 
 /*
- * Data structures manipulation functions.
- */ 
+ * Data structures' manipulation functions.
+ */
 
 /*
  * Concatenate vectors v1 and v2.
- */ 
+ */
 template<typename T>
-std::vector<T> 
-concatenate_two_vectors(std::vector<T> &v1, const std::vector<T> &v2) {
+std::vector<T>
+concatenate_two_vectors(std::vector<T> &v1, const std::vector<T> &v2)
+{
 	std::vector<T> outcome(v1);
 
 	for (auto &el : v2) {
@@ -292,8 +293,9 @@ concatenate_two_vectors(std::vector<T> &v1, const std::vector<T> &v2) {
  * Check if value exists in vector.
  */
 template<typename T>
-inline bool 
-exists_in_vector(const std::vector<T> &v, const T &item) {
+inline bool
+exists_in_vector(const std::vector<T> &v, const T &item)
+{
 	return ( std::find(v.begin(), v.end(), item) != v.end() );
 }
 
@@ -301,8 +303,9 @@ exists_in_vector(const std::vector<T> &v, const T &item) {
  * Remove from vector by value.
  */
 template<typename T>
-inline void 
-remove_from_vector_by_val(std::vector<T> &v, const T &item) {
+inline void
+remove_from_vector_by_val(std::vector<T> &v, const T &item)
+{
 	v.erase(std::remove(v.begin(), v.end(), item), v.end());
 }
 
@@ -310,12 +313,13 @@ remove_from_vector_by_val(std::vector<T> &v, const T &item) {
  * Check if value exists in map.
  */
 //template<typename T>
-//inline bool 
+//inline bool
 //exists_in_map(const std::map<T, U> &m, const T &item) {
 template <typename Map, typename Key>
-bool exists_in_map(const Map& m, const Key& k) {
+bool exists_in_map(const Map& m, const Key& k)
+{
     return m.find(k) != m.end();
-} 
+}
 
 /*
  * Generic method to delete a pointer of any type (T) from a data structure.
@@ -323,7 +327,8 @@ bool exists_in_map(const Map& m, const Key& k) {
  */
 /*
 template<typename T>
-struct deleter : std::unary_function<const T*, void> {
+struct deleter : std::unary_function<const T*, void>
+{
 	void operator() (const T *ptr) const {
 		delete ptr;
 		std::cout << "Pointer deleted" << std::endl;
