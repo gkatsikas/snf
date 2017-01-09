@@ -3,7 +3,7 @@
 
 /*
  * generator.hpp
- * 
+ *
  * Class declaration for exporting a runnable SNF configuration.
  *
  * Copyright (c) 2015-2016 KTH Royal Institute of Technology
@@ -13,12 +13,12 @@
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>
  */
@@ -101,7 +101,7 @@ class Generator {
 		 * |--> Hardware-assisted, Flow Director-based SNF
 		 * |--> All-in-Software SNF (ClickIPClassifier)
 		 */
-		virtual bool      generate_equivalent_configuration(const bool to_file=true) = 0;
+		virtual bool generate_equivalent_configuration(const bool to_file=true) = 0;
 
 		/*
 		 * Expose the list of generated filenames
@@ -112,16 +112,20 @@ class Generator {
 		/*
 		 * Expose a set of setters and getters to the derived classes
 		 */
-		inline TrafficClassFormat get_traffic_class_format        (void) const {
+		inline TrafficClassFormat get_traffic_class_format        (void) const
+		{
 			return this->traffic_classification_format;
 		};
-		inline std::string        get_basic_configuration_filename(void) const {
+		inline std::string        get_basic_configuration_filename(void) const
+		{
 			return this->basic_configuration_filename;
 		};
-		inline std::string        get_soft_configuration_filename (void) const {
+		inline std::string        get_soft_configuration_filename (void) const
+		{
 			return this->soft_configuration_filename;
 		};
-		inline Synthesizer*       get_synthesizer                 (void) {
+		inline Synthesizer       *get_synthesizer                 (void)
+		{
 			return this->synthesizer;
 		};
 

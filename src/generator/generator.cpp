@@ -1,6 +1,6 @@
 // -*- c-basic-offset: 4 -*-
 /* generator.cpp
- * 
+ *
  * Export a runnable, SNF configuration.
  * The input parameters will drive the Generator to either create
  * a fully software-based SNF or a hardware-assisted one.
@@ -12,12 +12,12 @@
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>
  */
@@ -27,7 +27,8 @@
 #include "../shared/helpers.hpp"
 #include "../synthesizer/synthesizer.hpp"
 
-Generator::Generator(Synthesizer *synth) {
+Generator::Generator(Synthesizer *synth)
+{
 	this->log.set_logger_file(__FILE__);
 	if ( !synth ) {
 		FANCY_BUG(this->log, "\tGenerator: Invalid Synthesizer object");
@@ -35,9 +36,9 @@ Generator::Generator(Synthesizer *synth) {
 
 	this->synthesizer      = synth;
 	this->input_properties = this->synthesizer
-								->get_chain_parser()
-								->get_chain_graph()
-								->get_properties();
+					->get_chain_parser()
+					->get_chain_graph()
+					->get_properties();
 
 	this->hw_classification             = this->input_properties->has_hardware_classification();
 	this->click_type                    = this->input_properties->get_click_type();
@@ -47,19 +48,21 @@ Generator::Generator(Synthesizer *synth) {
 	this->soft_configuration_filename   = this->basic_configuration_filename + ".click";
 }
 
-Generator::~Generator() {
+Generator::~Generator()
+{
 	delete this->synthesizer;
 }
 
 const std::string
-Generator::get_output_files_list_str(void) {
+Generator::get_output_files_list_str(void)
+{
 	std::string all_out_files;
 	all_out_files = "\n\t\t\t\t\t\t\t==== |--> " + this->soft_configuration_filename;
 	TrafficClassFormat tc_format = this->traffic_classification_format;
 
 	// A single configuration file is produced if we are in Click or RSS mode.
-	if  ( 
-		(!this->hw_classification) || 
+	if  (
+		(!this->hw_classification) ||
 		((tc_format != FlowDirector) && (tc_format != OpenFlow))
 	)
 		return all_out_files;
@@ -104,11 +107,10 @@ Generator::get_output_files_list_str(void) {
 }
 
 void
-Generator::generate_indicative_chain_parameters(unsigned short &snf_ifaces_no, std::stringstream &config_stream) {
-
-	if ( snf_ifaces_no < 4 ) {
+Generator::generate_indicative_chain_parameters(unsigned short &snf_ifaces_no, std::stringstream &config_stream)
+{
+	if ( snf_ifaces_no < 4 )
 		return;
-	}
 
 	config_stream << "define(" << std::endl;
 

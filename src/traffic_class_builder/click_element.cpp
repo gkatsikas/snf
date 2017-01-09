@@ -1,6 +1,6 @@
 // -*- c-basic-offset: 4 -*-
 /* click_element.cpp
- * 
+ *
  * Implementation of SNF's traffic class node.
  *
  * Copyright (c) 2015-2016 KTH Royal Institute of Technology
@@ -10,12 +10,12 @@
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>
  */
@@ -43,35 +43,39 @@ std::shared_ptr<ClickElement>
 ClickElement::discard_elem_ptr(new ClickElement(Discard_def,empty));
 
 ClickElement::ClickElement(
-		ElementVertex *ev,
-		short input_port) :
-		ClickElement(type_from_name(ev->get_class()),
-		ev->get_configuration(), ev, input_port, 
-		ev->get_implicit_configuration() ) {
+	ElementVertex *ev,
+	short input_port) :
+	ClickElement(type_from_name(ev->get_class()),
+	ev->get_configuration(), ev, input_port,
+	ev->get_implicit_configuration() )
+{
 	this->log.set_logger_file(__FILE__);
 }
 
 ClickElement::ClickElement(
-		const std::string &name,
-		const std::string &configuration) : 
-		ClickElement(type_from_name(name), configuration, nullptr) {
+	const std::string &name,
+	const std::string &configuration)
+	: ClickElement(type_from_name(name), configuration, nullptr)
+{
 	this->log.set_logger_file(__FILE__);
 }
 
 ClickElement::ClickElement(
-		ElementType type,
-		const std::string &configuration) :
-		ClickElement(type, configuration, nullptr) {
+	ElementType type,
+	const std::string &configuration)
+	: ClickElement(type, configuration, nullptr)
+{
 	this->log.set_logger_file(__FILE__);
 }
 
 ClickElement::ClickElement(
-		ElementType type,
-		const std::string &configuration,
-		ElementVertex *ev,
-		short input_port,
-		std::unordered_map< short, std::vector<std::string> > *extra_conf) :
-		m_type(type), m_configuration(configuration), m_nb_ports(0), m_ev(ev) {
+	ElementType type,
+	const std::string &configuration,
+	ElementVertex *ev,
+	short input_port,
+	std::unordered_map< short, std::vector<std::string> > *extra_conf)
+	: m_type(type), m_configuration(configuration), m_nb_ports(0), m_ev(ev)
+{
 	this->log.set_logger_file(__FILE__);
 
 	debug_chatter(this->log, "\tCreating element " + to_str());
@@ -162,8 +166,10 @@ ClickElement::ClickElement(
 }
 
 void
-ClickElement::set_child(std::shared_ptr<ClickElement> child, 
-						int port, int next_input_port) {
+ClickElement::set_child(
+	std::shared_ptr<ClickElement> child,
+	int port, int next_input_port)
+{
 	debug_chatter(this->log, "\tAdding child " + element_names[child->get_type()] + " to " + to_str());
 	for (auto &it : m_outputClasses) {
 		if (it.get_port_number() == port) {
@@ -173,58 +179,68 @@ ClickElement::set_child(std::shared_ptr<ClickElement> child,
 }
 
 bool
-ClickElement::is_leaf(void) {
+ClickElement::is_leaf(void)
+{
 	return (this->m_nb_ports==0);
 }
 
 std::string
-ClickElement::get_configuration(void) const {
+ClickElement::get_configuration(void) const
+{
 	return this->m_configuration;
 }
 
 int
-ClickElement::get_nb_ports(void) const {
+ClickElement::get_nb_ports(void) const
+{
 	return this->m_nb_ports;
 }
 
 void
-ClickElement::set_nb_ports(int nb_ports) {
+ClickElement::set_nb_ports(int nb_ports)
+{
 	this->m_nb_ports = nb_ports;
 }
 
 std::vector<OutputClass>
-ClickElement::get_output_classes(void) const {
+ClickElement::get_output_classes(void) const
+{
 	return this->m_outputClasses;
 }
 
 ElementType
-ClickElement::get_type(void) const {
+ClickElement::get_type(void) const
+{
 	return this->m_type;
 }
 
 ElementVertex*
-ClickElement::get_ev(void) const {
+ClickElement::get_ev(void) const
+{
 	return this->m_ev;
 }
 
 void
-ClickElement::set_nf_name(const std::string &name) {
+ClickElement::set_nf_name(const std::string &name)
+{
 	this->m_nfName = name;
 }
 
 std::string
-ClickElement::get_nf_name(void) const {
+ClickElement::get_nf_name(void) const
+{
 	return this->m_nfName;
 }
 
 std::string
-ClickElement::to_str(void) const {
-	return element_names[this->m_type] + " with configuration \"" + 
-			this->m_configuration + "\"";
+ClickElement::to_str(void) const
+{
+	return element_names[this->m_type] + " with configuration \"" + this->m_configuration + "\"";
 }
 
 ElementType
-ClickElement::type_from_name(const std::string &name) {
+ClickElement::type_from_name(const std::string &name)
+{
 	for (size_t i=0; i<NB_ELEMENT_TYPES; i++) {
 		if ( !name.compare(element_names[i]) ) {
 			return (ElementType) i;
@@ -234,7 +250,8 @@ ClickElement::type_from_name(const std::string &name) {
 }
 
 void
-ClickElement::add_output_class(OutputClass &output_class) {
+ClickElement::add_output_class(OutputClass &output_class)
+{
 	this->m_outputClasses.push_back(output_class);
 	if ( output_class.get_port_number()+1 > this->m_nb_ports ) {
 		this->m_nb_ports = output_class.get_port_number()+1;
@@ -242,12 +259,14 @@ ClickElement::add_output_class(OutputClass &output_class) {
 }
 
 std::shared_ptr<ClickElement>
-ClickElement::get_discard_elem(void) {
+ClickElement::get_discard_elem(void)
+{
 	return (ClickElement::discard_elem_ptr);
 }
 
 void
-ClickElement::parse_dec_ttl_conf(const std::string &configuration) {
+ClickElement::parse_dec_ttl_conf(const std::string &configuration)
+{
 	if (configuration.size() != 0) {
 		configuration_fail();
 	}
@@ -271,7 +290,8 @@ ClickElement::parse_dec_ttl_conf(const std::string &configuration) {
 }
 
 void
-ClickElement::parse_fix_ip_src(const std::string &configuration) {
+ClickElement::parse_fix_ip_src(const std::string &configuration)
+{
 	std::vector<std::string> split_conf = split(configuration, spaces);
 
 	uint32_t new_ip_value=0;
@@ -301,7 +321,8 @@ ClickElement::parse_fix_ip_src(const std::string &configuration) {
 }
 
 void
-ClickElement::parse_ip_filter(const std::string &configuration) {
+ClickElement::parse_ip_filter(const std::string &configuration)
+{
 	std::vector<std::string> rules = separate_args(configuration);
 	std::vector<PacketFilter> to_discard;
 	for (size_t i=0; i<rules.size(); i++) {
@@ -323,10 +344,11 @@ ClickElement::parse_ip_filter(const std::string &configuration) {
 		else if (behaviour.compare("deny") && behaviour.compare("drop") ) {
 			FANCY_BUG(this->log, "\tUnknown action for IP Filter: " + behaviour);
 		}
-		std::vector<PacketFilter> outputs = filters_from_ipfilter_line( rules[i].substr(
-									first_space+1,rule.size() - first_space - 1));
 
-		if (output == -1) {
+		std::vector<PacketFilter> outputs = filters_from_ipfilter_line( rules[i].substr(
+							first_space+1,rule.size() - first_space - 1));
+
+		if ( output == -1 ) {
 			to_discard.insert(to_discard.end(), outputs.begin(), outputs.end());
 		}
 		else {
@@ -337,6 +359,7 @@ ClickElement::parse_ip_filter(const std::string &configuration) {
 			}
 		}
 	}
+
 	uint32_t discard_port = this->m_nb_ports;
 	for(auto &pf : to_discard) {
 		OutputClass port(discard_port);
@@ -347,7 +370,8 @@ ClickElement::parse_ip_filter(const std::string &configuration) {
 }
 
 void
-ClickElement::parse_classifier(const std::string &configuration) {
+ClickElement::parse_classifier(const std::string &configuration)
+{
 	std::vector<std::string> rules = separate_args(configuration);
 
 	for (size_t i=0; i<rules.size(); i++) {
@@ -359,8 +383,8 @@ ClickElement::parse_classifier(const std::string &configuration) {
 		std::string rule = trim(rules[i]);
 
 		// Get the packet filters of this rule and a brief description of the policy (pass, drop)
-		std::pair< std::vector<PacketFilter>, ClassifierAction > pf_with_action = 
-												filters_from_classifier_line(rule);
+		std::pair< std::vector<PacketFilter>, ClassifierAction > pf_with_action =
+			filters_from_classifier_line(rule);
 
 		// Discard the traffic class of this rule
 		if ( pf_with_action.second == ClassifierAction::DROP ) {
@@ -387,7 +411,8 @@ ClickElement::parse_classifier(const std::string &configuration) {
 }
 
 void
-ClickElement::parse_ip_classifier(const std::string &configuration) {
+ClickElement::parse_ip_classifier(const std::string &configuration)
+{
 	std::vector<std::string> rules = separate_args(configuration);
 
 	for (size_t i=0; i<rules.size(); i++) {
@@ -408,7 +433,8 @@ ClickElement::parse_ip_classifier(const std::string &configuration) {
 }
 
 void
-ClickElement::parse_lookup_filter(const std::string &configuration) {
+ClickElement::parse_lookup_filter(const std::string &configuration)
+{
 	std::vector<std::string> rules = separate_args(configuration);
 	Filter parsed_prefixes(ip_src);
 	parsed_prefixes.make_none();
@@ -420,12 +446,12 @@ ClickElement::parse_lookup_filter(const std::string &configuration) {
 
 void
 ClickElement::parse_ip_rewriter(
-		const std::string &configuration,
-		short input_port,
-		std::unordered_map< short, std::vector<std::string> > *extra_conf) {
-				
+	const std::string &configuration,
+	short input_port,
+	std::unordered_map< short, std::vector<std::string> > *extra_conf)
+{
 	debug_chatter(this->log, "\tEntering IPRewriter at port "+std::to_string(input_port));
-	
+
 	if(extra_conf && (extra_conf->find(input_port) != extra_conf->end()) ) {
 		std::vector<std::string> rr_ip_mapper_conf = extra_conf->at(input_port);
 		FieldOperation field_op (WriteLB, ip_dst, 0);
@@ -442,7 +468,7 @@ ClickElement::parse_ip_rewriter(
 				output_port = (unsigned short) atoi(split_line[5].c_str());
 			}
 		}
-		
+
 		OutputClass port(output_port);
 		port.add_field_op(field_op);
 		error_chatter(this->log, "\tCurrent port: " << port.to_str());
@@ -476,7 +502,8 @@ ClickElement::parse_ip_rewriter(
 }
 
 void
-ClickElement::parse_vlan_encap_configuration(const std::string &configuration) {
+ClickElement::parse_vlan_encap_configuration(const std::string &configuration)
+{
 	size_t pos = configuration.find(' ');
 	if (pos == std::string::npos) {
 		FANCY_BUG(this->log, "\tExpected keyword in VLANEncap configuration and got: \""+configuration+"\"");
@@ -486,14 +513,14 @@ ClickElement::parse_vlan_encap_configuration(const std::string &configuration) {
 	uint32_t pcp = 0;
 	uint32_t dei = 2;
 	uint32_t vid = 0;
-	if (!keyword.compare("VLAN_TCI")) {
+	if ( !keyword.compare("VLAN_TCI") ) {
 		uint32_t value  = atoi (configuration.substr(pos+1,configuration.size()-pos-1).c_str());
 		pcp = value >> 13;                     // Removes 13 last bits
 		dei = (value>>12) & (0xffffffff << 1); // Gets 12th bit from smaller endian
 		vid = value & (0xffffffff << 12);      // Gets 12 last bits
 	}
 	else {
-		while (pos != std::string::npos) {
+		while ( pos != std::string::npos ) {
 			if (!keyword.compare("VLAN_PCP")) {
 				pcp  = atoi (configuration.substr(pos+1,configuration.size()-pos-1).c_str());
 			}
@@ -503,6 +530,7 @@ ClickElement::parse_vlan_encap_configuration(const std::string &configuration) {
 			else {
 				FANCY_BUG(this->log, "\tUnknown keyword in VLANEncap: "+keyword);
 			}
+
 			uint32_t start = configuration.find_first_not_of(" ,", configuration.find(',',pos));
 			pos = configuration.find(' ',start);
 		}
@@ -518,7 +546,8 @@ ClickElement::parse_vlan_encap_configuration(const std::string &configuration) {
 }
 
 void
-ClickElement::parse_vlan_decap_configuration(const std::string &configuration) {
+ClickElement::parse_vlan_decap_configuration(const std::string &configuration)
+{
 	if( configuration.empty() ) {
 		//TODO do we handle ANNO and if yes how?
 		FANCY_BUG(this->log, "\tVLAN annotation not implemented yet");
@@ -531,7 +560,8 @@ ClickElement::parse_vlan_decap_configuration(const std::string &configuration) {
 }
 
 void
-ClickElement::parse_set_vlan_anno_configuration(const std::string &configuration) {
+ClickElement::parse_set_vlan_anno_configuration(const std::string &configuration __attribute__((unused)))
+{
 	//TODO complete
 	def_chatter(this->log, configuration);
 	FANCY_BUG(this->log, "\tVLAN annotation not implemented yet");
@@ -539,8 +569,8 @@ ClickElement::parse_set_vlan_anno_configuration(const std::string &configuration
 
 //New syntax: [IPSRC|IPDST] xxx.xxx.xxx.xxx-yyy.yyy.yyy.yyy
 void
-ClickElement::parse_rr_ip_mapper(const std::string &configuration) {
-
+ClickElement::parse_rr_ip_mapper(const std::string &configuration)
+{
 	std::string separators = " \t\n";
 
 	size_t start = 0;
@@ -583,10 +613,10 @@ ClickElement::parse_rr_ip_mapper(const std::string &configuration) {
 }
 
 void
-ClickElement::parse_ip_fragmenter_configuration(const std::string &configuration) {
-	if( configuration.find_first_not_of("0123456789") != std::string::npos ) {
+ClickElement::parse_ip_fragmenter_configuration(const std::string &configuration)
+{
+	if( configuration.find_first_not_of("0123456789") != std::string::npos )
 		configuration_fail();
-	}
 
 	OutputClass port(0);
 	FieldOperation field_op = {Write,mtu,(uint32_t) atoi(configuration.c_str())};
@@ -595,7 +625,8 @@ ClickElement::parse_ip_fragmenter_configuration(const std::string &configuration
 }
 
 void
-ClickElement::configuration_fail(void) {
-	FANCY_BUG(this->log, "\tCould not parse configuration for " + 
-				element_names[m_type] + ":\n\t" + m_configuration);
+ClickElement::configuration_fail(void)
+{
+	FANCY_BUG(this->log, "\tCould not parse configuration for " +
+		element_names[m_type] + ":\n\t" + m_configuration);
 }

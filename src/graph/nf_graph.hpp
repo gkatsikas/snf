@@ -3,8 +3,8 @@
 
 /*
  * nf_graph.hpp
- * 
- * Extensions of basic Vertex and Graph classes to represent a NF 
+ *
+ * Extensions of basic Vertex and Graph classes to represent a NF
  * as a DAG of Click elements.
  *
  * Copyright (c) 2015-2016 KTH Royal Institute of Technology
@@ -14,12 +14,12 @@
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>
  */
@@ -27,7 +27,7 @@
 #include <memory>
 
 #include "graph.hpp"
- 
+
 #include "../shared/helpers.hpp"
 #include "../click/click_parser.hpp"
 
@@ -86,7 +86,7 @@ class ElementVertex : public Vertex {
 		const std::string              get_interface     (void) const;
 		const std::string              get_configuration (void) const;
 		const std::shared_ptr<Element> get_click_element (void) const;
-		std::unordered_map<short, std::vector<std::string>>* get_implicit_configuration(void);
+		std::unordered_map<short, std::vector<std::string>> *get_implicit_configuration(void);
 
 		inline std::string    get_glue_iface      (void) const { return this->glue.second; };
 		inline unsigned short get_glue_nf_position(void) const { return this->glue.first;  };
@@ -115,7 +115,7 @@ class NFGraph : public Graph {
 		 * Get subset of vertices based on several characteristics.
 		 */
 		Vector<ElementVertex*> get_vertices_by_stage      (const VertexType &t) const;
-		ElementVertex*         get_vertex_by_click_element(const Element    *e) const;
+		ElementVertex         *get_vertex_by_click_element(const Element    *e) const;
 		Vector<ElementVertex*> get_all_endpoint_vertices  (void)                const;
 		Vector<ElementVertex*> get_endpoint_vertices      (const VertexType &t) const;
 };

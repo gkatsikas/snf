@@ -3,15 +3,15 @@
 
 /*
  * rss_generator.hpp
- * 
+ *
  * Class for exporting a hardware-assisted SNF configuration.
  * A Click-DPDK module is generated with the following properties:
  * |-> Receive-side Scaling (RSS) mechanism to read packets from different
  *     hardware queues of the NIC, using one FromDPDKDevice element per queue.
- * |-> Scheduling of all the FromDPDKDevice elements to perform distributed I/O 
+ * |-> Scheduling of all the FromDPDKDevice elements to perform distributed I/O
  *     across multiple cores.
- * |-> Replication of the chain across multiple cores to perfrom distributed, 
- *     parallel processing. Each FromDPDKDevice is linked to a copy of the 
+ * |-> Replication of the chain across multiple cores to perfrom distributed,
+ *     parallel processing. Each FromDPDKDevice is linked to a copy of the
  *     synthesized chain.
  *
  * Copyright (c) 2015-2016 KTH Royal Institute of Technology
@@ -21,12 +21,12 @@
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>
  */
@@ -41,7 +41,7 @@ class RSSGenerator : public Generator {
 
 	private:
 		/*
-		 * Enum type that indicates how we use multiple cores to do 
+		 * Enum type that indicates how we use multiple cores to do
 		 * I/O and processing. Check properties class.
 		 */
 		IOMode            io_mode;
@@ -60,17 +60,17 @@ class RSSGenerator : public Generator {
 		unsigned short    number_of_nics;
 
 		/*
-		 * The number of available CPU cores, as specified by 
+		 * The number of available CPU cores, as specified by
 		 * the user in the input file.
 		 */
 		unsigned short    rss_cores;
 		/*
-		 * The number of available hardware queues, as specified by 
+		 * The number of available hardware queues, as specified by
 		 * the user in the input file.
 		 */
 		unsigned short    rss_queues;
 		/*
-		 * The number of available CPU sockets, as specified by 
+		 * The number of available CPU sockets, as specified by
 		 * the user in the input file.
 		 */
 		unsigned short    cpu_sockets_no;
@@ -96,7 +96,7 @@ class RSSGenerator : public Generator {
 
 		/*
 		 * Extra prefix to be appended to Click objects
-		 * in order to replicate them across multiple 
+		 * in order to replicate them across multiple
 		 * queues of the NIC.
 		 */
 		const std::string queue_ext_prefix = std::string("_q");
@@ -121,7 +121,7 @@ class RSSGenerator : public Generator {
 		/*
 		 * Implements the abstract method of parent Generator class by calling the
 		 * private generate_rss_cloned_pipelines method below.
-		 * This method generates a hardware-assisted SNF configuration based 
+		 * This method generates a hardware-assisted SNF configuration based
 		 * on Click-DPDK and RSS.
 		 */
 		bool generate_equivalent_configuration(const bool to_file=true);
@@ -130,8 +130,8 @@ class RSSGenerator : public Generator {
 		/*
 		 * Hardware-assisted, RSS-based SNF:
 		 *    RSS-Hashing in the NIC splits traffic at will (based on fields that we specify).
-		 *    Then, a Click-DPDK configuration is reading packets from different queues, 
-		 *    schedules threads from multiple cores on these queues, and clones the chain 
+		 *    Then, a Click-DPDK configuration is reading packets from different queues,
+		 *    schedules threads from multiple cores on these queues, and clones the chain
 		 *    across all of them.
 		 */
 		bool generate_rss_cloned_pipelines(const bool &to_file);
@@ -144,7 +144,7 @@ class RSSGenerator : public Generator {
 		);
 
 		/*
-		 * Clone the input, read, write, and output parts of a SNF 
+		 * Clone the input, read, write, and output parts of a SNF
 		 * chain across multiple CPU cores.
 		 */
 		bool replicate_input_part_of_synthesis(
@@ -160,7 +160,7 @@ class RSSGenerator : public Generator {
 			std::map < unsigned short, std::string >              &nic_to_classifier,
 			std::map < unsigned short, std::vector<std::string> > &nic_to_classifier_repl,
 			std::map <
-				std::string, std::vector< 
+				std::string, std::vector<
 				std::pair< std::string, unsigned short > >
 			>                                                     &classifier_repl_to_rewriter_repl
 		);
@@ -190,7 +190,7 @@ class RSSGenerator : public Generator {
 		 * find the classifier associated to that specific rewriter.
 		 */
 		std::pair< std::string, unsigned short > from_rewriter_to_classifier(
-			const std::map<	
+			const std::map<
 				std::pair< std::string, unsigned short>,
 				std::pair< std::string, unsigned short>
 			>                                             &classifier_repl_to_rewriter,
@@ -199,7 +199,7 @@ class RSSGenerator : public Generator {
 
 		/*
 		 * When hardware classification is on, we need to schedule multiple
-		 * threads (one per core) to the various NIC queues and attach one 
+		 * threads (one per core) to the various NIC queues and attach one
 		 * Click-DPDK input element (FromDPDKDevice) to each queue.
 		 */
 		bool assign_nic_queues_to_cores(
@@ -211,7 +211,7 @@ class RSSGenerator : public Generator {
 		);
 
 		/*
-		 * Call Click's StaticThreadSched element to schedule 
+		 * Call Click's StaticThreadSched element to schedule
 		 * Click instances to different CPU cores.
 		 */
 		bool scheduling(
@@ -219,7 +219,7 @@ class RSSGenerator : public Generator {
 			std::map < std::string, unsigned short >        &out_nic_desc_to_core,
 			std::map < std::string, unsigned short >        &classifier_to_core,
 			std::map <
-				std::string, std::vector< 
+				std::string, std::vector<
 				std::pair< std::string, unsigned short > >
 			>                                               &classifier_repl_to_rewriter_repl,
 			std::stringstream                               &config_stream
@@ -234,7 +234,7 @@ class RSSGenerator : public Generator {
 		bool stateful_path_scheduling(
 			std::map <std::string, unsigned short>          &classifier_to_core,
 			std::map <
-				std::string, std::vector< 
+				std::string, std::vector<
 				std::pair< std::string, unsigned short > >
 			>                                               &classifier_repl_to_rewriter_repl,
 			std::stringstream                               &config_stream

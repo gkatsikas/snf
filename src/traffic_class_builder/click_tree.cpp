@@ -1,6 +1,6 @@
 // -*- c-basic-offset: 4 -*-
 /* click_tree.cpp
- * 
+ *
  * Implementation of SNF's traffic class tree.
  *
  * Copyright (c) 2015-2016 KTH Royal Institute of Technology
@@ -10,12 +10,12 @@
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>
  */
@@ -31,40 +31,49 @@
 
 #include "../logger/logger.hpp"
 
-ClickTree::ClickTree(std::shared_ptr<ClickElement> root) : 
-						m_root( {root, TrafficClass()}),
-						m_input_nf(-1), m_input_iface(),
-						m_traffic_classes(), m_behind_proxy(false) {
+ClickTree::ClickTree(std::shared_ptr<ClickElement> root)
+	:
+	m_root( {root, TrafficClass()}),
+	m_input_nf(-1), m_input_iface(),
+	m_traffic_classes(), m_behind_proxy(false)
+{
 	this->log.set_logger_file(__FILE__);
 	this->find_classes();
 }
 
-ClickTree::ClickTree(int input_nf, std::string input_interface,
-						std::shared_ptr<ClickElement> root) : 
-						m_root( {root, TrafficClass()}),
-						m_input_nf(input_nf), m_input_iface(input_interface),
-						m_traffic_classes(), m_behind_proxy(false) {
+ClickTree::ClickTree(
+	int input_nf, std::string input_interface,
+	std::shared_ptr<ClickElement> root)
+	:
+	m_root( {root, TrafficClass()}),
+	m_input_nf(input_nf), m_input_iface(input_interface),
+	m_traffic_classes(), m_behind_proxy(false)
+{
 	this->log.set_logger_file(__FILE__);
 	this->find_classes();
 }
 
 void
-ClickTree::set_behind_proxy(const bool& bn) {
+ClickTree::set_behind_proxy(const bool& bn)
+{
 	this->m_behind_proxy = bn;
 }
 
 bool
-ClickTree::get_behind_proxy(void) {
+ClickTree::get_behind_proxy(void)
+{
 	return this->m_behind_proxy;
 }
 
 std::vector<TrafficClass>
-ClickTree::get_traffic_classes(void) const {
+ClickTree::get_traffic_classes(void) const
+{
 	return this->m_traffic_classes;
 }
 
 void
-ClickTree::find_classes(void) {
+ClickTree::find_classes(void)
+{
 	std::stack<ClickNode> nodes_to_visit;
 	nodes_to_visit.push(this->m_root);
 
@@ -99,7 +108,7 @@ ClickTree::find_classes(void) {
 						child,
 						next_tc
 					 };
-					 debug_chatter(this->log, "\t\tFound transition from " << 
+					 debug_chatter(this->log, "\t\tFound transition from " <<
 					 				element_names[curr_element->get_type()] <<
 					 				" to " << element_names[child->get_type()]);
 					 nodes_to_visit.push(next_node);
