@@ -249,7 +249,7 @@ class Properties {
 		/*
 		 * Default contructor with indicative properties
 		 */
-		Properties () {
+		Properties() {
 			this->numa                          = true;
 			this->hardware_classification       = false;
 			this->click_type                    = DEFAULT_CLICK_TYPE;

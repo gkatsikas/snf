@@ -1,48 +1,48 @@
 #!/bin/bash
+
 ##============================================================================
 ##        Name: profile.sh
-##   Copyright: KTH ICT CoS Network Systems Lab
+##      Author: Georgios Katsikas (katsikas@kth.se)
 ## Description: Starts GNU Debugger to profile the SNF
 ##       Usage: In conjunction with valgrind.sh
 ##============================================================================
 
-ERROR=1
-SUCCESS=0
+if [[ -z $SNF_HOME ]]; then
+	printf "Need to set env. variable SNF_HOME\n"
+	exit 1
+fi
+
+source $SNF_HOME/scripts/commons.sh
 
 program=$0
+# Argument 1: Path to the SNF executable
+executable=$1
 
-function usage {
-	printf "Usage: %s <input_property_file>\n" "$program"
+usage()
+{
+	printf "Usage: %s <executable>\n" $program
 	exit $ERROR
 }
 
-function file_exists {
-	input_file=$1
+main()
+{
+	# Check whether the SNF executable exists or not
+	file_exists $executable && : || usage
+	executable=$(get_abs_path $executable)
 
-	if [[ ! -e $input_file ]]; then
-		printf "%s does not exist\n" "$input_file"
-		usage
-	fi
+	### 1. Valgrind
+	# Start ./valgrind.sh <executable> <input_property_file> in another shell
 
-	if [[ ! -f $input_file ]]; then
-		printf "%s is not a regular file\n" "$input_file"
-		usage
-	fi
+	### 2. Invoke program through GDB
+	cd $SNF_HOME
+
+	printf "Press q + Enter after gdb is launched\n"
+	gdb --args $executable target remote | vgdb
+
+	cd -
+
+	### 3. Press q (quit) + Enter
 }
 
-# We only accept the path to the input property file
-if [[ $# != 1 ]]; then
-	usage
-fi
-
-# The SNF executable
-executable=$1
-file_exists $executable
-
-### 1. Valgrind
-# Start ./valgrind.sh <input_property_file> in another shell
-
-### 2. Invoke program through GDB
-gdb --args $executable target remote | vgdb
-
-### 3. Press q (quit) + Enter
+# Check input arguments
+[[ ($# != 1) ]] && usage || main

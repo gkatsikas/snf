@@ -250,6 +250,7 @@ bool create_directory_path(const std::string &dir_path);
  * Check if file exists
  */
 bool file_exists(const std::string &file_path);
+std::string get_absolute_path(const std::string &path);
 
 /*
  * A C++11 template that is able to receive any function with any arguments

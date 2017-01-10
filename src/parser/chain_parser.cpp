@@ -134,9 +134,10 @@ ChainParser::chain_nf_configurations(void)
 bool
 ChainParser::load_nf(const std::string &nf_name __attribute__((unused)), const std::string &nf_source, const unsigned short &position)
 {
-	info_chatter(this->log, "Loading Click Configuration for " << nf_name << ": " << nf_source);
+	std::string nf_source_full_path = get_absolute_path(nf_source);
+	info_chatter(this->log, "Loading Click Configuration for " << nf_name << ": " << nf_source_full_path);
 
-	Router *router = input_a_click_configuration(nf_source.c_str());
+	Router *router = input_a_click_configuration(nf_source_full_path.c_str());
 	if ( !router ) {
 		error_chatter(this->log, "\tProblem while parsing Network Function " << position);
 		return TO_BOOL(CLICK_PARSING_PROBLEM);

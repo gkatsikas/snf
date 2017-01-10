@@ -2,59 +2,60 @@
 
 ##============================================================================
 ##        Name: run.sh
-##   Copyright: KTH ICT CoS Network Systems Lab
-## Description: Starts SNF with or without the GNU Debugger.
+##      Author: Georgios Katsikas (katsikas@kth.se)
+## Description: Runs SNF with or without the GNU Debugger.
 ##============================================================================
 
-ERROR=1
-SUCCESS=0
+if [[ -z $SNF_HOME ]]; then
+	printf "Need to set env. variable SNF_HOME\n"
+	exit 1
+fi
+
+source $SNF_HOME/scripts/commons.sh
 
 program=$0
+# Argument 1: Path to the SNF executable
+executable=$1
+# Argument 2: Input property file
+input_property_file=$2
+# Argument 3: Debug flag for gdb [Optional]
+debug_mode=$3
 
-function usage {
-	printf "Usage: %s <executable> <input_property_file> [OPTIONAL -d]\n"
+usage()
+{
+	printf "Usage: %s <executable> <input_property_file> [OPTIONAL -d]\n" $program
 	exit $ERROR
 }
 
-function file_exists {
-	input_file=$1
+main()
+{
+	# Check if the SNF executable exists
+	file_exists $executable && : || usage
+	printf "SNF Executable: %s\n" $executable
 
-	if [[ ! -e $input_file ]]; then
-		printf "%s does not exist\n" "$input_file"
-		usage
+	# Check if the input property file exists
+	file_exists $input_property_file && : || usage
+	printf "SNF      Input: %s\n" $input_property_file
+
+	# Debug option is given
+	[[ $debug_mode == "-d" ]] && debug_mode="true" || debug_mode="false"
+	printf "    Debug Mode: %s\n" $debug_mode
+
+	cd $SNF_HOME
+
+	### Execution through GDB (Press r (run) and then q (quit))
+	if [[ $debug_mode == "true" ]]; then
+		printf "Execution through GDB: Press r to run and then q to quit\n"
+		gdb --args $executable -p $input_property_file -v
+	### Normal execution
+	else
+		$executable -p $input_property_file -v
 	fi
 
-	if [[ ! -f $input_file ]]; then
-		printf "%s is not a regular file\n" "$input_file"
-		usage
-	fi
+	cd - > /dev/null
+
+	exit $SUCCESS
 }
 
-# We accept the paths to the executable and input property file
-# and optionally a debug flag
-if [[ ($# != 2) && ($# != 3) ]]; then
-	usage
-fi
-
-# The SNF executable
-executable=$1
-file_exists $executable
-
-# Check if property file exists
-input_property_file=$2
-file_exists $input_property_file
-
-# Both property file and debug option are given
-if [[ $# == 3 ]]; then
-	debug_mode=1
-fi
-
-### Execution through GDB (Press r (run) and then q (quit))
-if [[ ! -z $debug_mode ]]; then
-	gdb --args $executable -p $input_property_file -v
-### Normal execution
-else
-	$executable -p $input_property_file -v
-fi
-
-exit $SUCCESS
+# Check input arguments
+[[ ($# != 2) && ($# != 3) ]] && usage || main

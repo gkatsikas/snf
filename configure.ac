@@ -2,7 +2,7 @@
 # Process this file with autoconf to produce a configure script.
 
 AC_PREREQ([2.69])
-AC_INIT([SNF], [0.9.0], [katsikas@kth.se])
+AC_INIT([SNF], [1.0.0], [katsikas@kth.se])
 
 AC_CONFIG_HEADERS([config.h])
 AC_CONFIG_AUX_DIR([build-aux])

@@ -196,7 +196,7 @@ main(int argc, char **argv)
 	task_exec_time = measure<>::execution( [&]() {
 		info_chatter(main_log, "SNF Chain Loader... ");
 		pcf = new ParserConfiguration(property_file);
-		def_chatter(main_log, "\tProperty file: " << property_file);
+
 		if ( !(exit_status=pcf->load_property_file()) ) {
 			delete pcf;
 			exit(exit_status);

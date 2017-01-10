@@ -35,7 +35,8 @@ GenericConfiguration::GenericConfiguration(const std::string &config_file)
 		exit(FAILURE);
 	}
 
-	this->filename = config_file;
+	this->filename = get_absolute_path(config_file);
+	def_chatter(this->log, "\tProperty file: " << this->filename);
 	this->load_in_memory();
 }
 
@@ -139,8 +140,7 @@ GenericConfiguration::read_multi_line(std::ifstream &file, std::string &value, u
 }
 
 Chameleon const&
-GenericConfiguration::get_value(
-		std::string const &section, std::string const &entry) const
+GenericConfiguration::get_value(std::string const &section, std::string const &entry) const
 {
 	std::map<std::string, Chameleon>::const_iterator ci = content.find(section + '/' + entry);
 
@@ -151,8 +151,7 @@ GenericConfiguration::get_value(
 }
 
 Chameleon const&
-GenericConfiguration::get_value(
-	std::string const &section, std::string const &entry, int value)
+GenericConfiguration::get_value(std::string const &section, std::string const &entry, int value)
 {
 	try {
 		return get_value(section, entry);
@@ -163,8 +162,7 @@ GenericConfiguration::get_value(
 }
 
 Chameleon const&
-GenericConfiguration::get_value(
-	std::string const &section, std::string const &entry, unsigned short value)
+GenericConfiguration::get_value(std::string const &section, std::string const &entry, unsigned short value)
 {
 	try {
 		return get_value(section, entry);
@@ -175,8 +173,7 @@ GenericConfiguration::get_value(
 }
 
 Chameleon const&
-GenericConfiguration::get_value(
-	std::string const &section, std::string const &entry, bool value)
+GenericConfiguration::get_value(std::string const &section, std::string const &entry, bool value)
 {
 	try {
 		return get_value(section, entry);
@@ -187,8 +184,7 @@ GenericConfiguration::get_value(
 }
 
 Chameleon const&
-GenericConfiguration::get_value(
-	std::string const &section, std::string const &entry, double value)
+GenericConfiguration::get_value(std::string const &section, std::string const &entry, double value)
 {
 	try {
 		return get_value(section, entry);
@@ -199,8 +195,7 @@ GenericConfiguration::get_value(
 }
 
 Chameleon const&
-GenericConfiguration::get_value(
-	std::string const &section, std::string const &entry, std::string const& value)
+GenericConfiguration::get_value(std::string const &section, std::string const &entry, std::string const& value)
 {
 	try {
 		return get_value(section, entry);

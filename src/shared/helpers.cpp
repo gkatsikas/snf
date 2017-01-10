@@ -400,3 +400,14 @@ file_exists(const std::string &file_path)
 	struct stat buffer;
 	return ( stat(file_path.c_str(), &buffer) == 0 );
 }
+
+/*
+ * Convert relative to absolute path.
+ * Assumes that the path exists.
+ */
+std::string
+get_absolute_path(const std::string &path)
+{
+	std::string abs_path( realpath((const char *)path.c_str(), NULL) );
+	return abs_path;
+}
