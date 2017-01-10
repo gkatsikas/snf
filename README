@@ -1,7 +1,9 @@
-SNF: Synthesizing High-Performance NFV Chains
+SNF: Synthesizing high performance NFV service chains
 ======
 
-A framework to turn a chain of Click-based network functions (NFs) into a sythesized SNF.
+A framework to turn a chain of Click-based network functions (NFs) into a sythesized network function (SNF).
+Our [PeerJ Computer Science journal article](https://peerj.com/articles/cs-98/) provides more information about SNF.
+Moreover, the [licentiate thesis](http://kth.diva-portal.org/smash/record.jsf?pid=diva2%3A1044355&dswid=-1244) of Georgios P. Katsikas presents an even more thorough performance evaluation of SNF in Chapter 7.
 
 ## Requirements
   * C++11 (e.g. apt-get install build-essential)
