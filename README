@@ -95,21 +95,10 @@ To explore other possibilities in DPDK, refer to ${DPDK_DIR}/lib/librte_ether/rt
 An important property we might want to explore is how to run RSS in symmetric mode.
 
 ##### Symmetric RSS (Source is http://galsagie.github.io/2015/02/26/dpdk-tips-1/)
-It is very important in networking applications to have the same CPU handling both sides of a connection, also called symmetrical flow.
-Many networking applications operate on a per-flow basis, and you don't want this information being shared between two CPUs.
-This might potentially introduce locking, which might hurt the performance.
-An RSS mechanism usually uses the Toeplitz hash function. This function takes two inputs: the static hash key and the tuples which are extracted from each packet.
-The problem is that the default hash key that is used in DPDK (and is the recommended key from Microsoft) does not distribute symmetrical flows to the same CPU.
-For example, if we have the following packet {src ip=1.1.1.1, dst ip=2.2.2.2, src port=123, dst port=88}, then the symmetrical packet {src ip=2.2.2.2, dst ip=1.1.1.1,
-src port=88, dst port=123} might not have the same hash result.
-One can achieve symmetric hashing by changing the hash key (which as I showed earlier can be changed in DPDK configuration), such that the first 32 bits of the key need
-to be identical to the second 32 bits, and the 16 bits afterwards should be identical to the next 16 bits.
-Using that key we achieve symmetrical RSS. The problem is that this scheme might lead to bad traffic distribution among the different cores.
-
-But fear not! as there is a solution to this problem.
-A group of researchers found that there is a specific hash key which gives you both symmetrical flow distribution and a uniform one.
-You can read more details in their published paper (http://www.ndsl.kaist.edu/~kyoungsoo/papers/TR-symRSS.pdf).
-Some tests have been done to check the uniform distribution of this key with random IP traffic and found it to be good enough (and symmetrical).
+Many networking applications operate on a per-flow basis, and you don't want this information being shared among different CPUs.
+Therefore, it is very important to have the same CPU handling both sides of a connection (bi-directional or symmetrical flows).
+A group of researchers found that there is a specific hash key which offers this property.
+You can read more details in their paper: http://www.ndsl.kaist.edu/~kyoungsoo/papers/TR-symRSS.pdf
 The hash key (in case you don't want to read the document) is:
 static uint8_t symmetric_hashkey[40] = {
 	0x6D, 0x5A, 0x6D, 0x5A, 0x6D, 0x5A, 0x6D, 0x5A, 0x6D, 0x5A, 0x6D, 0x5A, 0x6D, 0x5A, 0x6D, 0x5A, 0x6D, 0x5A, 0x6D, 0x5A,
