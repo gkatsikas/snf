@@ -25,24 +25,31 @@ A framework to turn a chain of Click-based network functions (NFs) into a sythes
   * `cd ./click`
   * export CLICK_HOME=`pwd`
   * `patch -p1 < ${SNF_HOME}/src/click/click-snf-v4.patch`
-    * Normal Click (User + Kernel-space):
-		`./configure    --enable-user-multithread --enable-multithread --enable-ip6 --enable-nanotimestamp \
-				--enable-intel-cpu --enable-analysis --enable-ipsec --enable-local --enable-simple \
+    * Normal Click (User-space):
+		`./configure    --enable-user-multithread --enable-multithread --enable-ip6 \
+				--enable-nanotimestamp --enable-intel-cpu --enable-analysis \
+				--enable-ipsec --enable-local --enable-simple \
 				--enable-etherswitch --enable-all-elements`
-    * Click-Netmap (User-space only, after building Netmap):
+    * Click-Netmap (User-space, after building Netmap):
 		`./configure    --with-netmap=${NETMAP_DIR}/sys --enable-multithread \
-				--disable-linuxmodule --enable-intel-cpu --enable-user-multithread \
-				--verbose --enable-select=poll CFLAGS="-O3" CXXFLAGS="-std=gnu++11 -O3" \
-				--disable-dynamic-linking --enable-poll --enable-bound-port-transfer \
-				--enable-local --enable-nanotimestamp --enable-ipsec --enable-analysis \
+				--disable-linuxmodule --enable-intel-cpu \
+				--enable-user-multithread --verbose --enable-select=poll \
+				CFLAGS="-O3" CXXFLAGS="-std=gnu++11 -O3" \
+				--disable-dynamic-linking --enable-poll \
+				--enable-bound-port-transfer --enable-local \
+				--enable-nanotimestamp --enable-ipsec --enable-analysis \
 				--enable-ip6 --enable-simple --enable-etherswitch`
-    * Click-DPDK (User-space only, after building DPDK 2.1.0 or 2.2.0):
-		`./configure    RTE_SDK=${DPDK_DIR} RTE_TARGET=x86_64-native-linuxapp-gcc --enable-multithread \
-				--disable-linuxmodule --enable-intel-cpu --enable-user-multithread \
-				--verbose CFLAGS="-g -O3" CXXFLAGS="-g -std=gnu++11 -O3" \
-				--disable-dynamic-linking --enable-poll --enable-bound-port-transfer \
-				--enable-dpdk --with-netmap=no --enable-local --enable-nanotimestamp \
-				--enable-ipsec --enable-analysis --enable-ip6 --enable-simple --enable-etherswitch`
+    * Click-DPDK (User-space, after building DPDK 2.1.0 or 2.2.0):
+		`./configure    RTE_SDK=${DPDK_DIR} \
+				RTE_TARGET=x86_64-native-linuxapp-gcc --enable-multithread \
+				--disable-linuxmodule --enable-intel-cpu \
+				--enable-user-multithread --verbose \
+				CFLAGS="-g -O3" CXXFLAGS="-g -std=gnu++11 -O3" \
+				--disable-dynamic-linking --enable-poll \
+				--enable-bound-port-transfer --enable-dpdk --with-netmap=no \
+				--enable-local --enable-nanotimestamp --enable-ipsec \
+				--enable-analysis --enable-ip6 --enable-simple \
+				--enable-etherswitch`
   * `make elemlist`
   * `make install` (uses default prefix=/usr/local/)
 
@@ -98,9 +105,9 @@ to be identical to the second 32 bits, and the 16 bits afterwards should be iden
 Using that key we achieve symmetrical RSS. The problem is that this scheme might lead to bad traffic distribution among the different cores.
 
 But fear not! as there is a solution to this problem.
-A group of smart people found that there is a specific hash key which gives you both symmetrical flow distribution and a uniform one which is same with the default key)
-You can read about it in their published paper (http://www.ndsl.kaist.edu/~kyoungsoo/papers/TR-symRSS.pdf).
-Some tests have been done to check the uniform distribution of this key with random IP traffic and found it to be good (and symmetrical).
+A group of researchers found that there is a specific hash key which gives you both symmetrical flow distribution and a uniform one.
+You can read more details in their published paper (http://www.ndsl.kaist.edu/~kyoungsoo/papers/TR-symRSS.pdf).
+Some tests have been done to check the uniform distribution of this key with random IP traffic and found it to be good enough (and symmetrical).
 The hash key (in case you don't want to read the document) is:
 static uint8_t symmetric_hashkey[40] = {
 	0x6D, 0x5A, 0x6D, 0x5A, 0x6D, 0x5A, 0x6D, 0x5A, 0x6D, 0x5A, 0x6D, 0x5A, 0x6D, 0x5A, 0x6D, 0x5A, 0x6D, 0x5A, 0x6D, 0x5A,
