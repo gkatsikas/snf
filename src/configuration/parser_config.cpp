@@ -122,7 +122,7 @@ bool
 ParserConfiguration::parse_generic_properties(void)
 {
 	// Apply the default configuration in case something goes wrong.
-	std::string output_folder  (DEFAULT_SNF_OUT_FOLDER);
+	std::string output_folder = get_absolute_path(DEFAULT_SNF_OUT_FOLDER);
 	std::string output_filename(output_folder + DEFAULT_SNF_CONF_NAME);
 
 	bool numa                   = true;
@@ -158,6 +158,9 @@ ParserConfiguration::parse_generic_properties(void)
 			}
 			def_chatter(this->log, "\tCreated output folder: " << output_folder);
 		}
+
+		// Convert a potentially relative path to absolute
+		output_folder = get_absolute_path(output_folder);
 	}
 	catch (...) {
 		// Initialized already
