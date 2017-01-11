@@ -41,8 +41,8 @@ NIC_HW_QUEUES           = 16
 #                     |
 #                    DMZ
 #
-NF_1 = input/chains/tests/compound/napt_2if.click
-NF_2 = input/chains/tests/compound/firewall_3if.click
+NF_1 = input/tests/compound/napt_2if.click
+NF_2 = input/tests/compound/firewall_3if.click
 
 
 ### TOPO 2
@@ -52,8 +52,8 @@ NF_2 = input/chains/tests/compound/firewall_3if.click
 #             \     /
 #               DMZ
 #
-#NF_1 = input/chains/tests/compound/napt_3if.click
-#NF_2 = input/chains/tests/compound/napt_3if.click
+#NF_1 = input/tests/compound/napt_3if.click
+#NF_2 = input/tests/compound/napt_3if.click
 
 
 ### TOPO 3
@@ -64,9 +64,9 @@ NF_2 = input/chains/tests/compound/firewall_3if.click
 #                                       \
 #                                        Server 2
 #
-#NF_1 = input/chains/tests/compound/napt_2if.click
-#NF_2 = input/chains/tests/compound/firewall_2if.click
-#NF_3 = input/chains/tests/compound/load_balancer_2if.click
+#NF_1 = input/tests/compound/napt_2if.click
+#NF_2 = input/tests/compound/firewall_2if.click
+#NF_3 = input/tests/compound/load_balancer_2if.click
 
 ### TOPO 4
 #
@@ -75,10 +75,10 @@ NF_2 = input/chains/tests/compound/firewall_3if.click
 #                          \    /
 #                         Domain 2
 #
-#NF_1 = input/chains/tests/compound/router_2if.click
-#NF_2 = input/chains/tests/compound/router_3if.click
-#NF_3 = input/chains/tests/compound/router_3if.click
-#NF_4 = input/chains/tests/compound/router_2if.click
+#NF_1 = input/tests/compound/router_2if.click
+#NF_2 = input/tests/compound/router_3if.click
+#NF_3 = input/tests/compound/router_3if.click
+#NF_4 = input/tests/compound/router_2if.click
 
 
 #######

@@ -37,4 +37,4 @@ check_env()
 	return $SUCCESS
 }
 
-#check_env
+check_env
