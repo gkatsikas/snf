@@ -23,8 +23,8 @@ A. Download SNF
 
 B. Download and Configure Click
 ----
-Currently, SNF compiles with the basic Click framework.
-FastClick support might be added in the future.
+Currently, SNF compiles with the basic Click framework. FastClick support might be added in the future.
+
   * `git clone https://github.com/kohler/click.git`
   * `cd ./click`
   * export CLICK_HOME=`pwd`
