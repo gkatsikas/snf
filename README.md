@@ -7,13 +7,17 @@ Moreover, the licentiate thesis of Georgios P. Katsikas presents an even more th
 
 I. Requirements
 ------
-  * C++11 (e.g. apt-get install build-essential)
+SNF is implemented in C++11 and uses autotools.
+
+  * `apt-get install build-essential`
   * `apt-get install autotools-dev`
   * `apt-get install libpcap-dev`
   * `apt-get install libboost-all-dev` (or libboost-dev)
 
 II. Steps
 ------
+To build and run SNF, follow the steps below:
+
 A. Download SNF
 ----
   * `git clone git@bitbucket.org:nslab/snf.git`
@@ -24,6 +28,7 @@ A. Download SNF
 B. Download and Configure Click
 ----
 Currently, SNF compiles with the basic Click framework. FastClick support might be added in the future.
+In case you want to use the DPDK I/O, compile DPDK 2.1.0 or 2.2.0 (recommended).
 
   * `git clone https://github.com/kohler/click.git`
   * `cd ./click`
@@ -61,17 +66,16 @@ C. Build SNF
 ----
   * `cd ${SNF_HOME}`
   * Build SNF according to INSTALL
-  * Modify ./input/property_file accordingly to create the chains you wish
-  * Write your own Click configurations and put them into input/nf_repo
-    * Make sure that input/nf_repo/ contains the Click configurations you specify in the property_file
-    * You can use our test Click implementations
-  * `./run.sh <snf-exec> <your property file>` will load the property file and generate the synthesized chain in the specified folder (property file).
+  * Create an input property of your wished service chain, following the example in: `input/tests/tests.prop`
+    * Make sure that the Click configurations you specify in the property file are valid paths.
   * SNF can be instructed (via the property file) to generate either a Click or a FastClick synthesized service chain. This allows to reap the benefits of FastClick's advanced thread scheduling, computational batching, and fast user-space I/O, while maintainig compatibility with Click.
 
 D. Run SNF
 ----
-  * Click-based SNF: `click <path-to-snf.click>`
-  * (Fast)Click-based SNF with DPDK: `click --dpdk -c ffff -n 4 -- <path-to-dpdk-snf.click>`
+To synthesize and deploy your service chain do:
+  * `./run.sh <snf-exec> <your property file>` will load the property file and generate the synthesized chain in the specified folder.
+  * To run a Click-based SNF: `click <path-to-snf.click>`
+  * To run a (Fast)Click-based SNF with DPDK: `click --dpdk -c ffff -n 4 -- <path-to-dpdk-snf.click>`
 
 III. Multi-core SNF
 ------
