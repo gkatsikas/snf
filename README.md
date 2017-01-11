@@ -73,6 +73,7 @@ C. Build SNF
 D. Run SNF
 ----
 To synthesize and deploy your service chain do:
+
   * `./run.sh <snf-exec> <your property file>` will load the property file and generate the synthesized chain in the specified folder.
   * To run a Click-based SNF: `click <path-to-snf.click>`
   * To run a (Fast)Click-based SNF with DPDK: `click --dpdk -c ffff -n 4 -- <path-to-dpdk-snf.click>`
@@ -80,6 +81,7 @@ To synthesize and deploy your service chain do:
 III. Multi-core SNF
 ------
 There are various ways to deploy SNF across multiple cores. We currently support Click-DPDK and FastClick (with DPDK) using Receive-Side Scaling (RSS) as follows:
+
   * Build SNF with DPDK support following the steps above.
   * Input a set of Click-based NFs, even if they do not use Click-DPDK I/O!
   * In the [GENERIC] section of the input property file set:
