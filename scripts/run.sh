@@ -31,10 +31,12 @@ main()
 {
 	# Check if the SNF executable exists
 	file_exists $executable && : || usage
+	executable=$(get_abs_path $executable)
 	printf "SNF Executable: %s\n" $executable
 
 	# Check if the input property file exists
 	file_exists $input_property_file && : || usage
+	input_property_file=$(get_abs_path $input_property_file)
 	printf "SNF      Input: %s\n" $input_property_file
 
 	# Debug option is given

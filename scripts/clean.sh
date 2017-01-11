@@ -6,4 +6,8 @@
 ## Description: Cleans SNF repository
 ##============================================================================
 
+cd $SNF_HOME
+
 make clean
+
+cd - > /dev/null

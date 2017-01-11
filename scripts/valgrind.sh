@@ -29,12 +29,12 @@ main()
 {
 	# The SNF executable
 	file_exists $executable && : || usage
-	executable=$(realpath $executable)
+	executable=$(get_abs_path $executable)
 	echo $executable
 
 	# Check if property file exists
 	file_exists $input_property_file && : || usage
-	input_property_file=$(realpath $input_property_file)
+	input_property_file=$(get_abs_path $input_property_file)
 	echo $input_property_file
 
 	cd $SNF_HOME

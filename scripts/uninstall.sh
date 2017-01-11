@@ -29,6 +29,7 @@ main()
 
 	# Check if the path exists
 	path_exists $build_path  && : || usage
+	build_path=$(get_abs_path $build_path)
 
 	# Uninstall
 	cd $SNF_HOME
