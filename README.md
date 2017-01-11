@@ -5,28 +5,23 @@ A framework to turn a chain of Click-based network functions (NFs) into a sythes
 Our PeerJ Computer Science journal article provides more information about SNF: https://peerj.com/articles/cs-98/
 Moreover, the licentiate thesis of Georgios P. Katsikas presents an even more thorough performance evaluation of SNF in Chapter 7: http://kth.diva-portal.org/smash/record.jsf?pid=diva2%3A1044355&dswid=-1244
 
-Requirements
+I. Requirements
 ------
   * C++11 (e.g. apt-get install build-essential)
   * `apt-get install autotools-dev`
   * `apt-get install libpcap-dev`
   * `apt-get install libboost-all-dev` (or libboost-dev)
 
-Profile
+II. Steps
 ------
-  * `apt-get install gdb`
-  * `apt-get install valgrind`
-
-Steps
-------
-Download SNF
+A. Download SNF
 ----
   * `git clone git@bitbucket.org:nslab/snf.git`
   * `cd snf/`
   * export SNF_HOME=`pwd`
   * `cd ../`
 
-Download and Configure Click
+B. Download and Configure Click
 ----
 Currently, SNF compiles with the basic Click framework.
 FastClick support might be added in the future.
@@ -62,7 +57,7 @@ FastClick support might be added in the future.
   * `make elemlist`
   * `make install` (uses default prefix=/usr/local/)
 
-Build SNF
+C. Build SNF
 ----
   * `cd ${SNF_HOME}`
   * Build SNF according to INSTALL
@@ -73,12 +68,12 @@ Build SNF
   * `./run.sh <snf-exec> <your property file>` will load the property file and generate the synthesized chain in the specified folder (property file).
   * SNF can be instructed (via the property file) to generate either a Click or a FastClick synthesized service chain. This allows to reap the benefits of FastClick's advanced thread scheduling, computational batching, and fast user-space I/O, while maintainig compatibility with Click.
 
-Run SNF
+D. Run SNF
 ----
   * Click-based SNF: `click <path-to-snf.click>`
   * (Fast)Click-based SNF with DPDK: `click --dpdk -c ffff -n 4 -- <path-to-dpdk-snf.click>`
 
-Multi-core SNF
+III. Multi-core SNF
 ------
 There are various ways to deploy SNF across multiple cores. We currently support Click-DPDK and FastClick (with DPDK) using Receive-Side Scaling (RSS) as follows:
   * Build SNF with DPDK support following the steps above.
@@ -94,8 +89,8 @@ There are various ways to deploy SNF across multiple cores. We currently support
 hence your SNF chain can read packets from all of these queues and execute the chain pipeline in parallel.
   * Underneath this system, the DPDK I/O uses RSS to hash incoming packets to different hardware queues. See the RSS section below.
 
-Receive-Side Scaling (RSS)
-------
+A. Receive-Side Scaling (RSS)
+----
 Click-DPDK or FastClick use RSS by default. The default hash function is specified in the lib/dpdkdevice.cc file using struct rte_eth_conf.
 This data structure contains a member structure struct rte_eth_rxmode rxmode which in turn contains a field mq_mode (multi-queue mode in the receiver) that is set to ETH_MQ_RX_RSS (RSS in on).
 The RSS configuration can be adjusted by modifying rx_adv_conf.rss_conf.rss_key (NULL by default) and rx_adv_conf.rss_conf.rss_hf (ETH_RSS_IP by default).
@@ -103,8 +98,8 @@ This configuration means that the IP address field is used in the hash function 
 To explore other possibilities in DPDK, refer to ${DPDK_DIR}/lib/librte_ether/rte_ethdev.h and search for keyword ETH_RSS_.
 An important property we might want to explore is how to run RSS in symmetric mode.
 
-Symmetric RSS
-------
+B. Symmetric RSS
+----
 Many networking applications operate on a per-flow basis, and you don't want this information being shared among different CPUs.
 Therefore, it is very important to have the same CPU handling both sides of a connection (bi-directional or symmetrical flows).
 A group of researchers found that there is a specific hash key which offers this property.
