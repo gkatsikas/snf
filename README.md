@@ -33,7 +33,7 @@ In case you want to use the DPDK I/O, compile DPDK 2.1.0 or 2.2.0 (recommended).
   * `git clone https://github.com/kohler/click.git`
   * `cd ./click`
   * export CLICK_HOME=`pwd`
-  * `patch -p1 < ${SNF_HOME}/src/click/click-snf.patch`
+  * `patch -p1 < ${SNF_HOME}/patch/click-snf.patch`
     * Normal Click (User-space):
 		`./configure    --enable-user-multithread --enable-multithread --enable-ip6 \
 				--enable-nanotimestamp --enable-intel-cpu --enable-analysis \
