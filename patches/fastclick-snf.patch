@@ -1,3 +1,1129 @@
+diff --git a/elements/analysis/settimestampdelta.cc b/elements/analysis/settimestampdelta.cc
+index 0fd5811..6195210 100644
+--- a/elements/analysis/settimestampdelta.cc
++++ b/elements/analysis/settimestampdelta.cc
+@@ -3,7 +3,11 @@
+  * settimestampdelta.{cc,hh} -- element observes range of timestamps
+  * Eddie Kohler
+  *
++ * Computational batching support
++ * by Georgios Katsikas
++ *
+  * Copyright (c) 2003 International Computer Science Institute
++ * Copyright (c) 2016 KTH Royal Institute of Technology
+  *
+  * Permission is hereby granted, free of charge, to any person obtaining a
+  * copy of this software and associated documentation files (the "Software"),
+@@ -72,6 +76,15 @@ SetTimestampDelta::simple_action(Packet *p)
+     return p;
+ }
+ 
++#if HAVE_BATCH
++PacketBatch*
++SetTimestampDelta::simple_action_batch(PacketBatch *batch)
++{
++    EXECUTE_FOR_EACH_PACKET(simple_action, batch);
++    return batch;
++}
++#endif
++
+ String
+ SetTimestampDelta::read_handler(Element *e, void *thunk)
+ {
+diff --git a/elements/analysis/settimestampdelta.hh b/elements/analysis/settimestampdelta.hh
+index 2dd6cfb..d927846 100644
+--- a/elements/analysis/settimestampdelta.hh
++++ b/elements/analysis/settimestampdelta.hh
+@@ -1,7 +1,7 @@
+ // -*- mode: c++; c-basic-offset: 4 -*-
+ #ifndef CLICK_SETTIMESTAMPDELTA_HH
+ #define CLICK_SETTIMESTAMPDELTA_HH
+-#include <click/element.hh>
++#include <click/batchelement.hh>
+ CLICK_DECLS
+ 
+ /*
+@@ -44,7 +44,7 @@ relative to the next nonzero timestamp encountered.
+ 
+ SetTimestamp, AdjustTimestamp, TimeFilter */
+ 
+-class SetTimestampDelta : public Element { public:
++class SetTimestampDelta : public BatchElement { public:
+ 
+     SetTimestampDelta() CLICK_COLD;
+     ~SetTimestampDelta() CLICK_COLD;
+@@ -55,7 +55,10 @@ class SetTimestampDelta : public Element { public:
+     int configure(Vector<String> &, ErrorHandler *) CLICK_COLD;
+     void add_handlers() CLICK_COLD;
+ 
+-    Packet *simple_action(Packet *);
++    Packet      *simple_action      (Packet      *p);
++#if HAVE_BATCH
++    PacketBatch *simple_action_batch(PacketBatch *batch);
++#endif
+ 
+   private:
+ 
+diff --git a/elements/analysis/storeicmptimeseqrecord.cc b/elements/analysis/storeicmptimeseqrecord.cc
+new file mode 100644
+index 0000000..d61a206
+--- /dev/null
++++ b/elements/analysis/storeicmptimeseqrecord.cc
+@@ -0,0 +1,170 @@
++/*
++ * storeicmptimeseqrecord.{cc,hh} -- Store timestamp annotations into ICMP packets.
++ * Supports computational batching.
++ * by Georgios Katsikas
++ *
++ * Copyright (c) 2016 KTH Royal Institute of Technology
++
++ * Permission is hereby granted, free of charge, to any person obtaining a
++ * copy of this software and associated documentation files (the "Software"),
++ * to deal in the Software without restriction, subject to the conditions
++ * listed in the Click LICENSE file. These conditions include: you must
++ * preserve this copyright notice, and you cannot mention the copyright
++ * holders in advertising related to the Software without their permission.
++ * The Software is provided WITHOUT ANY WARRANTY, EXPRESS OR IMPLIED. This
++ * notice is a summary of the Click LICENSE file; the license in that file is
++ * legally binding.
++*/
++
++#include <click/config.h>
++#include "storeicmptimeseqrecord.hh"
++#include <click/glue.hh>
++#include <clicknet/ip.h>
++#include <clicknet/ip6.h>
++#include <clicknet/icmp.h>
++#include <clicknet/tcp.h>
++#include <click/args.hh>
++#include <click/error.hh>
++
++
++
++CLICK_DECLS
++
++/*
++ */
++StoreICMPTimeSeqRecord::StoreICMPTimeSeqRecord() {
++	_count = 0;
++	_delta = 0;
++	_offset = 0;
++}
++
++int
++StoreICMPTimeSeqRecord::configure(Vector<String> &conf, ErrorHandler *errh) {
++	if (Args(conf, this, errh)
++		.read_mp("OFFSET", _offset)
++		.read("DELTA", _delta)
++		.complete() < 0)
++		return -1;
++	return 0;
++}
++
++// This is the tricky bit.  We can't rely on any headers being
++// filled out if elements like CheckIPHeader have not been called
++// so we should just access the raw data and cast wisely
++Packet* StoreICMPTimeSeqRecord::simple_action(Packet *packet) {
++	WritablePacket *p = packet->uniqueify();
++	Timestamp       tnow;
++	click_icmp     *icmph = 0;
++	PData          *pData;
++	uint32_t        csum = 0;
++	uint32_t        offset = _offset;
++
++	// the packet is shared and we can't modify it without screwing
++	// things up
++	if (!p) {
++	// If uniqueify() fails, packet itself is garbage and has been deleted
++		click_chatter("Non-Writable Packet!");
++		return 0;
++	}
++
++	// get the first two words of the IP header to see what it is to determine how to proceed further
++	if (p->length() < offset + sizeof(uint32_t) * 2) {
++		p->kill();
++		return 0;
++	}
++
++	// here need to get to the right offset.  The IP header can be of variable length due to options
++	// also, the header might be IPv4 of IPv6
++	u_char version = p->data()[offset] >> 4;
++	if (version == 0x04) {
++		const click_ip *ip = reinterpret_cast<const click_ip *>(p->data() + offset);
++		offset += ip->ip_hl << 2;
++	}
++	else if (version == 0x06) {
++		// IPv6 header is
++		const click_ip6 *ip6 = reinterpret_cast<const click_ip6 *>(p->data() + offset);
++		if (ip6->ip6_nxt == 0x01) { // ICMP is the next header
++			offset += sizeof(click_ip6);
++		}
++		else { // the next header is not ICMP so stop now
++			p->kill();
++			return 0;
++		}
++	}
++	else {
++		click_chatter("Unknown IP version!");
++		p->kill();
++		return 0;
++	}
++
++	if (p->length() < offset + sizeof(click_icmp) + sizeof(PData)) {
++		//click_chatter("Packet is too short");
++		p->kill();
++		return 0;
++	}
++
++	// eth, IP, headers must be bypassed with a correct offset
++	icmph = (click_icmp*)(p->data() + offset);
++	pData = (PData*)((char*)icmph + sizeof(click_icmp));
++	csum = icmph->icmp_cksum;
++
++	// we use incremental checksum computation to patch up the checksum after
++	// the payload will get modified
++	_count++;
++	if (_delta) {
++		Timestamp ts1(ntohl(pData->data[0]), Timestamp::nsec_to_subsec(ntohl(pData->data[1])));
++		Timestamp diff = Timestamp::now() - ts1;
++
++		//click_chatter("Seq %d Time Diff sec: %d usec: %d\n", ntohl(pData->seq_num), diff.sec(), diff.nsec());
++		pData->data[2] = htonl(diff.sec());
++		pData->data[3] = htonl(diff.nsec());
++		csum += click_in_cksum((const unsigned char*)(pData->data + 2), 2 * sizeof(uint32_t));
++	}
++	else {
++		tnow = Timestamp::now();
++
++		// subtract the previous contribution from CHECKSUM in case PData values are non-zero
++		csum -= click_in_cksum((const unsigned char*)pData, sizeof(PData));
++		pData->seq_num = htonl(_count);
++		pData->data[0] = htonl(tnow.sec());
++		pData->data[1] = htonl(tnow.nsec());
++		pData->data[2] = 0;
++		pData->data[3] = 0;
++		csum += click_in_cksum((const unsigned char*)pData, sizeof(PData));
++	}
++
++	csum = (0xFFFF & csum) + ((0xFFFF0000 & csum) >> 16);
++	csum = (csum != 0xFFFF) ? csum : 0;
++
++	// now that we modified the packet it is time to fix up the
++	// csum of the header.
++	icmph->icmp_cksum = (uint16_t)csum;
++
++	return p;
++}
++
++#if HAVE_BATCH
++PacketBatch*
++StoreICMPTimeSeqRecord::simple_action_batch(PacketBatch *batch)
++{
++	EXECUTE_FOR_EACH_PACKET_DROPPABLE(simple_action, batch, [](Packet *p){});
++	return batch;
++}
++#endif
++
++int
++StoreICMPTimeSeqRecord::reset_handler(const String &, Element *e, void *, ErrorHandler *) {
++	StoreICMPTimeSeqRecord *t = static_cast<StoreICMPTimeSeqRecord *>(e);
++
++	t->_count = 0;
++	return 0;
++}
++
++void
++StoreICMPTimeSeqRecord::add_handlers() {
++	add_data_handlers("count", Handler::f_read, &_count);
++	add_write_handler("reset", reset_handler);
++}
++
++CLICK_ENDDECLS
++EXPORT_ELEMENT(StoreICMPTimeSeqRecord)
+diff --git a/elements/analysis/storeicmptimeseqrecord.hh b/elements/analysis/storeicmptimeseqrecord.hh
+new file mode 100644
+index 0000000..faf30a7
+--- /dev/null
++++ b/elements/analysis/storeicmptimeseqrecord.hh
+@@ -0,0 +1,97 @@
++// -*- c-basic-offset: 4 -*-
++#ifndef CLICK_STOREICMPTIMESEQRECORD_HH
++#define CLICK_STOREICMPTIMESEQRECORD_HH
++#include <click/batchelement.hh>
++
++CLICK_DECLS
++
++/*
++=c
++
++StoreICMPTimeSeqRecord([I<keywords> OFFSET, DELTA])
++
++=s timestamps
++
++=d
++
++StoreICMPTimeSeqRecord element can be handy when computing end-to-end ICMP packet
++delays.  The element embeds a timestamp and a sequence number into a packet and
++adjusts the checksum of the ICMP packet.  Once the initial timestamp has been
++placed into the payload of the ICMP packet, a time difference can be computed
++once a packet passes through another StoreICMPTimeSeqRecord element.  The data can be
++accessed by examining the packet payload (e.g., do a tcpdump and then do post
++processing of the data).  The element uses partial checksums to speed up the
++processing.  The element works with IPv4 and IPv6 packets. In case of IPv6,
++it assumes that the next header field is ICMP.  If this is not the case, the
++element will discard the packet.
++
++Packet payload found after the ICMP header.  Note, the ICMP payload must be at least
++22 bytes long.  The values will be stored in network byte order.
++
++uint32_t seq_num
++uint32_t initial_second
++uint32_t initial_nano_second
++uint32_t difference_second
++uint32_t difference_nano_second
++
++Keyword arguments are:
++
++=over 2
++
++=item OFFSET
++
++Number of bytes to offset from the beginning of the packet where the IPv4/6 header can be found.
++If raw Ethernet packets are fed into this element, then OFFSET needs to be 14.
++
++=item DELTA
++
++Determines which time values are set. If DELTA is false (the default), then the initial_second
++and initial_nano_second values are set to the current time, and the difference values are set to 0.
++If DELTA is true, then the initial values are left as is, and the difference values are set to
++the difference between the current time and the packet's initial time.
++
++=back
++
++=e
++    src :: RatedSource(\<00>, LENGTH 22, RATE 1, LIMIT 100)
++        -> ICMPIPEncap(10.0.1.1, 20.0.0.2)
++        -> EtherEncap(0x0800, 00:04:23:D0:93:63, 00:17:cb:0d:f8:db)
++        -> StoreICMPTimeSeqRecord(OFFSET 14, DELTA false)
++        -> DelayShaper(100msec)
++        -> StoreICMPTimeSeqRecord(OFFSET 14, DELTA true)
++        -> ToDump("dump.dmp");
++*/
++class StoreICMPTimeSeqRecord : public BatchElement {
++	public:
++		StoreICMPTimeSeqRecord() CLICK_COLD;
++
++		const char *class_name() const	{ return "StoreICMPTimeSeqRecord"; }
++		const char *port_count() const	{ return PORTS_1_1; }
++
++		void add_handlers() CLICK_COLD;
++		int  configure(Vector<String> &conf, ErrorHandler *errh) CLICK_COLD;
++
++		Packet      *simple_action      (Packet      *p);
++	#if HAVE_BATCH
++		PacketBatch *simple_action_batch(PacketBatch *batch);
++	#endif
++
++		// packet data payload access struct
++		// Header | PDATA | rest of data
++		// This comes out to 22 bytes which will fit into the smallest Ethernet frame
++		struct PData {
++			uint32_t seq_num;
++			uint32_t data[4];
++		};
++
++	private:
++		unsigned long _count;
++		bool          _delta;  // if true put in_timestamp else out_timestamp
++		uint32_t      _offset; //how much to shift to get to the IPv4/v6 header
++
++		static String read_handler(Element *, void *) CLICK_COLD;
++		static int    reset_handler(const String &, Element *, void *, ErrorHandler *);
++};
++
++CLICK_ENDDECLS
++#endif
+diff --git a/elements/analysis/storetcptimeseqrecord.cc b/elements/analysis/storetcptimeseqrecord.cc
+new file mode 100644
+index 0000000..1af179a
+--- /dev/null
++++ b/elements/analysis/storetcptimeseqrecord.cc
+@@ -0,0 +1,168 @@
++/*
++ * storetcptimeseqrecord.{cc,hh} -- Store timestamp annotations into TCP packets.
++ * Supports computational batching.
++ * by Georgios Katsikas
++ *
++ * Copyright (c) 2016 KTH Royal Institute of Technology
++
++ * Permission is hereby granted, free of charge, to any person obtaining a
++ * copy of this software and associated documentation files (the "Software"),
++ * to deal in the Software without restriction, subject to the conditions
++ * listed in the Click LICENSE file. These conditions include: you must
++ * preserve this copyright notice, and you cannot mention the copyright
++ * holders in advertising related to the Software without their permission.
++ * The Software is provided WITHOUT ANY WARRANTY, EXPRESS OR IMPLIED. This
++ * notice is a summary of the Click LICENSE file; the license in that file is
++ * legally binding.
++*/
++
++#include <click/config.h>
++#include "storetcptimeseqrecord.hh"
++#include <click/glue.hh>
++#include <clicknet/ip.h>
++#include <clicknet/ip6.h>
++#include <clicknet/tcp.h>
++#include <click/args.hh>
++#include <click/error.hh>
++
++CLICK_DECLS
++
++/*
++ */
++StoreTCPTimeSeqRecord::StoreTCPTimeSeqRecord() {
++	_count = 0;
++	_delta = 0;
++	_offset = 0;
++}
++
++int
++StoreTCPTimeSeqRecord::configure(Vector<String> &conf, ErrorHandler *errh) {
++	if (Args(conf, this, errh)
++		.read_mp("OFFSET", _offset)
++		.read("DELTA", _delta)
++		.complete() < 0)
++		return -1;
++	return 0;
++}
++
++// This is the tricky bit.  We can't rely on any headers being
++// filled out if elements like CheckIPHeader have not been called
++// so we should just access the raw data and cast wisely
++Packet*
++StoreTCPTimeSeqRecord::simple_action(Packet *packet) {
++	WritablePacket *p = packet->uniqueify();
++	Timestamp      tnow;
++	click_tcp      *tcph = 0;
++	PData          *pData;
++	uint32_t       csum = 0;
++	uint32_t       offset = _offset;
++
++	// the packet is shared and we can't modify it without screwing
++	// things up
++	if (!p) {
++	// If uniqueify() fails, packet itself is garbage and has been deleted
++		click_chatter("Non-Writable Packet!");
++		return 0;
++	}
++
++	// get the first two words of the IP header to see what it is to determine how to proceed further
++	if (p->length() < offset + sizeof(uint32_t) * 2) {
++		p->kill();
++		return 0;
++	}
++
++	// here need to get to the right offset.  The IP header can be of variable length due to options
++	// also, the header might be IPv4 of IPv6
++	u_char version = p->data()[offset] >> 4;
++	if (version == 0x04) {
++		const click_ip *ip = reinterpret_cast<const click_ip *>(p->data() + offset);
++		offset += ip->ip_hl << 2;
++	}
++	else if (version == 0x06) {
++		// IPv6 header is
++		const click_ip6 *ip6 = reinterpret_cast<const click_ip6 *>(p->data() + offset);
++		if (ip6->ip6_nxt == 0x06) { // TCP is the next header
++			offset += sizeof(click_ip6);
++		}
++		else { // the next header is not TCP so stop now
++			p->kill();
++			return 0;
++		}
++	}
++	else {
++		click_chatter("Unknown IP version!");
++		p->kill();
++		return 0;
++	}
++
++	if (p->length() < offset + sizeof(click_tcp) + sizeof(PData)) {
++		//click_chatter("Packet is too short");
++		p->kill();
++		return 0;
++	}
++
++	// eth, IP, headers must be bypassed with a correct offset
++	tcph = (click_tcp*)(p->data() + offset);
++	pData = (PData*)((char*)tcph + sizeof(click_tcp));
++	csum = tcph->th_sum;
++
++	// we use incremental checksum computation to patch up the checksum after
++	// the payload will get modified
++	_count++;
++	if (_delta) {
++		Timestamp ts1(ntohl(pData->data[0]), Timestamp::nsec_to_subsec(ntohl(pData->data[1])));
++		Timestamp diff = Timestamp::now() - ts1;
++
++		//click_chatter("Seq %d Time Diff sec: %d usec: %d\n", ntohl(pData->seq_num), diff.sec(), diff.nsec());
++		pData->data[2] = htonl(diff.sec());
++		pData->data[3] = htonl(diff.nsec());
++		csum += click_in_cksum((const unsigned char*)(pData->data + 2), 2 * sizeof(uint32_t));
++	}
++	else {
++		tnow = Timestamp::now();
++
++		// subtract the previous contribution from CHECKSUM in case PData values are non-zero
++		csum -= click_in_cksum((const unsigned char*)pData, sizeof(PData));
++		pData->seq_num = htonl(_count);
++		pData->data[0] = htonl(tnow.sec());
++		pData->data[1] = htonl(tnow.nsec());
++		pData->data[2] = 0;
++		pData->data[3] = 0;
++		csum += click_in_cksum((const unsigned char*)pData, sizeof(PData));
++	}
++
++	csum = (0xFFFF & csum) + ((0xFFFF0000 & csum) >> 16);
++	csum = (csum != 0xFFFF) ? csum : 0;
++
++	// now that we modified the packet it is time to fix up the
++	// csum of the header.
++	tcph->th_sum = (uint16_t)csum;
++
++	return p;
++}
++
++#if HAVE_BATCH
++PacketBatch*
++StoreTCPTimeSeqRecord::simple_action_batch(PacketBatch *batch)
++{
++	EXECUTE_FOR_EACH_PACKET_DROPPABLE(simple_action, batch, [](Packet *p){});
++	return batch;
++}
++#endif
++
++int
++StoreTCPTimeSeqRecord::reset_handler(const String &, Element *e, void *, ErrorHandler *) {
++	StoreTCPTimeSeqRecord *t = static_cast<StoreTCPTimeSeqRecord *>(e);
++
++	t->_count = 0;
++	return 0;
++}
++
++void
++StoreTCPTimeSeqRecord::add_handlers() {
++	add_data_handlers("count", Handler::f_read, &_count);
++	add_write_handler("reset", reset_handler);
++}
++
++CLICK_ENDDECLS
++EXPORT_ELEMENT(StoreTCPTimeSeqRecord)
+diff --git a/elements/analysis/storetcptimeseqrecord.hh b/elements/analysis/storetcptimeseqrecord.hh
+new file mode 100644
+index 0000000..fa67e05
+--- /dev/null
++++ b/elements/analysis/storetcptimeseqrecord.hh
+@@ -0,0 +1,88 @@
++// -*- c-basic-offset: 4 -*-
++#ifndef CLICK_STORETCPTIMESEQRECORD_HH
++#define CLICK_STORETCPTIMESEQRECORD_HH
++#include <click/batchelement.hh>
++
++CLICK_DECLS
++
++/*
++=c
++
++StoreTCPTimeSeqRecord([I<keywords> OFFSET, DELTA])
++
++=s timestamps
++
++=d
++
++StoreTCPTimeSeqRecord element can be handy when computing end-to-end TCP packet
++delays.  The element embeds a timestamp and a sequence number into a packet and
++adjusts the checksum of the TCP packet.  Once the initial timestamp has been
++placed into the payload of the TCP packet, a time difference can be computed
++once a packet passes through another StoreTCPTimeSeqRecord element.  The data can be
++accessed by examining the packet payload (e.g., do a tcpdump and then do post
++processing of the data).  The element uses partial checksums to speed up the
++processing.  The element works with IPv4 and IPv6 packets. In case of IPv6,
++it assumes that the next header field is TCP.  If this is not the case, the
++element will discard the packet.
++
++Packet payload found after the TCP header.  Note, the TCP payload must be at least
++22 bytes long.  The values will be stored in network byte order.
++
++uint32_t seq_num
++uint32_t initial_second
++uint32_t initial_nano_second
++uint32_t difference_second
++uint32_t difference_nano_second
++
++Keyword arguments are:
++
++=over 2
++
++=item OFFSET
++
++Number of bytes to offset from the beginning of the packet where the IPv4/6 header can be found.
++If raw Ethernet packets are fed into this element, then OFFSET needs to be 14.
++
++=item DELTA
++
++Determines which time values are set. If DELTA is false (the default), then the initial_second
++and initial_nano_second values are set to the current time, and the difference values are set to 0.
++If DELTA is true, then the initial values are left as is, and the difference values are set to
++the difference between the current time and the packet's initial time.
++
++=back
++*/
++class StoreTCPTimeSeqRecord : public BatchElement {
++	public:
++		StoreTCPTimeSeqRecord() CLICK_COLD;
++
++		const char *class_name() const	{ return "StoreTCPTimeSeqRecord"; }
++		const char *port_count() const	{ return PORTS_1_1; }
++
++		void add_handlers() CLICK_COLD;
++		int  configure(Vector<String> &conf, ErrorHandler *errh) CLICK_COLD;
++
++		Packet      *simple_action      (Packet      *p);
++	#if HAVE_BATCH
++		PacketBatch *simple_action_batch(PacketBatch *batch);
++	#endif
++
++		// packet data payload access struct
++		// Header | PDATA | rest of data
++		// This comes out to 22 bytes which will fit into the smallest Ethernet frame
++		struct PData {
++			uint32_t seq_num;
++			uint32_t data[4];
++		};
++
++	private:
++		unsigned long _count;
++		bool          _delta;  // if true put in_timestamp else out_timestamp
++		uint32_t      _offset; //how much to shift to get to the IPv4/v6 header
++
++		static String read_handler(Element *, void *) CLICK_COLD;
++		static int    reset_handler(const String &, Element *, void *, ErrorHandler *);
++};
++
++CLICK_ENDDECLS
++#endif
+diff --git a/elements/analysis/storetimeseqrecord.cc b/elements/analysis/storetimeseqrecord.cc
+new file mode 100644
+index 0000000..8afd541
+--- /dev/null
++++ b/elements/analysis/storetimeseqrecord.cc
+@@ -0,0 +1,225 @@
++/*
++ * storetimeseqrecord.{cc,hh} -- Store timestamp annotations into TCP/UDP/ICMP packets.
++ * Supports computational batching.
++ * by Georgios Katsikas
++ *
++ * Copyright (c) 2016 KTH Royal Institute of Technology
++ *
++ * Permission is hereby granted, free of charge, to any person obtaining a
++ * copy of this software and associated documentation files (the "Software"),
++ * to deal in the Software without restriction, subject to the conditions
++ * listed in the Click LICENSE file. These conditions include: you must
++ * preserve this copyright notice, and you cannot mention the copyright
++ * holders in advertising related to the Software without their permission.
++ * The Software is provided WITHOUT ANY WARRANTY, EXPRESS OR IMPLIED. This
++ * notice is a summary of the Click LICENSE file; the license in that file is
++ * legally binding.
++*/
++
++#include <click/config.h>
++#include <click/glue.hh>
++#include <clicknet/ip.h>
++#include <clicknet/ip6.h>
++#include <clicknet/udp.h>
++#include <clicknet/tcp.h>
++#include <clicknet/icmp.h>
++#include <click/args.hh>
++#include <click/error.hh>
++
++#include "storetimeseqrecord.hh"
++
++CLICK_DECLS
++
++/*
++ */
++StoreTimeSeqRecord::StoreTimeSeqRecord() {
++	_count = 0;
++	_delta = 0;
++	_offset = 0;
++}
++
++int
++StoreTimeSeqRecord::configure(Vector<String> &conf, ErrorHandler *errh) {
++	if (Args(conf, this, errh)
++		.read_mp("OFFSET", _offset)
++		.read("DELTA", _delta)
++		.complete() < 0)
++		return -1;
++	return 0;
++}
++
++// This is the tricky bit.  We can't rely on any headers being
++// filled out if elements like CheckIPHeader have not been called
++// so we should just access the raw data and cast wisely
++Packet*
++StoreTimeSeqRecord::simple_action(Packet *packet) {
++	WritablePacket *p = packet->uniqueify();
++	Timestamp      tnow;
++	PData          *pData;
++	uint32_t       csum = 0;
++	uint32_t       offset = _offset;
++
++	// the packet is shared and we can't modify it without screwing
++	// things up
++	if (!p) {
++	// If uniqueify() fails, packet itself is garbage and has been deleted
++		click_chatter("[%s] Non-Writable Packet!", class_name());
++		return 0;
++	}
++
++	// get the first two words of the IP header to see what it is to determine how to proceed further
++	if (p->length() < offset + sizeof(uint32_t) * 2) {
++		click_chatter("[%s] Not enough space to proceed", class_name());
++		p->kill();
++		return 0;
++	}
++
++	// Abstract pointer that points to TCP/UDP/ICMP packets
++	void           *hdr_pointer = 0;
++	unsigned short tr_offset    = -1;
++	unsigned short proto        = -1;
++
++	// here need to get to the right offset.  The IP header can be of variable length due to options
++	// also, the header might be IPv4 of IPv6
++	u_char version = p->data()[offset] >> 4;
++	if (version == 0x04) {
++		const click_ip *ip = reinterpret_cast<const click_ip *>(p->data() + offset);
++		offset += ip->ip_hl << 2;
++
++		// ICMP
++		if ( ip->ip_p == IP_PROTO_ICMP ) {
++			hdr_pointer = reinterpret_cast<click_icmp *>(p->data() + offset);
++			tr_offset = sizeof(click_icmp);
++			proto = IP_PROTO_ICMP;
++		}
++		// TCP
++		else if ( ip->ip_p == IP_PROTO_TCP ) {
++			hdr_pointer = reinterpret_cast<click_tcp *>(p->data() + offset);
++			tr_offset = sizeof(click_tcp);
++			proto = IP_PROTO_TCP;
++		}
++		// UDP
++		else if ( ip->ip_p == IP_PROTO_UDP ) {
++			hdr_pointer = reinterpret_cast<click_udp *>(p->data() + offset);
++			tr_offset = sizeof(click_udp);
++			proto = IP_PROTO_UDP;
++		}
++		else {
++			//click_chatter("[%s] Accepts only ICMP, TCP, and UDP packets", class_name());
++			p->kill();
++			return 0;
++		}
++	}
++	else if (version == 0x06) {
++		// IPv6 header is
++		const click_ip6 *ip6 = reinterpret_cast<const click_ip6 *>(p->data() + offset);
++		offset += sizeof(click_ip6);
++
++		// ICMP
++		if ( ip6->ip6_nxt == 0x01 ) {
++			hdr_pointer = reinterpret_cast<click_icmp *>(p->data() + offset);
++			tr_offset = sizeof(click_icmp);
++			proto = IP_PROTO_ICMP;
++		}
++		// TCP
++		else if ( ip6->ip6_nxt == 0x06 ) {
++			hdr_pointer = reinterpret_cast<click_tcp *>(p->data() + offset);
++			tr_offset = sizeof(click_tcp);
++			proto = IP_PROTO_TCP;
++		}
++		// UDP
++		else if ( ip6->ip6_nxt == 0x11 ) {
++			hdr_pointer = reinterpret_cast<click_udp *>(p->data() + offset);
++			tr_offset = sizeof(click_udp);
++			proto = IP_PROTO_UDP;
++		}
++		else { // the next header is not ICMP/TCP/UDP so stop now
++			//click_chatter("[%s] Accepts only ICMP, TCP, and UDP packets", class_name());
++			p->kill();
++			return 0;
++		}
++	}
++	else {
++		click_chatter("Unknown IP version!");
++		p->kill();
++		return 0;
++	}
++
++	if ( p->length() < offset + tr_offset + sizeof(PData) ) {
++		//click_chatter("Packet is too short");
++		p->kill();
++		return 0;
++	}
++
++	// Eth, IP, headers must be bypassed with a correct offset
++	pData = (PData*)((char*)hdr_pointer + tr_offset);
++	if      ( proto == IP_PROTO_ICMP )
++		csum = reinterpret_cast<click_icmp *>(hdr_pointer)->icmp_cksum;
++	else if ( proto == IP_PROTO_TCP  )
++		csum = reinterpret_cast<click_tcp  *>(hdr_pointer)->th_sum;
++	else if ( proto == IP_PROTO_UDP  )
++		csum = reinterpret_cast<click_udp  *>(hdr_pointer)->uh_sum;
++
++	// we use incremental checksum computation to patch up the checksum after
++	// the payload will get modified
++	_count++;
++	if (_delta) {
++		Timestamp ts1(ntohl(pData->data[0]), Timestamp::nsec_to_subsec(ntohl(pData->data[1])));
++		Timestamp diff = Timestamp::now() - ts1;
++
++		//click_chatter("Seq %d Time Diff sec: %d usec: %d\n", ntohl(pData->seq_num), diff.sec(), diff.nsec());
++		pData->data[2] = htonl(diff.sec());
++		pData->data[3] = htonl(diff.nsec());
++		csum += click_in_cksum((const unsigned char*)(pData->data + 2), 2 * sizeof(uint32_t));
++	}
++	else {
++		tnow = Timestamp::now();
++
++		// subtract the previous contribution from CHECKSUM in case PData values are non-zero
++		csum -= click_in_cksum((const unsigned char*)pData, sizeof(PData));
++		pData->seq_num = htonl(_count);
++		pData->data[0] = htonl(tnow.sec());
++		pData->data[1] = htonl(tnow.nsec());
++		pData->data[2] = 0;
++		pData->data[3] = 0;
++		csum += click_in_cksum((const unsigned char*)pData, sizeof(PData));
++	}
++
++	csum = (0xFFFF & csum) + ((0xFFFF0000 & csum) >> 16);
++	csum = (csum != 0xFFFF) ? csum : 0;
++
++	// now that we modified the packet it is time to fix up the csum of the header.
++	if      ( proto == IP_PROTO_ICMP )
++		reinterpret_cast<click_icmp *>(hdr_pointer)->icmp_cksum = (uint16_t)csum;
++	else if ( proto == IP_PROTO_TCP  )
++		reinterpret_cast<click_tcp  *>(hdr_pointer)->th_sum     = (uint16_t)csum;
++	else if ( proto == IP_PROTO_UDP  )
++		reinterpret_cast<click_udp  *>(hdr_pointer)->uh_sum     = (uint16_t)csum;
++
++	return p;
++}
++
++#if HAVE_BATCH
++PacketBatch*
++StoreTimeSeqRecord::simple_action_batch(PacketBatch *batch)
++{
++	EXECUTE_FOR_EACH_PACKET_DROPPABLE(simple_action, batch, [](Packet *p){});
++	return batch;
++}
++#endif
++
++int
++StoreTimeSeqRecord::reset_handler(const String &, Element *e, void *, ErrorHandler *) {
++	StoreTimeSeqRecord *t = static_cast<StoreTimeSeqRecord *>(e);
++	t->_count = 0;
++	return 0;
++}
++
++void
++StoreTimeSeqRecord::add_handlers() {
++	add_data_handlers("count", Handler::f_read, &_count);
++	add_write_handler("reset", reset_handler);
++}
++
++CLICK_ENDDECLS
++EXPORT_ELEMENT(StoreTimeSeqRecord)
+diff --git a/elements/analysis/storetimeseqrecord.hh b/elements/analysis/storetimeseqrecord.hh
+new file mode 100644
+index 0000000..b546b77
+--- /dev/null
++++ b/elements/analysis/storetimeseqrecord.hh
+@@ -0,0 +1,88 @@
++// -*- c-basic-offset: 4 -*-
++#ifndef CLICK_STORETIMESEQRECORD_HH
++#define CLICK_STORETIMESEQRECORD_HH
++#include <click/batchelement.hh>
++
++CLICK_DECLS
++
++/*
++=c
++
++StoreTimeSeqRecord([I<keywords> OFFSET, DELTA])
++
++=s timestamps
++
++=d
++
++StoreTimeSeqRecord element can be handy when computing end-to-end TCP/UDP/ICMP packet
++delays.  The element embeds a timestamp and a sequence number into a packet and
++adjusts the checksum of the packet.  Once the initial timestamp has been
++placed into the payload of the packet, a time difference can be computed
++once a packet passes through another StoreTimeSeqRecord element.  The data can be
++accessed by examining the packet payload (e.g., do a tcpdump and then do post
++processing of the data).  The element uses partial checksums to speed up the
++processing.  The element works with IPv4 and IPv6 packets. In case of IPv6,
++it assumes that the next header field is TCP/UDP/ICMP.  If this is not the case, the
++element will discard the packet.
++
++Packet payload found after the TCP/UDP/ICMP header.  Note, the TCP/UDP/ICMP payload must be at least
++22 bytes long.  The values will be stored in network byte order.
++
++uint32_t seq_num
++uint32_t initial_second
++uint32_t initial_nano_second
++uint32_t difference_second
++uint32_t difference_nano_second
++
++Keyword arguments are:
++
++=over 2
++
++=item OFFSET
++
++Number of bytes to offset from the beginning of the packet where the IPv4/6 header can be found.
++If raw Ethernet packets are fed into this element, then OFFSET needs to be 14.
++
++=item DELTA
++
++Determines which time values are set. If DELTA is false (the default), then the initial_second
++and initial_nano_second values are set to the current time, and the difference values are set to 0.
++If DELTA is true, then the initial values are left as is, and the difference values are set to
++the difference between the current time and the packet's initial time.
++
++=back
++*/
++class StoreTimeSeqRecord : public BatchElement {
++	public:
++		StoreTimeSeqRecord() CLICK_COLD;
++
++		const char *class_name() const	{ return "StoreTimeSeqRecord"; }
++		const char *port_count() const	{ return PORTS_1_1; }
++
++		void add_handlers() CLICK_COLD;
++		int  configure(Vector<String> &conf, ErrorHandler *errh) CLICK_COLD;
++
++		Packet      *simple_action      (Packet      *p);
++	#if HAVE_BATCH
++		PacketBatch *simple_action_batch(PacketBatch *batch);
++	#endif
++
++		// packet data payload access struct
++		// Header | PDATA | rest of data
++		// This comes out to 22 bytes which will fit into the smallest Ethernet frame
++		struct PData {
++			uint32_t seq_num;
++			uint32_t data[4];
++		};
++
++	private:
++		unsigned long _count;
++		bool          _delta;  // if true put in_timestamp else out_timestamp
++		uint32_t      _offset; //how much to shift to get to the IPv4/v6 header
++
++		static String read_handler(Element *, void *) CLICK_COLD;
++		static int    reset_handler(const String &, Element *, void *, ErrorHandler *);
++};
++
++CLICK_ENDDECLS
++#endif
+diff --git a/elements/analysis/storetimestamp.cc b/elements/analysis/storetimestamp.cc
+index b489ff6..95302ef 100644
+--- a/elements/analysis/storetimestamp.cc
++++ b/elements/analysis/storetimestamp.cc
+@@ -3,7 +3,11 @@
+  * storetimestamp.{cc,hh} -- element stores timestamp in packet data
+  * Eddie Kohler
+  *
++ * Computational batching support
++ * by Georgios Katsikas
++ *
+  * Copyright (c) 2003 International Computer Science Institute
++ * Copyright (c) 2016 KTH Royal Institute of Technology
+  *
+  * Permission is hereby granted, free of charge, to any person obtaining a
+  * copy of this software and associated documentation files (the "Software"),
+@@ -58,5 +62,14 @@ StoreTimestamp::simple_action(Packet *p)
+ 	return 0;
+ }
+ 
++#if HAVE_BATCH
++PacketBatch*
++StoreTimestamp::simple_action_batch(PacketBatch *batch)
++{
++    EXECUTE_FOR_EACH_PACKET_DROPPABLE(simple_action, batch, [](Packet *p){});
++    return batch;
++}
++#endif
++
+ CLICK_ENDDECLS
+ EXPORT_ELEMENT(StoreTimestamp)
+diff --git a/elements/analysis/storetimestamp.hh b/elements/analysis/storetimestamp.hh
+index d6f1eb0..07450a9 100644
+--- a/elements/analysis/storetimestamp.hh
++++ b/elements/analysis/storetimestamp.hh
+@@ -1,7 +1,7 @@
+ // -*- mode: c++; c-basic-offset: 4 -*-
+ #ifndef CLICK_STORETIMESTAMP_HH
+ #define CLICK_STORETIMESTAMP_HH
+-#include <click/element.hh>
++#include <click/batchelement.hh>
+ CLICK_DECLS
+ 
+ /*
+@@ -38,7 +38,7 @@ Boolean.  If true, the timestamp will be tacked on to the end of the packet.
+ 
+ SetTimestamp */
+ 
+-class StoreTimestamp : public Element { public:
++class StoreTimestamp : public BatchElement { public:
+ 
+     StoreTimestamp() CLICK_COLD;
+     ~StoreTimestamp() CLICK_COLD;
+@@ -47,7 +47,10 @@ class StoreTimestamp : public Element { public:
+     const char *port_count() const	{ return PORTS_1_1; }
+     int configure(Vector<String> &, ErrorHandler *) CLICK_COLD;
+ 
+-    Packet *simple_action(Packet *);
++    Packet      *simple_action      (Packet *);
++#if HAVE_BATCH
++    PacketBatch *simple_action_batch(PacketBatch *batch);
++#endif
+ 
+   private:
+ 
+diff --git a/elements/analysis/storeudptimeseqrecord.cc b/elements/analysis/storeudptimeseqrecord.cc
+index 4690364..9c6cedd 100644
+--- a/elements/analysis/storeudptimeseqrecord.cc
++++ b/elements/analysis/storeudptimeseqrecord.cc
+@@ -1,7 +1,12 @@
+ /*
+-Programmer: Roman Chertov
++ * Programmer: Roman Chertov
++ *
++ * Computational batching support
++ * by Georgios Katsikas
++ *
+  * Copyright (c) 2010 The Aerospace Corporation
+-
++ * Copyright (c) 2016 KTH Royal Institute of Technology
++ *
+  * Permission is hereby granted, free of charge, to any person obtaining a
+  * copy of this software and associated documentation files (the "Software"),
+  * to deal in the Software without restriction, subject to the conditions
+@@ -38,9 +43,8 @@ StoreUDPTimeSeqRecord::StoreUDPTimeSeqRecord()
+     _offset = 0;
+ }
+ 
+-
+-
+-int StoreUDPTimeSeqRecord::configure(Vector<String> &conf, ErrorHandler *errh)
++int
++StoreUDPTimeSeqRecord::configure(Vector<String> &conf, ErrorHandler *errh)
+ {
+     if (Args(conf, this, errh)
+ 	.read_mp("OFFSET", _offset)
+@@ -53,8 +57,8 @@ int StoreUDPTimeSeqRecord::configure(Vector<String> &conf, ErrorHandler *errh)
+ // This is the tricky bit.  We can't rely on any headers being
+ // filled out if elements like CheckIPHeader have not been called
+ // so we should just access the raw data and cast wisely
+-Packet* StoreUDPTimeSeqRecord::simple_action(Packet *packet)
+-{
++Packet*
++StoreUDPTimeSeqRecord::simple_action(Packet *packet) {
+     WritablePacket *p = packet->uniqueify();
+     Timestamp       tnow;
+     click_udp      *udph = 0;
+@@ -150,8 +154,17 @@ Packet* StoreUDPTimeSeqRecord::simple_action(Packet *packet)
+     return p;
+ }
+ 
++#if HAVE_BATCH
++PacketBatch*
++StoreUDPTimeSeqRecord::simple_action_batch(PacketBatch *batch)
++{
++	EXECUTE_FOR_EACH_PACKET_DROPPABLE(simple_action, batch, [](Packet *p){});
++	return batch;
++}
++#endif
+ 
+-int StoreUDPTimeSeqRecord::reset_handler(const String &, Element *e, void *, ErrorHandler *)
++int
++StoreUDPTimeSeqRecord::reset_handler(const String &, Element *e, void *, ErrorHandler *)
+ {
+     StoreUDPTimeSeqRecord *t = (StoreUDPTimeSeqRecord *) e;
+ 
+@@ -159,7 +172,8 @@ int StoreUDPTimeSeqRecord::reset_handler(const String &, Element *e, void *, Err
+     return 0;
+ }
+ 
+-void StoreUDPTimeSeqRecord::add_handlers()
++void
++StoreUDPTimeSeqRecord::add_handlers()
+ {
+     add_data_handlers("count", Handler::f_read, &_count);
+     add_write_handler("reset", reset_handler);
+diff --git a/elements/analysis/storeudptimeseqrecord.hh b/elements/analysis/storeudptimeseqrecord.hh
+index 350c4f4..cb817f4 100644
+--- a/elements/analysis/storeudptimeseqrecord.hh
++++ b/elements/analysis/storeudptimeseqrecord.hh
+@@ -1,8 +1,13 @@
+ // -*- c-basic-offset: 4 -*-
+ /*
+-Programmer: Roman Chertov
++ * Programmer: Roman Chertov
++ *
++ * Computational batching support
++ * by Georgios Katsikas
++ *
+  * Copyright (c) 2010 The Aerospace Corporation
+-
++ * Copyright (c) 2016 KTH Royal Institute of Technology
++ *
+  * Permission is hereby granted, free of charge, to any person obtaining a
+  * copy of this software and associated documentation files (the "Software"),
+  * to deal in the Software without restriction, subject to the conditions
+@@ -15,7 +20,7 @@ Programmer: Roman Chertov
+ */
+ #ifndef CLICK_STOREUDPTIMESEQRECORD_HH
+ #define CLICK_STOREUDPTIMESEQRECORD_HH
+-#include <click/element.hh>
++#include <click/batchelement.hh>
+ 
+ CLICK_DECLS
+ 
+@@ -75,8 +80,8 @@ the difference between the current time and the packet's initial time.
+         -> StoreUDPTimeSeqRecord(OFFSET 14, DELTA true)
+         -> ToDump("dump.dmp");
+ */
+-class StoreUDPTimeSeqRecord : public Element
+-{
++class StoreUDPTimeSeqRecord : public BatchElement {
++
+ public:
+     StoreUDPTimeSeqRecord() CLICK_COLD;
+ 
+@@ -86,7 +91,10 @@ public:
+     void add_handlers() CLICK_COLD;
+     int  configure(Vector<String> &conf, ErrorHandler *errh) CLICK_COLD;
+ 
+-    Packet *simple_action(Packet *);
++    Packet      *simple_action      (Packet      *p);
++#if HAVE_BATCH
++    PacketBatch *simple_action_batch(PacketBatch *batch);
++#endif
+ 
+     // packet data payload access struct
+     // Header | PDATA | rest of data
 diff --git a/elements/icmp/icmppingrewriter.cc b/elements/icmp/icmppingrewriter.cc
 index 9222cfd..bbf0d8a 100644
 --- a/elements/icmp/icmppingrewriter.cc
@@ -2784,6 +3910,22 @@ index b7ced3a..94e4efc 100644
  }
  
  CLICK_ENDDECLS
+diff --git a/elements/ip/iproutetable.hh b/elements/ip/iproutetable.hh
+index 538ac5e..b56f058 100644
+--- a/elements/ip/iproutetable.hh
++++ b/elements/ip/iproutetable.hh
+@@ -196,9 +196,9 @@ class IPRouteTable : public BatchElement { public:
+     virtual int lookup_route(IPAddress addr, IPAddress& gw) const = 0;
+     virtual String dump_routes();
+ 
+-    void push(int, Packet      *p);
++    void push      (int, Packet      *p);
+ #if HAVE_BATCH
+-    void push_batch (int, PacketBatch *batch);
++    void push_batch(int, PacketBatch *batch);
+ #endif
+ 
+     static int add_route_handler(const String&, Element*, void*, ErrorHandler*);
 diff --git a/elements/ip/iprwmapping.cc b/elements/ip/iprwmapping.cc
 index 966382c..b0ff0f3 100644
 --- a/elements/ip/iprwmapping.cc
@@ -2846,6 +3988,1557 @@ index 446f95b..5ee3860 100644
  
      void unparse(StringAccum &sa, bool direction, click_jiffies_t now) const;
      void unparse_ports(StringAccum &sa, bool direction, click_jiffies_t now) const;
+diff --git a/elements/ipsec/aes.cc b/elements/ipsec/aes.cc
+index c6711d9..225178f 100644
+--- a/elements/ipsec/aes.cc
++++ b/elements/ipsec/aes.cc
+@@ -3,10 +3,11 @@
+  * Dimitris Syrivelis  <jsyr@inf.uth.gr>
+  * contains code from other sources; see below
+  *
+- * Copyright (c) 2006 University of Thessaly, Hellas
+- *
+- *
++ * Computational batching support
++ * by Georgios Katsikas
+  *
++ * Copyright (c) 2006 University of Thessaly, Hellas
++ * Copyright (c) 2016 KTH Royal Institute of Technology
+  *
+  * Permission is hereby granted, free of charge, to any person obtaining a
+  * copy of this software and associated documentation files (the "Software"),
+@@ -69,14 +70,13 @@ Aes::initialize(ErrorHandler *)
+ Packet *
+ Aes::simple_action(Packet *p_in)
+ {
+-
+   WritablePacket *p = p_in->uniqueify();
+   unsigned char hold[8];
+   struct esp_new *esp = (struct esp_new *)p->data();
+-  SADataTuple * sa_data;
++  SADataTuple *sa_data;
+   unsigned char iv[8];
+-  unsigned char *ivp = esp->esp_iv;
+-  unsigned char * idat = p->data() + sizeof(esp_new);
++  unsigned char *ivp  = esp->esp_iv;
++  unsigned char *idat = p->data() + sizeof(esp_new);
+   int plen = p->length() - sizeof(esp_new) - _ignore;
+   int i;
+   /*
+@@ -87,7 +87,7 @@ Aes::simple_action(Packet *p_in)
+   if ((plen % 16) != 0) { plen += 8; }
+   i = plen;
+ 
+-  sa_data =(SADataTuple *)IPSEC_SA_DATA_REFERENCE_ANNO(p);
++  sa_data =reinterpret_cast<SADataTuple *>( IPSEC_SA_DATA_REFERENCE_ANNO(p) );
+ 
+   if (_op == AES_DECRYPT) {
+     memcpy(iv, ivp, 8);
+@@ -137,6 +137,15 @@ Aes::simple_action(Packet *p_in)
+   return(p);
+ }
+ 
++#if HAVE_BATCH
++PacketBatch*
++Aes::simple_action_batch(PacketBatch *batch)
++{
++    EXECUTE_FOR_EACH_PACKET_DROPPABLE(simple_action, batch, [](Packet *p){});
++    return batch;
++}
++#endif
++
+ /***************************AES BELOW********************************/
+ 
+ static const unsigned long Te0[256] = {
+@@ -814,7 +823,6 @@ static const unsigned long rcon[] = {
+ int Aes::AES_set_encrypt_key(const unsigned char *userKey, const int bits,
+ 			AES_KEY *key)
+  {
+-
+ 	unsigned long *rk;
+ 	int i = 0;
+ 	unsigned long temp;
+@@ -915,8 +923,7 @@ int Aes::AES_set_encrypt_key(const unsigned char *userKey, const int bits,
+  */
+ int Aes::AES_set_decrypt_key(const unsigned char *userKey, const int bits,
+ 			 AES_KEY *key) {
+-
+-        unsigned long *rk;
++    unsigned long *rk;
+ 	int i, j, status;
+ 	unsigned long temp;
+ 
+@@ -1209,33 +1216,5 @@ void Aes::AES_decrypt(const unsigned char *in, unsigned char *out,
+ 	PUTU32(out + 12, s3);
+ }
+ 
+-
+-
+-
+-
+-
+-
+-
+-
+-
+-
+-
+-
+-
+-
+-
+-
+-
+-
+-
+-
+-
+-
+-
+-
+-
+-
+-
+-
+ CLICK_ENDDECLS
+ EXPORT_ELEMENT(Aes)
+diff --git a/elements/ipsec/aes.hh b/elements/ipsec/aes.hh
+index aed8cf2..72afec0 100644
+--- a/elements/ipsec/aes.hh
++++ b/elements/ipsec/aes.hh
+@@ -1,6 +1,6 @@
+ #ifndef CLICK_IPSECAES_HH
+ #define CLICK_IPSECAES_HH
+-#include <click/element.hh>
++#include <click/batchelement.hh>
+ #include <click/glue.hh>
+ CLICK_DECLS
+ 
+@@ -37,7 +37,7 @@ typedef struct aes_key_st AES_KEY;
+ class Address;
+ 
+ 
+-class Aes : public Element {
++class Aes : public BatchElement {
+  public:
+    Aes() CLICK_COLD;
+    Aes(int);
+@@ -49,7 +49,10 @@ class Aes : public Element {
+    int configure(Vector<String> &, ErrorHandler *) CLICK_COLD;
+    int initialize(ErrorHandler *) CLICK_COLD;
+ 
+-   Packet *simple_action(Packet *);
++   Packet     *simple_action      (Packet *p);
++#if HAVE_BATCH
++  PacketBatch *simple_action_batch(PacketBatch *batch);
++#endif
+ 
+    enum { AES_DECRYPT = 0, AES_ENCRYPT = 1 };
+ 
+diff --git a/elements/ipsec/des.cc b/elements/ipsec/des.cc
+index 5cc425c..98c4b0a 100644
+--- a/elements/ipsec/des.cc
++++ b/elements/ipsec/des.cc
+@@ -3,12 +3,14 @@
+  * Alex Snoeren, Benjie Chen
+  * contains code from other sources; see below
+  *
+- * Copyright (c) 1999-2000 Massachusetts Institute of Technology
+- *
+- * Changed to use the Security Association Table. Dimitris Syrivelis <jsyr@inf.uth.gr>, University of Thessaly ,
+- * Hellas
++ * Computational batching support
++ * by Georgios Katsikas
+  *
++ * Copyright (c) 1999-2000 Massachusetts Institute of Technology
++ * Copyright (c) 2016 KTH Royal Institute of Technology
+  *
++ * Changed to use the Security Association Table. Dimitris Syrivelis <jsyr@inf.uth.gr>, 
++ * University of Thessaly, Hellas
+  *
+  * Permission is hereby granted, free of charge, to any person obtaining a
+  * copy of this software and associated documentation files (the "Software"),
+@@ -117,6 +119,15 @@ Des::simple_action(Packet *p_in)
+   return(p);
+ }
+ 
++#if HAVE_BATCH
++PacketBatch*
++Des::simple_action_batch(PacketBatch *batch)
++{
++    EXECUTE_FOR_EACH_PACKET_DROPPABLE(simple_action, batch, [](Packet *p){});
++    return batch;
++}
++#endif
++
+ /* Copyright (C) 1992 Eric Young - see COPYING for more details */
+ /* Collected and modified by Werner Almesberger */
+ 
+diff --git a/elements/ipsec/des.hh b/elements/ipsec/des.hh
+index 1b90bdc..442b080 100644
+--- a/elements/ipsec/des.hh
++++ b/elements/ipsec/des.hh
+@@ -1,6 +1,6 @@
+ #ifndef CLICK_IPSECDES_HH
+ #define CLICK_IPSECDES_HH
+-#include <click/element.hh>
++#include <click/batchelement.hh>
+ #include <click/glue.hh>
+ CLICK_DECLS
+ 
+@@ -31,7 +31,7 @@ typedef struct des_ks_struct {
+ 
+ class Address;
+ 
+-class Des : public Element {
++class Des : public BatchElement {
+ public:
+   Des() CLICK_COLD;
+   Des(int);
+@@ -43,7 +43,10 @@ public:
+   int configure(Vector<String> &, ErrorHandler *) CLICK_COLD;
+   int initialize(ErrorHandler *) CLICK_COLD;
+ 
+-  Packet *simple_action(Packet *);
++  Packet      *simple_action      (Packet *p);
++#if HAVE_BATCH
++  PacketBatch *simple_action_batch(PacketBatch *batch);
++#endif
+ 
+   enum { DES_DECRYPT = 0, DES_ENCRYPT = 1 };
+ 
+diff --git a/elements/ipsec/desp.cc b/elements/ipsec/desp.cc
+index 15a347e..6609e49 100644
+--- a/elements/ipsec/desp.cc
++++ b/elements/ipsec/desp.cc
+@@ -2,7 +2,11 @@
+  * desp.{cc,hh} -- element implements IPsec unencapsulation (RFC 2406)
+  * Alex Snoeren, Benjie Chen
+  *
++ * Computational batching support
++ * by Georgios Katsikas
++ *
+  * Copyright (c) 1999-2000 Massachusetts Institute of Technology
++ * Copyright (c) 2016 KTH Royal Institute of Technology
+  *
+  * Added Security Association Table support. Dimitris Syrivelis <jsyr@inf.uth.gr>, University of Thessaly, Hellas
+  * Added Replay Check support originally written for linux ipsec-0.5 from John Ioannidis <ji@hol.gr>
+@@ -120,6 +124,15 @@ IPsecESPUnencap::simple_action(Packet *p)
+   return p;
+ }
+ 
++#if HAVE_BATCH
++PacketBatch*
++IPsecESPUnencap::simple_action_batch(PacketBatch *batch)
++{
++    EXECUTE_FOR_EACH_PACKET_DROPPABLE(simple_action, batch, [](Packet *p){});
++    return batch;
++}
++#endif
++
+ CLICK_ENDDECLS
+ EXPORT_ELEMENT(IPsecESPUnencap)
+ ELEMENT_MT_SAFE(IPsecESPUnencap)
+diff --git a/elements/ipsec/desp.hh b/elements/ipsec/desp.hh
+index 58816d5..90eedf9 100644
+--- a/elements/ipsec/desp.hh
++++ b/elements/ipsec/desp.hh
+@@ -1,6 +1,6 @@
+ #ifndef CLICK_IPSEC_DESP_HH
+ #define CLICK_IPSEC_DESP_HH
+-#include <click/element.hh>
++#include <click/batchelement.hh>
+ #include <click/glue.hh>
+ #include "satable.hh"
+ #include "sadatatuple.hh"
+@@ -19,7 +19,7 @@ CLICK_DECLS
+  * =a IPsecESPUnencap, IPsecDES, IPsecAuthSHA1
+  */
+ 
+-class IPsecESPUnencap : public Element {
++class IPsecESPUnencap : public BatchElement {
+ public:
+   IPsecESPUnencap() CLICK_COLD;
+   ~IPsecESPUnencap() CLICK_COLD;
+@@ -29,7 +29,10 @@ public:
+ 
+   int checkreplaywindow(SADataTuple * sa_data,unsigned long seq);
+ 
+-  Packet *simple_action(Packet *);
++  Packet      *simple_action      (Packet *p);
++#if HAVE_BATCH
++  PacketBatch *simple_action_batch(PacketBatch *batch);
++#endif
+ };
+ 
+ CLICK_ENDDECLS
+diff --git a/elements/ipsec/esp.cc b/elements/ipsec/esp.cc
+index 281a4ff..815c328 100644
+--- a/elements/ipsec/esp.cc
++++ b/elements/ipsec/esp.cc
+@@ -2,12 +2,14 @@
+  * esp.{cc,hh} -- element implements IPsec encapsulation (RFC 2406)
+  * Alex Snoeren, Benjie Chen
+  *
++ * Computational batching support
++ * by Georgios Katsikas
+  *
+  * Copyright (c) 1999-2000 Massachusetts Institute of Technology
++ * Copyright (c) 2016 KTH Royal Institute of Technology
+  *
+- * Added Security Association Database support. Dimitris Syrivelis <jsyr@inf.uth.gr>, University of Thessaly, *
+- * Hellas
+- *
++ * Added Security Association Database support. Dimitris Syrivelis <jsyr@inf.uth.gr>,
++ * University of Thessaly, Hellas
+  *
+  * Permission is hereby granted, free of charge, to any person obtaining a
+  * copy of this software and associated documentation files (the "Software"),
+@@ -59,7 +61,7 @@ IPsecESPEncap::simple_action(Packet *p)
+   // extract protocol header
+   if (p->has_network_header())
+       ip_p = p->ip_header()->ip_p;
+-  sa_data=(SADataTuple *)IPSEC_SA_DATA_REFERENCE_ANNO(p);
++  sa_data = reinterpret_cast<SADataTuple *>( IPSEC_SA_DATA_REFERENCE_ANNO(p) );
+ 
+   // make room for ESP header and padding
+   int plen = p->length();
+@@ -97,7 +99,14 @@ IPsecESPEncap::simple_action(Packet *p)
+   return(q);
+ }
+ 
+-
++#if HAVE_BATCH
++PacketBatch*
++IPsecESPEncap::simple_action_batch(PacketBatch *batch)
++{
++    EXECUTE_FOR_EACH_PACKET(simple_action, batch);
++    return batch;
++}
++#endif
+ 
+ CLICK_ENDDECLS
+ EXPORT_ELEMENT(IPsecESPEncap)
+diff --git a/elements/ipsec/esp.hh b/elements/ipsec/esp.hh
+index eb7b883..fc6decc 100644
+--- a/elements/ipsec/esp.hh
++++ b/elements/ipsec/esp.hh
+@@ -1,6 +1,6 @@
+ #ifndef CLICK_IPSEC_ESP_HH
+ #define CLICK_IPSEC_ESP_HH
+-#include <click/element.hh>
++#include <click/batchelement.hh>
+ #include <click/atomic.hh>
+ #include <click/glue.hh>
+ CLICK_DECLS
+@@ -29,7 +29,7 @@ struct esp_new {
+   uint8_t esp_iv[8];
+ };
+ 
+-class IPsecESPEncap : public Element {
++class IPsecESPEncap : public BatchElement {
+ 
+ public:
+   IPsecESPEncap() CLICK_COLD;
+@@ -41,7 +41,10 @@ public:
+ 
+   int configure(Vector<String> &, ErrorHandler *) CLICK_COLD;
+ 
+-  Packet *simple_action(Packet *);
++  Packet      *simple_action      (Packet *p);
++#if HAVE_BATCH
++  PacketBatch *simple_action_batch(PacketBatch *batch);
++#endif
+ 
+ private:
+ 
+diff --git a/elements/ipsec/hmacsha1.cc b/elements/ipsec/hmacsha1.cc
+index f9d7932..dbca2da 100644
+--- a/elements/ipsec/hmacsha1.cc
++++ b/elements/ipsec/hmacsha1.cc
+@@ -2,7 +2,11 @@
+  * hmacsha1.{cc,hh} -- element implements IPsec hmac authentication using SHA1
+  * Dimitris Syrivelis
+  *
++ * Computational batching support
++ * by Georgios Katsikas
++ *
+  * Copyright (c) 2006 University of Thessaly, Hellas
++ * Copyright (c) 2016 KTH Royal Institute of Technology
+  *
+  * Permission is hereby granted, free of charge, to any person obtaining a
+  * copy of this software and associated documentation files (the "Software"),
+@@ -61,7 +65,7 @@ IPsecAuthHMACSHA1::initialize(ErrorHandler *)
+ Packet *
+ IPsecAuthHMACSHA1::simple_action(Packet *p)
+ {
+-  SADataTuple * sa_data=(SADataTuple *)IPSEC_SA_DATA_REFERENCE_ANNO(p);
++  SADataTuple *sa_data = reinterpret_cast<SADataTuple *>( IPSEC_SA_DATA_REFERENCE_ANNO(p) );
+   unsigned int len;
+   // compute HMAC
+   len = SHA_DIGEST_LEN;
+@@ -95,10 +99,19 @@ IPsecAuthHMACSHA1::simple_action(Packet *p)
+   }
+ }
+ 
++#if HAVE_BATCH
++PacketBatch*
++IPsecAuthHMACSHA1::simple_action_batch(PacketBatch *batch)
++{
++    EXECUTE_FOR_EACH_PACKET_DROPPABLE(simple_action, batch, [](Packet *p){});
++    return batch;
++}
++#endif
++
+ String
+ IPsecAuthHMACSHA1::drop_handler(Element *e, void *)
+ {
+-  IPsecAuthHMACSHA1 *a = (IPsecAuthHMACSHA1 *)e;
++  IPsecAuthHMACSHA1 *a = static_cast<IPsecAuthHMACSHA1 *>(e);
+   return String(a->_drops);
+ }
+ 
+diff --git a/elements/ipsec/hmacsha1.hh b/elements/ipsec/hmacsha1.hh
+index 6f65415..253d46a 100644
+--- a/elements/ipsec/hmacsha1.hh
++++ b/elements/ipsec/hmacsha1.hh
+@@ -1,6 +1,6 @@
+ #ifndef CLICK_IPSECAUTHHMACSHA1_HH
+ #define CLICK_IPSECAUTHHMACSHA1_HH
+-#include <click/element.hh>
++#include <click/batchelement.hh>
+ #include <click/atomic.hh>
+ #include <click/glue.hh>
+ CLICK_DECLS
+@@ -19,7 +19,7 @@ CLICK_DECLS
+  * =a IPsecESPEncap, IPsecDES
+  */
+ 
+-class IPsecAuthHMACSHA1 : public Element {
++class IPsecAuthHMACSHA1 : public BatchElement {
+ 
+ public:
+   IPsecAuthHMACSHA1();
+@@ -31,7 +31,11 @@ public:
+   int configure(Vector<String> &, ErrorHandler *) CLICK_COLD;
+   int initialize(ErrorHandler *) CLICK_COLD;
+ 
+-  Packet *simple_action(Packet *);
++  Packet      *simple_action      (Packet *p);
++#if HAVE_BATCH
++  PacketBatch *simple_action_batch(PacketBatch *batch);
++#endif
++
+   void add_handlers() CLICK_COLD;
+ 
+   static String drop_handler(Element *e, void *thunk);
+diff --git a/elements/ipsec/ipsecencap.cc b/elements/ipsec/ipsecencap.cc
+index 89e7521..69d7b18 100644
+--- a/elements/ipsec/ipsecencap.cc
++++ b/elements/ipsec/ipsecencap.cc
+@@ -1,14 +1,17 @@
+ /*
+  * ipsecenncap.{cc,hh} -- element encapsulates packet in IP header and implements additional logic for IPSEC
+  * (implemented in simple_action)
+- *
+  * Dimitris Syrivelis
+- * Copyright (c) 2006 University of Thessaly, Hellas
+  *
+  * based on ipencap.{cc,hh}
+  * Robert Morris, Eddie Kohler, Alex Snoeren
+  *
++ * Computational batching support
++ * by Georgios Katsikas
++ *
+  * Copyright (c) 1999-2000 Massachusetts Institute of Technology
++ * Copyright (c) 2006 University of Thessaly, Hellas
++ * Copyright (c) 2016 KTH Royal Institute of Technology
+  *
+  * Permission is hereby granted, free of charge, to any person obtaining a
+  * copy of this software and associated documentation files (the "Software"),
+@@ -155,6 +158,15 @@ IPsecEncap::simple_action(Packet *p_in)
+   return p;
+ }
+ 
++#if HAVE_BATCH
++PacketBatch*
++IPsecEncap::simple_action_batch(PacketBatch *batch)
++{
++    EXECUTE_FOR_EACH_PACKET_DROPPABLE(simple_action, batch, [](Packet *p){});
++    return batch;
++}
++#endif
++
+ String
+ IPsecEncap::read_handler(Element *e, void *thunk)
+ {
+diff --git a/elements/ipsec/ipsecencap.hh b/elements/ipsec/ipsecencap.hh
+index 4337535..b6472ca 100644
+--- a/elements/ipsec/ipsecencap.hh
++++ b/elements/ipsec/ipsecencap.hh
+@@ -1,6 +1,6 @@
+ #ifndef CLICK_IPSECENCAP_HH
+ #define CLICK_IPSECENCAP_HH
+-#include <click/element.hh>
++#include <click/batchelement.hh>
+ #include <click/glue.hh>
+ #include <click/atomic.hh>
+ #include <clicknet/ip.h>
+@@ -79,7 +79,7 @@ Returns or sets the DST parameter.
+ 
+ =a UDPIPsecEncap, StripIPHeader */
+ 
+-class IPsecEncap : public Element { public:
++class IPsecEncap : public BatchElement { public:
+ 
+   IPsecEncap() CLICK_COLD;
+   ~IPsecEncap() CLICK_COLD;
+@@ -93,7 +93,10 @@ class IPsecEncap : public Element { public:
+   int initialize(ErrorHandler *) CLICK_COLD;
+   void add_handlers() CLICK_COLD;
+ 
+-  Packet *simple_action(Packet *);
++  Packet      *simple_action      (Packet      *p);
++#if HAVE_BATCH
++  PacketBatch *simple_action_batch(PacketBatch *batch);
++#endif
+ 
+  private:
+ 
+diff --git a/elements/ipsec/ipsecroutetable.cc b/elements/ipsec/ipsecroutetable.cc
+index cd5bf31..5e89f6b 100644
+--- a/elements/ipsec/ipsecroutetable.cc
++++ b/elements/ipsec/ipsecroutetable.cc
+@@ -4,7 +4,8 @@
+  * between a pair of gateways (check push and cp_ipsec_route)
+  * Dimitris Syrivelis
+  *
+- * Copyright (c) 2006 University of Thessaly, Hellas
++ * Computational batching support
++ * by Georgios Katsikas
+  *
+  * This is an extended version of iproutetable
+  * iproutetable.{cc,hh} -- looks up next-hop address in route table
+@@ -12,7 +13,8 @@
+  *
+  * Copyright (c) 2001 Massachusetts Institute of Technology
+  * Copyright (c) 2002 International Computer Science Institute
+- *
++ * Copyright (c) 2006 University of Thessaly, Hellas
++ * Copyright (c) 2016 KTH Royal Institute of Technology
+  *
+  * Permission is hereby granted, free of charge, to any person
+  * obtaining a copy of this software and associated documentation
+@@ -43,45 +45,45 @@ CLICK_DECLS
+ bool
+ cp_ipsec_route(String s, IPsecRoute *r_store, bool remove_route, Element *context)
+ {
+-    IPsecRoute r;
+-    //Data to initialize the SADataTuple
+-    unsigned int replay;
+-    uint8_t  oowin;
++	IPsecRoute r;
++	//Data to initialize the SADataTuple
++	unsigned int replay;
++	uint8_t  oowin;
+ 
+-    SADataTuple * sa_data;
++	SADataTuple * sa_data;
+ 
+-    if (!IPPrefixArg(true).parse(cp_shift_spacevec(s), r.addr, r.mask, context))
++	if (!IPPrefixArg(true).parse(cp_shift_spacevec(s), r.addr, r.mask, context))
+ 	return false;
+ 
+-    r.addr &= r.mask;
+-    String word = cp_shift_spacevec(s);
+-    if (word == "-")
++	r.addr &= r.mask;
++	String word = cp_shift_spacevec(s);
++	if (word == "-")
+ 	/* null gateway; do nothing */;
+-    else if (IPAddressArg().parse(word, r.gw, context))
++	else if (IPAddressArg().parse(word, r.gw, context))
+ 	/* do nothing */;
+-    else
++	else
+ 	goto two_words;
+ 
+-    word = cp_shift_spacevec(s);
++	word = cp_shift_spacevec(s);
+   two_words:
+-    if (IntArg().parse(word, r.port) || (!word && remove_route))
++	if (IntArg().parse(word, r.port) || (!word && remove_route))
+ 	//Ipsec extensions parsing
+ 	word = cp_shift_spacevec(s);
+ 
+-    if (!word) {
++	if (!word) {
+ 	//no further arguments found so no ipsec extensions need to be added for this route
+ 	r.spi = SPI(0);
+ 	r.sa_data = NULL;
+ 	//store routing table
+-        *r_store = r;
++		*r_store = r;
+ 	return true;
+-    }
++	}
+ 
+-    Vector<String> words;
+-    words.push_back(word);
+-    cp_spacevec(s, words);
+-    String enc_key, auth_key;
+-    if (Args(words, context, ErrorHandler::default_handler())
++	Vector<String> words;
++	words.push_back(word);
++	cp_spacevec(s, words);
++	String enc_key, auth_key;
++	if (Args(words, context, ErrorHandler::default_handler())
+ 	.read_mp("SPI", r.spi)
+ 	.read_mp("ENCRYPT_KEY", enc_key)
+ 	.read_mp("AUTH_KEY", auth_key)
+@@ -89,301 +91,377 @@ cp_ipsec_route(String s, IPsecRoute *r_store, bool remove_route, Element *contex
+ 	.read_mp("OOSIZE", oowin)
+ 	.complete() < 0)
+ 	return false;
+-    if (enc_key.length() != 16 || auth_key.length() != 16) {
++	if (enc_key.length() != 16 || auth_key.length() != 16) {
+ 	click_chatter("key has bad length");
+ 	return false;
+-    }
+-
+-    // Create new Security Association Table entry
+-    sa_data = new SADataTuple(enc_key.data(), auth_key.data(), replay, oowin);
+-    ((IPsecRouteTable*)context)->_sa_table.insert(SPI(r.spi),*sa_data);
+-    //Set Tuple reference in the Routing entry
+-    r.sa_data = sa_data;
+-    //store routing table
+-    *r_store = r;
+-    return true;
++	}
++
++	// Create new Security Association Table entry
++	sa_data = new SADataTuple(enc_key.data(), auth_key.data(), replay, oowin);
++	((IPsecRouteTable*)context)->_sa_table.insert(SPI(r.spi),*sa_data);
++	//Set Tuple reference in the Routing entry
++	r.sa_data = sa_data;
++	//store routing table
++	*r_store = r;
++	return true;
+ }
+ 
+ //changed to support ipsec extensions
+ StringAccum&
+ IPsecRoute::unparse(StringAccum& sa, bool tabs) const
+ {
+-    int l = sa.length();
+-    char tab = (tabs ? '\t' : ' ');
+-    sa << addr.unparse_with_mask(mask) << tab;
+-    if (sa.length() < l + 17 && tabs)
++	int l = sa.length();
++	char tab = (tabs ? '\t' : ' ');
++	sa << addr.unparse_with_mask(mask) << tab;
++	if (sa.length() < l + 17 && tabs)
+ 	sa << '\t';
+-    l = sa.length();
+-    if (gw)
++	l = sa.length();
++	if (gw)
+ 	sa << gw << tab;
+-    else
++	else
+ 	sa << '-' << tab;
+-    if (sa.length() < l + 9 && tabs)
++	if (sa.length() < l + 9 && tabs)
+ 	sa << '\t';
+-    if (!real())
++	if (!real())
+ 	sa << "-1";
+-    else
++	else
+ 	sa << port;
+-    if(spi != 0) {
++	if(spi != 0) {
+ 	sa << "  |TUNNELED CONNECTION| \n|SPI| |ENC KEY| |AUTH KEY| ||\n";
+ 	sa << " |" <<spi<<"|";
+ 	sa << sa_data->unparse_entries().c_str() <<"\n";
+-    }
+-    return sa;
++	}
++	return sa;
+ }
+ 
+ String
+ IPsecRoute::unparse() const
+ {
+-    StringAccum sa;
+-    sa << *this;
+-    return sa.take_string();
++	StringAccum sa;
++	sa << *this;
++	return sa.take_string();
+ }
+ 
+ 
+ void *
+ IPsecRouteTable::cast(const char *name)
+ {
+-    if (strcmp(name, "IPsecRouteTable") == 0)
++	if (strcmp(name, "IPsecRouteTable") == 0)
+ 	return (void *)this;
+-    else
++	else
+ 	return Element::cast(name);
+ }
+ 
+ int
+ IPsecRouteTable::configure(Vector<String> &conf, ErrorHandler *errh)
+ {
+-    IPsecRoute r;
+-    for (int i = 0; i < conf.size(); i++) {
++	IPsecRoute r;
++	for (int i = 0; i < conf.size(); i++) {
+ 	if (cp_ipsec_route(conf[i], &r, false, this)
+-	    && r.port >= 0 && r.port < noutputs())
+-	    (void) add_route(r, false, 0, errh);
++		&& r.port >= 0 && r.port < noutputs())
++		(void) add_route(r, false, 0, errh);
+ 	else
+-	    errh->error("argument %d should be 'ADDR/MASK [GATEWAY] OUTPUT'", i+1);
+-    }
+-    return errh->nerrors() ? -1 : 0;
++		errh->error("argument %d should be 'ADDR/MASK [GATEWAY] OUTPUT'", i+1);
++	}
++	return errh->nerrors() ? -1 : 0;
+ }
+ 
+ int
+ IPsecRouteTable::add_route(const IPsecRoute&, bool, IPsecRoute*, ErrorHandler *errh)
+ {
+-    // by default, cannot add routes
+-    return errh->error("cannot add routes to this routing table");
++	// by default, cannot add routes
++	return errh->error("cannot add routes to this routing table");
+ }
+ 
+ int
+ IPsecRouteTable::remove_route(const IPsecRoute&, IPsecRoute*, ErrorHandler *errh)
+ {
+-    // by default, cannot remove routes
+-    return errh->error("cannot delete routes from this routing table");
++	// by default, cannot remove routes
++	return errh->error("cannot delete routes from this routing table");
+ }
+ 
+ int
+ IPsecRouteTable::lookup_route(IPAddress, IPAddress &, unsigned int&, SADataTuple*&) const
+ {
+-    return -1;			// by default, route lookups fail
++	return -1;			// by default, route lookups fail
+ }
+ 
+ String
+ IPsecRouteTable::dump_routes()
+ {
+-    return String();
++	return String();
++}
++
++int
++IPsecRouteTable::process(int, Packet *p)
++{
++	IPAddress gw;
++	uint32_t spi;
++	SADataTuple *sa_data;
++	const click_ip *ip = reinterpret_cast< const click_ip *>(p->data());
++
++	int port = lookup_route(p->dst_ip_anno(), gw, spi, sa_data);
++
++	if (port >= 0) {
++		switch(port) {
++			case 1: {
++			   //This packet should be sent over a tunneled connection
++			   //so set proper annotations with references to Security Data to be used by IPsec modules
++			   if((spi == 0) || (sa_data == NULL)) {
++					click_chatter("No Ipsec tunnel for %s. Wrong tunnel setup", p->dst_ip_anno().unparse().c_str());
++				}
++				SET_IPSEC_SPI_ANNO(p, (uint32_t)spi);
++				//ISSUE: This is 32-bit architecture specific passing a pointer to next module through annotations!!
++				SET_IPSEC_SA_DATA_REFERENCE_ANNO(p, (uintptr_t)sa_data);
++				break;
++			}
++			case 0: {
++				//Is this packet an ipsec ESP packet? What if one just needs to communicate with a server
++				//that runs on this router?
++				if(ip->ip_p != 50) {
++					/*This not an IPSEC packet and it should be delivered to the host's linux network stack
++					In a typical setup one would send anything that is directed to port 2 to Linux */
++					port = 2;
++				}
++				// This is an ipsec packet and belongs to a tunneled connection
++				// so we set the proper annotation with reference to Security Data Table to be used by IPsec modules
++				// Careful this enhancement is 32-bit architecture specific!!
++				struct esp_new * esp =(struct esp_new *)(p->data()+sizeof(click_ip));
++				sa_data = _sa_table.lookup(SPI(ntohl(esp->esp_spi)));
++				if(sa_data == NULL) {
++					click_chatter("Invalid SPI %d, Dropping packet",ntohl(esp->esp_spi));
++					return -1;
++				}
++				SET_IPSEC_SA_DATA_REFERENCE_ANNO(p, (uintptr_t)sa_data);
++				break;
++			}
++		}; //end of switch
++
++		assert(port < noutputs());
++		if (gw)
++			p->set_dst_ip_anno(gw);
++		return port;
++	}
++	else {
++		static int complained = 0;
++		if (++complained <= 5)
++			click_chatter("IPsecRouteTable: no route for %s", p->dst_ip_anno().unparse().c_str());
++		return -1;
++	}
++
++	return -1;
+ }
+ 
+ void
+-IPsecRouteTable::push(int, Packet *p)
++IPsecRouteTable::push(int port, Packet *p)
+ {
++	int output_port = process(port, p);
++	if ( output_port < 0 ) {
++		p->kill();
++		return;
++	}
+ 
+-    IPAddress gw;
+-    uint32_t spi;
+-    SADataTuple * sa_data;
+-    const click_ip *ip = reinterpret_cast< const click_ip *>(p->data());
+-
+-    int port = lookup_route(p->dst_ip_anno(), gw, spi, sa_data);
+-
+-    if (port >= 0) {
+-	switch(port) {
+-	  case 1: {
+-	   //This packet should be sent over a tunneled connection
+-	   //so set proper annotations with references to Security Data to be used by IPsec modules
+-           if((spi == 0) || (sa_data == NULL)) {
+-	       click_chatter("No Ipsec tunnel for %s. Wrong tunnel setup", p->dst_ip_anno().unparse().c_str());
+-	   }
+-	   SET_IPSEC_SPI_ANNO(p,(uint32_t)spi);
+-	   //ISSUE: This is 32-bit architecture specific passing a pointer to next module through annotations!!
+-	   SET_IPSEC_SA_DATA_REFERENCE_ANNO(p, (uintptr_t)sa_data);
+-	   break;
+-	 }
+-	 case 0: {
+-	    //Is this packet an ipsec ESP packet? What if one just needs to communicate with a server
+-            //that runs on this router?
+-	    if(ip->ip_p != 50) {
+-	      /*This not an IPSEC packet and it should be delivered to the host's linux network stack
+-                In a typical setup one would send anything that is directed to port 2 to Linux */
+-                port = 2;
+-            }
+-            // This is an ipsec packet and belongs to a tunneled connection
+-	    // so we set the proper annotation with reference to Security Data Table to be used by IPsec modules
+-            // Careful this enhancement is 32-bit architecture specific!!
+-            struct esp_new * esp =(struct esp_new *)(p->data()+sizeof(click_ip));
+-            sa_data = _sa_table.lookup(SPI(ntohl(esp->esp_spi)));
+-	    if(sa_data == NULL) {
+-		click_chatter("Invalid SPI %d, Dropping packet",ntohl(esp->esp_spi));
+-	p->kill();
+-                return;
+-           }
+-	   SET_IPSEC_SA_DATA_REFERENCE_ANNO(p, (uintptr_t)sa_data);
+-	   break;
+-	 }
+-	}; //end of switch
+-	assert(port < noutputs());
+-	if (gw)
+-	    p->set_dst_ip_anno(gw);
+-	output(port).push(p);
+-    } else {
+-	static int complained = 0;
+-	if (++complained <= 5)
+-	    click_chatter("IPsecRouteTable: no route for %s", p->dst_ip_anno().unparse().c_str());
+-	p->kill();
+-    }
++	output(output_port).push(p);
+ }
+ 
++#if HAVE_BATCH
++void
++IPsecRouteTable::push_batch(int port, PacketBatch *batch)
++{
++	unsigned short outports = noutputs();
++	PacketBatch* out[outports];
++	bzero(out,sizeof(PacketBatch*)*outports);
++	PacketBatch* next = ((batch != NULL)? static_cast<PacketBatch*>(batch->next()) : NULL );
++	PacketBatch* p = batch;
++	PacketBatch* last = NULL;
++	int last_o = -1;
++	int passed = 0;
++	int count  = 0;
++
++	for ( ;p != NULL; p=next,next=(p==0?0:static_cast<PacketBatch*>(p->next())) ) {
++		// The actual job of this element
++		int o = process(port, p);
++
++		if (o < 0 || o>=(outports)) o = (outports - 1);
++
++		if (o == last_o) {
++			passed ++;
++		}
++		else {
++			if ( !last ) {
++				out[o] = p;
++				p->set_count(1);
++				p->set_tail(p);
++			}
++			else {
++				out[last_o]->set_tail(last);
++				out[last_o]->set_count(out[last_o]->count() + passed);
++				if (!out[o]) {
++					out[o] = p;
++					out[o]->set_count(1);
++					out[o]->set_tail(p);
++				}
++				else {
++					out[o]->append_packet(p);
++				}
++				passed = 0;
++			}
++		}
++		last = p;
++		last_o = o;
++		count++;
++	}
++
++	if (passed) {
++		out[last_o]->set_tail(last);
++		out[last_o]->set_count(out[last_o]->count() + passed);
++	}
++
++	int i = 0;
++	for (; i < outports; i++) {
++		if (out[i]) {
++			out[i]->tail()->set_next(NULL);
++			checked_output_push_batch(i, out[i]);
++		}
++	}
++}
++#endif
+ 
+ int
+ IPsecRouteTable::run_command(int command, const String &str, Vector<IPsecRoute> * old_routes, ErrorHandler *errh)
+ {
+-    IPsecRoute route, old_route;
+-    if (!cp_ipsec_route(str, &route, command == CMD_REMOVE, this)
++	IPsecRoute route, old_route;
++	if (!cp_ipsec_route(str, &route, command == CMD_REMOVE, this)
+ 	|| route.port < (command == CMD_REMOVE ? -1 : 0)
+ 	|| route.port >= noutputs())
+ 	return errh->error("expected 'ADDR/MASK [GATEWAY%s'", (command == CMD_REMOVE ? " OUTPUT]" : "] OUTPUT"));
+ 
+-    int r, before = errh->nerrors();
+-    if (command == CMD_ADD)
++	int r, before = errh->nerrors();
++	if (command == CMD_ADD)
+ 	r = add_route(route, false, &old_route, errh);
+-    else if (command == CMD_SET)
++	else if (command == CMD_SET)
+ 	r = add_route(route, true, &old_route, errh);
+-    else
++	else
+ 	r = remove_route(route, &old_route, errh);
+ 
+-    // save old route if in a transaction
+-    if (r >= 0 && old_routes) {
++	// save old route if in a transaction
++	if (r >= 0 && old_routes) {
+ 	if (old_route.port < 0) { // must come from add_route
+-	    old_route = route;
+-	    old_route.extra = CMD_ADD;
++		old_route = route;
++		old_route.extra = CMD_ADD;
+ 	} else
+-	    old_route.extra = command;
++		old_route.extra = command;
+ 	old_routes->push_back(old_route);
+-    }
++	}
+ 
+-    // report common errors
+-    if (r == -EEXIST && errh->nerrors() == before)
++	// report common errors
++	if (r == -EEXIST && errh->nerrors() == before)
+ 	errh->error("conflict with existing route '%s'", old_route.unparse().c_str());
+-    if (r == -ENOENT && errh->nerrors() == before)
++	if (r == -ENOENT && errh->nerrors() == before)
+ 	errh->error("route '%s' not found", route.unparse().c_str());
+-    return r;
++	return r;
+ }
+ 
+ 
+ int
+ IPsecRouteTable::add_route_handler(const String &conf, Element *e, void *thunk, ErrorHandler *errh)
+ {
+-    IPsecRouteTable *table = static_cast<IPsecRouteTable *>(e);
+-    return table->run_command((thunk ? CMD_SET : CMD_ADD), conf, 0, errh);
++	IPsecRouteTable *table = static_cast<IPsecRouteTable *>(e);
++	return table->run_command((thunk ? CMD_SET : CMD_ADD), conf, 0, errh);
+ }
+ 
+ int
+ IPsecRouteTable::remove_route_handler(const String &conf, Element *e, void *, ErrorHandler *errh)
+ {
+-    IPsecRouteTable *table = static_cast<IPsecRouteTable *>(e);
+-    return table->run_command(CMD_REMOVE, conf, 0, errh);
++	IPsecRouteTable *table = static_cast<IPsecRouteTable *>(e);
++	return table->run_command(CMD_REMOVE, conf, 0, errh);
+ }
+ 
+ int
+ IPsecRouteTable::ctrl_handler(const String &conf_in, Element *e, void *, ErrorHandler *errh)
+ {
+-    IPsecRouteTable *table = static_cast<IPsecRouteTable *>(e);
+-    String conf = cp_uncomment(conf_in);
+-    const char* s = conf.begin(), *end = conf.end();
++	IPsecRouteTable *table = static_cast<IPsecRouteTable *>(e);
++	String conf = cp_uncomment(conf_in);
++	const char* s = conf.begin(), *end = conf.end();
+ 
+-    Vector<IPsecRoute> old_routes;
+-    int r = 0;
++	Vector<IPsecRoute> old_routes;
++	int r = 0;
+ 
+-    while (s < end) {
++	while (s < end) {
+ 	const char* nl = find(s, end, '\n');
+ 	String line = conf.substring(s, nl);
+ 
+ 	String first_word = cp_shift_spacevec(line);
+ 	int command;
+ 	if (first_word == "add")
+-	    command = CMD_ADD;
++		command = CMD_ADD;
+ 	else if (first_word == "remove")
+-	    command = CMD_REMOVE;
++		command = CMD_REMOVE;
+ 	else if (first_word == "set")
+-	    command = CMD_SET;
++		command = CMD_SET;
+ 	else if (!first_word)
+-	    continue;
++		continue;
+ 	else {
+-	    r = errh->error("bad command '%#s'", first_word.c_str());
+-	    goto rollback;
++		r = errh->error("bad command '%#s'", first_word.c_str());
++		goto rollback;
+ 	}
+ 
+ 	if ((r = table->run_command(command, line, &old_routes, errh)) < 0)
+-	    goto rollback;
++		goto rollback;
+ 
+ 	s = nl + 1;
+-    }
+-    return 0;
++	}
++	return 0;
+ 
+   rollback:
+-    while (old_routes.size()) {
++	while (old_routes.size()) {
+ 	const IPsecRoute& rt = old_routes.back();
+ 	if (rt.extra == CMD_REMOVE)
+-	    table->add_route(rt, false, 0, errh);
++		table->add_route(rt, false, 0, errh);
+ 	else if (rt.extra == CMD_ADD)
+-	    table->remove_route(rt, 0, errh);
++		table->remove_route(rt, 0, errh);
+ 	else
+-	    table->add_route(rt, true, 0, errh);
++		table->add_route(rt, true, 0, errh);
+ 	old_routes.pop_back();
+-    }
+-    return r;
++	}
++	return r;
+ }
+ 
+ String
+ IPsecRouteTable::table_handler(Element *e, void *)
+ {
+-    IPsecRouteTable *r = static_cast<IPsecRouteTable*>(e);
+-    return r->dump_routes();
++	IPsecRouteTable *r = static_cast<IPsecRouteTable*>(e);
++	return r->dump_routes();
+ }
+ 
+ int
+ IPsecRouteTable::lookup_handler(int, String& s, Element* e, const Handler*, ErrorHandler* errh)
+ {
+-    IPsecRouteTable *table = static_cast<IPsecRouteTable*>(e);
+-    IPAddress a;
+-    if (IPAddressArg().parse(cp_uncomment(s), a, table)) {
++	IPsecRouteTable *table = static_cast<IPsecRouteTable*>(e);
++	IPAddress a;
++	if (IPAddressArg().parse(cp_uncomment(s), a, table)) {
+ 	IPAddress gw;
+ 	uint32_t spi;
+ 	SADataTuple * sa_data;
+ 	int port = table->lookup_route(a, gw,spi,sa_data);
+ 	if (gw)
+-	    s = String(port) + " " + gw.unparse();
++		s = String(port) + " " + gw.unparse();
+ 	else
+-	    s = String(port);
++		s = String(port);
+ 	return 0;
+-    } else
++	} else
+ 	return errh->error("expected IP address, not '%s'", s.c_str());
+ }
+ 
+ void
+ IPsecRouteTable::add_handlers()
+ {
+-    add_write_handler("add", add_route_handler, 0);
+-    add_write_handler("set", add_route_handler, 1);
+-    add_write_handler("remove", remove_route_handler, 0);
+-    add_write_handler("ctrl", ctrl_handler, 0);
+-    add_read_handler("table", table_handler, 0);
+-    set_handler("lookup", Handler::OP_READ | Handler::READ_PARAM, lookup_handler);
++	add_write_handler("add", add_route_handler, 0);
++	add_write_handler("set", add_route_handler, 1);
++	add_write_handler("remove", remove_route_handler, 0);
++	add_write_handler("ctrl", ctrl_handler, 0);
++	add_read_handler("table", table_handler, 0);
++	set_handler("lookup", Handler::OP_READ | Handler::READ_PARAM, lookup_handler);
+ }
+ 
+ CLICK_ENDDECLS
+diff --git a/elements/ipsec/ipsecroutetable.hh b/elements/ipsec/ipsecroutetable.hh
+index 6f09912..5ebae12 100644
+--- a/elements/ipsec/ipsecroutetable.hh
++++ b/elements/ipsec/ipsecroutetable.hh
+@@ -2,7 +2,7 @@
+ #ifndef CLICK_IPSECROUTETABLE_HH
+ #define CLICK_IPSECROUTETABLE_HH
+ #include <click/glue.hh>
+-#include <click/element.hh>
++#include <click/batchelement.hh>
+ #include "satable.hh"
+ #include "sadatatuple.hh"
+ CLICK_DECLS
+@@ -199,7 +199,7 @@ struct IPsecRoute {
+ };
+ 
+ 
+-class IPsecRouteTable : public Element { public:
++class IPsecRouteTable : public BatchElement { public:
+ 
+     void* cast(const char*);
+     int configure(Vector<String>&, ErrorHandler*) CLICK_COLD;
+@@ -210,7 +210,10 @@ class IPsecRouteTable : public Element { public:
+     virtual int lookup_route(IPAddress dest, IPAddress &gw, unsigned int &spi, SADataTuple * &sa_data) const = 0;
+     virtual String dump_routes();
+ 
+-    void push(int port, Packet* p);
++    void push      (int, Packet      *p);
++#if HAVE_BATCH
++    void push_batch(int, PacketBatch *batch);
++#endif
+ 
+     static int add_route_handler(const String&, Element*, void*, ErrorHandler*);
+     static int remove_route_handler(const String&, Element*, void*, ErrorHandler*);
+@@ -224,6 +227,9 @@ class IPsecRouteTable : public Element { public:
+     enum { CMD_ADD, CMD_SET, CMD_REMOVE };
+     int run_command(int command, const String &, Vector<IPsecRoute>* old_routes, ErrorHandler*);
+ 
++    // The actual processing of this element is abstracted from the push operation.
++    // This allows both push and push_batch to exploit the same processing.
++    int process(int port, Packet *p);
+ };
+ 
+ inline StringAccum&
+diff --git a/elements/ipsec/sha1.cc b/elements/ipsec/sha1.cc
+index e76a273..d7517a2 100644
+--- a/elements/ipsec/sha1.cc
++++ b/elements/ipsec/sha1.cc
+@@ -2,7 +2,11 @@
+  * sha1.{cc,hh} -- element implements IPsec SHA1 authentication (RFC 2404)
+  * Benjie Chen
+  *
++ * Computational batching support
++ * by Georgios Katsikas
++ *
+  * Copyright (c) 1999-2000 Massachusetts Institute of Technology
++ * Copyright (c) 2016 KTH Royal Institute of Technology
+  *
+  * Permission is hereby granted, free of charge, to any person obtaining a
+  * copy of this software and associated documentation files (the "Software"),
+@@ -91,6 +95,15 @@ IPsecAuthSHA1::simple_action(Packet *p)
+   }
+ }
+ 
++#if HAVE_BATCH
++PacketBatch*
++IPsecAuthSHA1::simple_action_batch(PacketBatch *batch)
++{
++    EXECUTE_FOR_EACH_PACKET_DROPPABLE(simple_action, batch, [](Packet *p){});
++    return batch;
++}
++#endif
++
+ String
+ IPsecAuthSHA1::drop_handler(Element *e, void *)
+ {
+diff --git a/elements/ipsec/sha1.hh b/elements/ipsec/sha1.hh
+index 3aea5fc..fd2bff5 100644
+--- a/elements/ipsec/sha1.hh
++++ b/elements/ipsec/sha1.hh
+@@ -1,6 +1,6 @@
+ #ifndef CLICK_IPSECAUTHSHA1_HH
+ #define CLICK_IPSECAUTHSHA1_HH
+-#include <click/element.hh>
++#include <click/batchelement.hh>
+ #include <click/atomic.hh>
+ #include <click/glue.hh>
+ CLICK_DECLS
+@@ -19,7 +19,7 @@ CLICK_DECLS
+  * =a IPsecESPEncap, IPsecDES, IPsecAES
+  */
+ 
+-class IPsecAuthSHA1 : public Element {
++class IPsecAuthSHA1 : public BatchElement {
+ 
+ public:
+   IPsecAuthSHA1();
+@@ -31,9 +31,12 @@ public:
+   int configure(Vector<String> &, ErrorHandler *) CLICK_COLD;
+   int initialize(ErrorHandler *) CLICK_COLD;
+ 
+-  Packet *simple_action(Packet *);
+-  void add_handlers() CLICK_COLD;
++  Packet      *simple_action      (Packet *p);
++#if HAVE_BATCH
++  PacketBatch *simple_action_batch(PacketBatch *batch);
++#endif
+ 
++  void add_handlers() CLICK_COLD;
+   static String drop_handler(Element *e, void *thunk);
+ 
+ private:
+diff --git a/elements/standard/dropbroadcasts.cc b/elements/standard/dropbroadcasts.cc
+index be9a927..a6858de 100644
+--- a/elements/standard/dropbroadcasts.cc
++++ b/elements/standard/dropbroadcasts.cc
+@@ -1,3 +1,23 @@
++/*
++ * dropbroadcasts.{cc,hh} -- element that drops broadcast packets
++ *
++ * Computational batching support
++ * by Georgios Katsikas
++ *
++ * Copyright (c) 1999-2000 Massachusetts Institute of Technology
++ * Copyright (c) 2016 KTH Royal Institute of Technology
++ *
++ * Permission is hereby granted, free of charge, to any person obtaining a
++ * copy of this software and associated documentation files (the "Software"),
++ * to deal in the Software without restriction, subject to the conditions
++ * listed in the Click LICENSE file. These conditions include: you must
++ * preserve this copyright notice, and you cannot mention the copyright
++ * holders in advertising related to the Software without their permission.
++ * The Software is provided WITHOUT ANY WARRANTY, EXPRESS OR IMPLIED. This
++ * notice is a summary of the Click LICENSE file; the license in that file is
++ * legally binding.
++ */
++
+ #include <click/config.h>
+ #include "dropbroadcasts.hh"
+ #include <click/glue.hh>
+@@ -30,6 +50,15 @@ DropBroadcasts::simple_action(Packet *p)
+     return p;
+ }
+ 
++#if HAVE_BATCH
++PacketBatch *
++DropBroadcasts::simple_action_batch(PacketBatch *batch)
++{
++    EXECUTE_FOR_EACH_PACKET_DROPPABLE(simple_action, batch, [](Packet *p){});
++    return batch;
++}
++#endif
++
+ static String
+ dropbroadcasts_read_drops(Element *f, void *)
+ {
+diff --git a/elements/standard/dropbroadcasts.hh b/elements/standard/dropbroadcasts.hh
+index 76df3e7..518197e 100644
+--- a/elements/standard/dropbroadcasts.hh
++++ b/elements/standard/dropbroadcasts.hh
+@@ -1,6 +1,6 @@
+ #ifndef CLICK_DROPBROADCASTS_HH
+ #define CLICK_DROPBROADCASTS_HH
+-#include <click/element.hh>
++#include <click/batchelement.hh>
+ #include <click/atomic.hh>
+ CLICK_DECLS
+ 
+@@ -17,7 +17,7 @@ CLICK_DECLS
+  * =a FromDevice
+  */
+ 
+-class DropBroadcasts : public Element {
++class DropBroadcasts : public BatchElement {
+  public:
+ 
+   DropBroadcasts() CLICK_COLD;
+@@ -30,7 +30,11 @@ class DropBroadcasts : public Element {
+   uint32_t drops() const		{ return _drops; }
+ 
+   void drop_it(Packet *);
+-  Packet *simple_action(Packet *);
++
++  Packet        *simple_action      (Packet *p);
++#if HAVE_BATCH
++    PacketBatch *simple_action_batch(PacketBatch *batch);
++#endif
+ 
+ private:
+   atomic_uint32_t _drops;
+diff --git a/elements/standard/idle.cc b/elements/standard/idle.cc
+index a9ace39..66325e4 100644
+--- a/elements/standard/idle.cc
++++ b/elements/standard/idle.cc
+@@ -2,7 +2,11 @@
+  * idle.{cc,hh} -- element just sits there and kills packets
+  * Robert Morris, Eddie Kohler
+  *
++ * Computational batching support
++ * by Georgios Katsikas
++ *
+  * Copyright (c) 1999-2000 Massachusetts Institute of Technology
++ * Copyright (c) 2016 KTH Royal Institute of Technology
+  *
+  * Permission is hereby granted, free of charge, to any person obtaining a
+  * copy of this software and associated documentation files (the "Software"),
+@@ -22,6 +26,9 @@ CLICK_DECLS
+ Idle::Idle()
+     : _notifier(NotifierSignal::idle_signal())
+ {
++#if HAVE_BATCH
++  in_batch_mode = BATCH_MODE_YES;
++#endif
+ }
+ 
+ void *
+@@ -39,12 +46,28 @@ Idle::push(int, Packet *p)
+   p->kill();
+ }
+ 
++#if HAVE_BATCH
++void
++Idle::push_batch(int, PacketBatch *batch)
++{
++  batch->kill();
++}
++#endif
++
+ Packet *
+ Idle::pull(int)
+ {
+   return 0;
+ }
+ 
++#if HAVE_BATCH
++PacketBatch *
++Idle::pull_batch(int)
++{
++  return 0;
++}
++#endif
++
+ CLICK_ENDDECLS
+ EXPORT_ELEMENT(Idle)
+ ELEMENT_MT_SAFE(Idle)
+diff --git a/elements/standard/idle.hh b/elements/standard/idle.hh
+index 74b162d..547f24e 100644
+--- a/elements/standard/idle.hh
++++ b/elements/standard/idle.hh
+@@ -1,7 +1,9 @@
+ #ifndef CLICK_IDLE_HH
+ #define CLICK_IDLE_HH
+-#include <click/element.hh>
++
++#include <click/batchelement.hh>
+ #include <click/notifier.hh>
++
+ CLICK_DECLS
+ 
+ /*
+@@ -26,7 +28,7 @@ CLICK_DECLS
+  * =sa SimpleIdle
+  */
+ 
+-class Idle : public Element { public:
++class Idle : public BatchElement { public:
+ 
+   Idle() CLICK_COLD;
+ 
+@@ -37,8 +39,15 @@ class Idle : public Element { public:
+   void *cast(const char *);
+   const char *flags() const		{ return "S0"; }
+ 
+-  void push(int, Packet *);
+-  Packet *pull(int);
++  void push      (int, Packet      *);
++#if HAVE_BATCH
++  void push_batch(int, PacketBatch *);
++#endif
++
++  Packet      *pull      (int);
++#if HAVE_BATCH
++  PacketBatch *pull_batch(int);
++#endif
+ 
+   private:
+ 
+diff --git a/elements/standard/nullelement.cc b/elements/standard/nullelement.cc
+index 7ab9263..f206485 100644
+--- a/elements/standard/nullelement.cc
++++ b/elements/standard/nullelement.cc
+@@ -2,7 +2,11 @@
+  * nullelement.{cc,hh} -- do-nothing element
+  * Eddie Kohler
+  *
++ * Computational batching support
++ * by Georgios Katsikas
++ *
+  * Copyright (c) 1999-2000 Massachusetts Institute of Technology
++ * Copyright (c) 2016 KTH Royal Institute of Technology
+  *
+  * Permission is hereby granted, free of charge, to any person obtaining a
+  * copy of this software and associated documentation files (the "Software"),
+@@ -29,11 +33,14 @@ NullElement::simple_action(Packet *p)
+   return p;
+ }
+ 
+-PacketBatch *
+-NullElement::simple_action_batch(PacketBatch *p)
++#if HAVE_BATCH
++PacketBatch*
++NullElement::simple_action_batch(PacketBatch *batch)
+ {
+-  return p;
++    EXECUTE_FOR_EACH_PACKET(simple_action, batch);
++    return batch;
+ }
++#endif
+ 
+ PushNullElement::PushNullElement()
+ {
+@@ -44,6 +51,17 @@ PushNullElement::push(int, Packet *p)
+ {
+   output(0).push(p);
+ }
++#if HAVE_BATCH
++void
++PushNullElement::push_batch(int, PacketBatch *batch)
++{
++    output_push_batch(0, batch);
++}
++#endif
++
++#if HAVE_BATCH
++static const short PULL_LIMIT = 32;
++#endif
+ 
+ PullNullElement::PullNullElement()
+ {
+@@ -55,6 +73,14 @@ PullNullElement::pull(int)
+   return input(0).pull();
+ }
+ 
++#if HAVE_BATCH
++PacketBatch *
++PullNullElement::pull_batch(int)
++{
++    return input_pull_batch(0, PULL_LIMIT);
++}
++#endif
++
+ CLICK_ENDDECLS
+ EXPORT_ELEMENT(NullElement)
+ EXPORT_ELEMENT(PushNullElement)
+diff --git a/elements/standard/nullelement.hh b/elements/standard/nullelement.hh
+index 0eaee06..8422e8c 100644
+--- a/elements/standard/nullelement.hh
++++ b/elements/standard/nullelement.hh
+@@ -49,8 +49,10 @@ class NullElement : public BatchElement { public:
+   const char *class_name() const	{ return "Null"; }
+   const char *port_count() const	{ return PORTS_1_1; }
+ 
+-  Packet *simple_action(Packet *);
+-  PacketBatch *simple_action_batch(PacketBatch *);
++  Packet      *simple_action      (Packet      *p);
++#if HAVE_BATCH
++  PacketBatch *simple_action_batch(PacketBatch *batch);
++#endif
+ 
+ };
+ 
+@@ -68,7 +70,7 @@ Responds to each pushed packet by pushing it unchanged out its first output.
+ Null, PullNull
+ */
+ 
+-class PushNullElement : public Element { public:
++class PushNullElement : public BatchElement { public:
+ 
+   PushNullElement() CLICK_COLD;
+ 
+@@ -76,8 +78,10 @@ class PushNullElement : public Element { public:
+   const char *port_count() const	{ return PORTS_1_1; }
+   const char *processing() const	{ return PUSH; }
+ 
+-  void push(int, Packet *);
+-
++  void push      (int port, Packet      *p);
++#if HAVE_BATCH
++  void push_batch(int port, PacketBatch *batch);
++#endif
+ };
+ 
+ /*
+@@ -94,7 +98,7 @@ that packet unchanged.
+ =a
+ Null, PushNull */
+ 
+-class PullNullElement : public Element { public:
++class PullNullElement : public BatchElement { public:
+ 
+   PullNullElement() CLICK_COLD;
+ 
+@@ -102,8 +106,10 @@ class PullNullElement : public Element { public:
+   const char *port_count() const	{ return PORTS_1_1; }
+   const char *processing() const	{ return PULL; }
+ 
+-  Packet *pull(int);
+-
++  Packet      *pull      (int);
++#if HAVE_BATCH
++  PacketBatch *pull_batch(int);
++#endif
+ };
+ 
+ CLICK_ENDDECLS
 diff --git a/elements/tcpudp/iprewriter.cc b/elements/tcpudp/iprewriter.cc
 index 0bc909b..84121f6 100644
 --- a/elements/tcpudp/iprewriter.cc
@@ -6074,6 +8767,19 @@ index 4246624..684e135 100644
  }
  
  CLICK_ENDDECLS
+diff --git a/elements/userlevel/fromdpdkring.hh b/elements/userlevel/fromdpdkring.hh
+index 26f41dc..ca6effc 100644
+--- a/elements/userlevel/fromdpdkring.hh
++++ b/elements/userlevel/fromdpdkring.hh
+@@ -94,7 +94,7 @@ class FromDPDKRing : public BatchElement {
+ 		void add_handlers()					CLICK_COLD;
+ 		void cleanup     (CleanupStage) 			CLICK_COLD;
+ 
+-		// Calls either push_packet or push_batch
++		// Calls either push or push_batch
+ 		bool run_task    (Task *);
+ 
+ 	private:
 diff --git a/include/click/router.hh b/include/click/router.hh
 index b4fa24b..798cae8 100644
 --- a/include/click/router.hh
