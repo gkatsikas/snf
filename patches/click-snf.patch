@@ -1,0 +1,2270 @@
+diff --git a/elements/analysis/storeicmptimeseqrecord.cc b/elements/analysis/storeicmptimeseqrecord.cc
+new file mode 100644
+index 0000000..75f35f6
+--- /dev/null
++++ b/elements/analysis/storeicmptimeseqrecord.cc
+@@ -0,0 +1,158 @@
++/*
++Programmer: Georgios Katsikas
++ * Copyright (c) 2016 
++
++ * Permission is hereby granted, free of charge, to any person obtaining a
++ * copy of this software and associated documentation files (the "Software"),
++ * to deal in the Software without restriction, subject to the conditions
++ * listed in the Click LICENSE file. These conditions include: you must
++ * preserve this copyright notice, and you cannot mention the copyright
++ * holders in advertising related to the Software without their permission.
++ * The Software is provided WITHOUT ANY WARRANTY, EXPRESS OR IMPLIED. This
++ * notice is a summary of the Click LICENSE file; the license in that file is
++ * legally binding.
++*/
++
++#include <click/config.h>
++#include "storeicmptimeseqrecord.hh"
++#include <click/glue.hh>
++#include <clicknet/ip.h>
++#include <clicknet/ip6.h>
++#include <clicknet/icmp.h>
++#include <clicknet/tcp.h>
++#include <click/args.hh>
++#include <click/error.hh>
++
++
++
++CLICK_DECLS
++
++/*
++ */
++StoreICMPTimeSeqRecord::StoreICMPTimeSeqRecord() {
++	_count = 0;
++	_delta = 0;
++	_offset = 0;
++}
++
++
++
++int StoreICMPTimeSeqRecord::configure(Vector<String> &conf, ErrorHandler *errh) {
++	if (Args(conf, this, errh)
++		.read_mp("OFFSET", _offset)
++		.read("DELTA", _delta)
++		.complete() < 0)
++		return -1;
++	return 0;
++}
++
++// This is the tricky bit.  We can't rely on any headers being
++// filled out if elements like CheckIPHeader have not been called
++// so we should just access the raw data and cast wisely
++Packet* StoreICMPTimeSeqRecord::simple_action(Packet *packet) {
++	WritablePacket *p = packet->uniqueify();
++	Timestamp       tnow;
++	click_icmp     *icmph = 0;
++	PData          *pData;
++	uint32_t        csum = 0;
++	uint32_t        offset = _offset;
++
++	// the packet is shared and we can't modify it without screwing
++	// things up
++	if (!p) {
++	// If uniqueify() fails, packet itself is garbage and has been deleted
++		click_chatter("Non-Writable Packet!");
++		return 0;
++	}
++
++	// get the first two words of the IP header to see what it is to determine how to proceed further
++	if (p->length() < offset + sizeof(uint32_t) * 2) {
++		p->kill();
++		return 0;
++	}
++
++	// here need to get to the right offset.  The IP header can be of variable length due to options
++	// also, the header might be IPv4 of IPv6
++	u_char version = p->data()[offset] >> 4;
++	if (version == 0x04) {
++		const click_ip *ip = reinterpret_cast<const click_ip *>(p->data() + offset);
++		offset += ip->ip_hl << 2;
++	}
++	else if (version == 0x06) {
++		// IPv6 header is
++		const click_ip6 *ip6 = reinterpret_cast<const click_ip6 *>(p->data() + offset);
++		if (ip6->ip6_nxt == 0x01) { // ICMP is the next header
++			offset += sizeof(click_ip6);
++		}
++		else { // the next header is not ICMP so stop now
++			p->kill();
++			return 0;
++		}
++	}
++	else {
++		click_chatter("Unknown IP version!");
++		p->kill();
++		return 0;
++	}
++
++	if (p->length() < offset + sizeof(click_icmp) + sizeof(PData)) {
++		//click_chatter("Packet is too short");
++		p->kill();
++		return 0;
++	}
++
++	// eth, IP, headers must be bypassed with a correct offset
++	icmph = (click_icmp*)(p->data() + offset);
++	pData = (PData*)((char*)icmph + sizeof(click_icmp));
++	csum = icmph->icmp_cksum;
++
++	// we use incremental checksum computation to patch up the checksum after
++	// the payload will get modified
++	_count++;
++	if (_delta) {
++		Timestamp ts1(ntohl(pData->data[0]), Timestamp::nsec_to_subsec(ntohl(pData->data[1])));
++		Timestamp diff = Timestamp::now() - ts1;
++
++		//click_chatter("Seq %d Time Diff sec: %d usec: %d\n", ntohl(pData->seq_num), diff.sec(), diff.nsec());
++		pData->data[2] = htonl(diff.sec());
++		pData->data[3] = htonl(diff.nsec());
++		csum += click_in_cksum((const unsigned char*)(pData->data + 2), 2 * sizeof(uint32_t));
++	}
++	else {
++		tnow = Timestamp::now();
++
++		// subtract the previous contribution from CHECKSUM in case PData values are non-zero
++		csum -= click_in_cksum((const unsigned char*)pData, sizeof(PData));
++		pData->seq_num = htonl(_count);
++		pData->data[0] = htonl(tnow.sec());
++		pData->data[1] = htonl(tnow.nsec());
++		pData->data[2] = 0;
++		pData->data[3] = 0;
++		csum += click_in_cksum((const unsigned char*)pData, sizeof(PData));
++	}
++
++	csum = (0xFFFF & csum) + ((0xFFFF0000 & csum) >> 16);
++	csum = (csum != 0xFFFF) ? csum : 0;
++
++	// now that we modified the packet it is time to fix up the
++	// csum of the header.
++	icmph->icmp_cksum = (uint16_t)csum;
++
++	return p;
++}
++
++
++int StoreICMPTimeSeqRecord::reset_handler(const String &, Element *e, void *, ErrorHandler *) {
++	StoreICMPTimeSeqRecord *t = (StoreICMPTimeSeqRecord *) e;
++
++	t->_count = 0;
++	return 0;
++}
++
++void StoreICMPTimeSeqRecord::add_handlers() {
++	add_data_handlers("count", Handler::f_read, &_count);
++	add_write_handler("reset", reset_handler);
++}
++
++CLICK_ENDDECLS
++EXPORT_ELEMENT(StoreICMPTimeSeqRecord)
+diff --git a/elements/analysis/storeicmptimeseqrecord.hh b/elements/analysis/storeicmptimeseqrecord.hh
+new file mode 100644
+index 0000000..977d683
+--- /dev/null
++++ b/elements/analysis/storeicmptimeseqrecord.hh
+@@ -0,0 +1,108 @@
++// -*- c-basic-offset: 4 -*-
++/*
++Programmer: Georgios Katsikas
++ * Copyright (c) 2016 
++
++ * Permission is hereby granted, free of charge, to any person obtaining a
++ * copy of this software and associated documentation files (the "Software"),
++ * to deal in the Software without restriction, subject to the conditions
++ * listed in the Click LICENSE file. These conditions include: you must
++ * preserve this copyright notice, and you cannot mention the copyright
++ * holders in advertising related to the Software without their permission.
++ * The Software is provided WITHOUT ANY WARRANTY, EXPRESS OR IMPLIED. This
++ * notice is a summary of the Click LICENSE file; the license in that file is
++ * legally binding.
++*/
++#ifndef CLICK_STOREICMPTIMESEQRECORD_HH
++#define CLICK_STOREICMPTIMESEQRECORD_HH
++#include <click/element.hh>
++
++CLICK_DECLS
++
++/*
++=c
++
++StoreICMPTimeSeqRecord([I<keywords> OFFSET, DELTA])
++
++=s timestamps
++
++=d
++
++StoreICMPTimeSeqRecord element can be handy when computing end-to-end ICMP packet
++delays.  The element embeds a timestamp and a sequence number into a packet and
++adjusts the checksum of the ICMP packet.  Once the initial timestamp has been
++placed into the payload of the ICMP packet, a time difference can be computed
++once a packet passes through another StoreICMPTimeSeqRecord element.  The data can be
++accessed by examining the packet payload (e.g., do a tcpdump and then do post
++processing of the data).  The element uses partial checksums to speed up the
++processing.  The element works with IPv4 and IPv6 packets. In case of IPv6,
++it assumes that the next header field is ICMP.  If this is not the case, the
++element will discard the packet.
++
++Packet payload found after the ICMP header.  Note, the ICMP payload must be at least
++22 bytes long.  The values will be stored in network byte order.
++
++uint32_t seq_num
++uint32_t initial_second
++uint32_t initial_nano_second
++uint32_t difference_second
++uint32_t difference_nano_second
++
++Keyword arguments are:
++
++=over 2
++
++=item OFFSET
++
++Number of bytes to offset from the beginning of the packet where the IPv4/6 header can be found.
++If raw Ethernet packets are fed into this element, then OFFSET needs to be 14.
++
++=item DELTA
++
++Determines which time values are set. If DELTA is false (the default), then the initial_second
++and initial_nano_second values are set to the current time, and the difference values are set to 0.
++If DELTA is true, then the initial values are left as is, and the difference values are set to
++the difference between the current time and the packet's initial time.
++
++=back
++
++=e
++    src :: RatedSource(\<00>, LENGTH 22, RATE 1, LIMIT 100)
++        -> ICMPIPEncap(10.0.1.1, 20.0.0.2)
++        -> EtherEncap(0x0800, 00:04:23:D0:93:63, 00:17:cb:0d:f8:db)
++        -> StoreICMPTimeSeqRecord(OFFSET 14, DELTA false)
++        -> DelayShaper(100msec)
++        -> StoreICMPTimeSeqRecord(OFFSET 14, DELTA true)
++        -> ToDump("dump.dmp");
++*/
++class StoreICMPTimeSeqRecord : public Element {
++	public:
++		StoreICMPTimeSeqRecord() CLICK_COLD;
++
++		const char *class_name() const	{ return "StoreICMPTimeSeqRecord"; }
++		const char *port_count() const	{ return PORTS_1_1; }
++
++		void add_handlers() CLICK_COLD;
++		int  configure(Vector<String> &conf, ErrorHandler *errh) CLICK_COLD;
++
++		Packet *simple_action(Packet *);
++
++		// packet data payload access struct
++		// Header | PDATA | rest of data
++		// This comes out to 22 bytes which will fit into the smallest Ethernet frame
++		struct PData {
++			uint32_t seq_num;
++			uint32_t data[4];
++		};
++
++	private:
++		unsigned long _count;
++		bool          _delta;  // if true put in_timestamp else out_timestamp
++		uint32_t      _offset; //how much to shift to get to the IPv4/v6 header
++
++		static String read_handler(Element *, void *) CLICK_COLD;
++		static int    reset_handler(const String &, Element *, void *, ErrorHandler *);
++};
++
++CLICK_ENDDECLS
++#endif
+diff --git a/elements/analysis/storetcptimeseqrecord.cc b/elements/analysis/storetcptimeseqrecord.cc
+new file mode 100644
+index 0000000..50fe1f8
+--- /dev/null
++++ b/elements/analysis/storetcptimeseqrecord.cc
+@@ -0,0 +1,153 @@
++/*
++Programmer: Georgios Katsikas
++ * Copyright (c) 2016 
++
++ * Permission is hereby granted, free of charge, to any person obtaining a
++ * copy of this software and associated documentation files (the "Software"),
++ * to deal in the Software without restriction, subject to the conditions
++ * listed in the Click LICENSE file. These conditions include: you must
++ * preserve this copyright notice, and you cannot mention the copyright
++ * holders in advertising related to the Software without their permission.
++ * The Software is provided WITHOUT ANY WARRANTY, EXPRESS OR IMPLIED. This
++ * notice is a summary of the Click LICENSE file; the license in that file is
++ * legally binding.
++*/
++
++#include <click/config.h>
++#include "storetcptimeseqrecord.hh"
++#include <click/glue.hh>
++#include <clicknet/ip.h>
++#include <clicknet/ip6.h>
++#include <clicknet/tcp.h>
++#include <click/args.hh>
++#include <click/error.hh>
++
++CLICK_DECLS
++
++/*
++ */
++StoreTCPTimeSeqRecord::StoreTCPTimeSeqRecord() {
++	_count = 0;
++	_delta = 0;
++	_offset = 0;
++}
++
++int StoreTCPTimeSeqRecord::configure(Vector<String> &conf, ErrorHandler *errh) {
++	if (Args(conf, this, errh)
++		.read_mp("OFFSET", _offset)
++		.read("DELTA", _delta)
++		.complete() < 0)
++		return -1;
++	return 0;
++}
++
++// This is the tricky bit.  We can't rely on any headers being
++// filled out if elements like CheckIPHeader have not been called
++// so we should just access the raw data and cast wisely
++Packet* StoreTCPTimeSeqRecord::simple_action(Packet *packet) {
++	WritablePacket *p = packet->uniqueify();
++	Timestamp      tnow;
++	click_tcp      *tcph = 0;
++	PData          *pData;
++	uint32_t       csum = 0;
++	uint32_t       offset = _offset;
++
++	// the packet is shared and we can't modify it without screwing
++	// things up
++	if (!p) {
++	// If uniqueify() fails, packet itself is garbage and has been deleted
++		click_chatter("Non-Writable Packet!");
++		return 0;
++	}
++
++	// get the first two words of the IP header to see what it is to determine how to proceed further
++	if (p->length() < offset + sizeof(uint32_t) * 2) {
++		p->kill();
++		return 0;
++	}
++
++	// here need to get to the right offset.  The IP header can be of variable length due to options
++	// also, the header might be IPv4 of IPv6
++	u_char version = p->data()[offset] >> 4;
++	if (version == 0x04) {
++		const click_ip *ip = reinterpret_cast<const click_ip *>(p->data() + offset);
++		offset += ip->ip_hl << 2;
++	}
++	else if (version == 0x06) {
++		// IPv6 header is
++		const click_ip6 *ip6 = reinterpret_cast<const click_ip6 *>(p->data() + offset);
++		if (ip6->ip6_nxt == 0x06) { // TCP is the next header
++			offset += sizeof(click_ip6);
++		}
++		else { // the next header is not TCP so stop now
++			p->kill();
++			return 0;
++		}
++	}
++	else {
++		click_chatter("Unknown IP version!");
++		p->kill();
++		return 0;
++	}
++
++	if (p->length() < offset + sizeof(click_tcp) + sizeof(PData)) {
++		//click_chatter("Packet is too short");
++		p->kill();
++		return 0;
++	}
++
++	// eth, IP, headers must be bypassed with a correct offset
++	tcph = (click_tcp*)(p->data() + offset);
++	pData = (PData*)((char*)tcph + sizeof(click_tcp));
++	csum = tcph->th_sum;
++
++	// we use incremental checksum computation to patch up the checksum after
++	// the payload will get modified
++	_count++;
++	if (_delta) {
++		Timestamp ts1(ntohl(pData->data[0]), Timestamp::nsec_to_subsec(ntohl(pData->data[1])));
++		Timestamp diff = Timestamp::now() - ts1;
++
++		//click_chatter("Seq %d Time Diff sec: %d usec: %d\n", ntohl(pData->seq_num), diff.sec(), diff.nsec());
++		pData->data[2] = htonl(diff.sec());
++		pData->data[3] = htonl(diff.nsec());
++		csum += click_in_cksum((const unsigned char*)(pData->data + 2), 2 * sizeof(uint32_t));
++	}
++	else {
++		tnow = Timestamp::now();
++
++		// subtract the previous contribution from CHECKSUM in case PData values are non-zero
++		csum -= click_in_cksum((const unsigned char*)pData, sizeof(PData));
++		pData->seq_num = htonl(_count);
++		pData->data[0] = htonl(tnow.sec());
++		pData->data[1] = htonl(tnow.nsec());
++		pData->data[2] = 0;
++		pData->data[3] = 0;
++		csum += click_in_cksum((const unsigned char*)pData, sizeof(PData));
++	}
++
++	csum = (0xFFFF & csum) + ((0xFFFF0000 & csum) >> 16);
++	csum = (csum != 0xFFFF) ? csum : 0;
++
++	// now that we modified the packet it is time to fix up the
++	// csum of the header.
++	tcph->th_sum = (uint16_t)csum;
++
++	return p;
++}
++
++
++int StoreTCPTimeSeqRecord::reset_handler(const String &, Element *e, void *, ErrorHandler *) {
++	StoreTCPTimeSeqRecord *t = (StoreTCPTimeSeqRecord *) e;
++
++	t->_count = 0;
++	return 0;
++}
++
++void StoreTCPTimeSeqRecord::add_handlers() {
++	add_data_handlers("count", Handler::f_read, &_count);
++	add_write_handler("reset", reset_handler);
++}
++
++CLICK_ENDDECLS
++EXPORT_ELEMENT(StoreTCPTimeSeqRecord)
+diff --git a/elements/analysis/storetcptimeseqrecord.hh b/elements/analysis/storetcptimeseqrecord.hh
+new file mode 100644
+index 0000000..5aa8883
+--- /dev/null
++++ b/elements/analysis/storetcptimeseqrecord.hh
+@@ -0,0 +1,99 @@
++// -*- c-basic-offset: 4 -*-
++/*
++Programmer: Georgios Katsikas
++ * Copyright (c) 2016 
++
++ * Permission is hereby granted, free of charge, to any person obtaining a
++ * copy of this software and associated documentation files (the "Software"),
++ * to deal in the Software without restriction, subject to the conditions
++ * listed in the Click LICENSE file. These conditions include: you must
++ * preserve this copyright notice, and you cannot mention the copyright
++ * holders in advertising related to the Software without their permission.
++ * The Software is provided WITHOUT ANY WARRANTY, EXPRESS OR IMPLIED. This
++ * notice is a summary of the Click LICENSE file; the license in that file is
++ * legally binding.
++*/
++#ifndef CLICK_STORETCPTIMESEQRECORD_HH
++#define CLICK_STORETCPTIMESEQRECORD_HH
++#include <click/element.hh>
++
++CLICK_DECLS
++
++/*
++=c
++
++StoreTCPTimeSeqRecord([I<keywords> OFFSET, DELTA])
++
++=s timestamps
++
++=d
++
++StoreTCPTimeSeqRecord element can be handy when computing end-to-end TCP packet
++delays.  The element embeds a timestamp and a sequence number into a packet and
++adjusts the checksum of the TCP packet.  Once the initial timestamp has been
++placed into the payload of the TCP packet, a time difference can be computed
++once a packet passes through another StoreTCPTimeSeqRecord element.  The data can be
++accessed by examining the packet payload (e.g., do a tcpdump and then do post
++processing of the data).  The element uses partial checksums to speed up the
++processing.  The element works with IPv4 and IPv6 packets. In case of IPv6,
++it assumes that the next header field is TCP.  If this is not the case, the
++element will discard the packet.
++
++Packet payload found after the TCP header.  Note, the TCP payload must be at least
++22 bytes long.  The values will be stored in network byte order.
++
++uint32_t seq_num
++uint32_t initial_second
++uint32_t initial_nano_second
++uint32_t difference_second
++uint32_t difference_nano_second
++
++Keyword arguments are:
++
++=over 2
++
++=item OFFSET
++
++Number of bytes to offset from the beginning of the packet where the IPv4/6 header can be found.
++If raw Ethernet packets are fed into this element, then OFFSET needs to be 14.
++
++=item DELTA
++
++Determines which time values are set. If DELTA is false (the default), then the initial_second
++and initial_nano_second values are set to the current time, and the difference values are set to 0.
++If DELTA is true, then the initial values are left as is, and the difference values are set to
++the difference between the current time and the packet's initial time.
++
++=back
++*/
++class StoreTCPTimeSeqRecord : public Element {
++	public:
++		StoreTCPTimeSeqRecord() CLICK_COLD;
++
++		const char *class_name() const	{ return "StoreTCPTimeSeqRecord"; }
++		const char *port_count() const	{ return PORTS_1_1; }
++
++		void add_handlers() CLICK_COLD;
++		int  configure(Vector<String> &conf, ErrorHandler *errh) CLICK_COLD;
++
++		Packet *simple_action(Packet *);
++
++		// packet data payload access struct
++		// Header | PDATA | rest of data
++		// This comes out to 22 bytes which will fit into the smallest Ethernet frame
++		struct PData {
++			uint32_t seq_num;
++			uint32_t data[4];
++		};
++
++	private:
++		unsigned long _count;
++		bool          _delta;  // if true put in_timestamp else out_timestamp
++		uint32_t      _offset; //how much to shift to get to the IPv4/v6 header
++
++		static String read_handler(Element *, void *) CLICK_COLD;
++		static int    reset_handler(const String &, Element *, void *, ErrorHandler *);
++};
++
++CLICK_ENDDECLS
++#endif
+diff --git a/elements/ip/decipttl.cc b/elements/ip/decipttl.cc
+index cdc8dca..cf7ae50 100644
+--- a/elements/ip/decipttl.cc
++++ b/elements/ip/decipttl.cc
+@@ -24,7 +24,7 @@
+ CLICK_DECLS
+ 
+ DecIPTTL::DecIPTTL()
+-    : _active(true), _multicast(true)
++    : _active(true), _multicast(true), _calc_checksum(true)
+ {
+     _drops = 0;
+ }
+@@ -37,8 +37,9 @@ int
+ DecIPTTL::configure(Vector<String> &conf, ErrorHandler *errh)
+ {
+     return Args(conf, this, errh)
+-	.read("ACTIVE", _active)
+-	.read("MULTICAST", _multicast).complete();
++	.read("ACTIVE",        _active)
++	.read("CALC_CHECKSUM", _calc_checksum)
++	.read("MULTICAST",     _multicast).complete();
+ }
+ 
+ Packet *
+@@ -51,6 +52,7 @@ DecIPTTL::simple_action(Packet *p)
+     if (!_multicast && IPAddress(ip_in->ip_dst).is_multicast())
+ 	return p;
+ 
++    // Time to drop
+     if (ip_in->ip_ttl <= 1) {
+ 	++_drops;
+ 	checked_output_push(1, p);
+@@ -60,7 +62,13 @@ DecIPTTL::simple_action(Packet *p)
+ 	if (!q)
+ 	    return 0;
+ 	click_ip *ip = q->ip_header();
+-	--ip->ip_ttl;
++
++	// Decrement
++	ip->ip_ttl --;
++
++	// SNF: Do not calculate IP checksum if you are requested to do so
++	if ( !_calc_checksum )
++		return q;
+ 
+ 	// 19.Aug.1999 - incrementally update IP checksum as suggested by SOSP
+ 	// reviewers, according to RFC1141, as updated by RFC1624.
+@@ -81,6 +89,7 @@ DecIPTTL::add_handlers()
+ {
+     add_data_handlers("drops", Handler::OP_READ, &_drops);
+     add_data_handlers("active", Handler::OP_READ | Handler::OP_WRITE | Handler::CHECKBOX, &_active);
++    add_data_handlers("calc_checksum", Handler::OP_READ | Handler::OP_WRITE | Handler::CHECKBOX, &_calc_checksum);
+ }
+ 
+ CLICK_ENDDECLS
+diff --git a/elements/ip/decipttl.hh b/elements/ip/decipttl.hh
+index b2ff703..c1b6c92 100644
+--- a/elements/ip/decipttl.hh
++++ b/elements/ip/decipttl.hh
+@@ -62,6 +62,8 @@ class DecIPTTL : public Element { public:
+     bool _active;
+     bool _multicast;
+ 
++    // SNF: Make the Checksum calculation optional
++    bool _calc_checksum;
+ };
+ 
+ CLICK_ENDDECLS
+diff --git a/elements/ip/ipfilter.cc b/elements/ip/ipfilter.cc
+index 7cff8b2..af056f7 100644
+--- a/elements/ip/ipfilter.cc
++++ b/elements/ip/ipfilter.cc
+@@ -55,7 +55,10 @@ static const StaticNameDB::Entry type_entries[] = {
+     { "type", IPFilter::FIELD_ICMP_TYPE },
+     { "unfrag", IPFilter::TYPE_IPUNFRAG },
+     { "vers", IPFilter::FIELD_VERSION },
+-    { "win", IPFilter::FIELD_TCP_WIN }
++    { "win", IPFilter::FIELD_TCP_WIN },
++    /* Fields IP_SRC and IP_DST added for SNF */
++    { "src", IPFilter::FIELD_IP_SRC},
++    { "dst", IPFilter::FIELD_IP_DST}
+ };
+ 
+ static const StaticNameDB::Entry tcp_opt_entries[] = {
+@@ -294,6 +297,9 @@ IPFilter::Primitive::unparse_type(int srcdst, int type)
+        case FIELD_TTL: sa << "ip ttl"; break;
+        case FIELD_TCP_WIN: sa << "tcp win"; break;
+        case FIELD_ICMP_TYPE: sa << "icmp type"; break;
++       /* Fields IP_SRC and IP_DST added for SNF */
++       case FIELD_IP_SRC: sa << "ip src"; break;
++       case FIELD_IP_DST: sa << "ip dst"; break;
+        default:
+ 	if (type & FIELD_PROTO_MASK)
+ 	  sa << unparse_transp_proto((type & FIELD_PROTO_MASK) >> FIELD_PROTO_SHIFT);
+diff --git a/elements/ip/ipfilter.hh b/elements/ip/ipfilter.hh
+index 667f387..63421b1 100644
+--- a/elements/ip/ipfilter.hh
++++ b/elements/ip/ipfilter.hh
+@@ -172,7 +172,10 @@ class IPFilter : public Element { public:
+ 	FIELD_DSCP	= (TYPE_FIELD | ((1*8) << FIELD_OFFSET_SHIFT) | 5),
+ 	FIELD_TTL	= (TYPE_FIELD | ((8*8) << FIELD_OFFSET_SHIFT) | 7),
+ 	FIELD_TCP_WIN = (TYPE_FIELD | (IP_PROTO_TCP << FIELD_PROTO_SHIFT) | ((14*8) << FIELD_OFFSET_SHIFT) | 15),
+-	FIELD_ICMP_TYPE = (TYPE_FIELD | (IP_PROTO_ICMP << FIELD_PROTO_SHIFT) | (0 << FIELD_OFFSET_SHIFT) | 7)
++	FIELD_ICMP_TYPE = (TYPE_FIELD | (IP_PROTO_ICMP << FIELD_PROTO_SHIFT) | (0 << FIELD_OFFSET_SHIFT) | 7),
++        /* Fields IP_SRC and IP_DST added for SNF */
++        FIELD_IP_SRC = (TYPE_FIELD | ((12*8) << FIELD_OFFSET_SHIFT) | 31),
++        FIELD_IP_DST = (TYPE_FIELD | ((16*8) << FIELD_OFFSET_SHIFT) | 31),
+     };
+ 
+     enum {
+diff --git a/elements/ip/ipoutputcombo.cc b/elements/ip/ipoutputcombo.cc
+index 3320a05..deda012 100644
+--- a/elements/ip/ipoutputcombo.cc
++++ b/elements/ip/ipoutputcombo.cc
+@@ -2,7 +2,10 @@
+  * ipoutputcombo.{cc,hh} -- IP router output combination element
+  * Eddie Kohler
+  *
++ * Optional checksum calculation by Georgios Katsikas
++ *
+  * Copyright (c) 1999-2000 Massachusetts Institute of Technology
++ * Copyright (c) 2016 KTH Royal Institute of Technology
+  *
+  * Permission is hereby granted, free of charge, to any person obtaining a
+  * copy of this software and associated documentation files (the "Software"),
+@@ -24,6 +27,7 @@
+ CLICK_DECLS
+ 
+ IPOutputCombo::IPOutputCombo()
++    : _calc_checksum(true)
+ {
+ }
+ 
+@@ -37,6 +41,7 @@ IPOutputCombo::configure(Vector<String> &conf, ErrorHandler *errh)
+     return Args(conf, this, errh)
+ 	.read_mp("COLOR", _color)
+ 	.read_mp("IPADDR", _my_ip)
++	.read("CALC_CHECKSUM", _calc_checksum)
+ 	.read_mp("MTU", _mtu).complete();
+ }
+ 
+@@ -173,7 +178,7 @@ IPOutputCombo::push(int, Packet *p_in)
+   }
+ 
+   // IPGWOptions / FixIPSrc
+-  if (do_cksum) {
++  if (do_cksum && _calc_checksum) {
+     ip->ip_sum = 0;
+     ip->ip_sum = click_in_cksum(p->data(), hlen);
+   }
+@@ -186,8 +191,11 @@ IPOutputCombo::push(int, Packet *p_in)
+     ip->ip_ttl--;
+     // 19.Aug.1999 - incrementally update IP checksum as suggested by SOSP
+     // reviewers, according to RFC1141 and RFC1624
+-    unsigned long sum = (~ntohs(ip->ip_sum) & 0xFFFF) + 0xFEFF;
+-    ip->ip_sum = ~htons(sum + (sum >> 16));
++    // Do not calculate IP checksum if you are requested to do so
++    if (_calc_checksum) {
++        unsigned long sum = (~ntohs(ip->ip_sum) & 0xFFFF) + 0xFEFF;
++        ip->ip_sum = ~htons(sum + (sum >> 16));
++    }
+   }
+ 
+   // Fragmenter
+@@ -204,6 +212,12 @@ IPOutputCombo::push(int, Packet *p_in)
+   output(2).push(p);
+ }
+ 
++void
++IPOutputCombo::add_handlers()
++{
++    add_data_handlers("calc_checksum", Handler::OP_READ | Handler::OP_WRITE | Handler::CHECKBOX, &_calc_checksum);
++}
++
+ CLICK_ENDDECLS
+ EXPORT_ELEMENT(IPOutputCombo)
+ ELEMENT_MT_SAFE(IPOutputCombo)
+diff --git a/elements/ip/ipoutputcombo.hh b/elements/ip/ipoutputcombo.hh
+index 8fc95bd..0326702 100644
+--- a/elements/ip/ipoutputcombo.hh
++++ b/elements/ip/ipoutputcombo.hh
+@@ -7,7 +7,7 @@ CLICK_DECLS
+ 
+ /*
+  * =c
+- * IPOutputCombo(COLOR, IPADDR, MTU)
++ * IPOutputCombo(COLOR, IPADDR, MTU, CALC_CHECKSUM)
+  * =s ip
+  * output combo for IP routing
+  * =d
+@@ -32,6 +32,11 @@ CLICK_DECLS
+  * outputs for PaintTee, IPGWOptions, and DecIPTTL, respectively; and
+  * output 4 is for packets longer than MTU.
+  *
++ * =item CALC_CHECKSUM
++ * Boolean. If true, the element does not calculate the IP checksum,
++ * since it is assumed that a subsequent element will do so.
++ * Defaults to true.
++ *
+  * =n
+  *
+  * IPOutputCombo does no fragmentation. You'll still need an IPFragmenter for
+@@ -52,6 +57,7 @@ class IPOutputCombo : public Element {
+   const char *processing() const		{ return PUSH; }
+ 
+   int configure(Vector<String> &, ErrorHandler *) CLICK_COLD;
++  void add_handlers() CLICK_COLD;
+ 
+   void push(int, Packet *);
+ 
+@@ -60,7 +66,7 @@ class IPOutputCombo : public Element {
+   int _color;			// PaintTee
+   struct in_addr _my_ip;	// IPGWOptions, FixIPSrc
+   unsigned _mtu;		// Fragmenter
+-
++  bool _calc_checksum;          // Make the checksum calculation optional
+ };
+ 
+ CLICK_ENDDECLS
+diff --git a/elements/ip/iprewriterbase.cc b/elements/ip/iprewriterbase.cc
+index 50e3f34..cd5e942 100644
+--- a/elements/ip/iprewriterbase.cc
++++ b/elements/ip/iprewriterbase.cc
+@@ -50,7 +50,6 @@ CLICK_DECLS
+ //
+ // IPMapper
+ //
+-
+ void
+ IPMapper::notify_rewriter(IPRewriterBase *, IPRewriterInput *, ErrorHandler *)
+ {
+@@ -66,9 +65,12 @@ IPMapper::rewrite_flowid(IPRewriterInput *, const IPFlowID &, IPFlowID &,
+ //
+ // IPRewriterBase
+ //
+-
+ IPRewriterBase::IPRewriterBase()
+-    : _map(0), _heap(new IPRewriterHeap), _gc_timer(gc_timer_hook, this)
++    : _map(0), _heap(new IPRewriterHeap), _gc_timer(gc_timer_hook, this),
++	_drop_bcast(false), _ipgw_opt(false), _fix_ip_src(false),
++	_ip_fragment(false), _dec_ip_ttl(false), _calc_checksum(true),
++	_my_ip(), _mtu(1500), _headroom(Packet::default_headroom),
++	_honor_df(true), _verbose(false)
+ {
+     _timeouts[0] = default_timeout;
+     _timeouts[1] = default_guarantee;
+@@ -158,9 +160,45 @@ IPRewriterBase::configure(Vector<String> &conf, ErrorHandler *errh)
+ 	.read("GUARANTEE", SecondsArg(), _timeouts[1])
+ 	.read("REAP_INTERVAL", SecondsArg(), _gc_interval_sec)
+ 	.read("REAP_TIME", Args::deprecated, SecondsArg(), _gc_interval_sec)
++	.read("DROP_BCAST", _drop_bcast)
++	.read("IPGW_OPTIONS", _ipgw_opt)
++	.read("FIX_IP_SRC", _fix_ip_src)
++	.read("DEC_IP_TTL", _dec_ip_ttl)
++	.read("IP_FRAGMENT", _ip_fragment)
++	.read("IP_OUT_COMBO", _ip_out_combo)
++	.read("CALC_CHECKSUM", _calc_checksum)
++	.read("MTU", _mtu)
++	.read("HEADROOM", _headroom)
++	.read("HONOR_DF", _honor_df)
++	.read("VERBOSE", _verbose)
+ 	.consume() < 0)
+ 	return -1;
+ 
++    // Combines all these elements
++    if ( _ip_out_combo ) {
++	_dec_ip_ttl = _fix_ip_src = _ipgw_opt = _drop_bcast = true;
++    }
++
++    // These elements modify parts of header space
++    if ( _ipgw_opt || _fix_ip_src || _dec_ip_ttl || _ip_out_combo ) {
++	_calc_checksum = true;
++    }
++
++    /*
++    click_chatter("\n");
++    click_chatter("   DEC_IP_TTL: %s", _dec_ip_ttl? "True":"False");
++    click_chatter("   DROP_BCAST: %s", _drop_bcast? "True":"False");
++    click_chatter(" IPGW_OPTIONS: %s", _ipgw_opt? "True":"False");
++    click_chatter("   FIX_IP_SRC: %s", _fix_ip_src? "True":"False");
++    click_chatter("  IP_FRAGMENT: %s", _ip_fragment? "True":"False");
++    click_chatter("CALC_CHECKSUM: %s", _calc_checksum? "True":"False");
++    click_chatter("     HONOR_DF: %s", _honor_df? "True":"False");
++    click_chatter("      VERBOSE: %s", _verbose? "True":"False");
++    click_chatter("     HEADROOM: %d", _headroom);
++    click_chatter("          MTU: %d", _mtu);
++    click_chatter("       IPADDR: %s", IPAddress(_my_ip).s().c_str());
++    */
++
+     if (capacity_word) {
+ 	Element *e;
+ 	IPRewriterBase *rwb;
+@@ -175,18 +213,40 @@ IPRewriterBase::configure(Vector<String> &conf, ErrorHandler *errh)
+ 	    return errh->error("bad MAPPING_CAPACITY");
+     }
+ 
+-    if (conf.size() != ninputs())
+-	return errh->error("need %d arguments, one per input port", ninputs());
+-
+     _timeouts[0] *= CLICK_HZ;	// _timeouts is measured in jiffies
+     _timeouts[1] *= CLICK_HZ;
+ 
++    bool has_ipaddr = false;
++    String ipaddr_pat = String("IPADDR");
+     for (int i = 0; i < conf.size(); ++i) {
++	//click_chatter("Arg: %s", conf[i].c_str());
++
++	// IPADDR argument not handled above
++	int start_pos = conf[i].find_left(ipaddr_pat, 0);
++	if ( start_pos >= 0 ) {
++		has_ipaddr = true;
++		String ip = conf[i].substring(start_pos+ipaddr_pat.length()+1, -1);
++		//click_chatter("Found %s", ip.c_str());
++		_my_ip = IPAddress(ip).in_addr();
++		//click_chatter("       IPADDR: %s", IPAddress(_my_ip).s().c_str());
++		continue;
++	}
++
+ 	IPRewriterInput is;
+ 	if (parse_input_spec(conf[i], is, i, errh) >= 0)
+ 	    _input_specs.push_back(is);
+     }
+ 
++    int extra_params = has_ipaddr? 1:0;
++    if ( conf.size()-extra_params != ninputs() )
++	return errh->error("need %d arguments, one per input port", ninputs());
++
++    if ( (_ip_fragment) && (_mtu < 8) )
++	return errh->error("MTU must be at least 8");
++
++    if ( (_ipgw_opt || _fix_ip_src) && (_my_ip != 0) )
++	return errh->error("IPGWOptions and/or FixIPSrc operations require IPADDR to be set");
++
+     return _input_specs.size() == ninputs() ? 0 : -1;
+ }
+ 
+@@ -497,6 +557,22 @@ IPRewriterBase::llrpc(unsigned command, void *data)
+ 	return Element::llrpc(command, data);
+ }
+ 
++void
++IPRewriterBase::print_flow_info(IPRewriterEntry *m, click_ip *iph)
++{
++    if (!m || !iph)
++	return;
++
++    click_chatter("---->        IP Proto: %d\n", iph->ip_p);
++    click_chatter("---->        Src   IP: %s\n", m->flowid().saddr().s().c_str());
++    click_chatter("---->        Src Port: %d\n", htons(m->flowid().sport()));
++    click_chatter("---->        Dst   IP: %s\n", m->flowid().daddr().s().c_str());
++    click_chatter("---->        Dst Port: %d\n", htons(m->flowid().dport()));
++    click_chatter("---->       Direction: %s\n", m->direction()? "Response":"Forward");
++    click_chatter("----> Forward Outport: %d\n", m->output());
++    click_chatter("\n");
++}
++
+ ELEMENT_REQUIRES(IPRewriterMapping IPRewriterPattern)
+ ELEMENT_PROVIDES(IPRewriterBase)
+ CLICK_ENDDECLS
+diff --git a/elements/ip/iprewriterbase.hh b/elements/ip/iprewriterbase.hh
+index b7ced3a..bfaf0e3 100644
+--- a/elements/ip/iprewriterbase.hh
++++ b/elements/ip/iprewriterbase.hh
+@@ -140,6 +140,21 @@ class IPRewriterBase : public Element { public:
+     uint32_t _gc_interval_sec;
+     Timer _gc_timer;
+ 
++    // SNF extensions: IP Rewriter can possibly apply these operations
++    bool _drop_bcast;           // DropBroadcast
++    bool _ipgw_opt;             // IPGWOptions
++    bool _fix_ip_src;           // FixIPSrc
++    bool _ip_fragment;          // IPFragmenter
++    bool _dec_ip_ttl;           // DecIPTTL
++    bool _ip_out_combo;         // DropBroadcast + IPGWOptions + FixIPSrc + DecIPTTL
++    bool _calc_checksum;
++
++    struct in_addr _my_ip;      // For IPGWOptions, FixIPSrc
++    unsigned       _mtu;        // For IP Fragmenter
++    unsigned       _headroom;
++    bool           _honor_df;
++    bool           _verbose;
++
+     enum {
+ 	default_timeout = 300,	   // 5 minutes
+ 	default_guarantee = 5,	   // 5 seconds
+@@ -171,6 +186,8 @@ class IPRewriterBase : public Element { public:
+     friend int IPRewriterInput::rewrite_flowid(const IPFlowID &flowid,
+ 			IPFlowID &rewritten_flowid, Packet *p, int mapid);
+ 
++    void print_flow_info(IPRewriterEntry *m, click_ip *iph);
++
+   private:
+ 
+     void shift_heap_best_effort(click_jiffies_t now_j);
+diff --git a/elements/ip/iprwmapping.cc b/elements/ip/iprwmapping.cc
+index 966382c..766fe49 100644
+--- a/elements/ip/iprwmapping.cc
++++ b/elements/ip/iprwmapping.cc
+@@ -55,7 +55,7 @@ IPRewriterFlow::IPRewriterFlow(IPRewriterInput *owner, const IPFlowID &flowid,
+ }
+ 
+ void
+-IPRewriterFlow::apply(WritablePacket *p, bool direction, unsigned annos)
++IPRewriterFlow::apply(WritablePacket *p, bool direction, unsigned annos, bool calc_checksum)
+ {
+     assert(p->has_network_header());
+     click_ip *iph = p->ip_header();
+@@ -68,7 +68,11 @@ IPRewriterFlow::apply(WritablePacket *p, bool direction, unsigned annos)
+ 	p->set_dst_ip_anno(revflow.saddr());
+     if (direction && (annos & 2))
+ 	p->set_anno_u8(annos >> 2, _reply_anno);
+-    update_csum(&iph->ip_sum, direction, _ip_csum_delta);
++
++    // SNF: Allow to skip IP checksum calculation
++    if ( calc_checksum ) {
++	update_csum(&iph->ip_sum, direction, _ip_csum_delta);
++    }
+ 
+     // end if not first fragment
+     if (!IP_FIRSTFRAG(iph))
+@@ -79,13 +83,20 @@ IPRewriterFlow::apply(WritablePacket *p, bool direction, unsigned annos)
+ 	click_tcp *tcph = p->tcp_header();
+ 	tcph->th_sport = revflow.dport();
+ 	tcph->th_dport = revflow.sport();
+-	update_csum(&tcph->th_sum, direction, _udp_csum_delta);
++	// SNF extension: Allow to skip TCP checksum calculation
++	if ( calc_checksum ) {
++		update_csum(&tcph->th_sum, direction, _udp_csum_delta);
++	}
+     } else if (iph->ip_p == IP_PROTO_UDP) {
+ 	click_udp *udph = p->udp_header();
+ 	udph->uh_sport = revflow.dport();
+ 	udph->uh_dport = revflow.sport();
+-	if (udph->uh_sum)	// 0 checksum is no checksum
+-	    update_csum(&udph->uh_sum, direction, _udp_csum_delta);
++	if (udph->uh_sum) {	// 0 checksum is no checksum
++	    // SNF extension: Allow to skip TCP checksum calculation
++	    if ( calc_checksum ) {
++		update_csum(&udph->uh_sum, direction, _udp_csum_delta);
++	    }
++	}
+     }
+ }
+ 
+diff --git a/elements/ip/iprwmapping.hh b/elements/ip/iprwmapping.hh
+index 446f95b..5ee3860 100644
+--- a/elements/ip/iprwmapping.hh
++++ b/elements/ip/iprwmapping.hh
+@@ -135,7 +135,7 @@ class IPRewriterFlow { public:
+     static inline void update_csum(uint16_t *csum, bool direction,
+ 				   uint16_t csum_delta);
+ 
+-    void apply(WritablePacket *p, bool direction, unsigned annos);
++    void apply(WritablePacket *p, bool direction, unsigned annos, bool calc_checksum);
+ 
+     void unparse(StringAccum &sa, bool direction, click_jiffies_t now) const;
+     void unparse_ports(StringAccum &sa, bool direction, click_jiffies_t now) const;
+diff --git a/elements/tcpudp/iprewriter.cc b/elements/tcpudp/iprewriter.cc
+index 0bc909b..8f153e5 100644
+--- a/elements/tcpudp/iprewriter.cc
++++ b/elements/tcpudp/iprewriter.cc
+@@ -2,6 +2,8 @@
+  * iprewriter.{cc,hh} -- rewrites packet source and destination
+  * Max Poletto, Eddie Kohler
+  *
++ * 
++ *
+  * Copyright (c) 2000 Massachusetts Institute of Technology
+  * Copyright (c) 2008-2010 Meraki, Inc.
+  *
+@@ -127,6 +129,24 @@ IPRewriter::push(int port, Packet *p_in)
+ 	return;
+     }
+ 
++    // SNF: Decrement IP TTL!
++    // Do it here, before jumping to either UDP or TCP
++    if ( _dec_ip_ttl ) {
++	// Safe decrement
++	if ( iph->ip_ttl > 1 ) {
++	    iph->ip_ttl --;
++	    // Checksum is not mandatory anymore
++	    if ( _calc_checksum ) {
++		unsigned long sum = (~ntohs(iph->ip_sum) & 0xFFFF) + 0xFEFF;
++		iph->ip_sum = ~htons(sum + (sum >> 16));
++	    }
++	}
++	// End flow if TTL is 0
++	else {
++	    return;
++	}
++    }
++
+     IPFlowID flowid(p);
+     HashContainer<IPRewriterEntry> *map = (iph->ip_p == IP_PROTO_TCP ? &_map : &_udp_map);
+     IPRewriterEntry *m = map->get(flowid);
+@@ -135,8 +155,10 @@ IPRewriter::push(int port, Packet *p_in)
+ 	IPRewriterInput &is = _input_specs.unchecked_at(port);
+ 	IPFlowID rewritten_flowid = IPFlowID::uninitialized_t();
+ 	int result = is.rewrite_flowid(flowid, rewritten_flowid, p, iph->ip_p == IP_PROTO_TCP ? 0 : IPRewriterInput::mapid_iprewriter_udp);
+-	if (result == rw_addmap)
++	if (result == rw_addmap) {
+ 	    m = IPRewriter::add_flow(iph->ip_p, flowid, rewritten_flowid, port);
++	    //print_flow_info(m, iph);
++	}
+ 	if (!m) {
+ 	    checked_output_push(result, p);
+ 	    return;
+@@ -148,14 +170,14 @@ IPRewriter::push(int port, Packet *p_in)
+     IPRewriterFlow *mf = m->flow();
+     if (iph->ip_p == IP_PROTO_TCP) {
+ 	TCPFlow *tcpmf = static_cast<TCPFlow *>(mf);
+-	tcpmf->apply(p, m->direction(), _annos);
++	tcpmf->apply(p, m->direction(), _annos, _calc_checksum);
+ 	if (_timeouts[1])
+ 	    tcpmf->change_expiry(_heap, true, now_j + _timeouts[1]);
+ 	else
+ 	    tcpmf->change_expiry(_heap, false, now_j + tcp_flow_timeout(tcpmf));
+     } else {
+ 	UDPFlow *udpmf = static_cast<UDPFlow *>(mf);
+-	udpmf->apply(p, m->direction(), _annos);
++	udpmf->apply(p, m->direction(), _annos, _calc_checksum);
+ 	if (_udp_timeouts[1])
+ 	    udpmf->change_expiry(_heap, true, now_j + _udp_timeouts[1]);
+ 	else
+diff --git a/elements/tcpudp/ipsynthesizer.cc b/elements/tcpudp/ipsynthesizer.cc
+new file mode 100644
+index 0000000..8696236
+--- /dev/null
++++ b/elements/tcpudp/ipsynthesizer.cc
+@@ -0,0 +1,486 @@
++/*
++ * ipsynthesizer.{cc,hh} -- rewrites TCP/UDP packet source and destination
++ * while (optionally) applying post-routing operations
++ * Max Poletto, Eddie Kohler, Georgios Katsikas
++ *
++ * Copyright (c) 2000 Massachusetts Institute of Technology
++ * Copyright (c) 2008-2010 Meraki, Inc.
++ * Copyright (c) 2016 KTH Royal Institute of Technology
++ *
++ * Permission is hereby granted, free of charge, to any person obtaining a
++ * copy of this software and associated documentation files (the "Software"),
++ * to deal in the Software without restriction, subject to the conditions
++ * listed in the Click LICENSE file. These conditions include: you must
++ * preserve this copyright notice, and you cannot mention the copyright
++ * holders in advertising related to the Software without their permission.
++ * The Software is provided WITHOUT ANY WARRANTY, EXPRESS OR IMPLIED. This
++ * notice is a summary of the Click LICENSE file; the license in that file is
++ * legally binding.
++ */
++
++#include <click/config.h>
++#include "ipsynthesizer.hh"
++#include <clicknet/ip.h>
++#include <clicknet/tcp.h>
++#include <clicknet/udp.h>
++#include <click/args.hh>
++#include <click/straccum.hh>
++#include <click/error.hh>
++#include <click/timer.hh>
++#include <click/router.hh>
++#include <click/packet_anno.hh>
++CLICK_DECLS
++
++IPSynthesizer::IPSynthesizer()
++    : _udp_map(0)
++{
++}
++
++IPSynthesizer::~IPSynthesizer()
++{
++}
++
++void *
++IPSynthesizer::cast(const char *n)
++{
++    if (strcmp(n, "IPRewriterBase") == 0)
++	return (IPRewriterBase *)this;
++    else if (strcmp(n, "TCPRewriter") == 0)
++	return (TCPRewriter *)this;
++    else if (strcmp(n, "IPSynthesizer") == 0)
++	return this;
++    else
++	return 0;
++}
++
++int
++IPSynthesizer::configure(Vector<String> &conf, ErrorHandler *errh)
++{
++    bool has_udp_streaming_timeout = false;
++    _udp_timeouts[0] = 60 * 5;	// 5 minutes
++    _udp_timeouts[1] = 5;	// 5 seconds
++
++    if (Args(this, errh).bind(conf)
++	.read("UDP_TIMEOUT", SecondsArg(), _udp_timeouts[0])
++	.read("UDP_STREAMING_TIMEOUT", SecondsArg(), _udp_streaming_timeout).read_status(has_udp_streaming_timeout)
++	.read("UDP_GUARANTEE", SecondsArg(), _udp_timeouts[1])
++	.consume() < 0)
++	return -1;
++
++    if (!has_udp_streaming_timeout)
++	_udp_streaming_timeout = _udp_timeouts[0];
++    _udp_timeouts[0] *= CLICK_HZ; // change timeouts to jiffies
++    _udp_timeouts[1] *= CLICK_HZ;
++    _udp_streaming_timeout *= CLICK_HZ; // IPRewriterBase handles the others
++
++    return TCPRewriter::configure(conf, errh);
++}
++
++inline IPRewriterEntry *
++IPSynthesizer::get_entry(int ip_p, const IPFlowID &flowid, int input)
++{
++    if (ip_p == IP_PROTO_TCP)
++	return TCPRewriter::get_entry(ip_p, flowid, input);
++    if (ip_p != IP_PROTO_UDP)
++	return 0;
++    IPRewriterEntry *m = _udp_map.get(flowid);
++    if (!m && (unsigned) input < (unsigned) _input_specs.size()) {
++	IPRewriterInput &is = _input_specs[input];
++	IPFlowID rewritten_flowid = IPFlowID::uninitialized_t();
++	if (is.rewrite_flowid(flowid, rewritten_flowid, 0, IPRewriterInput::mapid_iprewriter_udp) == rw_addmap)
++	    m = IPSynthesizer::add_flow(0, flowid, rewritten_flowid, input);
++    }
++
++    return m;
++}
++
++IPRewriterEntry *
++IPSynthesizer::add_flow(int ip_p, const IPFlowID &flowid,
++		     const IPFlowID &rewritten_flowid, int input)
++{
++    if (ip_p == IP_PROTO_TCP)
++	return TCPRewriter::add_flow(ip_p, flowid, rewritten_flowid, input);
++
++    void *data;
++    if (!(data = _udp_allocator.allocate()))
++	return 0;
++
++    IPRewriterInput *rwinput = &_input_specs[input];
++    IPRewriterFlow *flow = new(data) IPRewriterFlow
++	(rwinput, flowid, rewritten_flowid, ip_p,
++	 !!_udp_timeouts[1], click_jiffies() + relevant_timeout(_udp_timeouts));
++
++    return store_flow(flow, input, _udp_map, &reply_udp_map(rwinput));
++}
++
++void
++IPSynthesizer::push(int port, Packet *p_in)
++{
++    WritablePacket *p = p_in->uniqueify();
++    click_ip *iph = p->ip_header();
++
++    // handle non-first fragments
++    if ((iph->ip_p != IP_PROTO_TCP && iph->ip_p != IP_PROTO_UDP)
++	|| !IP_FIRSTFRAG(iph)
++	|| p->transport_length() < 8) {
++	const IPRewriterInput &is = _input_specs[port];
++	if (is.kind == IPRewriterInput::i_nochange)
++	    output(is.foutput).push(p);
++	else
++	    p->kill();
++	return;
++    }
++
++    // SNF: Apply post-routing elements
++    // such as DropBroadcasts, FixIPSrc, DecIPTTL, ect.
++    if ( !combine_ip_elements(p_in) ) {
++	p->kill();
++	return;
++    }
++
++    IPFlowID flowid(p);
++    HashContainer<IPRewriterEntry> *map = (iph->ip_p == IP_PROTO_TCP ? &_map : &_udp_map);
++    IPRewriterEntry *m = map->get(flowid);
++
++    // This is a fresh flow, store the annotation
++    if (!m) {			// create new mapping
++	IPRewriterInput &is = _input_specs.unchecked_at(port);
++	IPFlowID rewritten_flowid = IPFlowID::uninitialized_t();
++
++	int result = is.rewrite_flowid(flowid, rewritten_flowid, p, iph->ip_p == IP_PROTO_TCP ? 0 : IPRewriterInput::mapid_iprewriter_udp);
++	if (result == rw_addmap) {
++	    m = IPSynthesizer::add_flow(iph->ip_p, flowid, rewritten_flowid, port);
++	    //print_flow_info(m, iph);
++	}
++	if (!m) {
++	    checked_output_push(result, p);
++	    return;
++	} else if (_annos & 2) {
++	    m->flow()->set_reply_anno(p->anno_u8(_annos >> 2));
++	}
++    }
++
++    // Flow exists for sure now, go to transport header
++    click_jiffies_t now_j = click_jiffies();
++    IPRewriterFlow *mf = m->flow();
++    if (iph->ip_p == IP_PROTO_TCP) {
++	TCPFlow *tcpmf = static_cast<TCPFlow *>(mf);
++	tcpmf->apply(p, m->direction(), _annos, _calc_checksum);
++	if (_timeouts[1])
++	    tcpmf->change_expiry(_heap, true, now_j + _timeouts[1]);
++	else
++	    tcpmf->change_expiry(_heap, false, now_j + tcp_flow_timeout(tcpmf));
++    } else {
++	UDPFlow *udpmf = static_cast<UDPFlow *>(mf);
++	udpmf->apply(p, m->direction(), _annos, _calc_checksum);
++	if (_udp_timeouts[1])
++	    udpmf->change_expiry(_heap, true, now_j + _udp_timeouts[1]);
++	else
++	    udpmf->change_expiry(_heap, false, now_j + udp_flow_timeout(udpmf));
++    }
++
++    // Fragment IP packets if requested to do so
++    if (p->network_length() <= (int) this->_mtu) {
++	output(m->output()).push(p);
++    }
++    else {
++	fragment(p, m->output());
++    }
++}
++
++String
++IPSynthesizer::udp_mappings_handler(Element *e, void *)
++{
++    IPSynthesizer *rw = (IPSynthesizer *)e;
++    click_jiffies_t now = click_jiffies();
++    StringAccum sa;
++    for (Map::iterator iter = rw->_udp_map.begin(); iter.live(); ++iter) {
++	iter->flow()->unparse(sa, iter->direction(), now);
++	sa << '\n';
++    }
++    return sa.take_string();
++}
++
++void
++IPSynthesizer::add_handlers()
++{
++    add_read_handler("tcp_table", tcp_mappings_handler);
++    add_read_handler("udp_table", udp_mappings_handler);
++    add_read_handler("tcp_mappings", tcp_mappings_handler, 0, Handler::h_deprecated);
++    add_read_handler("udp_mappings", udp_mappings_handler, 0, Handler::h_deprecated);
++    set_handler("tcp_lookup", Handler::OP_READ | Handler::READ_PARAM, tcp_lookup_handler, 0);
++    add_rewriter_handlers(true);
++}
++
++bool
++IPSynthesizer::combine_ip_elements(Packet *p_in)
++{
++  int do_cksum = 0;
++  int problem_offset = -1;
++
++  // DropBroadcasts
++  if (  (this->_drop_bcast) &&
++	(p_in->packet_type_anno() == Packet::BROADCAST || p_in->packet_type_anno() == Packet::MULTICAST) ) {
++    p_in->kill();
++    return false;
++  }
++
++  // IPGWOptions
++  WritablePacket *p = p_in->uniqueify();
++  assert(p->has_network_header());
++  click_ip *ip = p->ip_header();
++  unsigned hlen = (ip->ip_hl << 2);
++
++  if ( (this->_ipgw_opt) && (hlen > sizeof(click_ip)) ) {
++    uint8_t *woa = p->network_header();
++    int hlen = p->network_header_length();
++
++    int oi;
++    for (oi = sizeof(click_ip); oi < hlen; ) {
++      // handle one-byte options
++      unsigned type = woa[oi];
++      if (type == IPOPT_NOP) {
++	oi++;
++	continue;
++      } else if (type == IPOPT_EOL)
++	/* end of option list */
++	break;
++
++      // otherwise, get option length
++      int xlen = woa[oi + 1];
++      if (xlen < 2 || oi + xlen > hlen) {
++	// bad length
++	problem_offset = oi + 1; // to point at length
++	goto ipgw_send_error;
++      } else if (type != IPOPT_RR && type != IPOPT_TS) {
++	// not for us to process
++	oi += xlen;
++	continue;
++      }
++
++      // have a writable packet already
++
++      if(type == IPOPT_RR){
++	/*
++	 * Record Route.
++	 * Apparently the pointer (oa[oi+2]) is 1-origin.
++	 */
++	int p = woa[oi+2] - 1;
++	if (p >= 3 && p + 4 <= xlen) {
++	  memcpy(woa + oi + p, &_my_ip, 4);
++	  woa[oi+2] += 4;
++	  do_cksum = 1;
++	} else if (p != xlen) {
++	  problem_offset = oi + 2;
++	  goto ipgw_send_error;
++	}
++      } else if(type == IPOPT_TS){
++	/*
++	 * Timestamp Option.
++	 * We can't do a good job with the pre-specified mode (flg=3),
++	 * since we don't know all our i/f addresses.
++	 */
++	int p = woa[oi+2] - 1;
++	int oflw = woa[oi+3] >> 4;
++	int flg = woa[oi+3] & 0xf;
++	bool overflowed = 0;
++
++	Timestamp now = Timestamp::now();
++	int ms = htonl((now.sec() % 86400)*1000 + now.msec());
++
++	if(p < 4){
++	  problem_offset = oi + 2;
++	  goto ipgw_send_error;
++	} else if(flg == 0){
++	  /* 32-bit timestamps only */
++	  if(p+4 <= xlen){
++	    memcpy(woa + oi + p, &ms, 4);
++	    woa[oi+2] += 4;
++	    do_cksum = 1;
++	  } else
++	    overflowed = 1;
++	} else if(flg == 1){
++	  /* ip address followed by timestamp */
++	  if(p+8 <= xlen){
++	    memcpy(woa + oi + p, &_my_ip, 4);
++	    memcpy(woa + oi + p + 4, &ms, 4);
++	    woa[oi+2] += 8;
++	    do_cksum = 1;
++	  } else
++	    overflowed = 1;
++	} else if (flg == 3 && p + 8 <= xlen) {
++	  /* only if it's my address */
++	  if (memcmp(woa + oi + p, &_my_ip, 4) == 0) {
++	    memcpy(woa + oi + p + 4, &ms, 4);
++	    woa[oi+2] += 8;
++	    do_cksum = 1;
++	  }
++	} else {
++	  problem_offset = oi + 3;
++	  goto ipgw_send_error;
++	}
++	if (overflowed) {
++	  if (oflw < 15) {
++	    woa[oi+3] = ((oflw + 1) << 4) | flg;
++	    do_cksum = 1;
++	  } else {
++	    problem_offset = oi + 3;
++	    goto ipgw_send_error;
++	  }
++	}
++      }
++
++      oi += xlen;
++    }
++  }
++
++  // FixIPSrc
++  if ( (this->_fix_ip_src) && FIX_IP_SRC_ANNO(p) )  {
++    click_chatter("FixIPSrc\n");
++    SET_FIX_IP_SRC_ANNO(p, 0);
++    ip->ip_src = _my_ip;
++    do_cksum = 1;
++  }
++
++  // For IPGWOptions / FixIPSrc
++  if (do_cksum) {
++    ip->ip_sum = 0;
++    ip->ip_sum = click_in_cksum(p->data(), hlen);
++  }
++
++  // DecIPTTL
++  if ( this->_dec_ip_ttl ) {
++    // Safe decrement
++    if ( ip->ip_ttl > 1 ) {
++      ip->ip_ttl --;
++      // Checksum is not mandatory anymore
++      if ( _calc_checksum ) {
++        unsigned long sum = (~ntohs(ip->ip_sum) & 0xFFFF) + 0xFEFF;
++        ip->ip_sum = ~htons(sum + (sum >> 16));
++      }
++    }
++    // End flow if TTL is 0
++    else {
++      return false;
++    }
++  }
++
++  // Everything OK!
++  return true;
++
++  // Problem from IPGWOptions
++  ipgw_send_error:
++	return false;
++}
++
++void
++IPSynthesizer::fragment(Packet *p_in, const int &output_port)
++{
++    const click_ip *ip_in = p_in->ip_header();
++    int hlen = ip_in->ip_hl << 2;
++    int first_dlen = (_mtu - hlen) & ~7;
++    int in_dlen = ntohs(ip_in->ip_len) - hlen;
++
++    if (((ip_in->ip_off & htons(IP_DF)) && _honor_df) || first_dlen < 8) {
++	if (_verbose || _drops < 5)
++	    click_chatter("IPFragmenter(%d) DF %p{ip_ptr} %p{ip_ptr} len=%d", _mtu, &ip_in->ip_src, &ip_in->ip_dst, p_in->length());
++	_drops++;
++	checked_output_push(1, p_in);
++	return;
++    }
++
++    // make sure we can modify the packet
++    WritablePacket *p = p_in->uniqueify();
++    if (!p)
++	return;
++    click_ip *ip = p->ip_header();
++
++    // output the first fragment
++    // If we're cheating the DF bit, we can't trust the ip_id; set to random.
++    if (ip->ip_off & htons(IP_DF)) {
++	ip->ip_id = click_random();
++	ip->ip_off &= ~htons(IP_DF);
++    }
++    bool had_mf = (ip->ip_off & htons(IP_MF)) != 0;
++    ip->ip_len = htons(hlen + first_dlen);
++    ip->ip_off |= htons(IP_MF);
++    ip->ip_sum = 0;
++    ip->ip_sum = click_in_cksum((const unsigned char *)ip, hlen);
++    Packet *first_fragment = p->clone();
++    first_fragment->take(p->length() - p->network_header_offset() - hlen - first_dlen);
++    output(output_port).push(first_fragment);
++    _fragments++;
++
++    // output the remaining fragments
++    int out_hlen = sizeof(click_ip) + optcopy(ip, 0);
++
++    for (int off = first_dlen; off < in_dlen; ) {
++	// prepare packet
++	int out_dlen = (_mtu - out_hlen) & ~7;
++	if (out_dlen + off > in_dlen)
++	    out_dlen = in_dlen - off;
++
++	WritablePacket *q = Packet::make(_headroom, 0, out_hlen + out_dlen, 0);
++	if (q) {
++	    q->set_network_header(q->data(), out_hlen);
++	    click_ip *qip = q->ip_header();
++
++	    memcpy(qip, ip, sizeof(click_ip));
++	    optcopy(ip, qip);
++	    memcpy(q->transport_header(), p->transport_header() + off, out_dlen);
++
++	    qip->ip_hl = out_hlen >> 2;
++	    qip->ip_off = htons(ntohs(ip->ip_off) + (off >> 3));
++	    if (out_dlen + off >= in_dlen && !had_mf)
++		qip->ip_off &= ~htons(IP_MF);
++	    qip->ip_len = htons(out_hlen + out_dlen);
++	    qip->ip_sum = 0;
++	    qip->ip_sum = click_in_cksum((const unsigned char *)qip, out_hlen);
++
++	    q->copy_annotations(p);
++
++	    output(output_port).push(q);
++	    _fragments++;
++	}
++
++	off += out_dlen;
++    }
++
++    p->kill();
++}
++
++int
++IPSynthesizer::optcopy(const click_ip *ip1, click_ip *ip2)
++{
++    const uint8_t* oin = (const uint8_t*) (ip1 + 1);
++    const uint8_t* oin_end = oin + (ip1->ip_hl << 2) - sizeof(click_ip);
++    uint8_t *oout = (uint8_t *) (ip2 + 1);
++    int outpos = 0;
++
++    while (oin < oin_end)
++	if (*oin == IPOPT_NOP)  // don't copy NOP
++	    ++oin;
++	else if (*oin == IPOPT_EOL
++                 || oin + 1 == oin_end
++                 || oin[1] < 2
++		 || oin + oin[1] > oin_end)
++	    break;
++        else {
++            if (*oin & 0x80) {	// copy the option
++                if (ip2)
++                    memcpy(oout + outpos, oin, oin[1]);
++                outpos += oin[1];
++            }
++            oin += oin[1];
++        }
++
++    for (; (outpos & 3) != 0; outpos++)
++	if (ip2)
++	    oout[outpos] = IPOPT_EOL;
++
++    return outpos;
++}
++
++CLICK_ENDDECLS
++ELEMENT_REQUIRES(TCPRewriter UDPRewriter)
++EXPORT_ELEMENT(IPSynthesizer)
+diff --git a/elements/tcpudp/ipsynthesizer.hh b/elements/tcpudp/ipsynthesizer.hh
+new file mode 100644
+index 0000000..1ea2ba2
+--- /dev/null
++++ b/elements/tcpudp/ipsynthesizer.hh
+@@ -0,0 +1,303 @@
++#ifndef CLICK_IPSYNTHESIZER_HH
++#define CLICK_IPSYNTHESIZER_HH
++#include "tcprewriter.hh"
++#include "udprewriter.hh"
++CLICK_DECLS
++class UDPRewriter;
++
++/*
++=c
++
++IPSynthesizer(INPUTSPEC1, ..., INPUTSPECn [, I<keywords>])
++
++=s nat
++
++rewrites TCP/UDP packets' addresses and ports while (optionally) combining post-routing operations
++such as DecIPTTL, DropBroadcasts, FixIPSrc, IPGWOptions, and IPFragmentation.
++
++=d
++
++Rewrites the source address, source port, destination address, and/or
++destination port on TCP and UDP packets, along with their checksums.
++IPSynthesizer implements the functionality of a network address/port translator
++E<lparen>NAPT).  See also IPAddrRewriter and IPAddrPairRewriter, which
++implement Basic NAT, and TCPRewriter, which implements NAPT plus sequence
++number changes for TCP packets.
++
++IPSynthesizer maintains a I<mapping table> that records how packets are
++rewritten.  The mapping table is indexed by I<flow identifier>, the quintuple
++of source address, source port, destination address, destination port, and IP
++protocol (TCP or UDP).  Each mapping contains a new flow identifier and an
++output port.  Input packets with the indexed flow identifier are rewritten to
++use the new flow identifier, then emitted on the output port.  A mapping is
++written as follows:
++
++    (SA, SP, DA, DP, PROTO) => (SA', SP', DA', DP') [*OUTPUT]
++
++When IPSynthesizer receives a packet, it first looks up that packet in the
++mapping table by flow identifier.  If the table contains a mapping for the
++input packet, then the packet is rewritten according to the mapping and
++emitted on the specified output port.  If there was no mapping, the packet is
++handled by the INPUTSPEC corresponding to the input port on which the packet
++arrived.  (There are as many input ports as INPUTSPECs.)  Most INPUTSPECs
++install new mappings, so that future packets from the same TCP or UDP flow are
++handled by the mapping table rather than some INPUTSPEC.  The six forms of
++INPUTSPEC handle input packets as follows:
++
++=over 5
++
++=item 'drop' or 'discard'
++
++Discards input packets.
++
++=item 'pass OUTPUT'
++
++Sends input packets to output port OUTPUT.  No mappings are installed.
++
++=item 'keep FOUTPUT ROUTPUT'
++
++Installs mappings that preserve the input packet's flow ID.  Specifically,
++given an input packet with flow ID (SA, SP, DA, DP, PROTO), two mappings are
++installed:
++
++    (SA, SP, DA, DP, PROTO) => (SA, SP, DA, DP) [*FOUTPUT]
++    (DA, DP, SA, SP, PROTO) => (DA, DP, SA, SP) [*ROUTPUT]
++
++Thus, the input packet is emitted on output port FOUTPUT unchanged, and
++packets from the reply flow are emitted on output port ROUTPUT unchanged.
++
++=item 'pattern SADDR SPORT DADDR DPORT FOUTPUT ROUTPUT'
++
++Creates a mapping according to the given pattern, 'SADDR SPORT DADDR DPORT'.
++Any pattern field may be a dash '-', in which case the packet's corresponding
++field is left unchanged.  For instance, the pattern '1.0.0.1 20 - -' will
++rewrite input packets' source address and port, but leave its destination
++address and port unchanged.  SPORT may be a port range 'L-H'; IPSynthesizer will
++choose a source port in that range so that the resulting mappings don't
++conflict with any existing mappings.  The input packet's source port is
++preferred, if it is available; otherwise a random port is chosen.  If no
++source port is available, the packet is dropped.  To allocate source ports
++sequentially (which can make testing easier), append a pound sign to the
++range, as in '1024-65535#'.  To choose a random port rather than preferring
++the source, append a '?'.
++
++Say a packet with flow ID (SA, SP, DA, DP, PROTO) is received, and the
++corresponding new flow ID is (SA', SP', DA', DP').  Then two mappings are
++installed:
++
++    (SA, SP, DA, DP, PROTO) => (SA', SP', DA', DP') [*FOUTPUT]
++    (DA', DP', SA', SP', PROTO) => (DA, DP, SA, SP) [*ROUTPUT]
++
++Thus, the input packet is rewritten and sent to FOUTPUT, and packets from the
++reply flow are rewritten to look like part of the original flow and sent to
++ROUTPUT.
++
++=item 'pattern PATNAME FOUTPUT ROUTPUT'
++
++Like 'pattern' above, but refers to named patterns defined by an
++IPRewriterPatterns element.
++
++=item 'ELEMENTNAME'
++
++Creates mappings according to instructions from the element ELEMENTNAME.  This
++element must implement the IPMapper interface.  One example mapper is
++RoundRobinIPMapper.
++
++=back
++
++IPSynthesizer has no mappings when first initialized.
++
++Input packets must have their IP header annotations set.  Non-TCP and UDP
++packets, and second and subsequent fragments, are dropped unless they arrive
++on a 'pass' input port.  IPSynthesizer changes IP packet data and, optionally,
++destination IP address annotations; see the DST_ANNO keyword argument below.
++
++Keyword arguments determine how often stale mappings should be removed.
++
++=over 5
++
++=item TCP_TIMEOUT I<time>
++
++Time out TCP connections every I<time> seconds. Defaults to 24 hours. This
++timeout applies to TCP connections for which payload data has been seen
++flowing in both directions.
++
++=item TCP_DONE_TIMEOUT I<time>
++
++Time out completed TCP connections every I<time> seconds. Defaults to 4
++minutes. FIN and RST flags mark TCP connections as complete.
++
++=item TCP_NODATA_TIMEOUT I<time>
++
++Time out non-bidirectional TCP connections every I<time> seconds. Defaults to
++5 minutes. A non-bidirectional TCP connection is one in which payload data
++hasn't been seen in at least one direction. This should generally be larger
++than TCP_DONE_TIMEOUT.
++
++=item TCP_GUARANTEE I<time>
++
++Preserve each TCP connection mapping for at least I<time> seconds after each
++successfully processed packet. Defaults to 5 seconds. Incoming flows are
++dropped if an IPSynthesizer's mapping table is full of guaranteed flows.
++
++=item UDP_TIMEOUT I<time>
++
++Time out UDP connections every I<time> seconds. Default is 5 minutes.
++
++=item UDP_STREAMING_TIMEOUT I<time>
++
++Timeout UDP streaming connections every I<time> seconds. A "streaming"
++connection, in contrast to an "RPC-like" connection, comprises at least 3
++packets and at least one packet in each direction. Default is the UDP_TIMEOUT
++setting.
++
++=item UDP_GUARANTEE I<time>
++
++UDP connection mappings are guaranteed to exist for I<time> seconds after each successfully processed packet. Defaults to 5 seconds.
++
++=item REAP_INTERVAL I<time>
++
++Reap timed-out connections every I<time> seconds. Default is 15 minutes.
++
++=item MAPPING_CAPACITY I<capacity>
++
++Set the maximum number of mappings this rewriter can hold to I<capacity>.
++I<Capacity> can either be an integer or the name of another rewriter-like
++element, in which case this element will share the other element's capacity.
++
++=item DST_ANNO
++
++Boolean. If true, then set the destination IP address annotation on passing
++packets to the rewritten destination address. Default is true.
++
++=back
++
++=h table_size r
++
++Returns the number of mappings in this IPSynthesizer's tables.
++
++=h mapping_failures r
++
++Returns the number of mapping failures, which can occur, for example, when the
++IPSynthesizer runs out of source ports, or when a new flow is dropped because the
++IPSynthesizer is full.
++
++=h size r
++
++Returns the number of flows in the flow set.  This is generally the same as
++'table_size', but can be more when several rewriters share a flow set.
++
++=h capacity rw
++
++Return or set the capacity of the flow set.  The returned value is two
++space-separated numbers, where the first is the capacity and the second is the
++short-term flow reservation.  When writing, the short-term reservation can be
++omitted; it is then set to the minimum of 50 and one-eighth the capacity.
++
++=h tcp_table read-only
++
++Returns a human-readable description of the IPSynthesizer's current TCP mapping
++table. An unparsed mapping includes both directions' output ports; the
++relevant output port is starred.
++
++=h udp_table read-only
++
++Returns a human-readable description of the IPSynthesizer's current UDP mapping
++table.
++
++=h tcp_lookup read
++
++Takes a TCP flow as a space-separated
++
++    saddr sport daddr dport
++
++and attempts to find a forward mapping for that flow. If found, rewrites the
++flow and returns in the same format.  Otherwise, returns nothing.
++
++=a TCPRewriter, IPAddrRewriter, IPAddrPairRewriter, IPRewriterPatterns,
++RoundRobinIPMapper, FTPPortMapper, ICMPRewriter, ICMPPingRewriter */
++
++class IPSynthesizer : public TCPRewriter { public:
++
++    typedef UDPRewriter::UDPFlow UDPFlow;
++
++    IPSynthesizer() CLICK_COLD;
++    ~IPSynthesizer() CLICK_COLD;
++
++    const char *class_name() const		{ return "IPSynthesizer"; }
++    void *cast(const char *);
++
++    int configure(Vector<String> &, ErrorHandler *) CLICK_COLD;
++
++    IPRewriterEntry *get_entry(int ip_p, const IPFlowID &flowid, int input);
++    HashContainer<IPRewriterEntry> *get_map(int mapid) {
++	if (mapid == IPRewriterInput::mapid_default)
++	    return &_map;
++	else if (mapid == IPRewriterInput::mapid_iprewriter_udp)
++	    return &_udp_map;
++	else
++	    return 0;
++    }
++
++    IPRewriterEntry *add_flow(int ip_p, const IPFlowID &flowid,
++			      const IPFlowID &rewritten_flowid, int input);
++
++    void destroy_flow(IPRewriterFlow *flow);
++    click_jiffies_t best_effort_expiry(const IPRewriterFlow *flow) {
++	if (flow->ip_p() == IP_PROTO_TCP)
++	    return TCPRewriter::best_effort_expiry(flow);
++	else
++	    return flow->expiry() + udp_flow_timeout(static_cast<const UDPFlow *>(flow)) - _udp_timeouts[1];
++    }
++
++    void push(int, Packet *);
++
++    void add_handlers() CLICK_COLD;
++
++  private:
++
++    Map _udp_map;
++    SizedHashAllocator<sizeof(UDPFlow)> _udp_allocator;
++    uint32_t _udp_timeouts[2];
++    uint32_t _udp_streaming_timeout;
++
++    atomic_uint32_t _drops;
++    atomic_uint32_t _fragments;
++
++    int udp_flow_timeout(const UDPFlow *mf) const {
++	if (mf->streaming())
++	    return _udp_streaming_timeout;
++	else
++	    return _udp_timeouts[0];
++    }
++
++    // SNF extension: Combines several post-routing elements
++    // to avoid further processing overhead
++    bool combine_ip_elements(Packet *p_in);
++    void fragment(Packet *p_in, const int& output_port);
++
++    int  optcopy(const click_ip *ip1, click_ip *ip2);
++
++    static inline Map &reply_udp_map(IPRewriterInput *rwinput) {
++	IPSynthesizer *x = static_cast<IPSynthesizer *>(rwinput->reply_element);
++	return x->_udp_map;
++    }
++    static String udp_mappings_handler(Element *e, void *user_data);
++
++};
++
++
++inline void
++IPSynthesizer::destroy_flow(IPRewriterFlow *flow)
++{
++    if (flow->ip_p() == IP_PROTO_TCP)
++	TCPRewriter::destroy_flow(flow);
++    else {
++	unmap_flow(flow, _udp_map, &reply_udp_map(flow->owner()));
++	flow->~IPRewriterFlow();
++	_udp_allocator.deallocate(flow);
++    }
++}
++
++CLICK_ENDDECLS
++#endif
+diff --git a/elements/tcpudp/tcprewriter.cc b/elements/tcpudp/tcprewriter.cc
+index 6e10003..b704312 100644
+--- a/elements/tcpudp/tcprewriter.cc
++++ b/elements/tcpudp/tcprewriter.cc
+@@ -84,7 +84,7 @@ TCPRewriter::TCPFlow::update_seqno_delta(bool direction,
+ }
+ 
+ void
+-TCPRewriter::TCPFlow::apply_sack(bool direction, click_tcp *tcph, int len)
++TCPRewriter::TCPFlow::apply_sack(bool direction, click_tcp *tcph, int len, bool calc_checksum)
+ {
+     if ((int)(tcph->th_off << 2) < len)
+ 	len = tcph->th_off << 2;
+@@ -106,10 +106,14 @@ TCPRewriter::TCPFlow::apply_sack(bool direction, click_tcp *tcph, int len)
+ 	      } else {
+ 		  uint8_t *end_sack = opt + opt[1];
+ 
+-		  // develop initial checksum value
+-		  uint16_t *csum_begin = reinterpret_cast<uint16_t *>(begin_opt + ((opt + 2 - begin_opt) & ~1));
+-		  for (uint16_t *csum = csum_begin; reinterpret_cast<uint8_t *>(csum) < end_sack; csum++)
+-		      csum_delta += ~*csum & 0xFFFF;
++		  // SNF extension: Allow to skip TCP checksum calculation
++		  uint16_t *csum_begin= 0;
++		  if ( calc_checksum ) {
++			// develop initial checksum value
++			csum_begin = reinterpret_cast<uint16_t *>(begin_opt + ((opt + 2 - begin_opt) & ~1));
++			for (uint16_t *csum = csum_begin; reinterpret_cast<uint8_t *>(csum) < end_sack; csum++)
++				csum_delta += ~*csum & 0xFFFF;
++		  }
+ 
+ 		  for (opt += 2; opt < end_sack; opt += 8) {
+ #if HAVE_INDIFFERENT_ALIGNMENT
+@@ -125,10 +129,13 @@ TCPRewriter::TCPFlow::apply_sack(bool direction, click_tcp *tcph, int len)
+ #endif
+ 		  }
+ 
+-		  // finish off csum_delta calculation
+-		  for (uint16_t *csum = csum_begin; reinterpret_cast<uint8_t *>(csum) < end_sack; csum++)
+-		      csum_delta += *csum;
+-		  break;
++		  // SNF extension: Allow to skip TCP checksum calculation
++		  if ( calc_checksum ) {
++			// finish off csum_delta calculation
++			for (uint16_t *csum = csum_begin; reinterpret_cast<uint8_t *>(csum) < end_sack; csum++)
++				csum_delta += *csum;
++			break;
++		  }
+ 	      }
+ 	  default:
+ 	    if (opt[1] < 2)
+@@ -138,7 +145,8 @@ TCPRewriter::TCPFlow::apply_sack(bool direction, click_tcp *tcph, int len)
+ 	}
+ 
+   done:
+-    if (csum_delta) {
++    // SNF extension: Allow to skip TCP checksum calculation
++    if (csum_delta && !calc_checksum) {
+ 	uint32_t sum = (~tcph->th_sum & 0xFFFF) + csum_delta;
+ 	sum = (sum & 0xFFFF) + (sum >> 16);
+ 	tcph->th_sum = ~(sum + (sum >> 16));
+@@ -146,7 +154,7 @@ TCPRewriter::TCPFlow::apply_sack(bool direction, click_tcp *tcph, int len)
+ }
+ 
+ void
+-TCPRewriter::TCPFlow::apply(WritablePacket *p, bool direction, unsigned annos)
++TCPRewriter::TCPFlow::apply(WritablePacket *p, bool direction, unsigned annos, bool calc_checksum)
+ {
+     assert(p->has_network_header());
+     click_ip *iph = p->ip_header();
+@@ -159,7 +167,11 @@ TCPRewriter::TCPFlow::apply(WritablePacket *p, bool direction, unsigned annos)
+ 	p->set_dst_ip_anno(revflow.saddr());
+     if (direction && (annos & 2))
+ 	p->set_anno_u8(annos >> 2, _reply_anno);
+-    update_csum(&iph->ip_sum, direction, _ip_csum_delta);
++
++    // SNF extension: Allow to skip IP checksum calculation
++    if ( calc_checksum ) {
++	update_csum(&iph->ip_sum, direction, _ip_csum_delta);
++    }
+ 
+     // end if not first fragment
+     if (!IP_FIRSTFRAG(iph) || p->transport_length() < 18)
+@@ -169,7 +181,10 @@ TCPRewriter::TCPFlow::apply(WritablePacket *p, bool direction, unsigned annos)
+     click_tcp *tcph = p->tcp_header();
+     tcph->th_sport = revflow.dport();
+     tcph->th_dport = revflow.sport();
+-    update_csum(&tcph->th_sum, direction, _udp_csum_delta);
++    // SNF extension: Allow to skip TCP checksum calculation
++    if ( calc_checksum ) {
++	update_csum(&tcph->th_sum, direction, _udp_csum_delta);
++    }
+ 
+     // track connection state
+     bool have_payload = ((iph->ip_hl + tcph->th_off) << 2) < ntohs(iph->ip_len);
+@@ -203,22 +218,28 @@ TCPRewriter::TCPFlow::apply(WritablePacket *p, bool direction, unsigned annos)
+ 
+     if (_dt->delta[direction] || _dt->has_trigger(direction)) {
+ 	uint32_t newval = htonl(new_seq(direction, ntohl(tcph->th_seq)));
+-	click_update_in_cksum(&tcph->th_sum, tcph->th_seq >> 16, newval >> 16);
+-	click_update_in_cksum(&tcph->th_sum, tcph->th_seq, newval);
++	// SNF extension: Allow to skip TCP checksum calculation
++	if ( calc_checksum ) {
++		click_update_in_cksum(&tcph->th_sum, tcph->th_seq >> 16, newval >> 16);
++		click_update_in_cksum(&tcph->th_sum, tcph->th_seq, newval);
++	}
+ 	tcph->th_seq = newval;
+     }
+ 
+     if (_dt->delta[!direction] || _dt->has_trigger(!direction)) {
+ 	uint32_t newval = htonl(new_ack(direction, ntohl(tcph->th_ack)));
+-	click_update_in_cksum(&tcph->th_sum, tcph->th_ack >> 16, newval >> 16);
+-	click_update_in_cksum(&tcph->th_sum, tcph->th_ack, newval);
++	// SNF extension: Allow to skip TCP checksum calculation
++	if ( calc_checksum ) {
++		click_update_in_cksum(&tcph->th_sum, tcph->th_ack >> 16, newval >> 16);
++		click_update_in_cksum(&tcph->th_sum, tcph->th_ack, newval);
++	}
+ 	tcph->th_ack = newval;
+ 
+ 	// update SACK sequence numbers
+ 	if (tcph->th_off > 8
+ 	    || (tcph->th_off == 8
+ 		&& *(reinterpret_cast<const uint32_t *>(tcph + 1)) != htonl(0x0101080A)))
+-	    apply_sack(direction, tcph, p->transport_length());
++	    apply_sack(direction, tcph, p->transport_length(), calc_checksum);
+     }
+ }
+ 
+@@ -331,7 +352,7 @@ TCPRewriter::push(int port, Packet *p_in)
+     }
+ 
+     TCPFlow *mf = static_cast<TCPFlow *>(m->flow());
+-    mf->apply(p, m->direction(), _annos);
++    mf->apply(p, m->direction(), _annos, _calc_checksum);
+ 
+     click_jiffies_t now_j = click_jiffies();
+     if (_timeouts[1])
+diff --git a/elements/tcpudp/tcprewriter.hh b/elements/tcpudp/tcprewriter.hh
+index bcae3fc..2bb8a6c 100644
+--- a/elements/tcpudp/tcprewriter.hh
++++ b/elements/tcpudp/tcprewriter.hh
+@@ -127,7 +127,7 @@ class TCPRewriter : public IPRewriterBase { public:
+ 	tcp_seq_t new_seq(bool direction, tcp_seq_t seqno) const;
+ 	tcp_seq_t new_ack(bool direction, tcp_seq_t seqno) const;
+ 
+-	void apply(WritablePacket *p, bool direction, unsigned annos);
++	void apply(WritablePacket *p, bool direction, unsigned annos, bool calc_checksum);
+ 
+ 	void unparse(StringAccum &sa, bool direction, click_jiffies_t now) const;
+ 
+@@ -150,7 +150,7 @@ class TCPRewriter : public IPRewriterBase { public:
+ 
+ 	delta_transition *_dt;
+ 
+-	void apply_sack(bool direction, click_tcp *tcp, int transport_len);
++	void apply_sack(bool direction, click_tcp *tcp, int transport_len, bool calc_checksum);
+ 
+     };
+ 
+diff --git a/elements/tcpudp/udprewriter.cc b/elements/tcpudp/udprewriter.cc
+index b3d0f62..3dde533 100644
+--- a/elements/tcpudp/udprewriter.cc
++++ b/elements/tcpudp/udprewriter.cc
+@@ -27,7 +27,7 @@
+ CLICK_DECLS
+ 
+ void
+-UDPRewriter::UDPFlow::apply(WritablePacket *p, bool direction, unsigned annos)
++UDPRewriter::UDPFlow::apply(WritablePacket *p, bool direction, unsigned annos, bool calc_checksum)
+ {
+     assert(p->has_network_header());
+     click_ip *iph = p->ip_header();
+@@ -40,7 +40,11 @@ UDPRewriter::UDPFlow::apply(WritablePacket *p, bool direction, unsigned annos)
+ 	p->set_dst_ip_anno(revflow.saddr());
+     if (direction && (annos & 2))
+ 	p->set_anno_u8(annos >> 2, _reply_anno);
+-    update_csum(&iph->ip_sum, direction, _ip_csum_delta);
++
++    // SNF: Allow to skip IP checksum calculation
++    if ( calc_checksum ) {
++	update_csum(&iph->ip_sum, direction, _ip_csum_delta);
++    }
+ 
+     // end if not first fragment
+     if (!IP_FIRSTFRAG(iph))
+@@ -55,8 +59,10 @@ UDPRewriter::UDPFlow::apply(WritablePacket *p, bool direction, unsigned annos)
+ 	    update_csum(&reinterpret_cast<click_tcp *>(udph)->th_sum, direction, _udp_csum_delta);
+     } else if (iph->ip_p == IP_PROTO_UDP) {
+ 	if (p->transport_length() >= 8 && udph->uh_sum)
+-	    // 0 checksum is no checksum
+-	    update_csum(&udph->uh_sum, direction, _udp_csum_delta);
++	    // SNF: Allow to skip UDP checksum calculation
++	    if ( calc_checksum ) {
++		update_csum(&udph->uh_sum, direction, _udp_csum_delta);
++	    }
+     }
+ 
+     // track connection state
+@@ -165,7 +171,7 @@ UDPRewriter::push(int port, Packet *p_in)
+     }
+ 
+     UDPFlow *mf = static_cast<UDPFlow *>(m->flow());
+-    mf->apply(p, m->direction(), _annos);
++    mf->apply(p, m->direction(), _annos, _calc_checksum);
+ 
+     click_jiffies_t now_j = click_jiffies();
+     if (_timeouts[1])
+diff --git a/elements/tcpudp/udprewriter.hh b/elements/tcpudp/udprewriter.hh
+index 4246624..6cd0caa 100644
+--- a/elements/tcpudp/udprewriter.hh
++++ b/elements/tcpudp/udprewriter.hh
+@@ -175,7 +175,7 @@ class UDPRewriter : public IPRewriterBase { public:
+ 	    return _tflags > 6;
+ 	}
+ 
+-	void apply(WritablePacket *p, bool direction, unsigned annos);
++	void apply(WritablePacket *p, bool direction, unsigned annos, bool calc_checksum);
+ 
+     };
+ 
+diff --git a/include/click/router.hh b/include/click/router.hh
+index e4eb40c..3e9c0d4 100644
+--- a/include/click/router.hh
++++ b/include/click/router.hh
+@@ -131,7 +131,14 @@ class Router { public:
+     inline Router* hotswap_router() const;
+     void set_hotswap_router(Router* router);
+ 
+-    int initialize(ErrorHandler* errh);
++    /*
++     * SNF Modification to prevent Click from initializing the elements in this call.
++     * We simply want to have the Click DAG populated with all the elements and connections.
++     * The 2nd argument is set to false by default. This is how normal Click calls the function
++     * so it does not affect normal Click executions.
++     */
++    int initialize(ErrorHandler* errh, bool initialize_only_dag=false);
++
+     void activate(bool foreground, ErrorHandler* errh);
+     inline void activate(ErrorHandler* errh);
+     inline void set_foreground(bool foreground);
+@@ -298,6 +305,10 @@ class Router { public:
+ 
+     Router* _next_router;
+ 
++    // SNF extension: If set to true, the router's elements are not initialized
++    // Router::initialize() and ~Router() use this field to properly set and reset the router
++    bool _do_not_initialize;
++
+ #if CLICK_LINUXMODULE
+     Vector<struct module*> _modules;
+ #endif
+diff --git a/lib/driver.cc b/lib/driver.cc
+index c2a701f..b06bbe7 100644
+--- a/lib/driver.cc
++++ b/lib/driver.cc
+@@ -3,9 +3,13 @@
+  * driver.cc -- support for packages
+  * Eddie Kohler
+  *
++ * Extensions to allow optional deactivation of the router's complete initialization
++ * Georgios Katsikas
++ *
+  * Copyright (c) 2001 Mazu Networks, Inc.
+  * Copyright (c) 2003 International Computer Science Institute
+  * Copyright (c) 2007 Regents of the University of California
++ * Copyright (c) 2016 KTH Royal Institute of Technology
+  *
+  * Permission is hereby granted, free of charge, to any person obtaining a
+  * copy of this software and associated documentation files (the "Software"),
+@@ -527,8 +531,10 @@ click_read_router(String filename, bool is_expr, ErrorHandler *errh, bool initia
+     l->end_parse(cookie);
+ 
+     // initialize if requested
++    // SNF extension: If initialize_only_dag is true, the router's elements are not initialized.
++    bool initialize_only_dag = false;
+     if (initialize)
+-        if (errh->nerrors() > before || router->initialize(errh) < 0) {
++        if (errh->nerrors() > before || router->initialize(errh, initialize_only_dag) < 0) {
+             delete router;
+             return 0;
+         }
+diff --git a/lib/router.cc b/lib/router.cc
+index 4954ca7..650e1be 100644
+--- a/lib/router.cc
++++ b/lib/router.cc
+@@ -3,10 +3,14 @@
+  * router.{cc,hh} -- a Click router configuration
+  * Eddie Kohler
+  *
++ * Extensions to allow optional deactivation of the router's complete initialization
++ * Georgios Katsikas
++ *
+  * Copyright (c) 1999-2000 Massachusetts Institute of Technology
+  * Copyright (c) 2000 Mazu Networks, Inc.
+  * Copyright (c) 2004-2007 Regents of the University of California
+  * Copyright (c) 2008 Meraki, Inc.
++ * Copyright (c) 2016 KTH Royal Institute of Technology
+  *
+  * Permission is hereby granted, free of charge, to any person obtaining a
+  * copy of this software and associated documentation files (the "Software"),
+@@ -83,7 +87,8 @@ Router::Router(const String &configuration, Master *master)
+       _configuration(configuration),
+       _notifier_signals(0),
+       _arena_factory(new HashMap_ArenaFactory),
+-      _hotswap_router(0), _thread_sched(0), _name_info(0), _next_router(0)
++      _hotswap_router(0), _thread_sched(0), _name_info(0), _next_router(0),
++      _do_not_initialize(false)
+ {
+     _refcount = 0;
+     _runcount = 0;
+@@ -117,7 +122,9 @@ Router::~Router()
+         for (int ord = _elements.size() - 1; ord >= 0; ord--)
+             _elements[ _element_configure_order[ord] ]->cleanup(Element::CLEANUP_ROUTER_INITIALIZED);
+     } else if (_state != ROUTER_DEAD) {
+-        assert(_element_configure_order.size() == 0 && _state <= ROUTER_PRECONFIGURE);
++        // We do not follow all the Click states when _do_not_initialize is true
++        if (!_do_not_initialize)
++            assert(_element_configure_order.size() == 0 && _state <= ROUTER_PRECONFIGURE);
+         for (int i = _elements.size() - 1; i >= 0; i--)
+             _elements[i]->cleanup(Element::CLEANUP_NO_ROUTER);
+     }
+@@ -151,6 +158,12 @@ Router::~Router()
+         delete ns;
+     }
+     delete _name_info;
++
++    // Return here in case that the router has been constructed by setting this member to true.
++    // In this case we haven't registered our Router in the first place.
++    if (_do_not_initialize)
++    	return;
++
+     if (_master)
+         _master->unregister_router(this);
+ }
+@@ -1085,7 +1098,7 @@ Router::initialize_handlers(bool defaults, bool specifics)
+ }
+ 
+ int
+-Router::initialize(ErrorHandler *errh)
++Router::initialize(ErrorHandler *errh, bool do_not_initialize)
+ {
+     if (_state != ROUTER_NEW)
+         return errh->error("second attempt to initialize router");
+@@ -1165,6 +1178,18 @@ Router::initialize(ErrorHandler *errh)
+         }
+     }
+ 
++    //////////////////////////////////////////////////////////////////////////////
++    /*
++     * SNF modification to prevent the initialization of Click elements
++     * It happens only when the boolean argument is true. Default is false.
++     */
++    //////////////////////////////////////////////////////////////////////////////
++    if ( do_not_initialize ) {
++	// This field is useful in the destructor
++	_do_not_initialize = true;
++	return 0;
++    }
++
+ #if CLICK_DMALLOC
+     CLICK_DMALLOC_REG("iHoo");
+ #endif
+diff --git a/userlevel/click.cc b/userlevel/click.cc
+index df694aa..07d662d 100644
+--- a/userlevel/click.cc
++++ b/userlevel/click.cc
+@@ -3,12 +3,16 @@
+  * click.cc -- user-level Click main program
+  * Eddie Kohler
+  *
++ * Extensions to allow optional deactivation of the router's complete initialization
++ * Georgios Katsikas
++ *
+  * Copyright (c) 1999-2000 Massachusetts Institute of Technology
+  * Copyright (c) 2000 Mazu Networks, Inc.
+  * Copyright (c) 2001-2003 International Computer Science Institute
+  * Copyright (c) 2004-2006 Regents of the University of California
+  * Copyright (c) 2008-2009 Meraki, Inc.
+  * Copyright (c) 1999-2015 Eddie Kohler
++ * Copyright (c) 2016 KTH Royal Institute of Technology
+  *
+  * Permission is hereby granted, free of charge, to any person obtaining a
+  * copy of this software and associated documentation files (the "Software"),
+@@ -60,6 +64,7 @@
+ #include <click/handlercall.hh>
+ #include "elements/standard/quitwatcher.hh"
+ #include "elements/userlevel/controlsocket.hh"
++
+ CLICK_USING_DECLS
+ 
+ #define HELP_OPT                300
+@@ -396,8 +401,9 @@ parse_configuration(const String &text, bool text_is_expr, bool hotswap,
+   if (hotswap && click_router && click_router->initialized())
+       router->set_hotswap_router(click_router);
+ 
++  bool initialize_only_dag = false;
+   if (errh->nerrors() == before_errors
+-      && router->initialize(errh) >= 0)
++      && router->initialize(errh, initialize_only_dag) >= 0)
+     return router;
+   else {
+     delete router;
