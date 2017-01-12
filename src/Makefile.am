@@ -23,7 +23,7 @@ snf_LDADD =  	graph/libgraph.a \
 		generator/libgenerator.a
 
 if DPDK
-snf_LDFLAGS = 	@DOLLAR_SIGN@(shell find @FULL_DPDK_PATH@/lib/ -name "*.a")
+snf_LDFLAGS = 	@DOLLAR_SIGN@(shell find @FULL_DPDK_PATH@/build/lib/ -name "*.a")
 else
 snf_LDFLAGS =
 endif

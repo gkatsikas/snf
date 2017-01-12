@@ -22,44 +22,52 @@ A. Download SNF
 ----
   * `git clone git@bitbucket.org:nslab/snf.git`
   * `cd snf/`
-  * export SNF_HOME=`pwd`
+  * export SNF_HOME=$(pwd)
   * `cd ../`
 
 B. Download and Configure Click
 ----
-Currently, SNF compiles with the basic Click framework. FastClick support might be added in the future.
-In case you want to use the DPDK I/O, compile DPDK 2.1.0 or 2.2.0 (recommended).
+Note that currently, the build process assumes that your Click binaries reside in the default location `/usr/local/`.
+We plan to get rid of this limitation soon.
+In case you want to use the DPDK I/O, compile DPDK 16.11. Earlier versions such as 2.2.0 are also tested and work well.
+In case you want to use FastClick input NFs instead of Click input NFs, SNF provides a patch to extend FastClick.
+This patch allows SNF to compile against FastClick but it does not run correctly at the moment.
+However, SNF allows to generate a FastClick-compatible synthesized chain out of an initial Click chain, hence you can still exploit the accelerations offered by FastClick.
 
   * `git clone https://github.com/kohler/click.git`
   * `cd ./click`
-  * export CLICK_HOME=`pwd`
-  * `patch -p1 < ${SNF_HOME}/patch/click-snf.patch`
+  * export CLICK_HOME=$(pwd)
+  * `patch -p1 < ${SNF_HOME}/patches/click-snf.patch`
     * Normal Click (User-space):
-		`./configure    --enable-user-multithread --enable-multithread --enable-ip6 \
-				--enable-nanotimestamp --enable-intel-cpu --enable-analysis \
-				--enable-ipsec --enable-local --enable-simple \
+
+		`./configure    --enable-user-multithread --enable-multithread --enable-ip6
+				--enable-nanotimestamp --enable-intel-cpu --enable-analysis
+				--enable-ipsec --enable-local --enable-simple
 				--enable-etherswitch --enable-all-elements`
+
     * Click-Netmap (User-space, after building Netmap):
-		`./configure    --with-netmap=${NETMAP_DIR}/sys --enable-multithread \
-				--disable-linuxmodule --enable-intel-cpu \
-				--enable-user-multithread --verbose --enable-select=poll \
-				CFLAGS="-O3" CXXFLAGS="-std=gnu++11 -O3" \
-				--disable-dynamic-linking --enable-poll \
-				--enable-bound-port-transfer --enable-local \
-				--enable-nanotimestamp --enable-ipsec --enable-analysis \
+
+		`./configure    --with-netmap=${NETMAP_DIR}/sys --enable-multithread
+				--disable-linuxmodule --enable-intel-cpu
+				--enable-user-multithread --verbose --enable-select=poll
+				CFLAGS="-O3" CXXFLAGS="-std=gnu++11 -O3"
+				--disable-dynamic-linking --enable-poll
+				--enable-bound-port-transfer --enable-local
+				--enable-nanotimestamp --enable-ipsec --enable-analysis
 				--enable-ip6 --enable-simple --enable-etherswitch`
-    * Click-DPDK (User-space, after building DPDK 2.1.0 or 2.2.0):
-		`./configure    RTE_SDK=${DPDK_DIR} \
-				RTE_TARGET=x86_64-native-linuxapp-gcc --enable-multithread \
-				--disable-linuxmodule --enable-intel-cpu \
-				--enable-user-multithread --verbose \
-				CFLAGS="-g -O3" CXXFLAGS="-g -std=gnu++11 -O3" \
-				--disable-dynamic-linking --enable-poll \
-				--enable-bound-port-transfer --enable-dpdk --with-netmap=no \
-				--enable-local --enable-nanotimestamp --enable-ipsec \
-				--enable-analysis --enable-ip6 --enable-simple \
+
+    * Click-DPDK (User-space, after building DPDK):
+
+		`./configure    RTE_SDK=${DPDK_DIR}
+				RTE_TARGET=x86_64-native-linuxapp-gcc --enable-multithread
+				--disable-linuxmodule --enable-intel-cpu
+				--enable-user-multithread --verbose
+				CFLAGS="-g -O3" CXXFLAGS="-g -std=gnu++11 -O3"
+				--disable-dynamic-linking --enable-poll
+				--enable-bound-port-transfer --enable-dpdk --with-netmap=no
+				--enable-local --enable-nanotimestamp --enable-ipsec
+				--enable-analysis --enable-ip6 --enable-simple
 				--enable-etherswitch`
-  * `make elemlist`
   * `make install` (uses default prefix=/usr/local/)
 
 C. Build SNF
