@@ -68,6 +68,7 @@ However, SNF allows to generate a FastClick-compatible synthesized chain out of 
 				--enable-local --enable-nanotimestamp --enable-ipsec
 				--enable-analysis --enable-ip6 --enable-simple
 				--enable-etherswitch`
+
   * `make install` (uses default prefix=/usr/local/)
 
 C. Build SNF
