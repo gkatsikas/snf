@@ -293,7 +293,8 @@ AC_CONFIG_FILES(
 	src/parser/Makefile
 	src/shared/Makefile
 	src/synthesizer/Makefile
-	src/traffic_class_builder/Makefile]
+	src/traffic_class_builder/Makefile
+	tests/Makefile]
 )
 
 AC_OUTPUT
