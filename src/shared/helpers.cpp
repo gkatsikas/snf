@@ -294,16 +294,16 @@ str_to_int(const std::string &s)
  * Initialize and return(by ref) the allocated buffer or return NULL.
  */
 bool
-allocateMemory(void **memoryBuffer, size_t size)
+allocate_memory(void **memory_buffer, size_t size)
 {
-	if ( *memoryBuffer )
-		free(*memoryBuffer);
+	if ( *memory_buffer )
+		free(*memory_buffer);
 
-	*memoryBuffer = (void*) malloc(size);
-	if ( ! (*memoryBuffer) ) {
+	*memory_buffer = (void*) malloc(size);
+	if ( ! (*memory_buffer) ) {
 		return TO_BOOL(NO_MEM_AVAILABLE);
 	}
-	memset(*memoryBuffer, 0, size);
+	memset(*memory_buffer, 0, size);
 	return DONE;
 }
 
@@ -311,11 +311,11 @@ allocateMemory(void **memoryBuffer, size_t size)
  * Free the space of a buffer if not already done
  */
 bool
-releaseMemory(void **memoryBuffer)
+release_memory(void **memory_buffer)
 {
-	if ( *memoryBuffer ) {
-		free(*memoryBuffer);
-		*memoryBuffer = NULL;
+	if ( *memory_buffer ) {
+		free(*memory_buffer);
+		*memory_buffer = NULL;
 		return DONE;
 	}
 	return TO_BOOL(MEMORY_ALREADY_RELEASED);

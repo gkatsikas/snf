@@ -233,8 +233,8 @@ int  str_to_int (const std::string &s);
 /*
  * Memory helpers
  */
-bool allocateMemory(void **memoryBuffer, size_t size);
-bool releaseMemory (void **memoryBuffer);
+bool allocate_memory(void **memory_buffer, size_t size);
+bool release_memory (void **memory_buffer);
 
 /*
  * Check if directory exists
