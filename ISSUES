@@ -15,7 +15,6 @@ TODO:
 	* if Click prefix != /usr/local/bin SNF compilation fails because it cannot detect the custom Click path
 	* add ID to all elements
 	* add pointer->element in Write operations
-	* Compile tests with autotools
 	* Identify comments in active lines of the SNF language
 	* Make IPSynthesizer IPRwriter's child and extend properly
 	* Direct both directions of a proxy/NAT to the same IPClassifier

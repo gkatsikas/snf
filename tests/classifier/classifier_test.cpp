@@ -26,9 +26,9 @@
 #include <cstdlib>
 #include <iostream>
 
-#include "../src/logger/logger.hpp"
-#include "../src/shared/helpers.hpp"
-#include "../src/traffic_class_builder/filter.hpp"
+#include "../../src/logger/logger.hpp"
+#include "../../src/shared/helpers.hpp"
+#include "../../src/traffic_class_builder/filter.hpp"
 
 #define MAX_NUMBER_CLASSES 1024
 #define REMOVED_ADDRESSES  5
@@ -138,14 +138,14 @@ main()
 	std::vector<std::string> position = {"first", "middle", "end"};
 
 	std::default_random_engine generator;
-	std::uniform_int_distribution<uint16_t> distribution(0,0xffff);
+	std::uniform_int_distribution<uint16_t> distribution(0, 0xffff);
 
 	std::ofstream myfile;
 
 	TrafficClass test_tc;
-	test_tc.intersect_filter(Filter(ip_dst,aton("200.0.0.2")));
+	test_tc.intersect_filter(Filter(ip_dst, aton("200.0.0.2")));
 	test_tc.intersect_filter(Filter(tp_dst_port, 1234));
-	test_tc.intersect_filter(Filter(ip_proto,17));
+	test_tc.intersect_filter(Filter(ip_proto, 17));
 
 	// Create the ouput folder, if it does not exist
 	if ( ! create_directory_path(CLASSIFIERS_REPO) ) {
@@ -162,7 +162,7 @@ main()
 		// |->   Last: The hit in the classifier occurs at the last rule   (slowest case)
 		for(size_t i=0; i<3; i++) {
 			myfile.open(
-				CLASSIFIERS_REPO+"/"+CLASSIFIERS_PREF+std::to_string(size)+"_"+position[i]+".click",
+				CLASSIFIERS_REPO + "/" + CLASSIFIERS_PREF + std::to_string(size) + "_" + position[i] + ".click",
 				std::ios::out
 			);
 
@@ -178,14 +178,14 @@ main()
 				}
 
 				TrafficClass tc;
-				uint32_t base_address = aton(std::to_string(j)+".0.0.0");
-				Filter f= Filter::get_filter_from_v4_prefix(ip_dst, base_address, 8);
+				uint32_t base_address = aton(std::to_string(j) + ".0.0.0");
+				Filter f = Filter::get_filter_from_v4_prefix(ip_dst, base_address, 8);
 
 				uint16_t dice_roll;
 
 				for(int k=0; k<REMOVED_ADDRESSES; k++) {
 					dice_roll = distribution(generator);
-					f.differentiate(Filter(ip_dst,base_address + dice_roll));
+					f.differentiate(Filter(ip_dst, base_address + dice_roll));
 				}
 
 				tc.intersect_filter(f);
@@ -195,7 +195,7 @@ main()
 
 				for(int k=0; k<ALLOWED_PORTS; k++) {
 					dice_roll = distribution(generator);
-					f.unite(Filter(tp_dst_port,dice_roll));
+					f.unite(Filter(tp_dst_port, dice_roll));
 				}
 
 				tc.intersect_filter(f);
