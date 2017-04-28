@@ -131,7 +131,7 @@ int
 main()
 {
 	// Initialize logger
-	Logger cl_test_log(__FILE__);
+	Logger test_log(__FILE__);
 
 	unsigned short size = 1;
 
@@ -149,10 +149,10 @@ main()
 
 	// Create the ouput folder, if it does not exist
 	if ( ! create_directory_path(CLASSIFIERS_REPO) ) {
-		error_chatter(cl_test_log, "Failed to create output directory: " << CLASSIFIERS_REPO);
+		error_chatter(test_log, "Failed to create output directory: " << CLASSIFIERS_REPO);
 		exit(FAILURE);
 	}
-	info_chatter(cl_test_log, "Created output directory: " << CLASSIFIERS_REPO);
+	info_chatter(test_log, "Created output directory: " << CLASSIFIERS_REPO);
 
 	// We increase the number of traffic classes exponentially (1, 2, 4, ..., MAX_NUMBER_CLASSES)
 	while (size <= MAX_NUMBER_CLASSES) {
@@ -225,7 +225,7 @@ main()
 		size *= 2;
 	}
 
-	info_chatter(cl_test_log, "Done! Check output Click confgurations at: " << CLASSIFIERS_REPO);
+	info_chatter(test_log, "Done! Check output Click confgurations at: " << CLASSIFIERS_REPO);
 
 	exit(SUCCESS);
 }

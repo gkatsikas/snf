@@ -1,3 +1,4 @@
-SUBDIRS =	\
+SUBDIRS = 	\
 		classifier \
-		filter
+		filter \
+		output_class

@@ -147,7 +147,7 @@ AC_DEFUN([SNF_CHECK_CLICK], [
 	if test -f "$click_path/include/click/element.hh"; then
 		CLICK_INCLUDES="-I$click_path"
 	fi
-	
+
 	saveflags="$CPPFLAGS"
 	CPPFLAGS="$saveflags $CLICK_INCLUDES"
 

@@ -1,7 +1,7 @@
 # The program to build (the name of the final binary)
-bin_PROGRAMS = 		filter_test
+bin_PROGRAMS =		filter_test
 
-# The filterer test
+# The test
 filter_test_SOURCES =	filter_test.cpp
 
 # Linked with
