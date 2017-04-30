@@ -1,11 +1,11 @@
 # The program to build (the name of the final binary)
-bin_PROGRAMS =			classifier_test
+bin_PROGRAMS =			ip_filter_parser_test
 
 # The test
-classifier_test_SOURCES =	classifier_test.cpp
+ip_filter_parser_test_SOURCES =	ip_filter_parser_test.cpp
 
 # Linked with
-classifier_test_LDADD =		$(top_builddir)/src/traffic_class_builder/libfilter.a \
+ip_filter_parser_test_LDADD =	$(top_builddir)/src/traffic_class_builder/libfilter.a \
 				$(top_builddir)/src/traffic_class_builder/libseglist.a \
 				$(top_builddir)/src/traffic_class_builder/libclickelement.a \
 				$(top_builddir)/src/traffic_class_builder/libipfilterparser.a \

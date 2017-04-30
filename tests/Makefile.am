@@ -1,4 +1,4 @@
-SUBDIRS = 	\
-		classifier \
+SUBDIRS = 	classifier \
 		filter \
-		output_class
+		output_class \
+		ip_filter_parser

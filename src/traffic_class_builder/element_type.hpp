@@ -75,6 +75,7 @@ static const uint32_t elem_start = __LINE__;
 	EL(AverageCounter) \
 	EL(Discard) \
 	EL(Discard_def) \
+	EL(Unstrip) \
 	EL(No_elem)
 static const uint32_t elem_end = __LINE__;
 

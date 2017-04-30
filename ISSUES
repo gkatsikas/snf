@@ -13,6 +13,7 @@ BUG:
 
 TODO:
 	* if Click prefix != /usr/local/bin SNF compilation fails because it cannot detect the custom Click path
+	* The upper bound of a filter must not be MAX uint32_t but adjusted to the header field's upper bound (e.g., port <= 65535).
 	* add ID to all elements
 	* add pointer->element in Write operations
 	* Identify comments in active lines of the SNF language
@@ -22,6 +23,12 @@ TODO:
 	* 3rd pattern of Synthesizer does not have keyword
 	* Empty classifiers are generated in case of stateful chains with more than 2 interfaces
 	* Use m4/snf.m4 to apply system checks (e.g., CXX compiler, CLICK, DPDK) and alleviate configure.ac
+
+FIXED:
+	* ip_filter_parser had duplicate pf_vec_to_str. Now it has one
+	* ip_filter_parser BUG: In filter_from_src/dst_option; goto was used only in case Option::SRC/DST_UDP_PORT (not for TCP). Now it is used on both.
+	* ip_filter_parser BUG: In filter_from_icmp_option, header field was IP src instead of icmp_type
+	* output_class.cpp BUG: In output_class_from_pattern, the destination IP part was using header field IP SRC. Now it uses IP dst.
  
 ###################
 # Element support #

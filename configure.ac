@@ -294,7 +294,11 @@ AC_CONFIG_FILES(
 	src/shared/Makefile
 	src/synthesizer/Makefile
 	src/traffic_class_builder/Makefile
-	tests/Makefile]
+	tests/Makefile
+	tests/classifier/Makefile
+	tests/filter/Makefile
+	tests/output_class/Makefile
+	tests/ip_filter_parser/Makefile]
 )
 
 AC_OUTPUT

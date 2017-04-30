@@ -293,8 +293,7 @@ class TrafficClass {
 		 */
 		unsigned short m_stateful_input_port;
 
-		void add_filter         (Filter filter, HeaderField field);
-		int  intersect_condition(const Filter &condition, const FieldOperation &operation);
+		int intersect_condition(const Filter &condition, const FieldOperation &operation);
 
 		/*
 		 * Check if a given element is present in the post-modification

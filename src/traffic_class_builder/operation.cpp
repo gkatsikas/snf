@@ -131,19 +131,19 @@ FieldOperation::to_str(void) const
 			switch (m_field) {
 				case ip_src:
 				case ip_dst:
-					output+= (": "+OperationName[m_type]+"("+ntoa(m_value[0])+")");
+					output+= (": " + OperationName[m_type] + "(" + ntoa(m_value[0]) + ")");
 					break;
 				default:
-					output+= (": "+OperationName[m_type]+"("+std::to_string(m_value[0])+")");
+					output+= (": " + OperationName[m_type] + "(" + std::to_string(m_value[0]) + ")");
 					break;
 			}
 			break;
 		case WriteLB:
-			output += ":"+OperationName[m_type]+"(";
+			output += ":" + OperationName[m_type] + "(";
 			for(auto &value: m_lb_values) {
-				output+=to_str(value)+",";
+				output += to_str(value) + ",";
 			}
-			output[output.size()-1]=')';
+			output[output.size() - 1] = ')';
 			break;
 		case WriteRR:
 		case WriteRa:
@@ -151,15 +151,15 @@ FieldOperation::to_str(void) const
 			switch (m_field) {
 				case ip_src:
 				case ip_dst:
-					output += (": "+OperationName[m_type]+"("+ntoa(m_value[0])+","+ntoa(m_value[1])+")");
+					output += (": " + OperationName[m_type] + "(" + ntoa(m_value[0]) + ", " + ntoa(m_value[1]) + ")");
 					break;
 				default:
-					output += (": "+OperationName[m_type]+"("+std::to_string(m_value[0])+","+std::to_string(m_value[1])+")");
+					output += (": " + OperationName[m_type] + "(" + std::to_string(m_value[0]) + ", " + std::to_string(m_value[1]) + ")");
 			}
 			break;
 		case Noop:
 		case Monitor:
-			output += (": "+OperationName[m_type]+"()");
+			output += (": " + OperationName[m_type] + "()");
 	}
 	return output;
 }
@@ -226,7 +226,7 @@ Operation::to_str(void) const
 {
 	std::string output = "Operation:\n";
 	for (auto &it : m_field_ops) {
-		output += ("\t"+it.second.to_str()+"\n");
+		output += ("\t" + it.second.to_str() + "\n");
 	}
 	return output;
 }
@@ -256,13 +256,13 @@ Operation::to_iprw_conf(void) const
 				tpsrc = std::to_string(field_op->second.m_value[0]);
 				break;
 			case WriteRR:
-				tpsrc = std::to_string(field_op->second.m_value[0])+"-"+std::to_string(field_op->second.m_value[1])+"#";
+				tpsrc = std::to_string(field_op->second.m_value[0]) + "-" + std::to_string(field_op->second.m_value[1]) + "#";
 				break;
 			case WriteRa:
-				tpsrc = std::to_string(field_op->second.m_value[0])+"-"+std::to_string(field_op->second.m_value[1])+"?";
+				tpsrc = std::to_string(field_op->second.m_value[0]) + "-"+std::to_string(field_op->second.m_value[1]) + "?";
 				break;
 			case WriteSF:
-				tpsrc = std::to_string(field_op->second.m_value[0])+"-"+std::to_string(field_op->second.m_value[1]);
+				tpsrc = std::to_string(field_op->second.m_value[0]) + "-"+std::to_string(field_op->second.m_value[1]);
 				break;
 			default:
 				FANCY_BUG(op_log, "\tUnexpected write operation");
@@ -290,12 +290,12 @@ Operation::to_iprw_conf(void) const
 	if ( field_op != m_field_ops.end() ) {
 		//TODO: add support for load balancing
 		if ( field_op->second.m_type == Write ) {
-			return ipsrc+" "+tpsrc+" "+ntoa(field_op->second.m_value[0])+" "+tpdst+" ";
+			return ipsrc + " " + tpsrc + " " + ntoa(field_op->second.m_value[0]) + " " + tpdst + " ";
 		}
 		else if ( field_op->second.m_type == WriteLB ) {
 			std::string output = "RoundRobinIPMapper(";
 			for (auto &ip : field_op->second.m_lb_values) {
-				output += ipsrc+" "+tpsrc+" "+ntoa(ip)+" "+tpdst+", ";
+				output += ipsrc + " " + tpsrc + " " + ntoa(ip) + " " + tpdst + ", ";
 			}
 			output[output.size()-2] = ')';
 			return output.substr(0,output.size()-1);
@@ -305,6 +305,6 @@ Operation::to_iprw_conf(void) const
 		}
 	}
 	else {
-		return "pattern "+ipsrc+" "+tpsrc+" "+"- "+tpdst+" ";
+		return "pattern " + ipsrc + " " + tpsrc + " " + "- " + tpdst + " ";
 	}
 }

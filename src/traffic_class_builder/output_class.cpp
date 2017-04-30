@@ -24,6 +24,7 @@
 #include <cstdlib>
 #include <iostream>
 
+#include "header_fields.hpp"
 #include "output_class.hpp"
 #include "../shared/helpers.hpp"
 
@@ -36,17 +37,17 @@ OutputClass::OutputClass (int port_nb)
 OutputClass
 OutputClass::port_from_lookup_rule(std::string &rule, Filter &parsed_rules)
 {
-	std::vector<std::string> decomposed_rule = split(rule," \t\n");
+	std::vector<std::string> decomposed_rule = split(rule, " \t\n");
 	int nb_arg = decomposed_rule.size();
 
-	if ( nb_arg>3 || nb_arg<2 ) {
+	if (nb_arg>3 || nb_arg<2) {
 		FANCY_BUG(oc_log, "\tWrong lookup format: " << rule);
 	}
 
 	uint32_t port_nb = atoi(decomposed_rule[nb_arg-1].c_str());
 	std::vector<std::string> address_and_mask = split(decomposed_rule[0],"/");
 	Filter f;
-	switch(address_and_mask.size()) {
+	switch (address_and_mask.size()) {
 		case 1:
 			f = Filter(ip_dst, aton(decomposed_rule[0]));
 			break;
@@ -58,13 +59,14 @@ OutputClass::port_from_lookup_rule(std::string &rule, Filter &parsed_rules)
 			FANCY_BUG(oc_log, "\tWrong lookup format: " << rule);
 	}
 
- 	debug_chatter(oc_log, "\tFrom lookup rule \""+rule+"\" we created: "+f.to_str());
+	debug_chatter(oc_log, "\tFrom lookup rule \"" + rule + "\" we created: " + f.to_str());
 
 	f.differentiate(parsed_rules);
 	parsed_rules.unite(f);
 
 	OutputClass port(port_nb);
-	port.add_filter(ip_dst,f);
+	port.add_filter(ip_dst, f);
+
 	return port;
 }
 
@@ -73,29 +75,32 @@ OutputClass::output_class_from_pattern(std::vector<std::string> &pattern)
 {
 	// IPRewriter supported pattern: pattern SADDR SPORT DADDR DPORT FOUTPUT ROUTPUT
 	if( pattern.size() != 7 ) {
-		FANCY_BUG(oc_log, "\tIncorrect pattern size");
+		FANCY_BUG(oc_log, "\tIncorrect IPRewriter pattern size");
 	}
 
 	uint32_t unmodified_port_nb = atoi(pattern[6].c_str());
 	uint32_t modified_port_nb   = atoi(pattern[5].c_str());
 
 	OutputClass foutput (modified_port_nb);
+
+	// Source IP address
 	if ( pattern[1].compare("-") ) {
 		if( !aton(pattern[1]) ) {
-			FANCY_BUG(oc_log, "\tIP pattern null?: " << pattern[1]);
+			FANCY_BUG(oc_log, "\tSource IP address in IPRewriter pattern null?: " << pattern[1]);
 		}
 
-		foutput.add_field_op({Write,ip_src,aton(pattern[1])});
+		foutput.add_field_op({Write, ip_src, aton(pattern[1])});
 	}
 
+	// Source transport port
 	if ( pattern[2].compare("-") ) {
-		std::vector<std::string> split_pattern = split(pattern[2],"-");
+		std::vector<std::string> split_pattern = split(pattern[2], "-");
 		if ( split_pattern.size() == 1 ){
-			foutput.add_field_op({Write,tp_src_port,(uint32_t) atoi(pattern[2].c_str())});
+			foutput.add_field_op({Write, tp_src_port, (uint32_t) atoi(pattern[2].c_str())});
 		}
 		else if( split_pattern.size() == 2 ) {
 			OperationType op_type = WriteSF;
-			switch (split_pattern[1][split_pattern[1].size()-1]) {
+			switch (split_pattern[1][split_pattern[1].size() - 1]) {
 				case '#':
 					op_type = WriteRR;
 					split_pattern[1].pop_back();
@@ -117,22 +122,24 @@ OutputClass::output_class_from_pattern(std::vector<std::string> &pattern)
 			foutput.add_field_op(field_op);
 		}
 		else {
-			FANCY_BUG(oc_log, "\tIncorrect port pattern: " << pattern[1]);
+			FANCY_BUG(oc_log, "\tIncorrect port pattern: " << pattern[2]);
 		}
 	}
 
+	// Destination IP address
 	if ( pattern[3].compare("-") ) {
 		foutput.add_field_op({Write,ip_dst,aton(pattern[3])});
 	}
 
+	// Destination IP port
 	if ( pattern[4].compare("-") ) {
-		std::vector<std::string> split_pattern = split(pattern[4],"-");
+		std::vector<std::string> split_pattern = split(pattern[4], "-");
 		if ( split_pattern.size() == 1 ){
-			foutput.add_field_op({Write,tp_src_port,(uint32_t) atoi(pattern[4].c_str())});
+			foutput.add_field_op({Write, tp_dst_port, (uint32_t) atoi(pattern[4].c_str())});
 		}
 		else if ( split_pattern.size() == 2 ) {
 			OperationType op_type = WriteSF;
-			switch ( split_pattern[1][split_pattern[1].size()-1] ) {
+			switch ( split_pattern[1][split_pattern[1].size() - 1] ) {
 				case '#':
 					op_type = WriteRR;
 					split_pattern[1].pop_back();
@@ -147,19 +154,19 @@ OutputClass::output_class_from_pattern(std::vector<std::string> &pattern)
 
 			FieldOperation field_op;
 			field_op.m_type = op_type;
-			field_op.m_field = tp_src_port;
+			field_op.m_field = tp_dst_port;
 			field_op.m_value[0] = (uint32_t) atoi(split_pattern[0].c_str());
 			field_op.m_value[1] = (uint32_t) atoi(split_pattern[1].c_str());
 			foutput.add_field_op(field_op);
 		}
 		else {
-			FANCY_BUG(oc_log, "\tIncorrect port pattern: " << pattern[3]);
+			FANCY_BUG(oc_log, "\tIncorrect destination port pattern: " << pattern[4]);
 		}
 	}
 
-	debug_chatter(oc_log, "\tCreated output class: "+foutput.to_str());
+	debug_chatter(oc_log, "\tCreated output class: " + foutput.to_str());
 
-	return std::pair<OutputClass,OutputClass>(foutput,OutputClass(unmodified_port_nb));
+	return std::pair<OutputClass,OutputClass>(foutput, OutputClass(unmodified_port_nb));
 }
 
 void

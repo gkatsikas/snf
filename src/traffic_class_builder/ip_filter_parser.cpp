@@ -110,16 +110,14 @@ pf_to_str(const PacketFilter &pf)
 }
 
 const std::string
-pf_vec_to_str(std::vector<PacketFilter> &vec)
+pf_vec_to_str(const std::vector<PacketFilter> &vec)
 {
-	int pf_counter = 0;
 	std::stringstream pf_str;
 	for (auto &it1 : vec) {
 		for (auto &it2 : it1) {
 			pf_str 	<< "[Header Field: " << header_field_names[it2.first] << ", "
-				<< "Filter: " << it2.second.to_str();
+				<< "Filter: " << it2.second.to_str() << "\n";
 		}
-		pf_counter++;
 	}
 	return pf_str.str();
 }
@@ -152,7 +150,7 @@ filter_from_icmp_option(const Option &option, const std::string &arg)
 	Filter f;
 	switch (option) {
 		case Option::ICMP_TYPE:
-			f = Filter::get_filter_from_ipclass_pattern(ip_src, arg);
+			f = Filter::get_filter_from_ipclass_pattern(icmp_type, arg);
 			break;
 		default:
 			break;
@@ -180,6 +178,7 @@ filter_from_src_option(const Option &option, const std::string &arg)
 		case Option::SRC_TCP_PORT:
 			f = Filter(ip_proto, 6);
 			add_filter_to_pf(pf, f);
+			goto add_port;
 		case Option::SRC_PORT:
 		add_port:
 			f = Filter::get_filter_from_ipclass_pattern(tp_src_port, arg);
@@ -210,6 +209,7 @@ filter_from_dst_option(const Option &option, const std::string &arg)
 		case Option::DST_TCP_PORT:
 			f = Filter(ip_proto, 6);
 			add_filter_to_pf(pf, f);
+			goto add_port;
 		case Option::DST_PORT:
 		add_port:
 			f = Filter::get_filter_from_ipclass_pattern(tp_dst_port, arg);
@@ -774,25 +774,11 @@ filters_from_ipfilter_line(const std::string &line)
 	if ( line.empty() ) {
 		error_chatter(ip_par_lg, "\tEmpty IPFilter configuration");
 		exit(CLICK_PARSING_PROBLEM);
-
 	}
+
 	const char *start = &(line[0]);
-	return filters_from_substr( (char**)&start, (char*)start+line.size() );
+	return filters_from_substr((char**)&start, (char*)start + line.size());
 }
-
-std::string
-pf_vec_to_str(const std::vector<PacketFilter> &vec)
-{
-	std::string output;
-	for (size_t i=0; i<vec.size(); i++) {
-		output += "Packet Filter i: \n";
-		for(auto &it : vec[i]) {
-			output += "\t" + it.second.to_str() + "\n";
-		}
-	}
-	return output;
-}
-
 
 #ifdef test
 int

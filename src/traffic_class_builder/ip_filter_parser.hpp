@@ -124,7 +124,7 @@ std::vector<PacketFilter> and_pf_vec      (const std::vector<PacketFilter> &a, c
 std::vector<PacketFilter> negate_pf_vec   (const std::vector<PacketFilter> &vec);
 void                      reset_pf_vec    (std::vector<PacketFilter> &vec);
 const std::string         pf_to_str       (const PacketFilter &pf);
-const std::string         pf_vec_to_str   (std::vector<PacketFilter> &vec);
+const std::string         pf_vec_to_str   (const std::vector<PacketFilter> &vec);
 
 PacketFilter filter_from_option     (const Primitive &primitive, const Option &option, const std::string &arg);
 PacketFilter filter_from_ip_option  (const Option &option, const std::string &arg);
