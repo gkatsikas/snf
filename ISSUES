@@ -10,8 +10,10 @@
 
 BUG:
 	* FromDevice leads to incorrect classifier
+	* !(ip ttl 5 or ip vers < 6) cannot be correctly translated to packet filter because of the negation
 
 TODO:
+	* Fix style issues according to segment_list
 	* if Click prefix != /usr/local/bin SNF compilation fails because it cannot detect the custom Click path
 	* The upper bound of a filter must not be MAX uint32_t but adjusted to the header field's upper bound (e.g., port <= 65535).
 	* add ID to all elements

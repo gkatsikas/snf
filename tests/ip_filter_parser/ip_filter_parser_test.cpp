@@ -37,18 +37,61 @@ main()
 
 	info_chatter(test_log, "IPFilter parser test started");
 
-	std::string pattern = "255.255.255.255/1";
-	Filter f1 = Filter::get_filter_from_v4_prefix_str(ip_src, pattern);
-	info_chatter(test_log, "\tFilter f1: " << f1.to_str());
+	info_chatter(test_log, "");
+	info_chatter(test_log, "------------ Test 1 ------------");
 
-	// !(ip ttl 5 or ip vers < 6) DOES NOT WORK
-	pattern = "(ip ttl 5 or ip vers < 6)";
+	std::string pattern = "(ip ttl 5 or ip vers < 6)";
+	std::vector<PacketFilter> pf_vec = filters_from_ipfilter_line(pattern);
+	def_chatter(test_log, "\tPacket filter t1: " << pf_vec_to_str(pf_vec));
+
+	info_chatter(test_log, "");
+	info_chatter(test_log, "------------ Test 2 ------------");
+
+	pattern = "10.0.0.4";
+	Filter f1 = Filter::get_filter_from_ipclass_pattern(ip_dst, pattern);
+	def_chatter(test_log, "\tFilter f1: " << f1.to_str());
+
+	pattern = "192.168.0.1";
 	Filter f2 = Filter::get_filter_from_ipclass_pattern(ip_src, pattern);
-	info_chatter(test_log, "\tFilter f2: " << f2.to_str());
+	def_chatter(test_log, "\tFilter f2: " << f2.to_str());
+
+	PacketFilter pf1;
+	pf1[ip_dst] = f1;
+	def_chatter(test_log, "\tPacket Filter pf1: " << pf_to_str(pf1));
+	PacketFilter pf2;
+	pf2[ip_src] = f2;
+	def_chatter(test_log, "\tPacket Filter pf2: " << pf_to_str(pf2));
+
+	std::vector<PacketFilter> pf_vec1;
+	pf_vec1.push_back(pf1);
+	std::vector<PacketFilter> pf_vec2;
+	pf_vec2.push_back(pf2);
+
+	pf_vec = and_pf_vec(pf_vec1, pf_vec2);
+	def_chatter(test_log, "Merged pf: " << pf_vec_to_str(pf_vec));
+
+	info_chatter(test_log, "");
+	info_chatter(test_log, "------------ Test 3 ------------");
+
+	std::vector<PacketFilter> neg_pf_vec_sin = negate_pf(pf1);
+	def_chatter(test_log, "Negated pf (Single): " << pf_vec_to_str(neg_pf_vec_sin));
+
+	std::vector<PacketFilter> neg_pf_vec_list = negate_pf_vec(pf_vec1);
+	def_chatter(test_log, "Negated pf   (List): " << pf_vec_to_str(neg_pf_vec_list));
+
+	if (neg_pf_vec_sin == neg_pf_vec_list) {
+		info_chatter(test_log, "Correct negations");
+	}
+	else {
+		throw std::runtime_error("Negations do not agree");
+	}
+
+	info_chatter(test_log, "");
+	info_chatter(test_log, "------------ Test 4 ------------");
 
 	const std::string a = "tcp opt syn && tcp win < 20";
-	std::vector<PacketFilter> pf_vec = filters_from_ipfilter_line(a);
-	std::cout << pf_vec_to_str(pf_vec);
+	pf_vec = filters_from_ipfilter_line(a);
+	def_chatter(test_log, pf_vec_to_str(pf_vec));
 
 	std::cout << std::endl;
 	info_chatter(test_log, "IPFilter parser test is completed");

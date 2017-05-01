@@ -68,6 +68,7 @@ class Filter {
 		Filter& translate    (uint32_t value, bool forward=true);
 
 		bool operator== (const Filter &rhs) const;
+		bool operator!= (const Filter &rhs) const;
 
 		static Filter get_filter_from_v4_prefix      (
 			HeaderField field, uint32_t value, uint32_t prefix
