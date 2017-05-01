@@ -138,6 +138,7 @@ ClickElement::ClickElement(
 		case ToNetFront:
 		case ToDPDKDevice:
 		case Strip:
+		case Unstrip:
 		case MarkIPHeader:
 		case CheckIPHeader:
 		case CheckICMPHeader:

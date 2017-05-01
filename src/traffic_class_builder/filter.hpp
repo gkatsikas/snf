@@ -138,7 +138,7 @@ class Condition {
 		Condition(HeaderField, std::shared_ptr<ClickElement>, Filter, FieldOperation);
 
 		bool        is_same_write(const FieldOperation &op) const;
-		bool        intersect    (const Filter &filter);  //return true if condition is not empty
+		bool        intersect    (const Filter &filter);
 		std::string to_str       (void) const;
 		bool        is_none      (void) const;
 
