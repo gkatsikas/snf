@@ -535,6 +535,8 @@ TrafficBuilder::traffic_class_builder_dfs(
 		//ElementVertex *ev = static_cast<ElementVertex*> (neighbour.second);
 		//std::string lb_patterns = TrafficBuilder::retrieve_lb_patterns_from_st_element(ev);
 
+		debug_chatter(log, "\t\t From " << nf_vertex->get_name() << " to " << neighbour.second->get_name());
+
 		std::shared_ptr<ClickElement> child(
 			new ClickElement( static_cast<ElementVertex*> (neighbour.second), neighbour.first )
 		);
