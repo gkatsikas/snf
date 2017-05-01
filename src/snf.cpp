@@ -85,22 +85,23 @@ parse_arguments(
 	const char *program = cmd_args[0];
 
 	// Check number of arguments
-	if ( 	(cmd_args_no != 2) &&
+	if (	(cmd_args_no != 2) &&
 		(cmd_args_no != 3) &&
-		(cmd_args_no != 4) ) {
+		(cmd_args_no != 4)
+	) {
 		usage(main_log, program);
 	}
 
 	// Parse arguments
-	while ( *cmd_args ) {
+	while (*cmd_args) {
 		// Property file
-		if ( strcmp(*cmd_args, "-p") == 0 ) {
+		if (strcmp(*cmd_args, "-p") == 0) {
 			if (cmd_args_no == 2) {
 				usage(main_log, program);
 			}
 
 			cmd_args++;
-			if ( *cmd_args ) {
+			if (*cmd_args) {
 				*property_file = (std::string) *cmd_args;
 				continue;
 			}
@@ -109,7 +110,7 @@ parse_arguments(
 			}
 		}
 		// SNF version
-		else if ( strcmp(*cmd_args, "-v") == 0 ) {
+		else if (strcmp(*cmd_args, "-v") == 0) {
 			#ifdef VERSION
 				*version = " v." + std::string(VERSION);
 			#else
@@ -142,17 +143,20 @@ identify_code_generator(
 	const bool               &has_hw_classification,
 	const TrafficClassFormat &tc_format)
 {
-	if ( has_hw_classification ) {
+	if (has_hw_classification) {
 		#ifdef HAVE_DPDK
 			switch (tc_format) {
 				case RSSHashing:
-					return new RSSGenerator         (std::move(synthesizer));
+					return new RSSGenerator(std::move(synthesizer));
 				case FlowDirector:
 					//return new FlowDirectorGenerator(std::move(synthesizer));
 				case OpenFlow:
-					//return new OpenFlowGenerator    (std::move(synthesizer));
+					//return new OpenFlowGenerator(std::move(synthesizer));
 				default:
-					error_chatter(main_log, "Unimplemented Traffic Class Format: " + tc_to_label(tc_format));
+					error_chatter(
+						main_log,
+						"Unimplemented Traffic Class Format: " + tc_to_label(tc_format)
+					);
 					return NULL;
 			}
 		#else
@@ -177,9 +181,9 @@ main(int argc, char **argv)
 
 	std::string property_file;
 	std::string version("");
-	bool        exit_status     = 0;
-	long        task_exec_time  = 0;
-	long        total_exec_time = 0;
+	bool exit_status     = 0;
+	long task_exec_time  = 0;
+	long total_exec_time = 0;
 
 	// Initialize logger
 	Logger main_log(__FILE__);
@@ -197,7 +201,7 @@ main(int argc, char **argv)
 		info_chatter(main_log, "SNF Chain Loader... ");
 		pcf = new ParserConfiguration(property_file);
 
-		if ( !(exit_status=pcf->load_property_file()) ) {
+		if (!(exit_status=pcf->load_property_file())) {
 			delete pcf;
 			exit(exit_status);
 		}
@@ -227,13 +231,13 @@ main(int argc, char **argv)
 		}
 
 		// 1. Load and verify all the Click configuration of the chain
-		if ( !(exit_status=parser->load_nf_configurations()) ) {
+		if (!(exit_status=parser->load_nf_configurations())) {
 			delete parser;
 			exit(exit_status);
 		}
 
 		// 2. Link the edges of all NF DAGs so as to prepare the Traffic Class Builder
-		if ( !(exit_status=parser->chain_nf_configurations()) ) {
+		if (!(exit_status=parser->chain_nf_configurations())) {
 			delete parser;
 			exit(exit_status);
 		}
@@ -261,7 +265,7 @@ main(int argc, char **argv)
 			exit(CHAIN_SYNTHESIS_PROBLEM);
 		}
 
-		if ( !(exit_status=synthesizer->build_traffic_classes()) ) {
+		if (!(exit_status=synthesizer->build_traffic_classes())) {
 			delete synthesizer;
 			exit(exit_status);
 		}
@@ -279,7 +283,7 @@ main(int argc, char **argv)
 	info_chatter(main_log, "+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+");
 	task_exec_time = measure<>::execution( [&]() {
 		info_chatter(main_log, "SNF Synthesizer... ");
-		if ( !(exit_status=synthesizer->synthesize_stateful()) ) {
+		if (!(exit_status=synthesizer->synthesize_stateful())) {
 			delete synthesizer;
 			exit(exit_status);
 		}
@@ -313,12 +317,12 @@ main(int argc, char **argv)
 			exit(CHAIN_SYNTHESIS_PROBLEM);
 		}
 
-		if ( !generator ) {
+		if (!generator) {
 			delete synthesizer;
 			exit(CHAIN_SYNTHESIS_PROBLEM);
 		}
 
-		if ( !(exit_status=generator->generate_equivalent_configuration()) ) {
+		if (!(exit_status=generator->generate_equivalent_configuration())) {
 			delete generator;
 			exit(exit_status);
 		}
@@ -356,7 +360,7 @@ main(int argc, char **argv)
 	info_chatter(main_log, "");
 	note_chatter(main_log, "\t=================================================================================");
 	note_chatter(main_log, "\t==== SNF Configuration in: " + output_files);
-	note_chatter(main_log, "\t==== Total Execution Time: " << float(total_exec_time)/1000 <<	 " milliseconds");
+	note_chatter(main_log, "\t==== Total Execution Time: " << float(total_exec_time)/1000 << " milliseconds");
 	note_chatter(main_log, "\t=================================================================================");
 
 	exit(SUCCESS);
