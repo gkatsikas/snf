@@ -37,6 +37,17 @@ OutputClass::OutputClass (int port_nb)
 OutputClass
 OutputClass::port_from_lookup_rule(std::string &rule, Filter &parsed_rules)
 {
+	// Lookup rules check only destination IP addresses!
+	if (parsed_rules.get_field() != ip_dst) {
+		FANCY_BUG(
+			oc_log,
+			"\tOutput class from lookup rule must be set" <<
+			"on the destination IP address. Header field " <<
+			header_field_names[(size_t) parsed_rules.get_field()] <<
+			" is given instead."
+		);
+	}
+
 	std::vector<std::string> decomposed_rule = split(rule, " \t\n");
 	int nb_arg = decomposed_rule.size();
 

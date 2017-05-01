@@ -437,7 +437,7 @@ void
 ClickElement::parse_lookup_filter(const std::string &configuration)
 {
 	std::vector<std::string> rules = separate_args(configuration);
-	Filter parsed_prefixes(ip_src);
+	Filter parsed_prefixes(ip_dst);
 	parsed_prefixes.make_none();
 	for (auto &it : rules) {
 		OutputClass port = OutputClass::port_from_lookup_rule(it, parsed_prefixes);

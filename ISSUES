@@ -28,9 +28,11 @@ TODO:
 
 FIXED:
 	* ip_filter_parser had duplicate pf_vec_to_str. Now it has one
-	* ip_filter_parser BUG: In filter_from_src/dst_option; goto was used only in case Option::SRC/DST_UDP_PORT (not for TCP). Now it is used on both.
+	* ip_filter_parser BUG: In filter_from_src/dst_option; goto was used only in case Option::SRC/DST_UDP_PORT (not for TCP). Now it is used on both
 	* ip_filter_parser BUG: In filter_from_icmp_option, header field was IP src instead of icmp_type
-	* output_class.cpp BUG: In output_class_from_pattern, the destination IP part was using header field IP SRC. Now it uses IP dst.
+	* output_class.cpp BUG: In output_class_from_pattern, the destination IP part was using header field IP SRC. Now it uses IP dst
+	* click_element.cpp BUG: In parse_lookup_filter, parsed_prefixes were created using ip_src instead of ip_dst. Fixed
+	* output_class.cpp FEATURE: A guard condition is added in port_from_lookup_rule to prevent header fields that are different from ip_dst
  
 ###################
 # Element support #
