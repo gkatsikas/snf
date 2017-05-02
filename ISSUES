@@ -11,6 +11,8 @@
 BUG:
 	* FromDevice leads to incorrect classifier
 	* !(ip ttl 5 or ip vers < 6) cannot be correctly translated to packet filter because of the negation
+	* Some traffic classes end up to be discarded because we cannot find a correct EtherEncap element. They also have incorrect settings in the IPSynthesizer.
+		* Test using input/tests/metron.prop
 
 TODO:
 	* Lazy subtraction sometimes leads to superfluous rules that can be fgreatly simplified.
