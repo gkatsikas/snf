@@ -38,10 +38,21 @@ main()
 	info_chatter(test_log, "IPFilter parser test started");
 
 	info_chatter(test_log, "");
+        info_chatter(test_log, "------------ Test 0 ------------");
+	std::string line = "(dst tcp port > 1023), (dst net 10.0.0.0/24) && (ip proto icmp)";
+	std::vector<std::string> rules = separate_args(line);
+	std::vector<PacketFilter> pf_vec;
+	for (auto &it : rules) {
+		info_chatter(test_log, "Rule: " << it);
+		pf_vec = filters_from_ipfilter_line(it);
+		def_chatter(test_log, pf_vec_to_str(pf_vec));
+	}
+
+	info_chatter(test_log, "");
 	info_chatter(test_log, "------------ Test 1 ------------");
 
 	std::string pattern = "(ip ttl 5 or ip vers < 6)";
-	std::vector<PacketFilter> pf_vec = filters_from_ipfilter_line(pattern);
+	pf_vec = filters_from_ipfilter_line(pattern);
 	def_chatter(test_log, "\tPacket filter t1: " << pf_vec_to_str(pf_vec));
 
 	info_chatter(test_log, "");

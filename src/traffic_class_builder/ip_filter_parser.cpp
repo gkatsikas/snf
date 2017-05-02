@@ -136,7 +136,7 @@ pf_vec_to_str(const std::vector<PacketFilter> &vec)
 PacketFilter
 filter_from_option(const Primitive &primitive, const Option &option, const std::string &arg)
 {
-	debug_chatter(ip_par_lg, "\tOption " + option_names[(size_t) option]);
+	debug_chatter(ip_par_lg, "\tOption " << option_names[(size_t) option] << " with value " << arg);
 
 	switch (primitive) {
 		case Primitive::IP:
@@ -620,9 +620,14 @@ parse_value(char **position, char *end)
 			Primitive p = primitive_from_string(current_word);
 			debug_chatter(ip_par_lg, "\tPrimitive from word " + current_word);
 
-			// New primitive, end of the value
-			// FIX ME: ip proto tcp -> tcp is not the primitive but the value
-			if (p != Primitive::Undefined && !is_operator(p)) {
+			/**
+			 * New primitive, end of the value
+			 */
+			if (
+				(p != Primitive::Undefined) &&
+				(p != Primitive::TCP && p != Primitive::ICMP) &&
+				!is_operator(p))
+			{
 				break;
 			}
 			// We wait to see whether the next one is a primitive or not
@@ -630,6 +635,11 @@ parse_value(char **position, char *end)
 				temp = current_word + " ";
 				current_word.clear();
 			}
+			/**
+			 * Normal  case: p is not a primitive --> We found a value
+			 * Special case: We found a primitive (TCP or ICMP) but it is actually a value.
+			 *               E.g., `ip proto tcp` -> tcp is not the primitive but the value!
+			 */
 			else {
 				*position = current_position;
 				value += temp + current_word + ' ';
@@ -725,7 +735,7 @@ filters_from_substr(char **position, char *end)
 			if (curr_operator == Primitive::Undefined) {
 				curr_operator = primitive_from_string(current_word);
 				if (!is_operator(curr_operator)) {
-					error_chatter(ip_par_lg, "\tExpected operator and got: \""+current_word+"\"");
+					error_chatter(ip_par_lg, "\tExpected operator and got: \"" + current_word + "\"");
 					exit(CLICK_PARSING_PROBLEM);
 				}
 			}
