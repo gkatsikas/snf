@@ -36,6 +36,7 @@ FIXED:
 	* click_element.cpp BUG: In parse_lookup_filter, parsed_prefixes were created using ip_src instead of ip_dst. Fixed
 	* output_class.cpp FEATURE: A guard condition is added in port_from_lookup_rule to prevent header fields that are different from ip_dst
 	* parse_value can now identify the case when a primitive can also become a value. E.g., ip proto tcp --> tcp is a primitive but here acts as a value
+	* Traffic classes created without an output interface are now properly asserted. Also, the way this is done is more robust
  
 ###################
 # Element support #

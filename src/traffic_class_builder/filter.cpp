@@ -82,7 +82,7 @@ Filter
 Filter::get_filter_from_v4_prefix(HeaderField field, uint32_t value, uint32_t prefix)
 {
 	if (prefix > 32) {
-		FANCY_BUG(tc_log, "\tNetwork prefix higher than 32");
+		FANCY_BUG(tc_log, "\tNetwork prefix greater than 32");
 	}
 	else if (prefix == 32) {
 		return Filter(field, value);
@@ -1010,66 +1010,87 @@ TrafficClass::add_element(std::shared_ptr<ClickElement> element, const int port,
 const std::string
 TrafficClass::get_output_iface_conf(void)
 {
+	std::string iface_conf = "";
+
 	if (!this->is_discarded()) {
 		if (this->m_element_path.size() > 1) {
-			std::shared_ptr<ClickElement> todev = this->m_element_path.back();
-			if ( 	(todev->get_type() == ToDevice)     ||
-				(todev->get_type() == ToNetFront)   ||
-				(todev->get_type() == ToDPDKDevice)
-			) {
-				// Configuration contains interface name and other parameters
-				std::vector<std::string> conf = split( todev->get_configuration(), "," );
-				// We discard the interface name
-				conf.erase(conf.begin());
-				this->set_output_iface_conf( vector_to_str(conf, ",") );
-				return ( this->m_output_iface_conf );
-			}
-			else if (todev->get_type() == No_elem) {
-				todev = this->m_element_path[this->m_element_path.size()-2];
-				if (todev->get_type() == ToDevice) {
-					// Configuration contains interface name and other parameters
-					std::vector<std::string> conf = split( todev->get_configuration(), "," );
-					// We discard the interface name
-					conf.erase(conf.begin());
-					this->set_output_iface_conf( vector_to_str(conf, ",") );
-					return ( this->m_output_iface_conf );
+			std::shared_ptr<ClickElement> todev = NULL;
+
+			// Search backwards for the last output element
+			for(int i = this->m_element_path.size() - 1; i >= 0; --i) {
+				std::shared_ptr<ClickElement> el = this->m_element_path[i];
+				if ((el->get_type() == ToDevice)     ||
+					(el->get_type() == ToNetFront)   ||
+					(el->get_type() == ToDPDKDevice))
+				{
+					todev = el;
+					break;
 				}
 			}
+
+			// Something is not right here!
+			if (todev == NULL) {
+				return "";
+			}
+
+			// Configuration contains interface name and other parameters
+			std::vector<std::string> conf = split(todev->get_configuration(), ",");
+			/**
+			 * We discard the interface name.
+			 * TODO: Make this robust
+			 */
+			conf.erase(conf.begin());
+			this->set_output_iface_conf(vector_to_str(conf, ","));
+
+			return this->m_output_iface_conf;
 		}
+	} else {
+		warn_chatter(tc_log, "\tNo output interface configuration for a discarded traffic class");
 	}
-	return "";
+
+	return iface_conf;
 }
 
 const std::string
 TrafficClass::get_output_iface(void)
 {
-	std::string iface;
+	warn_chatter(tc_log, "\t MPIKEEE ");
+
+	std::string iface = "";
 
 	if (!this->is_discarded()) {
 		if (this->m_element_path.size() > 1) {
-			std::shared_ptr<ClickElement> todev = this->m_element_path.back();
-			if ( 	(todev->get_type() == ToDevice)     ||
-				(todev->get_type() == ToNetFront)   ||
-				(todev->get_type() == ToDPDKDevice)
-			) {
-				iface = split( todev->get_configuration(), "," )[0];
-				this->set_output_iface(iface);
-				this->set_nf_of_output_iface(todev->get_nf_name());
-				return iface;
-			}
-			else if (todev->get_type() == No_elem) {
-				todev = this->m_element_path[this->m_element_path.size()-2];
-				if (todev->get_type() == ToDevice) {
-					iface = split( todev->get_configuration(), "," )[0];
-					this->set_output_iface(iface);
-					this->set_nf_of_output_iface(todev->get_nf_name());
-					return iface;
+			std::shared_ptr<ClickElement> todev = NULL;
+
+			// Search backwards for the last output element
+			for(int i = this->m_element_path.size() - 1; i >= 0; --i) {
+				std::shared_ptr<ClickElement> el = this->m_element_path[i];
+				if ((el->get_type() == ToDevice)     ||
+					(el->get_type() == ToNetFront)   ||
+					(el->get_type() == ToDPDKDevice))
+				{
+					warn_chatter(tc_log, "\t Element: " << el->to_str());
+					todev = el;
+					break;
 				}
 			}
+
+			// Something is not right here!
+			if (todev == NULL) {
+				return "";
+			}
+
+			iface = split(todev->get_configuration(), ",")[0];
+			this->set_output_iface(iface);
+			this->set_nf_of_output_iface(todev->get_nf_name());
+
+			return iface;
 		}
+	} else {
+		warn_chatter(tc_log, "\tNo output interface for a discarded traffic class");
 	}
 
-	return "None";
+	return iface;
 }
 
 std::string
