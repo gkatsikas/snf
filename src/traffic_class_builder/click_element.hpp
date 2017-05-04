@@ -79,7 +79,6 @@ class ClickElement {
 		ClickElement(const std::string &name, const std::string &configuration);
 		ClickElement(ElementType type, const std::string &configuration);
 
-		//TODO: add next_input_port with default = 0
 		void set_child(std::shared_ptr<ClickElement> child, int port, int next_input_port=0);
 		bool is_leaf  (void);
 

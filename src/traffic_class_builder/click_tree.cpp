@@ -33,7 +33,7 @@
 
 ClickTree::ClickTree(std::shared_ptr<ClickElement> root)
 	:
-	m_root( {root, TrafficClass()}),
+	m_root({root, TrafficClass()}),
 	m_input_nf(-1), m_input_iface(),
 	m_traffic_classes(), m_behind_proxy(false)
 {
@@ -45,7 +45,7 @@ ClickTree::ClickTree(
 	int input_nf, std::string input_interface,
 	std::shared_ptr<ClickElement> root)
 	:
-	m_root( {root, TrafficClass()}),
+	m_root({root, TrafficClass()}),
 	m_input_nf(input_nf), m_input_iface(input_interface),
 	m_traffic_classes(), m_behind_proxy(false)
 {
@@ -84,7 +84,7 @@ ClickTree::find_classes(void)
 	int add_elem_failure = 0;
 
 	// DFS starting from m_root
-	while ( !nodes_to_visit.empty() ) {
+	while (!nodes_to_visit.empty()) {
 
 		curr_node = nodes_to_visit.top();
 		nodes_to_visit.pop();
@@ -93,25 +93,27 @@ ClickTree::find_classes(void)
 		int nb_ports = curr_element->get_nb_ports();
 		curr_tc = curr_node.traffic_class;
 
-		if ( nb_ports ) {
+		if (nb_ports) {
 
 			unsigned short wr_ops = 0;
 
-			for(uint32_t i=0; i<curr_element->get_output_classes().size(); i++) {
+			for(uint32_t i = 0; i < curr_element->get_output_classes().size(); i++) {
 
 				TrafficClass next_tc = curr_tc;
 				add_elem_failure = next_tc.add_element(curr_element, i, &wr_ops);
 
-				if ( !add_elem_failure ) {
+				if (!add_elem_failure) {
 					std::shared_ptr<ClickElement> child = (curr_element->get_output_classes()[i]).get_child();
 					ClickNode next_node = ClickNode{
 						child,
 						next_tc
-					 };
-					 debug_chatter(this->log, "\t\tFound transition from " <<
-					 				element_names[curr_element->get_type()] <<
-					 				" to " << element_names[child->get_type()]);
-					 nodes_to_visit.push(next_node);
+					};
+					debug_chatter(
+						this->log, "\t\tFound transition from " <<
+						element_names[curr_element->get_type()] <<
+						" to " << element_names[child->get_type()]
+					);
+					nodes_to_visit.push(next_node);
 				}
 				// This is possible in case of NATing
 				else {
@@ -124,7 +126,7 @@ ClickTree::find_classes(void)
 
 			// Attempt to take a decision (i.e., read using IPLookup) on re-written IP fields by stateful elements.
 			// This can happen e.g., when we try to pass a NAT/Proxy from the outside.
-			if ( wr_ops == curr_element->get_output_classes().size() ) {
+			if (wr_ops == curr_element->get_output_classes().size()) {
 				this->set_behind_proxy(true);
 			}
 		}
@@ -135,4 +137,6 @@ ClickTree::find_classes(void)
 			this->m_traffic_classes.push_back(curr_tc);
 		}
 	}
+
+	def_chatter(this->log, "\t\tComposed " << this->m_traffic_classes.size() << " traffic classes");
 }

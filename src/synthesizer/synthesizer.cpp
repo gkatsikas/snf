@@ -221,6 +221,7 @@ Synthesizer::build_traffic_classes(void)
 			ClickTree ct(ep);
 
 			unsigned short all_tc = ct.get_traffic_classes().size();
+			unsigned short good_tc = 0;
 			unsigned short discarded_tc = 0;
 
 			// Create an array with all the traffic classes
@@ -273,9 +274,13 @@ Synthesizer::build_traffic_classes(void)
 					if (!exit_status) {
 						return exit_status;
 					}
+
+					good_tc++;
+					def_chatter(this->log, "\t\tTraffic class " << good_tc << ": " << tc.to_str());
 				}
 				else {
 					discarded_tc++;
+					def_chatter(this->log, "\t\tDiscarded Traffic class " << discarded_tc << ": " << tc.to_str());
 				}
 			}
 
@@ -560,15 +565,15 @@ TrafficBuilder::traffic_class_builder_dfs(
 	unsigned int count = 0;
 	for (auto &neighbour : adjacency_list.at(nf_vertex)) {
 		// A way to get an IPMapper's patterns when you encounter a stateful element
-		//ElementVertex *ev = static_cast<ElementVertex*> (neighbour.second);
-		//std::string lb_patterns = TrafficBuilder::retrieve_lb_patterns_from_st_element(ev);
+		// ElementVertex *ev = static_cast<ElementVertex*> (neighbour.second);
+		// std::string lb_patterns = TrafficBuilder::retrieve_lb_patterns_from_st_element(ev);
 
 		def_chatter(log, "\t\t From " << nf_vertex->get_name() << " to " << neighbour.second->get_name());
 
 		std::shared_ptr<ClickElement> child(
-			new ClickElement( static_cast<ElementVertex*> (neighbour.second), neighbour.first )
+			new ClickElement(static_cast<ElementVertex*> (neighbour.second), neighbour.first)
 		);
-		child->set_nf_name( static_cast<ChainVertex*> (graph->get_vertex_by_position(nf_position))->get_name() );
+		child->set_nf_name(static_cast<ChainVertex*> (graph->get_vertex_by_position(nf_position))->get_name());
 		elem->set_child(child, count++);
 
 		// Unvisited node --> recursion

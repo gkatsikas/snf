@@ -874,6 +874,7 @@ TrafficClass::intersect_filter(const Filter &filter)
 	else {
 		this->m_filters[field].intersect(filter);
 	}
+
 	return (int) (this->m_filters[field].is_none());
 }
 
@@ -1017,7 +1018,7 @@ TrafficClass::get_output_iface_conf(void)
 			std::shared_ptr<ClickElement> todev = NULL;
 
 			// Search backwards for the last output element
-			for(int i = this->m_element_path.size() - 1; i >= 0; --i) {
+			for (int i = this->m_element_path.size() - 1; i >= 0; --i) {
 				std::shared_ptr<ClickElement> el = this->m_element_path[i];
 				if ((el->get_type() == ToDevice)     ||
 					(el->get_type() == ToNetFront)   ||
@@ -1054,8 +1055,6 @@ TrafficClass::get_output_iface_conf(void)
 const std::string
 TrafficClass::get_output_iface(void)
 {
-	warn_chatter(tc_log, "\t MPIKEEE ");
-
 	std::string iface = "";
 
 	if (!this->is_discarded()) {
@@ -1063,13 +1062,12 @@ TrafficClass::get_output_iface(void)
 			std::shared_ptr<ClickElement> todev = NULL;
 
 			// Search backwards for the last output element
-			for(int i = this->m_element_path.size() - 1; i >= 0; --i) {
+			for (int i = this->m_element_path.size() - 1; i >= 0; --i) {
 				std::shared_ptr<ClickElement> el = this->m_element_path[i];
 				if ((el->get_type() == ToDevice)     ||
 					(el->get_type() == ToNetFront)   ||
 					(el->get_type() == ToDPDKDevice))
 				{
-					warn_chatter(tc_log, "\t Element: " << el->to_str());
 					todev = el;
 					break;
 				}
