@@ -89,6 +89,7 @@ class Operation {
 
 		std::string to_str      (void) const;
 		std::string to_iprw_conf(void) const;
+		std::string get_transport_port_value(const HeaderField portField) const;
 
 		FieldOperation *get_field_op(const HeaderField &field);
 };

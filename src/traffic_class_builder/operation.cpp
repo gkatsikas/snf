@@ -236,6 +236,7 @@ Operation::to_iprw_conf(void) const
 {
 	std::string ipsrc, tpsrc, tpdst;
 
+	// Source IP address
 	auto field_op = m_field_ops.find(ip_src);
 	if ( field_op != m_field_ops.end() ) {
 		if ( field_op->second.m_type == Write ) {
@@ -249,42 +250,13 @@ Operation::to_iprw_conf(void) const
 		ipsrc= "-";
 	}
 
-	field_op = m_field_ops.find(tp_src_port);
-	if ( field_op != m_field_ops.end() ) {
-		switch (field_op->second.m_type) {
-			case Write:
-				tpsrc = std::to_string(field_op->second.m_value[0]);
-				break;
-			case WriteRR:
-				tpsrc = std::to_string(field_op->second.m_value[0]) + "-" + std::to_string(field_op->second.m_value[1]) + "#";
-				break;
-			case WriteRa:
-				tpsrc = std::to_string(field_op->second.m_value[0]) + "-"+std::to_string(field_op->second.m_value[1]) + "?";
-				break;
-			case WriteSF:
-				tpsrc = std::to_string(field_op->second.m_value[0]) + "-"+std::to_string(field_op->second.m_value[1]);
-				break;
-			default:
-				FANCY_BUG(op_log, "\tUnexpected write operation");
-		}
-	}
-	else {
-		tpsrc = "-";
-	}
+	// Source port
+	tpsrc = this->get_transport_port_value(tp_src_port);
 
-	field_op = m_field_ops.find(tp_dst_port);
-	if ( field_op != m_field_ops.end() ) {
-		if(field_op->second.m_type == Write) {
-			tpdst = std::to_string(field_op->second.m_value[0]);
-		}
-		else {
-			FANCY_BUG(op_log, "\tExpected write operation, got "+to_str());
-		}
-	}
-	else {
-		tpdst = "-";
-	}
+	// Destination port
+	tpdst = this->get_transport_port_value(tp_dst_port);
 
+	// Destination IP address
 	field_op = m_field_ops.find(ip_dst);
 
 	if ( field_op != m_field_ops.end() ) {
@@ -307,4 +279,36 @@ Operation::to_iprw_conf(void) const
 	else {
 		return "pattern " + ipsrc + " " + tpsrc + " " + "- " + tpdst + " ";
 	}
+}
+
+std::string
+Operation::get_transport_port_value(const HeaderField portField) const
+{
+	if ((portField != tp_src_port) && (portField != tp_dst_port)) {
+		FANCY_BUG(op_log, "\tTransport port (src or dst) header field was expected");
+	}
+
+	std::string tpPort = "-";
+
+	auto field_op = m_field_ops.find(portField);
+	if ( field_op != m_field_ops.end() ) {
+		switch (field_op->second.m_type) {
+			case Write:
+				tpPort = std::to_string(field_op->second.m_value[0]);
+				break;
+			case WriteRR:
+				tpPort = std::to_string(field_op->second.m_value[0]) + "-" + std::to_string(field_op->second.m_value[1]) + "#";
+				break;
+			case WriteRa:
+				tpPort = std::to_string(field_op->second.m_value[0]) + "-"+std::to_string(field_op->second.m_value[1]) + "?";
+				break;
+			case WriteSF:
+				tpPort = std::to_string(field_op->second.m_value[0]) + "-"+std::to_string(field_op->second.m_value[1]);
+				break;
+			default:
+				FANCY_BUG(op_log, "\tUnexpected write operation on port");
+		}
+	}
+
+	return tpPort;
 }
