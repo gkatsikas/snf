@@ -295,7 +295,9 @@ AC_CONFIG_FILES(
 	src/synthesizer/Makefile
 	src/traffic_class_builder/Makefile
 	tests/Makefile
-	tests/classifier/Makefile
+	tests/benchmarks/classifier/Makefile
+	tests/benchmarks/classifier_kernel/Makefile
+	tests/benchmarks/ip_filter/Makefile
 	tests/filter/Makefile
 	tests/output_class/Makefile
 	tests/ip_filter_parser/Makefile]

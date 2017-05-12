@@ -1,8 +1,8 @@
 // -*- c-basic-offset: 4 -*-
 /*
- * classifier_test.cpp
+ * classifier_kernel_test.cpp
  *
- * Generates and benchmarks Click-based classifiers for the Linux kernel.
+ * Generates and benchmarks Click's IPClassifier for the Linux kernel.
  *
  * Copyright (c) 2015-2017 KTH Royal Institute of Technology
  * Copyright (c) 2015-2017 Georgios Katsikas, Marcel Enguehard
@@ -26,16 +26,16 @@
 #include <cstdlib>
 #include <iostream>
 
-#include "../../src/logger/logger.hpp"
-#include "../../src/shared/helpers.hpp"
-#include "../../src/traffic_class_builder/filter.hpp"
+#include "../../../src/logger/logger.hpp"
+#include "../../../src/shared/helpers.hpp"
+#include "../../../src/traffic_class_builder/filter.hpp"
 
 #define MAX_NUMBER_CLASSES 1024
 #define REMOVED_ADDRESSES  5
 #define ALLOWED_PORTS      5
 
 #define CLASSIFIERS_REPO (std::string)"./output"
-#define CLASSIFIERS_PREF (std::string)"class_test_"
+#define CLASSIFIERS_PREF (std::string)"class_kernel_test_"
 
 std::string
 generate_conf_parameters()

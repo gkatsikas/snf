@@ -547,6 +547,23 @@ Filter::to_ip_classifier_pattern(void) const
 
 /*
  * Translate all the segments of a filter into
+ * a format understandable by Click's IPFilter.
+ */
+std::string
+Filter::to_ip_filter_pattern(bool allowed) const
+{
+	std::string action;
+	if (allowed) {
+		action = "allow ";
+	} else {
+		action = "drop ";
+	}
+
+	return action + to_ip_classifier_pattern();
+}
+
+/*
+ * Translate all the segments of a filter into
  * a format understandable by Flow Director.
  */
 std::string
@@ -843,6 +860,26 @@ std::string
 TrafficClass::to_ip_classifier_pattern(void) const
 {
 	std::string output;
+	for (auto &it : this->m_filters) {
+		output += "(" + it.second.to_ip_classifier_pattern() + ") && ";
+	}
+
+	//Removes trailing " && "
+	return output.substr(0, output.size() - 4);
+}
+
+std::string
+TrafficClass::to_ip_filter_pattern(bool allowed) const
+{
+	std::string action;
+	if (allowed) {
+		action = "allow ";
+	}
+	else {
+		action = "drop ";
+	}
+
+	std::string output = action;
 	for (auto &it : this->m_filters) {
 		output += "(" + it.second.to_ip_classifier_pattern() + ") && ";
 	}

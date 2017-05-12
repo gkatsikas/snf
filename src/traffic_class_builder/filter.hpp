@@ -94,10 +94,12 @@ class Filter {
 		/*
 		 * Public API to turn a Filter into a format understandable by:
 		 * |--> Click's IPClassifier element
+		 * |--> Click's IPFilter element
 		 * |--> Flow Director (Intel NIC)
 		 * |--> OpenFlow
 		 */
 		std::string to_ip_classifier_pattern(void) const;
+		std::string to_ip_filter_pattern    (bool) const;
 		std::string to_flow_director_pattern(void) const;
 		std::string to_openflow_pattern     (void) const;
 
@@ -233,6 +235,7 @@ class TrafficClass {
 		 * |--> OpenFlow
 		 */
 		std::string to_ip_classifier_pattern(void) const;
+		std::string to_ip_filter_pattern    (bool) const;
 		std::string to_flow_director_pattern(void) const;
 		std::string to_openflow_pattern     (void) const;
 
