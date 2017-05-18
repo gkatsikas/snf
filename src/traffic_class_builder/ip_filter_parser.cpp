@@ -675,7 +675,7 @@ filters_from_substr(char **position, char *end)
 {
 /*
  * TODO:
- * - support pattern that are not of the type "primitive option [value]"
+ * - support patterns that are not of the type "primitive option [value]"
  * - Add a PacketFilter containing the current filter and wait for "or" that
  *   change the primitive to push it into open_filters
  *   ll 287 && 312
@@ -684,13 +684,13 @@ filters_from_substr(char **position, char *end)
 	std::vector<PacketFilter> open_filters;
 	reset_pf_vec (open_filters);
 
-	if (*position==end) {
+	if (*position == end) {
 		insert_last(finished_filters, open_filters);
 		return finished_filters;
 	}
 
 	std::string current_word;
-	bool negate=false;
+	bool negate = false;
 	Primitive curr_prim = Primitive::Undefined;
 	Primitive curr_operator = Primitive::AND;
 	Option curr_opt = Option::Undefined;
@@ -700,7 +700,7 @@ filters_from_substr(char **position, char *end)
 		debug_chatter(ip_par_lg, "\tConsidering character: " + std::string(*position));
 
 		if (**position == '!') {
-			negate=true;
+			negate = true;
 			(*position)++;
 		}
 		else if (**position == '(') {
@@ -713,6 +713,7 @@ filters_from_substr(char **position, char *end)
 				pf_vec = negate_pf_vec(pf_vec);
 				negate = false;
 			}
+
 			switch (curr_operator) {
 				case Primitive::AND:
 					open_filters = and_pf_vec(open_filters, pf_vec);
@@ -728,7 +729,7 @@ filters_from_substr(char **position, char *end)
 
 			curr_operator = curr_prim = Primitive::Undefined;
 			curr_opt = Option::Undefined;
-			(*position)++; //Go past blank space
+			(*position)++; // Go past blank space
 		}
 		else if (**position == ' ') {
 			(*position)++;
