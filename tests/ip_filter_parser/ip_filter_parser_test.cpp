@@ -100,9 +100,20 @@ main()
 	info_chatter(test_log, "");
 	info_chatter(test_log, "------------ Test 4 ------------");
 
-	const std::string a = "tcp opt syn && tcp win < 20";
+	std::string a = "tcp opt syn && tcp win < 20";
 	pf_vec = filters_from_ipfilter_line(a);
 	def_chatter(test_log, pf_vec_to_str(pf_vec));
+
+	info_chatter(test_log, "");
+	info_chatter(test_log, "------------ Test 5 ------------");
+
+	a = "(dst net 10.0.0.0/24) and (ip proto icmp)";
+	pf_vec = filters_from_ipfilter_line(a);
+	def_chatter(test_log, pf_vec_to_str(pf_vec));
+
+	std::string b = "(src udp port <= 456)";
+	std::vector<PacketFilter> pf_vec_2 = filters_from_ipfilter_line(b);
+	def_chatter(test_log, pf_vec_to_str(pf_vec_2));
 
 	std::cout << std::endl;
 	info_chatter(test_log, "IPFilter parser test is completed");
