@@ -16,7 +16,8 @@ BUG:
 		* Test using input/tests/metron.prop
 
 TODO:
-	* Lazy subtraction sometimes leads to superfluous rules that can be fgreatly simplified.
+	* When the IPRewriter configuration is empty, no need to generate IPRewriter.
+	* Lazy subtraction sometimes leads to superfluous rules that can be greatly simplified.
           E.g., dst net 10.0.0.1/16 && !(dst net 20.0.0.1/24) --> dst net 10.0.0.1/16
 	* Fix style issues according to segment_list
 	* if Click prefix != /usr/local/bin SNF compilation fails because it cannot detect the custom Click path
