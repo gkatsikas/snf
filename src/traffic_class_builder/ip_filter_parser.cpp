@@ -695,6 +695,8 @@ filters_from_substr(char **position, char *end)
 	Primitive curr_operator = Primitive::AND;
 	Option curr_opt = Option::Undefined;
 
+	// debug_chatter(ip_par_lg, "\tRule: \"" + std::string(*position) + "\"");
+
 	while ((*position < end) && (**position != ')')) {
 
 		debug_chatter(ip_par_lg, "\tConsidering character: " + std::string(*position));
@@ -737,6 +739,9 @@ filters_from_substr(char **position, char *end)
 				curr_operator = primitive_from_string(current_word);
 				if (!is_operator(curr_operator)) {
 					error_chatter(ip_par_lg, "\tExpected operator and got: \"" + current_word + "\"");
+					error_chatter(
+						ip_par_lg, "\tVerify that your keywords are explicit (e.g., src 10.0.0.0/24 must be src net 10.0.0.0/24)"
+					);
 					exit(CLICK_PARSING_PROBLEM);
 				}
 			}
