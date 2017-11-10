@@ -5,22 +5,16 @@ A framework to turn a chain of Click-based network functions (NFs) into a sythes
 Our PeerJ Computer Science journal article provides more information about SNF: https://peerj.com/articles/cs-98/
 Moreover, the licentiate thesis of Georgios P. Katsikas presents an even more thorough performance evaluation of SNF in Chapter 7: http://kth.diva-portal.org/smash/record.jsf?pid=diva2%3A1044355&dswid=-1244
 
-I. Requirements
+I. Basic Installation
 ------
-SNF is implemented in C++11 and uses autotools. Install the SNF dependencies as follows:
-
-  * `cd snf/`
-  * `./build_deps`
-
-II. Steps
-------
-To build and run SNF, follow the steps below:
+SNF is implemented in C++11 and uses autotools. To build and run SNF, follow the steps below:
 
 A. Download SNF
 ----
   * `git clone git@bitbucket.org:nslab/snf.git`
   * `cd snf/`
   * export SNF_HOME=$(pwd)
+  * `./build_deps`
   * `cd ../`
 
 B. Download and Configure Click
@@ -85,7 +79,7 @@ To synthesize and deploy your service chain do:
   * To run a Click-based SNF: `click <path-to-snf.click>`
   * To run a (Fast)Click-based SNF with DPDK: `click --dpdk -c ffff -n 4 -- <path-to-dpdk-snf.click>`
 
-III. Multi-core SNF
+II. Multi-core SNF
 ------
 There are various ways to deploy SNF across multiple cores. We currently support Click-DPDK and FastClick (with DPDK) using Receive-Side Scaling (RSS) as follows:
 
@@ -113,7 +107,7 @@ An important property we might want to explore is how to run RSS in symmetric mo
 
 B. Symmetric RSS
 ----
-Many networking applications operate on a per-flow basis, and you don't want this information being shared among different CPUs.
+Many networking applications operate on a per-flow basis and you don't want this information being shared among different CPUs.
 Therefore, it is very important to have the same CPU handling both sides of a connection (bi-directional or symmetrical flows).
 A group of researchers found that there is a specific hash key which offers this property.
 You can read more details in their paper: http://www.ndsl.kaist.edu/~kyoungsoo/papers/TR-symRSS.pdf
@@ -124,6 +118,11 @@ static uint8_t symmetric_hashkey[40] = {
 };
 
 Go to int DPDKDevice::initialize_device in lib/dpdkdevice.cc and replace:
+
 	`dev_conf.rx_adv_conf.rss_conf.rss_key = NULL;`
+
 with:
+
 	`dev_conf.rx_adv_conf.rss_conf.rss_key = symmetric_hashkey;`
+
+Our snf branch in Click takes care of this.
