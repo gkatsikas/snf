@@ -13,7 +13,7 @@ A. Download SNF
 ----
   * `git clone git@bitbucket.org:nslab/snf.git`
   * `cd snf/`
-  * export SNF_HOME=$(pwd)
+  * `export SNF_HOME=$(pwd)`
   * `./build_deps`
   * `cd ../`
 
@@ -28,7 +28,7 @@ However, SNF allows to generate a FastClick-compatible synthesized chain out of 
 
   * `git clone https://github.com/gkatsikas/click.git`
   * `cd ./click`
-  * export CLICK_HOME=$(pwd)
+  * `export CLICK_HOME=$(pwd)`
   * `git co snf`
     * Normal Click (User-space):
 
