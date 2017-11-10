@@ -51,15 +51,6 @@ RUN
 One can execute the following synthesis examples:
 	./run bin/usr/local/bin/snf input/tests/tests.prop
 
-	./run bin/usr/local/bin/snf input/papers/osdi16/20Gbps/routers/routers.prop
-	./run bin/usr/local/bin/snf input/papers/osdi16/40Gbps/routers/routers.prop
-
-	./run bin/usr/local/bin/snf input/papers/osdi16/20Gbps/napts/napts.prop
-	./run bin/usr/local/bin/snf input/papers/osdi16/40Gbps/napts/napts.prop
-
-	./run bin/usr/local/bin/snf input/papers/osdi16/20Gbps/acls/acls.prop
-	./run bin/usr/local/bin/snf input/papers/osdi16/40Gbps/acls/acls.prop
-
 UN-INSTALL
 ---------
 To un-install SNF change to the SNF source directory and run:
