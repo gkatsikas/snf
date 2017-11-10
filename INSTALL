@@ -19,7 +19,7 @@ This will initialize the required autotools to support the build process.
 To build SNF with basic Click support run:
 	./configure --with-click=<path-to-your-click-folder>
 Example:
-	./configure --with-click=~/nfv/dpdk/
+	./configure --with-click=~/nfv/click/
 
 To build SNF with Click-DPDK support run:
 	./configure \
@@ -49,16 +49,16 @@ After `configure` stay at the SNF source directory and run:
 RUN
 ---------
 One can execute the following synthesis examples:
-	./run bin/usr/local/bin/snf input/chains/tests/tests.prop
+	./run bin/usr/local/bin/snf input/tests/tests.prop
 
-	./run bin/usr/local/bin/snf input/chains/osdi16/20Gbps/routers/routers.prop
-	./run bin/usr/local/bin/snf input/chains/osdi16/40Gbps/routers/routers.prop
+	./run bin/usr/local/bin/snf input/papers/osdi16/20Gbps/routers/routers.prop
+	./run bin/usr/local/bin/snf input/papers/osdi16/40Gbps/routers/routers.prop
 
-	./run bin/usr/local/bin/snf input/chains/osdi16/20Gbps/napts/napts.prop
-	./run bin/usr/local/bin/snf input/chains/osdi16/40Gbps/napts/napts.prop
+	./run bin/usr/local/bin/snf input/papers/osdi16/20Gbps/napts/napts.prop
+	./run bin/usr/local/bin/snf input/papers/osdi16/40Gbps/napts/napts.prop
 
-	./run bin/usr/local/bin/snf input/chains/osdi16/20Gbps/acls/acls.prop
-	./run bin/usr/local/bin/snf input/chains/osdi16/40Gbps/acls/acls.prop
+	./run bin/usr/local/bin/snf input/papers/osdi16/20Gbps/acls/acls.prop
+	./run bin/usr/local/bin/snf input/papers/osdi16/40Gbps/acls/acls.prop
 
 UN-INSTALL
 ---------

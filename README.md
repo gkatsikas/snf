@@ -7,12 +7,10 @@ Moreover, the licentiate thesis of Georgios P. Katsikas presents an even more th
 
 I. Requirements
 ------
-SNF is implemented in C++11 and uses autotools.
+SNF is implemented in C++11 and uses autotools. Install the SNF dependencies as follows:
 
-  * `apt-get install build-essential`
-  * `apt-get install autotools-dev`
-  * `apt-get install libpcap-dev`
-  * `apt-get install libboost-all-dev` (or libboost-dev)
+  * `cd snf/`
+  * `./build_deps`
 
 II. Steps
 ------
@@ -29,15 +27,15 @@ B. Download and Configure Click
 ----
 Note that currently, the build process assumes that your Click binaries reside in the default location `/usr/local/`.
 We plan to get rid of this limitation soon.
-In case you want to use the DPDK I/O, compile DPDK 16.11. Earlier versions such as 2.2.0 are also tested and work well.
+In case you want to use the DPDK I/O, compile DPDK 17.08. Earlier versions such as 16.XX and 2.2.0 are also tested and work well.
 In case you want to use FastClick input NFs instead of Click input NFs, SNF provides a patch to extend FastClick.
 This patch allows SNF to compile against FastClick but it does not run correctly at the moment.
 However, SNF allows to generate a FastClick-compatible synthesized chain out of an initial Click chain, hence you can still exploit the accelerations offered by FastClick.
 
-  * `git clone https://github.com/kohler/click.git`
+  * `git clone https://github.com/gkatsikas/click.git`
   * `cd ./click`
   * export CLICK_HOME=$(pwd)
-  * `patch -p1 < ${SNF_HOME}/patches/click-snf.patch`
+  * `git co snf`
     * Normal Click (User-space):
 
 		`./configure    --enable-user-multithread --enable-multithread --enable-ip6
