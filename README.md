@@ -120,10 +120,10 @@ static uint8_t symmetric_hashkey[40] = {
 
 Go to int DPDKDevice::initialize_device in lib/dpdkdevice.cc and replace:
 
-	`dev_conf.rx_adv_conf.rss_conf.rss_key = NULL;`
+	dev_conf.rx_adv_conf.rss_conf.rss_key = NULL;
 
 with:
 
-	`dev_conf.rx_adv_conf.rss_conf.rss_key = symmetric_hashkey;`
+	dev_conf.rx_adv_conf.rss_conf.rss_key = symmetric_hashkey;
 
 Our snf branch in Click takes care of this.
