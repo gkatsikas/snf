@@ -3,7 +3,7 @@
 ##============================================================================
 ##        Name: run.sh
 ##      Author: Georgios Katsikas (katsikas@kth.se)
-## Description: Runs SNF with or without the GNU Debugger.
+## Description: Runs SNF with or without the GNU debugger (gdb).
 ##============================================================================
 
 if [[ -z $SNF_HOME ]]; then

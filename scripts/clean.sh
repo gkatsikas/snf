@@ -3,7 +3,7 @@
 ##============================================================================
 ##        Name: clean.sh
 ##      Author: Georgios Katsikas (katsikas@kth.se)
-## Description: Cleans SNF repository
+## Description: Cleans the SNF repository.
 ##============================================================================
 
 cd $SNF_HOME

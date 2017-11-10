@@ -3,7 +3,7 @@
 ##============================================================================
 ##        Name: uninstall.sh
 ##      Author: Georgios Katsikas (katsikas@kth.se)
-## Description: Uninstalls SNF from a designated (or default) path
+## Description: Uninstalls SNF from a designated (or default) path.
 ##============================================================================
 
 if [[ -z $SNF_HOME ]]; then
