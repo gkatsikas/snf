@@ -22,6 +22,7 @@ Example:
 	./configure --with-click=~/nfv/click/
 
 To build SNF with Click-DPDK support run:
+
 	./configure \
 			RTE_SDK=<path-to-your-dpdk-folder> \
 			RTE_TARGET=<your-dpdk-target> \
