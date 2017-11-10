@@ -12,6 +12,7 @@
  * Copyright (c) 2004-2006 Regents of the University of California
  * Copyright (c) 2008-2009 Meraki, Inc.
  * Copyright (c) 1999-2015 Eddie Kohler
+ * Copyright (c) 2015-2016 KTH Royal Institute of Technology
  * Copyright (c) 2015-2016 Georgios Katsikas
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -49,7 +50,8 @@ BUG("Click is not installed. Autoconf script needs to be fixed");
 /*
  * A little bit of house keeping after loading and parsing a Click configuration
  */
-namespace ClickCleaner {
+namespace ClickCleaner
+{
 	void cleanup(Clp_Parser *clp, const bool &clean_all);
 }
 

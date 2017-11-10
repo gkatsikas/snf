@@ -53,9 +53,9 @@ FieldOperation::compose(const FieldOperation &rhs)
 		case WriteLB:
 			this->m_type = WriteLB;
 			this->m_lb_values.clear();
-			error_chatter(op_log, "\tBefore composition: "<<to_str());
+			error_chatter(op_log, "\tBefore composition: " << to_str());
 			this->m_lb_values.insert(m_lb_values.begin(),rhs.m_lb_values.begin(),rhs.m_lb_values.end());
-			error_chatter(op_log, "\tAfter composition: "<<to_str());
+			error_chatter(op_log, "\tAfter composition: " << to_str());
 			return;
 		case WriteRR:
 		case WriteRa:
@@ -102,7 +102,7 @@ FieldOperation::operator== (const FieldOperation &rhs) const
 	return (rhs.m_field==m_field && rhs.m_type==m_type && is_same_value(rhs));
 }
 
-FieldOperation*
+FieldOperation *
 Operation::get_field_op(const HeaderField &field)
 {
 	if (m_field_ops.find(field) == m_field_ops.end() )
@@ -238,8 +238,8 @@ Operation::to_iprw_conf(void) const
 
 	// Source IP address
 	auto field_op = m_field_ops.find(ip_src);
-	if ( field_op != m_field_ops.end() ) {
-		if ( field_op->second.m_type == Write ) {
+	if (field_op != m_field_ops.end()) {
+		if (field_op->second.m_type == Write) {
 			ipsrc = ntoa(field_op->second.m_value[0]);
 		}
 		else {
@@ -259,12 +259,12 @@ Operation::to_iprw_conf(void) const
 	// Destination IP address
 	field_op = m_field_ops.find(ip_dst);
 
-	if ( field_op != m_field_ops.end() ) {
-		//TODO: add support for load balancing
-		if ( field_op->second.m_type == Write ) {
+	if (field_op != m_field_ops.end()) {
+		// TODO: add support for load balancing
+		if (field_op->second.m_type == Write) {
 			return ipsrc + " " + tpsrc + " " + ntoa(field_op->second.m_value[0]) + " " + tpdst + " ";
 		}
-		else if ( field_op->second.m_type == WriteLB ) {
+		else if (field_op->second.m_type == WriteLB) {
 			std::string output = "RoundRobinIPMapper(";
 			for (auto &ip : field_op->second.m_lb_values) {
 				output += ipsrc + " " + tpsrc + " " + ntoa(ip) + " " + tpdst + ", ";
@@ -291,7 +291,7 @@ Operation::get_transport_port_value(const HeaderField portField) const
 	std::string tpPort = "-";
 
 	auto field_op = m_field_ops.find(portField);
-	if ( field_op != m_field_ops.end() ) {
+	if (field_op != m_field_ops.end()) {
 		switch (field_op->second.m_type) {
 			case Write:
 				tpPort = std::to_string(field_op->second.m_value[0]);

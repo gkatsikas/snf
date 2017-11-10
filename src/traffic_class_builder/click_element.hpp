@@ -40,7 +40,7 @@ class ClickElement {
 		ElementType              m_type;
 		std::string              m_configuration;
 		int                      m_nb_ports;
-		ElementVertex            *m_ev;
+		ElementVertex           *m_ev;
 		std::vector<OutputClass> m_outputClasses;
 		std::string              m_nfName;
 
@@ -91,7 +91,7 @@ class ClickElement {
 
 		std::vector<OutputClass> get_output_classes(void) const;
 		ElementType    get_type(void) const;
-		ElementVertex* get_ev  (void) const;
+		ElementVertex *get_ev  (void) const;
 
 		void        set_nf_name(const std::string &name);
 		std::string get_nf_name(void) const;

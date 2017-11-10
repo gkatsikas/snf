@@ -5,11 +5,11 @@
  * openflow_generator.hpp
  *
  * Class for exporting a hardware-assisted SNF configuration.
- * SNF's global, chain classifier (i.e., ``read-part of synthesis) is
+ * SNF's global service chain classifier (i.e., ``read-part of the synthesis) is
  * translated into a set of OpenFlow v1.3 rules that can be deployed to either
  * a hardware or software-based OpenFlow v1.3 switch.
- * The switch will apply tags (VLAN) to the different traffic classes
- * and send those classes to one of multiple NFV servers.
+ * The switch will apply tags (e.g., VLAN) to the derived traffic classes
+ * and send those classes to one or multiple NFV servers.
  *
  * On the server side, a Click-DPDK module is generated with the following properties:
  * |-> Generate a set of Flow Director rules that will guide each VLAN tag

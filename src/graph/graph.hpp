@@ -43,8 +43,8 @@ class Graph {
 		 * Data structures
 		 */
 		template<typename U>
-		using VertexMap     = std::unordered_map<Vertex*, U>;
-		using AdjacencyList = VertexMap< std::vector<std::pair<unsigned short, Vertex*>>>;
+		using VertexMap     = std::unordered_map<Vertex *, U>;
+		using AdjacencyList = VertexMap< std::vector<std::pair<unsigned short, Vertex *>>>;
 
 	protected:
 		/*
@@ -87,14 +87,14 @@ class Graph {
 
 		Vertex*                get_vertex_by_name    (const std::string   &name);
 		Vertex*                get_vertex_by_position(const unsigned short &pos) const;
-		std::vector<Vertex*>   get_vertex_children   (Vertex *u)                 const;
+		std::vector<Vertex *>  get_vertex_children   (Vertex *u)                 const;
 		std::vector<std::pair<unsigned short, Vertex*>> get_vertex_children_and_ports(Vertex *u) const ;
 
 		/*
 		 * Graph features
 		 */
-		std::vector<Vertex*>   get_vertex_order(void);
-		std::vector<Vertex*>   topological_sort(void);
+		std::vector<Vertex *>  get_vertex_order(void);
+		std::vector<Vertex *>  topological_sort(void);
 
 		/*
 		 * Printouts
@@ -109,7 +109,7 @@ class Graph {
  * Recursive DFS function to visit all vertices from 'vertex'.
  */
 void dfs(
-	Vertex                    *vertex,
+	Vertex                     *vertex,
 	Colour                     &colour,
 	const Graph::AdjacencyList &adjacency_list,
 	Graph::VertexMap<Colour>   &visited,

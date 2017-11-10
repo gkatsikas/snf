@@ -95,7 +95,7 @@ class Generator {
 		virtual ~Generator();
 
 		/*
-		 * Generate a new configuration that depends on the user input.
+		 * Generate a new configuration that depends on the user input:
 		 * |--> Hardware-assisted, RSS-based SNF
 		 * |--> Hardware-assisted, OpenFlow-based SNF
 		 * |--> Hardware-assisted, Flow Director-based SNF

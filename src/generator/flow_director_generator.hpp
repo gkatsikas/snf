@@ -5,10 +5,10 @@
  * flow_director_generator.hpp
  *
  * Class for exporting a hardware-assisted SNF configuration.
- * SNF's global, chain classifier (i.e., ``read-part of synthesis) is
- * translated into a set of NIC-specific rules using the FlowDirector API.
+ * SNF's global service chain classifier (i.e., ``read-part of the synthesis)
+ * is translated into a set of NIC-specific rules using the FlowDirector API.
  * Each rule associates the matching packets with a particular CPU core
- * that will undertakes their processing.
+ * that will undertake their processing.
  * After a packet is caught by a core, a set of Click elements undertake
  * its modifications.
  *

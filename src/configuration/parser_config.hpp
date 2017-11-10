@@ -5,7 +5,7 @@
  * parser_config.hpp
  *
  * Defines the parsing mechanisms that feed the NF Synthesizer.
- * Represents a NF chain as a digraph of interconnected NFs while
+ * Represents an NF chain as a digraph of interconnected NFs while
  * another digraph shows the connectivity of this chain with
  * external NFV domains.
  *

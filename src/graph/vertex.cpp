@@ -45,7 +45,7 @@ Vertex::Vertex(const Vertex &v)
 
 Vertex& Vertex::operator=(Vertex &v)
 {
-	if ( this != &v ) {
+	if (this != &v) {
 		this->name     = v.name;
 		this->position = v.position;
 		this->type     = v.type;
@@ -70,9 +70,9 @@ ChainVertex::ChainVertex(const ChainVertex &cv)
 
 }
 
-ChainVertex& ChainVertex::operator=(ChainVertex &cv)
+ChainVertex &ChainVertex::operator=(ChainVertex &cv)
 {
-	if ( this != &cv ) {
+	if (this != &cv) {
 		Vertex::operator=(cv);
 		this->source_code_path  = cv.source_code_path;
 		this->entry_interfaces  = cv.entry_interfaces;
@@ -85,7 +85,7 @@ bool
 ChainVertex::has_entry_interface(const std::string &iface) const
 {
 	for (auto &it : this->entry_interfaces) {
-		if ( it.first.first == iface ) {
+		if (it.first.first == iface) {
 			return true;
 		}
 	}
@@ -96,7 +96,7 @@ bool
 ChainVertex::has_chain_interface(const std::string &iface) const
 {
 	for (auto &it : this->chain_interfaces) {
-		if ( it.first.first == iface ) {
+		if (it.first.first == iface) {
 			return true;
 		}
 	}
@@ -106,13 +106,13 @@ ChainVertex::has_chain_interface(const std::string &iface) const
 void
 ChainVertex::add_entry_interface_key(const std::string &iface, std::string mac)
 {
-	if ( iface.empty() ) {
+	if (iface.empty()) {
 		error_chatter(this->log, "\tCannot add empty entry interface");
 		return;
 	}
 	std::pair<std::string, std::string> key = std::make_pair(iface, mac);
 
-	if ( this->entry_interfaces.find(key) == this->entry_interfaces.end() )
+	if (this->entry_interfaces.find(key) == this->entry_interfaces.end())
 		this->entry_interfaces.insert({key, ""});
 	return;
 }
@@ -120,7 +120,7 @@ ChainVertex::add_entry_interface_key(const std::string &iface, std::string mac)
 void
 ChainVertex::add_entry_interface_pair(const std::string &iface, const std::string &mac, const std::string &domain)
 {
-	if ( (iface.empty()) || (domain.empty()) ) {
+	if ((iface.empty()) || (domain.empty())) {
 		error_chatter(this->log, "\tMissing field(s) while adding entry interface");
 		return;
 	}
@@ -130,13 +130,13 @@ ChainVertex::add_entry_interface_pair(const std::string &iface, const std::strin
 void
 ChainVertex::add_chain_interface_key(const std::string &iface, std::string mac)
 {
-	if ( iface.empty() ) {
+	if (iface.empty()) {
 		error_chatter(this->log, "\tCannot add empty chain interface");
 		return;
 	}
 	std::pair<std::string, std::string> key = std::make_pair(iface, mac);
 
-	if ( this->chain_interfaces.find(key) == this->chain_interfaces.end() )
+	if (this->chain_interfaces.find(key) == this->chain_interfaces.end())
 		this->chain_interfaces.insert({key, {"", ""}});
 	return;
 }
@@ -147,7 +147,7 @@ ChainVertex::add_chain_interface_pair(
 		const std::string &next_nf, const std::string &next_iface)
 {
 
-	if ( (iface.empty()) || (next_nf.empty()) || (next_iface.empty()) ) {
+	if ((iface.empty()) || (next_nf.empty()) || (next_iface.empty())) {
 		error_chatter(this->log, "\tMissing field(s) while adding chain interface");
 		return;
 	}
@@ -159,13 +159,13 @@ ChainVertex::add_chain_interface_pair(
 std::string
 ChainVertex::get_mac_from_entry_interface(const std::string &iface)
 {
-	if ( iface.empty() ) {
+	if (iface.empty()) {
 		error_chatter(this->log, "\tCannot retrieve MAC address from empty entry interface");
 		return "";
 	}
 
 	for (auto &it : this->entry_interfaces) {
-		if ( it.first.first == iface ) {
+		if (it.first.first == iface) {
 			return it.first.second;
 		}
 	}
@@ -175,13 +175,13 @@ ChainVertex::get_mac_from_entry_interface(const std::string &iface)
 std::string
 ChainVertex::get_domain_from_entry_interface(const std::string &iface)
 {
-	if ( iface.empty() ) {
+	if (iface.empty()) {
 		error_chatter(this->log, "\tCannot retrieve entry domain from empty entry interface");
 		return "";
 	}
 
 	for (auto &it : this->entry_interfaces) {
-		if ( it.first.first == iface ) {
+		if (it.first.first == iface) {
 			return it.second;
 		}
 	}
@@ -191,13 +191,13 @@ ChainVertex::get_domain_from_entry_interface(const std::string &iface)
 std::string
 ChainVertex::get_iface_from_entry_domain(const std::string &domain)
 {
-	if ( domain.empty() ) {
+	if (domain.empty()) {
 		error_chatter(this->log, "\tCannot retrieve entry interface from empty entry domain");
 		return "";
 	}
 
 	for (auto &it : this->entry_interfaces) {
-		if ( it.second == domain ) {
+		if (it.second == domain) {
 			return it.first.first;
 		}
 	}
@@ -207,13 +207,13 @@ ChainVertex::get_iface_from_entry_domain(const std::string &domain)
 std::string
 ChainVertex::get_mac_from_chain_interface(const std::string &iface)
 {
-	if ( iface.empty() ) {
+	if (iface.empty()) {
 		error_chatter(this->log, "\tCannot retrieve MAC address from empty chain interface");
 		return "";
 	}
 
 	for (auto &it : this->chain_interfaces) {
-		if ( it.first.first == iface ) {
+		if (it.first.first == iface) {
 			return it.first.second;
 		}
 	}
@@ -223,13 +223,13 @@ ChainVertex::get_mac_from_chain_interface(const std::string &iface)
 std::string
 ChainVertex::get_next_nf_from_chain_interface(const std::string &iface)
 {
-	if ( iface.empty() ) {
+	if (iface.empty()) {
 		error_chatter(this->log, "\tCannot retrieve next NF from empty chain interface");
 		return "";
 	}
 
 	for (auto &it : this->chain_interfaces) {
-		if ( it.first.first == iface ) {
+		if (it.first.first == iface) {
 			return it.second.first;
 		}
 	}
@@ -239,13 +239,13 @@ ChainVertex::get_next_nf_from_chain_interface(const std::string &iface)
 std::string
 ChainVertex::get_next_iface_from_chain_interface(const std::string &iface)
 {
-	if ( iface.empty() ) {
+	if (iface.empty()) {
 		error_chatter(this->log, "\tCannot retrieve next NF's interface from empty chain interface");
 		return "";
 	}
 
 	for (auto &it : this->chain_interfaces) {
-		if ( it.first.first == iface ) {
+		if (it.first.first == iface) {
 			return it.second.second;
 		}
 	}
@@ -255,13 +255,13 @@ ChainVertex::get_next_iface_from_chain_interface(const std::string &iface)
 std::string
 ChainVertex::get_chain_iface_from_nf(const std::string &nf)
 {
-	if ( nf.empty() ) {
+	if (nf.empty()) {
 		error_chatter(this->log, "\tCannot retrieve chain interface from empty NF");
 		return "";
 	}
 
 	for (auto &it : this->chain_interfaces) {
-		if ( it.second.first == nf ) {
+		if (it.second.first == nf) {
 			return it.first.first;
 		}
 	}
@@ -309,7 +309,7 @@ ChainVertex::print_entry_interface_map(void)
 {
 	#ifdef VERBOSE_MODE
 
-	for ( auto &kv : this->entry_interfaces ) {
+	for (auto &kv : this->entry_interfaces) {
 		std::string  iface = kv.first.first;
 		std::string    mac = (kv.first.second.empty()) ? "-" : kv.first.second;
 		std::string domain = kv.second;
@@ -317,7 +317,7 @@ ChainVertex::print_entry_interface_map(void)
 						<< "-> [Interface: " << iface << ", MAC: " << mac
 						<< "] [Domain: " << domain << "]");
 	}
-	if ( this->entry_interfaces.size() == 0 ) {
+	if (this->entry_interfaces.size() == 0) {
 		debug_chatter(this->log, "\tEmpty");
 	}
 
@@ -329,7 +329,7 @@ ChainVertex::print_chain_interface_map(void)
 {
 	#ifdef VERBOSE_MODE
 
-	for ( auto &kv : this->chain_interfaces ) {
+	for (auto &kv : this->chain_interfaces) {
 		std::string iface      = kv.first.first;
 		std::string mac        = (kv.first.second.empty()) ? "-" : kv.first.second;
 		std::string next_nf    = kv.second.first;
@@ -340,7 +340,7 @@ ChainVertex::print_chain_interface_map(void)
 						<< "] [Next: " << next_nf << ", Interface: " << next_iface
 						<< "]");
 	}
-	if ( this->chain_interfaces.size() == 0 ) {
+	if (this->chain_interfaces.size() == 0) {
 		debug_chatter(this->log, "\tEmpty");
 	}
 

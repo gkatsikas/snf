@@ -1,8 +1,8 @@
 // -*- c-basic-offset: 4 -*-
 /* openflow_generator.cpp
  *
- * Export a runnable, SNF configuration that implements the
- * NFV chain in a distributed, hardware-assisted fashion.
+ * Export a runnable, SNF configuration that implements a
+ * service chain in a distributed, hardware-assisted fashion.
  * The conditional part of the chain (i.e., read and classify flows)
  * is exported to an OpenFlow v1.3 switch. The switch encodes the traffic
  * classes using tags on the packet headers and sends those packets to
@@ -64,7 +64,7 @@ OpenFlowGenerator::generate_equivalent_configuration(const bool to_file)
 bool
 OpenFlowGenerator::generate_openflow_split_pipelines (const bool &to_file)
 {
-	if ( to_file ) {
+	if (to_file) {
 		// Open the output files to host our synthesized chain
 		//soft_out_file = new std::ofstream(this->soft_configuration_filename);
 		// One per nic
@@ -78,7 +78,7 @@ OpenFlowGenerator::generate_openflow_split_pipelines (const bool &to_file)
 	// ....
 
 	// Reset to standard output again
-	if ( to_file ) {
+	if (to_file) {
 		//std::cout.rdbuf(def_cout);
 		//soft_out_file->close();
 		//hard_out_file->close();

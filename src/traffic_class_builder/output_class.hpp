@@ -60,7 +60,7 @@ class OutputClass {
 
 		std::shared_ptr<ClickElement> get_child      (void) const;
 		PacketFilter                  get_filter     (void) const;
-		const Operation&              get_operation  (void) const;
+		const Operation              &get_operation  (void) const;
 		int                           get_port_number(void) const;
 };
 

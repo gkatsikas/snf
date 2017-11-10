@@ -48,13 +48,13 @@ class ChainParser {
 		 * Maps the position of a NF in the chain with a Click Router object.
 		 * The key is the position of the NF in the chain.
 		 */
-		NF_Map<Router*> nf_configuration;
+		NF_Map<Router *> nf_configuration;
 
 		/*
 		 * One DAG of Click elements per NF in the chain.
 		 * The key is the position of the NF in the chain.
 		 */
-		NF_Map<NFGraph*> nf_dag;
+		NF_Map<NFGraph *> nf_dag;
 
 		/*
 		 * Logger instance
@@ -116,7 +116,7 @@ class ChainParser {
 		 * Visits recursively the Click DAG and returns the vector of Elements it contains.
 		 * DEPRECATED from Click
 		 */
-		Vector<Element*> visit_dag(const unsigned short &position);
+		Vector<Element *> visit_dag(const unsigned short &position);
 
 	public:
 		/*
@@ -129,7 +129,7 @@ class ChainParser {
 		 * Setters & Getters
 		 */
 		inline ParserConfiguration *get_chain_graph(void) { return this->chain_graph; };
-		inline NF_Map<NFGraph*>     get_nf_graphs  (void) { return this->nf_dag;      };
+		inline NF_Map<NFGraph *>    get_nf_graphs  (void) { return this->nf_dag;      };
 		inline NFGraph             *get_nf_graph_at(const unsigned short &position) {
 			return this->nf_dag[position];
 		};

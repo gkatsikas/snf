@@ -2,7 +2,7 @@
 /* chain_parser.cpp
  *
  * Read a Click configuration and load it into a Graph.
- * Then compose multiple graphs to form a chain.
+ * Then compose multiple graphs to form a service chain graph.
  *
  * Copyright (c) 2015-2016 KTH Royal Institute of Technology
  * Copyright (c) 2015-2016 Georgios Katsikas, Marcel Enguehard
@@ -33,7 +33,7 @@ ChainParser::ChainParser(ParserConfiguration *pc) : chain_graph(pc)
 	this->log.set_logger_file(__FILE__);
 	this->chain_length = this->chain_graph->get_chain()->get_vertices_no();
 
-	if ( this->chain_length <= 0 ) {
+	if (this->chain_length <= 0) {
 		this->chain_graph = NULL;
 		error_chatter(this->log, "ChainParser: Invalid chain length");
 		exit(CHAIN_PARSING_PROBLEM);
@@ -43,13 +43,13 @@ ChainParser::ChainParser(ParserConfiguration *pc) : chain_graph(pc)
 
 ChainParser::~ChainParser()
 {
-	if ( this->chain_graph != NULL )
+	if (this->chain_graph != NULL)
 		delete this->chain_graph;
 
 	// From Click
 	ClickCleaner::cleanup(NULL, true);
 
-	for ( auto& conf : this->nf_configuration )
+	for (auto &conf : this->nf_configuration)
 		conf.second = NULL;
 	this->nf_configuration.clear();
 	this->nf_dag.clear();
@@ -71,7 +71,7 @@ ChainParser::load_nf_configurations(void)
 	info_chatter(this->log, "");
 
 	// For each NF
-	for ( Vertex *v : this->chain_graph->get_chain()->get_vertex_order() ) {
+	for (Vertex *v : this->chain_graph->get_chain()->get_vertex_order()) {
 		ChainVertex *cv = static_cast<ChainVertex*> (v);
 
 		info_chatter(this->log, "==============================================================================");
@@ -79,12 +79,12 @@ ChainParser::load_nf_configurations(void)
 
 		// 1. Load its elements into a Click Router object
 		bool exit_status = this->load_nf(cv->get_name(), cv->get_source_code_path(), cv->get_position());
-		if ( !exit_status )
+		if (!exit_status)
 			return exit_status;
 
 		// 2. Visit all the Click elements of the NF and build the synthesizer's graph
 		exit_status = this->build_nf_dag(cv->get_name(), cv->get_position());
-		if ( !exit_status )
+		if (!exit_status)
 			return exit_status;
 
 		info_chatter(this->log, "==============================================================================");
@@ -110,14 +110,14 @@ ChainParser::chain_nf_configurations(void)
 	info_chatter(this->log, "Chaining all Click Configurations...");
 
 	// For each NF
-	for ( Vertex *v : this->chain_graph->get_chain()->get_vertex_order() ) {
+	for (Vertex *v : this->chain_graph->get_chain()->get_vertex_order()) {
 		ChainVertex *cv = static_cast<ChainVertex*> (v);
 
 		def_chatter(this->log, "Network Function: " << cv->get_name());
 
 		// Verify the NF chain against the property file and create connections between NFs
 		short exit_status = this->verify_and_connect_nfs(cv->get_name(), cv->get_position());
-		if ( !exit_status )
+		if (!exit_status)
 			return exit_status;
 
 		info_chatter(this->log, "");
@@ -138,7 +138,7 @@ ChainParser::load_nf(const std::string &nf_name __attribute__((unused)), const s
 	info_chatter(this->log, "Loading Click Configuration for " << nf_name << ": " << nf_source_full_path);
 
 	Router *router = input_a_click_configuration(nf_source_full_path.c_str());
-	if ( !router ) {
+	if (!router) {
 		error_chatter(this->log, "\tProblem while parsing Network Function " << position);
 		return TO_BOOL(CLICK_PARSING_PROBLEM);
 	}
@@ -160,13 +160,13 @@ ChainParser::build_nf_dag(const std::string &nf_name __attribute__((unused)), co
 {
 	Router *router = this->nf_configuration[position];
 
-	if ( !router ) {
+	if (!router) {
 		error_chatter(this->log, "\tNetwork Function object is invalid");
 		return TO_BOOL(NO_MEM_AVAILABLE);
 	}
 
 	// Create an empty Graph if does not exist
-	if ( !this->nf_dag[position] )
+	if (!this->nf_dag[position])
 		this->nf_dag[position] = new NFGraph();
 	NFGraph *nf_graph = this->nf_dag[position];
 
@@ -177,14 +177,14 @@ ChainParser::build_nf_dag(const std::string &nf_name __attribute__((unused)), co
 	std::unordered_map< short, std::vector<std::string> > implicit_conf_mappings;
 	std::unordered_map< short, short > implicit_port_mappings;
 
-	for ( int i=0 ; i < router->nelements() ; i++ ) {
+	for (int i=0 ; i < router->nelements() ; i++) {
 		Element *e = Router::element(router, i);
 
 		//def_chatter(this->log, "Element " << e->class_name() << " " << e->eindex() << ": " << e->configuration().c_str());
 
 		// This is an exceptional element! It has no inputs and outputs but serves as input to IPRewriter
 		// We need to hand its configuration over the corresponding IPRewriter.
-		if( SUPPORTED_MAPPER_ELEMENTS.find(e->class_name()) != SUPPORTED_MAPPER_ELEMENTS.end() ){
+		if (SUPPORTED_MAPPER_ELEMENTS.find(e->class_name()) != SUPPORTED_MAPPER_ELEMENTS.end()){
 			std::string lb_variable = e->name().c_str();
 			std::string lb_patterns = e->configuration().c_str();
 
@@ -196,7 +196,7 @@ ChainParser::build_nf_dag(const std::string &nf_name __attribute__((unused)), co
 			int receiver_pos = this->associate_ip_mapper_to_rewriter(router, lb_variable, lb_patterns, implicit_conf, implicit_port);
 
 			// Now the Mapper's configuration is available in the map where the IPRewriter's position is the key.
-			if ( receiver_pos >= 0 ) {
+			if (receiver_pos >= 0) {
 				implicit_conf_mappings[receiver_pos] = implicit_conf;
 				implicit_port_mappings[receiver_pos] = implicit_port;
 			}
@@ -214,15 +214,15 @@ ChainParser::build_nf_dag(const std::string &nf_name __attribute__((unused)), co
 		ElementVertex *u = NULL;
 
 		// Turn this Click element into a Vertex for our DAG
-		if ( !nf_graph->contains(e->eindex()) ) {
+		if (!nf_graph->contains(e->eindex())) {
 			u = new ElementVertex(e, e->class_name(), e->eindex());
 		}
 		else {
-			u = static_cast<ElementVertex*> ( nf_graph->get_vertex_by_position(e->eindex()) );
+			u = static_cast<ElementVertex *> ( nf_graph->get_vertex_by_position(e->eindex()) );
 		}
 
 		// This element has some implicit configuration arguments coming from auxiliary elements.
-		if ( implicit_conf_mappings.find(e->eindex()) != implicit_conf_mappings.end() ) {
+		if (implicit_conf_mappings.find(e->eindex()) != implicit_conf_mappings.end()) {
 			// Only stateful Click rewriters can be such elements
 			assert(
 				(e->class_name() == std::string("IPRewriter"))  ||
@@ -241,7 +241,7 @@ ChainParser::build_nf_dag(const std::string &nf_name __attribute__((unused)), co
 		try {
 			nf_graph->add_vertex_and_neighbours(std::move(u));
 		}
-		catch (const std::exception& e) {
+		catch (const std::exception &e) {
 			error_chatter(this->log, "|--> " << e.what());
 			return TO_BOOL(CLICK_PARSING_PROBLEM);
 		}
@@ -250,7 +250,7 @@ ChainParser::build_nf_dag(const std::string &nf_name __attribute__((unused)), co
 	// The generated DAG should not contain more vertices than the original one.
 	// It can contain less though because we may have AddressInfo elements that are used only
 	// as configuration elements.
-	if ( nf_graph->get_vertices_no() > total_elements ) {
+	if (nf_graph->get_vertices_no() > total_elements) {
 		delete nf_graph;
 		return TO_BOOL(CLICK_PARSING_PROBLEM);
 	}
@@ -259,7 +259,7 @@ ChainParser::build_nf_dag(const std::string &nf_name __attribute__((unused)), co
 	try {
 		nf_graph->topological_sort();
 	}
-	catch (const std::exception& e) {
+	catch (const std::exception &e) {
 		error_chatter(this->log, "\t|--> " << e.what());
 		return TO_BOOL(NF_CHAIN_NOT_ACYCLIC);
 	}
@@ -293,12 +293,12 @@ ChainParser::associate_ip_mapper_to_rewriter(
 	// along with a vector with the patterns of this IPMapper (see last argument of this function)
 	int position = -1;
 
-	for ( int i=0 ; i < router->nelements() ; i++ ) {
+	for (int i=0 ; i < router->nelements() ; i++) {
 		Element *e = Router::element(router, i);
 		std::string elem_conf = e->configuration().c_str();
 
 		// We found an IPRewriter with this IPMapper as argument!
-		if ( ((e->class_name() == std::string("IPRewriter"))) &&  (elem_conf.find(short_variable) != std::string::npos) ) {
+		if (((e->class_name() == std::string("IPRewriter"))) &&  (elem_conf.find(short_variable) != std::string::npos)) {
 
 			// Keep the position
 			position = i;
@@ -306,8 +306,8 @@ ChainParser::associate_ip_mapper_to_rewriter(
 			// Tokenize the IPRewriter's configuration to find the port that corresponds to the IPMapper
 			short port  = 0;
 			bool  found = false;
-			for ( auto& tok : split(elem_conf, ",\t\n") ) {
-				if ( tok == short_variable ) {
+			for (auto &tok : split(elem_conf, ",\t\n")) {
+				if (tok == short_variable) {
 					// This port is returned by reference
 					implicit_port = port;
 					found = true;
@@ -316,7 +316,7 @@ ChainParser::associate_ip_mapper_to_rewriter(
 				port++;
 			}
 
-			if ( !found ) {
+			if (!found) {
 				error_chatter(this->log, "\tCannot map IPMapper " << mapper_variable
 					<< " to any port of element IPRewriter:" << e->eindex());
 				return CHAIN_PARSING_PROBLEM;
@@ -324,7 +324,7 @@ ChainParser::associate_ip_mapper_to_rewriter(
 
 			// Target found. We need to tokenize and store the IPMapper's patterns
 			// The tokenized configuration of the IPMapper is returned by reference
-			for ( auto &tok : split(mapper_conf, ",\t\n") ) {
+			for (auto &tok : split(mapper_conf, ",\t\n")) {
 				implicit_conf.push_back(tok);
 			}
 
@@ -345,7 +345,7 @@ ChainParser::verify_and_connect_nfs(const std::string &nf_name, const unsigned s
 {
 	Router *router = this->nf_configuration[position];
 
-	if ( !router ) {
+	if (!router) {
 		error_chatter(this->log, "Network Function object is invalid");
 		return TO_BOOL(NO_MEM_AVAILABLE);
 	}
@@ -355,23 +355,23 @@ ChainParser::verify_and_connect_nfs(const std::string &nf_name, const unsigned s
 	//     From this graph we need the vertex of this particular NF.
 	//  2. The NF graph that comprises of Click elements
 	Graph *chain_graph = this->chain_graph->get_chain();
-	if ( !chain_graph )
+	if (!chain_graph)
 		return TO_BOOL(NO_MEM_AVAILABLE);
 
-	ChainVertex *this_nf = static_cast<ChainVertex*> (chain_graph->get_vertex_by_position(position));
-	if ( !this_nf )
+	ChainVertex *this_nf = static_cast<ChainVertex *> (chain_graph->get_vertex_by_position(position));
+	if (!this_nf)
 		return TO_BOOL(NO_MEM_AVAILABLE);
 
 	NFGraph *nf_graph = this->nf_dag[position];
-	if ( !nf_graph )
+	if (!nf_graph)
 		return TO_BOOL(NO_MEM_AVAILABLE);
 
-	Vector<ElementVertex*> input_elements  = nf_graph->get_vertices_by_stage(VertexType::Input);
-	Vector<ElementVertex*> output_elements = nf_graph->get_vertices_by_stage(VertexType::Output);
+	Vector<ElementVertex *> input_elements  = nf_graph->get_vertices_by_stage(VertexType::Input);
+	Vector<ElementVertex *> output_elements = nf_graph->get_vertices_by_stage(VertexType::Output);
 
 	// A vector with both I and O elements
-	Vector<ElementVertex*> io_elements(input_elements);
-	for ( auto &el : output_elements )
+	Vector<ElementVertex *> io_elements(input_elements);
+	for (auto &el : output_elements)
 		io_elements.push_back(el);
 
 	unsigned short seen_entry_ifaces = 0;
@@ -379,7 +379,7 @@ ChainParser::verify_and_connect_nfs(const std::string &nf_name, const unsigned s
 
 	// Parse input elements' configuration and cross check with the inputs from the property file.
 	// --> Currently supported input elements: e.g., FromDevice()
-	for ( auto &element : io_elements ) {
+	for (auto &element : io_elements) {
 		std::string el_name  = element->get_name();
 		std::string el_class = element->get_class();
 		VertexType  type     = element->get_type();
@@ -391,9 +391,9 @@ ChainParser::verify_and_connect_nfs(const std::string &nf_name, const unsigned s
 		std::string interface = configuration.substr(0, configuration.find(","));
 
 		// Supported I/O elements (Standard Click, ClickOS, Click-DPDK)
-		if ( (el_class == "FromDevice")     || (el_class == "PollDevice") || (el_class == "ToDevice") ||
-			 (el_class == "FromDPDKDevice") || (el_class == "ToDPDKDevice") ||
-			 (el_class == "FromNetFront")   || (el_class == "ToNetFront") ) {
+		if ((el_class == "FromDevice")     || (el_class == "PollDevice") || (el_class == "ToDevice") ||
+			(el_class == "FromDPDKDevice") || (el_class == "ToDPDKDevice") ||
+			(el_class == "FromNetFront")   || (el_class == "ToNetFront")) {
 
 			debug_chatter(this->log, "");
 			debug_chatter(this->log, "\tElement  Name: " << el_name);
@@ -403,32 +403,32 @@ ChainParser::verify_and_connect_nfs(const std::string &nf_name, const unsigned s
 			debug_chatter(this->log, "\t    Interface: " << interface);
 
 			// This is an entry interface that connects the chain to a domain
-			if ( this_nf->has_entry_interface(interface) ) {
+			if (this_nf->has_entry_interface(interface)) {
 				//def_chatter(this->log, "\tInterface Type: ENTRY");
 				element->set_endpoint(true);
 
 				// Count only this side of the interface (not the ToDevice counterpart).
-				if ( type == VertexType::Input )
+				if (type == VertexType::Input)
 					seen_entry_ifaces++;
 			}
 			// This is an internal interface that connects the NF with a subsequent NF
-			else if ( this_nf->has_chain_interface(interface) ) {
+			else if (this_nf->has_chain_interface(interface)) {
 				//def_chatter(this->log, "\tInterface Type: CHAIN");
 
 				// Count only this side of the interface (not the ToDevice counterpart).
-				if ( type == VertexType::Input )
+				if (type == VertexType::Input)
 					seen_chain_ifaces++;
 
 				// ---> IMPORTANT
 				// For Output chain inerfaces (e.g. ToDevice(eth1) in NF_1[eth1] -> NF_2)
 				// set a pointer to the first input element of the next NF.
-				if ( type == VertexType::Output ) {
+				if (type == VertexType::Output) {
 					def_chatter(this->log, "\t" << nf_name << " --> " << el_name << "(" << interface << ")");
 
 					// Find the next hop information
 					std::string next_nf_name  = this_nf->get_next_nf_from_chain_interface   (interface);
 					std::string next_nf_iface = this_nf->get_next_iface_from_chain_interface(interface);
-					ChainVertex *next_nf = static_cast<ChainVertex*> (chain_graph->get_vertex_by_name(next_nf_name));
+					ChainVertex *next_nf = static_cast<ChainVertex *> (chain_graph->get_vertex_by_name(next_nf_name));
 					unsigned short next_nf_position = next_nf->get_position();
 					debug_chatter(this->log, "\tNext NF is " 	<< next_nf_name << " at position: "
 											<< next_nf_position << " and iface: "
@@ -437,7 +437,7 @@ ChainParser::verify_and_connect_nfs(const std::string &nf_name, const unsigned s
 					NFGraph *next_nf_graph = this->nf_dag[next_nf_position];
 
 					ElementVertex *next_jump = this->find_input_element_of_nf(next_nf_graph, next_nf_iface);
-					if ( ! next_jump ) {
+					if (! next_jump) {
 						error_chatter(this->log, "There is no connection between " << nf_name
 								<< " and " << next_nf_name << ". Element not found");
 						return TO_BOOL(CHAIN_PARSING_PROBLEM);
@@ -463,7 +463,7 @@ ChainParser::verify_and_connect_nfs(const std::string &nf_name, const unsigned s
 
 	// This means that here is an error in the definition of the chain in the property file.
 	// TO FIX !=
-	if ( seen_entry_ifaces + seen_chain_ifaces > all_ifaces_no ) {
+	if (seen_entry_ifaces + seen_chain_ifaces > all_ifaces_no) {
 		error_chatter(this->log,
 			"Number of parsed entry+chain interfaces is greater than the respective number specified in the property file");
 		error_chatter(this->log,
@@ -473,7 +473,7 @@ ChainParser::verify_and_connect_nfs(const std::string &nf_name, const unsigned s
 	}
 
 	// I must be able to see all the entry interfaces of the property file in my Click configuration.
-	if ( seen_entry_ifaces != this_nf->get_entry_interfaces_no() ) {
+	if (seen_entry_ifaces != this_nf->get_entry_interfaces_no()) {
 		error_chatter(this->log,
 			"Number of parsed entry interfaces is different than the respective number specified in the property file");
 		error_chatter(this->log,
@@ -485,7 +485,7 @@ ChainParser::verify_and_connect_nfs(const std::string &nf_name, const unsigned s
 
 	// If I see fewer chain interfaces than exist in the property file, there is a problem
 	// TO FIX !=
-	if ( seen_chain_ifaces > this_nf->get_chain_interfaces_no() ) {
+	if (seen_chain_ifaces > this_nf->get_chain_interfaces_no()) {
 		error_chatter(this->log,
 			"Number of parsed chain interfaces is greater than the number of chain interfaces declated in the property file");
 		error_chatter(this->log,
@@ -504,17 +504,17 @@ ChainParser::verify_and_connect_nfs(const std::string &nf_name, const unsigned s
  * Given a position in the chain and an output interface, we want to find the Click element of the next NF in
  * the chain. Essentially this function is a glue between two connected NFs.
  */
-ElementVertex*
+ElementVertex *
 ChainParser::find_input_element_of_nf(NFGraph *next_nf_graph, const std::string &target_interface)
 {
-	if ( ! next_nf_graph )
+	if (!next_nf_graph)
 		return NULL;
 
 	// Get all the input elements of this NF
-	Vector<ElementVertex*> input_elements = next_nf_graph->get_vertices_by_stage(VertexType::Input);
+	Vector<ElementVertex *> input_elements = next_nf_graph->get_vertices_by_stage(VertexType::Input);
 
 	// Search for the Input element with this interface
-	for ( auto &element : input_elements ) {
+	for (auto &element : input_elements) {
 		std::string name          = element->get_name();
 		std::string configuration = element->get_configuration();
 
@@ -524,21 +524,21 @@ ChainParser::find_input_element_of_nf(NFGraph *next_nf_graph, const std::string 
 
 		debug_chatter(this->log, "\tNext element " << name << " with conf " << configuration);
 
-		if ( interface == target_interface )
+		if (interface == target_interface)
 			return element;
 	}
 
 	return NULL;
 }
 
-Vector<Element*>
+Vector<Element *>
 ChainParser::visit_dag(const unsigned short &position)
 {
 	// Storage to put the visited elements
-	Vector<Element*> path_elements;
+	Vector<Element *> path_elements;
 
 	Router *router = this->nf_configuration[position];
-	if ( !router )
+	if (!router)
 		return path_elements;
 
 	// When set to -1, it means that all ports will be searched
@@ -547,7 +547,7 @@ ChainParser::visit_dag(const unsigned short &position)
 	// Start from the first element of the graph
 	Element *first = Router::element(router, 0);
 
-	if ( !first ) {
+	if (!first) {
 		error_chatter(this->log, "\tError while traversing NF no " << position << " configuration");
 		return path_elements;
 	}
@@ -557,7 +557,7 @@ ChainParser::visit_dag(const unsigned short &position)
 	// Suppress deprecated Click method
 	#pragma GCC diagnostic push
 	#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-	if ( router->downstream_elements(first, port, NULL, path_elements) != SUCCESS ) {
+	if (router->downstream_elements(first, port, NULL, path_elements) != SUCCESS) {
 		error_chatter(this->log, "\tError while traversing NF no " << position << " configuration");
 		return path_elements;
 	}
@@ -566,7 +566,7 @@ ChainParser::visit_dag(const unsigned short &position)
 	info_chatter(this->log, "\tNetwork Function is successfully traversed");
 	info_chatter(this->log, "\tFound " << path_elements.size() << " elements");
 
-	for ( Vector<Element*>::const_iterator i=path_elements.begin(); i!=path_elements.end(); ++i)
+	for (Vector<Element *>::const_iterator i=path_elements.begin(); i!=path_elements.end(); ++i)
 		debug_chatter(this->log, "\t\tElement Found: " << (*i)->class_name());
 
 	return path_elements;

@@ -56,7 +56,7 @@ OutputClass::port_from_lookup_rule(std::string &rule, Filter &parsed_rules)
 	}
 
 	uint32_t port_nb = atoi(decomposed_rule[nb_arg-1].c_str());
-	std::vector<std::string> address_and_mask = split(decomposed_rule[0],"/");
+	std::vector<std::string> address_and_mask = split(decomposed_rule[0], "/");
 	Filter f;
 	switch (address_and_mask.size()) {
 		case 1:
@@ -85,7 +85,7 @@ std::pair<OutputClass,OutputClass>
 OutputClass::output_class_from_pattern(std::vector<std::string> &pattern)
 {
 	// IPRewriter supported pattern: pattern SADDR SPORT DADDR DPORT FOUTPUT ROUTPUT
-	if( pattern.size() != 7 ) {
+	if (pattern.size() != 7) {
 		FANCY_BUG(oc_log, "\tIncorrect IPRewriter pattern size");
 	}
 
@@ -95,8 +95,8 @@ OutputClass::output_class_from_pattern(std::vector<std::string> &pattern)
 	OutputClass foutput (modified_port_nb);
 
 	// Source IP address
-	if ( pattern[1].compare("-") ) {
-		if( !aton(pattern[1]) ) {
+	if (pattern[1].compare("-")) {
+		if (!aton(pattern[1])) {
 			FANCY_BUG(oc_log, "\tSource IP address in IPRewriter pattern null?: " << pattern[1]);
 		}
 
@@ -104,12 +104,12 @@ OutputClass::output_class_from_pattern(std::vector<std::string> &pattern)
 	}
 
 	// Source transport port
-	if ( pattern[2].compare("-") ) {
+	if (pattern[2].compare("-")) {
 		std::vector<std::string> split_pattern = split(pattern[2], "-");
-		if ( split_pattern.size() == 1 ){
+		if (split_pattern.size() == 1){
 			foutput.add_field_op({Write, tp_src_port, (uint32_t) atoi(pattern[2].c_str())});
 		}
-		else if( split_pattern.size() == 2 ) {
+		else if (split_pattern.size() == 2) {
 			OperationType op_type = WriteSF;
 			switch (split_pattern[1][split_pattern[1].size() - 1]) {
 				case '#':
@@ -138,19 +138,19 @@ OutputClass::output_class_from_pattern(std::vector<std::string> &pattern)
 	}
 
 	// Destination IP address
-	if ( pattern[3].compare("-") ) {
+	if (pattern[3].compare("-")) {
 		foutput.add_field_op({Write,ip_dst,aton(pattern[3])});
 	}
 
 	// Destination IP port
-	if ( pattern[4].compare("-") ) {
+	if (pattern[4].compare("-")) {
 		std::vector<std::string> split_pattern = split(pattern[4], "-");
-		if ( split_pattern.size() == 1 ){
+		if (split_pattern.size() == 1){
 			foutput.add_field_op({Write, tp_dst_port, (uint32_t) atoi(pattern[4].c_str())});
 		}
-		else if ( split_pattern.size() == 2 ) {
+		else if (split_pattern.size() == 2) {
 			OperationType op_type = WriteSF;
-			switch ( split_pattern[1][split_pattern[1].size() - 1] ) {
+			switch (split_pattern[1][split_pattern[1].size() - 1]) {
 				case '#':
 					op_type = WriteRR;
 					split_pattern[1].pop_back();
@@ -183,7 +183,7 @@ OutputClass::output_class_from_pattern(std::vector<std::string> &pattern)
 void
 OutputClass::add_filter(const HeaderField &field, const Filter &filter)
 {
-	if ( this->m_filter.find(field) != m_filter.end() ) {
+	if (this->m_filter.find(field) != m_filter.end()) {
 		FANCY_BUG(oc_log, "\tTrying to add filter on already filtered field in OutputPort");
 	}
 	this->m_filter[field] = filter;
@@ -200,7 +200,7 @@ OutputClass::to_str(void) const
 {
 	std::string output = "======== Begin Output Class ========\nFilters:\n";
 	for(auto &it : this->m_filter) {
-		output += ("\t"+it.second.to_str()+"\n");
+		output += ("\t" + it.second.to_str() + "\n");
 	}
 	output += m_operation.to_str();
 	output += "========= End Output Class =========\n";
@@ -233,7 +233,7 @@ OutputClass::set_child(std::shared_ptr<ClickElement> &child, int next_input_port
 	this->m_next_input_port = next_input_port;
 }
 
-const Operation&
+const Operation &
 OutputClass::get_operation(void) const
 {
 	return this->m_operation;

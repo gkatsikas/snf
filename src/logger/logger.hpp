@@ -91,7 +91,7 @@ namespace Color {
 					return os << "\033[" << mod.code << "m";
 				// Omit the DEBUG level
 				#else
-					if ( mod.code != Color::FG_BLUE )
+					if (mod.code != Color::FG_BLUE)
 						return os << "\033[" << mod.code << "m";
 				//	NullStream null_stream;
 				//	return null_stream << os;
@@ -118,14 +118,14 @@ class Logger {
 			Logger() {};
 			Logger(std::string f) : filename(f) {};
 			template <typename T>
-			Logger& operator<< (T a);
+			Logger &operator<< (T a);
 
 			/*
 			 * Overload this operator to act as cout
 			 */
-			Logger& operator<<( std::ostream&(*f)(std::ostream&) )
+			Logger &operator<<(std::ostream &(*f)(std::ostream &))
 			{
-				(void)*f;
+				(void) *f;
 				std::cout << "[" + get_current_date_time() + "] [" + logger_source_file() + "] " << oss.str() << std::endl;
 				oss.str("");
 				return *this;
@@ -161,8 +161,8 @@ class Logger {
 				std::string token;
 				boost::char_separator<char> sep("/");
 				boost::tokenizer< boost::char_separator<char> > tokens(this->filename, sep);
-				BOOST_FOREACH (const std::string& t, tokens) {
-					if ( !t.empty() ) {
+				BOOST_FOREACH (const std::string &t, tokens) {
+					if (!t.empty()) {
 						token = t;
 						break;
 					}
@@ -173,7 +173,7 @@ class Logger {
 			}
 };
 
-template <typename T> Logger& Logger::operator<<(T a)
+template <typename T> Logger &Logger::operator<<(T a)
 {
 	oss << a;
 	return *this;

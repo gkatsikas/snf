@@ -48,7 +48,7 @@ split(const std::string &s, const std::string& delim)
 	std::vector<std::string> elems;
 	size_t start=s.find_first_not_of(delim);
 
-	while ( start != std::string::npos ) {
+	while (start != std::string::npos) {
 		size_t end = s.find_first_of(delim, start);
 		std::string temp = s.substr(start, end-start);
 		elems.push_back(temp);
@@ -64,7 +64,7 @@ vector_to_str(const std::vector<std::string> &vec, const std::string &delim)
 	unsigned short i = 0;
 	for (const auto &piece : vec) {
 		res += piece;
-		if ( i < vec.size()-1 ) {
+		if (i < vec.size()-1) {
 			res += delim;
 		}
 		i++;
@@ -81,8 +81,8 @@ separate_args(const std::string &s)
 	size_t position=0;
 	std::string spaces = " \t\n";
 
-	while( (position < size) && (position != std::string::npos) ) {
-		switch(s[position]) {
+	while ((position < size) && (position != std::string::npos)) {
+		switch (s[position]) {
 			case ' ':
 			case '\t':
 			case '\n':
@@ -95,7 +95,7 @@ separate_args(const std::string &s)
 				position = s.find_first_not_of(spaces,position+1);
 				break;
 			case '/':
-				if(position < size-1 && s[position+1] =='*') {
+				if (position < size-1 && s[position+1] =='*') {
 					position++;
 					do {
 						position = s.find('*',position);
@@ -103,7 +103,7 @@ separate_args(const std::string &s)
 					position++;
 					break;
 				}
-				else if(position < size-1 && s[position+1] =='/') {
+				else if (position < size-1 && s[position+1] =='/') {
 					position = s.find('\n',position)+1;
 					break;
 				}
@@ -113,7 +113,7 @@ separate_args(const std::string &s)
 		}
 	}
 
-	if ( !current_arg.empty() ) {
+	if (!current_arg.empty()) {
 		args.push_back(current_arg);
 	}
 
@@ -127,7 +127,7 @@ const std::string
 get_substr_before(const std::string &str, const std::string &pattern)
 {
 	std::size_t found = str.find(pattern);
-	if ( found != std::string::npos )
+	if (found != std::string::npos)
 		return str.substr(0, found);
 	return str;
 }
@@ -139,7 +139,7 @@ const std::string
 get_substr_after(const std::string &str, const std::string &pattern)
 {
 	std::size_t found = str.find(pattern);
-	if ( found != std::string::npos )
+	if (found != std::string::npos)
 		return str.substr(found+1, str.size()-1);
 	return str;
 }
@@ -150,7 +150,7 @@ get_substr_after(const std::string &str, const std::string &pattern)
 const std::string
 get_string_extension(const std::string &str, const char delim)
 {
-	if( str.find_last_of(delim) != std::string::npos )
+	if (str.find_last_of(delim) != std::string::npos)
 		return str.substr(str.find_last_of(delim) + 1);
 	return std::string("");
 }
@@ -184,11 +184,11 @@ trim(std::string const &s, char const *to_trim)
 {
 	std::string result(s);
 	std::string::size_type index = result.find_last_not_of(to_trim);
-	if ( index != std::string::npos )
+	if (index != std::string::npos)
 		result.erase(++index);
 
 	index = result.find_first_not_of(to_trim);
-	if ( index != std::string::npos )
+	if (index != std::string::npos)
 		result.erase(0, index);
 	else
 		result.erase();
@@ -208,9 +208,9 @@ is_ip4_prefix(const std::string &address, bool full)
 		return false;
 	}
 	if (full && split_address.size() != 4) { return false; }
-	for(int i=0; i<4; i++) {
+	for (int i=0; i<4; i++) {
 		int temp = atoi (split_address[i].c_str());
-		if ( temp > 255 ) {
+		if (temp > 255) {
 			return false;
 		}
 	}
@@ -237,8 +237,8 @@ aton(const std::string &address)
 std::string
 ntoa(uint32_t address)
 {
-	return 	std::to_string(address>>24)+"."+std::to_string((address>>16) % 256)+"."+
-		std::to_string((address>>8) % 256)+"."+std::to_string(address % 256);
+	return 	std::to_string(address>>24) + "." + std::to_string((address>>16) % 256) + "." +
+		std::to_string((address>>8) % 256) + "." + std::to_string(address % 256);
 }
 
 /*
@@ -248,7 +248,7 @@ const std::string
 get_number_from_string(std::string const &str)
 {
 	std::size_t const n = str.find_first_of("0123456789");
-	if ( n != std::string::npos ) {
+	if (n != std::string::npos) {
 		std::size_t const m = str.find_first_not_of("0123456789", n);
 		return str.substr(n, m != std::string::npos ? m-n : m);
 	}
@@ -296,11 +296,11 @@ str_to_int(const std::string &s)
 bool
 allocate_memory(void **memory_buffer, size_t size)
 {
-	if ( *memory_buffer )
+	if (*memory_buffer)
 		free(*memory_buffer);
 
-	*memory_buffer = (void*) malloc(size);
-	if ( ! (*memory_buffer) ) {
+	*memory_buffer = (void *) malloc(size);
+	if (!(*memory_buffer)) {
 		return TO_BOOL(NO_MEM_AVAILABLE);
 	}
 	memset(*memory_buffer, 0, size);
@@ -313,7 +313,7 @@ allocate_memory(void **memory_buffer, size_t size)
 bool
 release_memory(void **memory_buffer)
 {
-	if ( *memory_buffer ) {
+	if (*memory_buffer) {
 		free(*memory_buffer);
 		*memory_buffer = NULL;
 		return DONE;
@@ -358,13 +358,13 @@ create_directory_path(const std::string &dir_path)
 	std::string sub_path;
 
 	int result = mkdir( dir_path.c_str(), mode );
-	if ( result < 0 ) {
+	if (result < 0) {
 		switch( errno )	{
 			case ENOENT:
 				// Try to create the parent folder
 				sub_path = dir_path.substr(0, dir_path.find_last_of('/'));
 
-				if ( ! create_directory_path(sub_path) ) {
+				if (! create_directory_path(sub_path)) {
 					status = false;
 				}
 				else {
@@ -398,7 +398,7 @@ bool
 file_exists(const std::string &file_path)
 {
 	struct stat buffer;
-	return ( stat(file_path.c_str(), &buffer) == 0 );
+	return (stat(file_path.c_str(), &buffer) == 0);
 }
 
 /*

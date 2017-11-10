@@ -196,7 +196,7 @@ const std::set<std::string> SUPPORTED_MAPPER_ELEMENTS = {
  * String helpers
  */
 std::vector<std::string>  split(const std::string &s, const std::string& delim);
-std::vector<std::string>& split(const std::string &s, char delim, std::vector<std::string> &elems);
+std::vector<std::string> &split(const std::string &s, char delim, std::vector<std::string> &elems);
 std::string               vector_to_str(const std::vector<std::string> &vec, const std::string &delim);
 std::vector<std::string>  separate_args(const std::string &s);
 const std::string         get_substr_before   (const std::string &str, const std::string &pattern);
@@ -297,7 +297,7 @@ template<typename T>
 inline bool
 exists_in_vector(const std::vector<T> &v, const T &item)
 {
-	return ( std::find(v.begin(), v.end(), item) != v.end() );
+	return (std::find(v.begin(), v.end(), item) != v.end());
 }
 
 /*

@@ -30,7 +30,7 @@
 Generator::Generator(Synthesizer *synth)
 {
 	this->log.set_logger_file(__FILE__);
-	if ( !synth ) {
+	if (!synth) {
 		FANCY_BUG(this->log, "\tGenerator: Invalid Synthesizer object");
 	}
 
@@ -61,7 +61,7 @@ Generator::get_output_files_list_str(void)
 	TrafficClassFormat tc_format = this->traffic_classification_format;
 
 	// A single configuration file is produced if we are in Click or RSS mode.
-	if  (
+	if (
 		(!this->hw_classification) ||
 		((tc_format != FlowDirector) && (tc_format != OpenFlow))
 	)
@@ -70,7 +70,7 @@ Generator::get_output_files_list_str(void)
 	std::string extension;
 
 	// Some hardware classification options generate additional configuration files
-	if ( this->hw_classification ) {
+	if (this->hw_classification) {
 		switch (tc_format) {
 			case ClickIPClassifier:
 			case RSSHashing:
@@ -89,7 +89,7 @@ Generator::get_output_files_list_str(void)
 
 	// Output files (one per interface) to host the Flow director commands of each SNF interface.
 	unsigned short iface_counter = 0;
-	for ( auto &it : this->synthesizer->get_snf_ifaces() ) {
+	for (auto &it : this->synthesizer->get_snf_ifaces()) {
 		std::string nf    = it.first;
 		std::string iface = it.second;
 		std::string hdwr_file = this->basic_configuration_filename + "_" + nf + "_" + iface + extension;
@@ -98,7 +98,7 @@ Generator::get_output_files_list_str(void)
 		++iface_counter;
 
 		// Still have interfaces left
-		if ( iface_counter < this->synthesizer->get_snf_ifaces_no()) {
+		if (iface_counter < this->synthesizer->get_snf_ifaces_no()) {
 			all_out_files += "\n";
 		}
 	}
@@ -109,13 +109,13 @@ Generator::get_output_files_list_str(void)
 void
 Generator::generate_indicative_chain_parameters(unsigned short &snf_ifaces_no, std::stringstream &config_stream)
 {
-	if ( snf_ifaces_no < 4 )
+	if (snf_ifaces_no < 4)
 		return;
 
 	config_stream << "define(" << std::endl;
 
 	for (unsigned short i=0 ; i<snf_ifaces_no ; i++) {
-		if ( i == 0 ) {
+		if (i == 0) {
 			config_stream << "\t$iface0         0,"                 << std::endl;
 			config_stream << "\t$macAddr0       ec:f4:bb:d5:fe:08," << std::endl;
 			config_stream << "\t$ipAddr0        10.0.0.1,"          << std::endl;
@@ -125,7 +125,7 @@ Generator::generate_indicative_chain_parameters(unsigned short &snf_ifaces_no, s
 			config_stream << "\t$color0         1,"                 << std::endl;
 			config_stream << "\t$gwMACAddr0     ec:f4:bb:d5:fe:d0," << std::endl;
 		}
-		else if ( i == 1 ) {
+		else if (i == 1) {
 			config_stream << "\t$iface1         1,"                 << std::endl;
 			config_stream << "\t$macAddr1       ec:f4:bb:d5:fe:0a," << std::endl;
 			config_stream << "\t$ipAddr1        100.0.0.1,"         << std::endl;
@@ -135,7 +135,7 @@ Generator::generate_indicative_chain_parameters(unsigned short &snf_ifaces_no, s
 			config_stream << "\t$color1         2,"                 << std::endl;
 			config_stream << "\t$gwMACAddr1     ec:f4:bb:d5:fe:d2," << std::endl;
 		}
-		else if ( i == 2 ) {
+		else if (i == 2) {
 			config_stream << "\t$iface2         2,"               << std::endl;
 			config_stream << "\t$macAddr2       00:1b:21:4b:09:c8," << std::endl;
 			config_stream << "\t$ipAddr2        150.0.0.1,"         << std::endl;
@@ -145,7 +145,7 @@ Generator::generate_indicative_chain_parameters(unsigned short &snf_ifaces_no, s
 			config_stream << "\t$color2         3,"                 << std::endl;
 			config_stream << "\t$gwMACAddr2     ec:f4:bb:d6:06:d8," << std::endl;
 		}
-		else if ( i == 3 ) {
+		else if (i == 3) {
 			config_stream << "\t$iface3         3,"                 << std::endl;
 			config_stream << "\t$macAddr3       00:1b:21:4b:09:c9," << std::endl;
 			config_stream << "\t$ipAddr3        200.0.0.1,"         << std::endl;

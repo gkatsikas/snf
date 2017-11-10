@@ -51,7 +51,7 @@ class ClickElement;
 class StatefulSynthesizer;
 
 /*
- * Contains one field-specific filter
+ * Contains one field-specific filter.
  */
 class Filter {
 
@@ -62,10 +62,10 @@ class Filter {
 		Filter(HeaderField field, short &pos, short &len);
 		Filter(HeaderField field, uint32_t lower_value, uint32_t upper_value);
 
-		Filter& intersect    (const Filter &filter); // Intersects this and rhs
-		Filter& unite        (const Filter &filter);
-		Filter& differentiate(const Filter &filter);
-		Filter& translate    (uint32_t value, bool forward=true);
+		Filter &intersect    (const Filter &filter);
+		Filter &unite        (const Filter &filter);
+		Filter &differentiate(const Filter &filter);
+		Filter &translate    (uint32_t value, bool forward=true);
 
 		bool operator== (const Filter &rhs) const;
 		bool operator!= (const Filter &rhs) const;
@@ -226,7 +226,7 @@ class TrafficClass {
 		 * Add a post-routing element to the list of elements to be synthesized
 		 * by SNF's IPSytnhesizer.
 		 */
-		void add_post_routing_operation(const ElementType& et);
+		void add_post_routing_operation(const ElementType &et);
 
 		/*
 		 * Public API to convert a traffic class into a format understandable by:
@@ -305,7 +305,7 @@ class TrafficClass {
 		 * can be given to the IPSynthesizer in order to integrate this
 		 * element internally.
 		 */
-		bool has_post_routing_operation(const ElementType& et);
+		bool has_post_routing_operation(const ElementType &et);
 
 		/*
 		 * Retrieve all the post-routing operations of a traffic class

@@ -178,7 +178,7 @@ class Synthesizer {
 		{
 			return this->snf_ifaces_to_nics;
 		};
-		inline ChainParser*
+		inline ChainParser *
 		get_chain_parser(void)
 		{
 			return this->parser;
@@ -230,7 +230,7 @@ namespace TrafficBuilder {
 
 	void traffic_class_builder_dfs(
 		Graph                         *graph,
-		NF_Map<NFGraph*>              nf_chain,
+		NF_Map<NFGraph *>             nf_chain,
 		std::vector<unsigned short>   nfs_traversed,
 		unsigned short                nf_position,
 		std::shared_ptr<ClickElement> elem,

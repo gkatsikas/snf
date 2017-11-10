@@ -97,7 +97,7 @@ SegmentNode::operator==(const SegmentNode& node) const
 }
 
 bool
-SegmentNode::operator!=(const SegmentNode& node) const
+SegmentNode::operator!=(const SegmentNode &node) const
 {
 	return !(*this == node);
 }
@@ -261,7 +261,7 @@ DisjointSegmentList::unify(std::shared_ptr<SegmentNode> &container, const std::s
 }
 
 void
-DisjointSegmentList::substract_segment(uint32_t lower_limit, uint32_t upper_limit )
+DisjointSegmentList::substract_segment(uint32_t lower_limit, uint32_t upper_limit)
 {
 	m_head = differentiate(
 		m_head,
@@ -365,7 +365,7 @@ void
 DisjointSegmentList::intersect_segment(uint32_t lower_limit, uint32_t upper_limit)
 {
 	std::shared_ptr<SegmentNode> seg (new SegmentNode(lower_limit, upper_limit));
-	m_head=intersect(m_head, seg);
+	m_head = intersect(m_head, seg);
 }
 
 void
@@ -375,7 +375,9 @@ DisjointSegmentList::intersect_seglist(const DisjointSegmentList &rhs)
 }
 
 std::shared_ptr<SegmentNode>
-DisjointSegmentList::intersect(std::shared_ptr<SegmentNode> &container, const std::shared_ptr<SegmentNode> &to_intersect)
+DisjointSegmentList::intersect(
+	std::shared_ptr<SegmentNode> &container,
+	const std::shared_ptr<SegmentNode> &to_intersect)
 {
 	if (!container || !to_intersect) {
 		destroy_list(container);
@@ -416,7 +418,7 @@ DisjointSegmentList::intersect(std::shared_ptr<SegmentNode> &container, const st
 	current_node->m_upperLimit = MIN(upper_limit, current_node->m_upperLimit);
 	if (old_upper_lim > upper_limit + 1) {
 		std::shared_ptr<SegmentNode> grandchild = current_node->m_child;
-		std::shared_ptr<SegmentNode> new_child (new SegmentNode(upper_limit+1,old_upper_lim));
+		std::shared_ptr<SegmentNode> new_child (new SegmentNode(upper_limit+1, old_upper_lim));
 		update_relation(current_node,new_child);
 		if (grandchild) {
 			update_relation(new_child, grandchild);
@@ -434,7 +436,7 @@ DisjointSegmentList::intersect(std::shared_ptr<SegmentNode> &container, const st
 	return container;
 }
 
-DisjointSegmentList&
+DisjointSegmentList &
 DisjointSegmentList::operator= (const DisjointSegmentList &rhs)
 {
 	destroy_list(this->m_head);

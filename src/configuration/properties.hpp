@@ -7,7 +7,7 @@
  * Defines generic properties that drive the synthesis.
  * Among them, the output folder and filename where SNF
  * will generate the results, whether SNF will produce a
- * pure software or a hardware assisted synthesis. If the latter
+ * pure software or a hardware-assisted synthesis. If the latter
  * is selected, the number of CPU sockets, cores, NIC hardware
  * queues the type of CPU architecture are requested.
  *
@@ -327,33 +327,33 @@ class Properties {
 		}
 		inline void set_processing_layer             (const ProcessingLayer &p_layer)
 		{
-			assert ( (p_layer == L2) || (p_layer == L3) );
+			assert ((p_layer == L2) || (p_layer == L3));
 			this->proc_layer = p_layer;
 		}
 		inline void set_io_mode                      (const IOMode &io_md)
 		{
-			assert ( (io_md == SingleCore) || (io_md == ShareNothing) );
+			assert ((io_md == SingleCore) || (io_md == ShareNothing));
 			this->io_mode = io_md;
 		}
 		inline void set_cpu_cores_no                 (const unsigned short &cores_no)
 		{
-			assert ( (cores_no > 0) && (cores_no < MAX_CPU_CORES_NO) );
+			assert ((cores_no > 0) && (cores_no < MAX_CPU_CORES_NO));
 			this->cpu_cores_no = cores_no;
 		}
 		inline void set_cpu_sockets_no               (const unsigned short &sockets_no)
 		{
-			assert ( (sockets_no > 0) && (sockets_no < MAX_CPU_SOCKETS_NO) );
+			assert ((sockets_no > 0) && (sockets_no < MAX_CPU_SOCKETS_NO));
 			this->cpu_sockets_no = sockets_no;
 		}
 		inline void set_number_of_nics               (const unsigned short &nics_no)
 		{
-			assert ( (nics_no > 0) );
+			assert ((nics_no > 0));
 			this->number_of_nics = nics_no;
 		}
 		inline void set_nic_hw_queues_no             (const unsigned short &nic_queues)
 		{
-			assert ( (nic_queues > 0) && (nic_queues < MAX_NIC_HW_QUEUES_NO) );
-			if ( nic_queues == 0 ) return;
+			assert ((nic_queues > 0) && (nic_queues < MAX_NIC_HW_QUEUES_NO));
+			if (nic_queues == 0) return;
 			this->nic_hw_queues_no = nic_queues;
 		}
 		inline void set_rss_aggressive_pinning       (const bool &rss_aggr_pin)

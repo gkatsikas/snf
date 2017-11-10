@@ -1,8 +1,8 @@
 // -*- c-basic-offset: 4 -*-
 /* flow_director_generator.cpp
  *
- * Export a runnable, SNF configuration that implements the
- * NFV chain in a distributed, hardware-assisted fashion.
+ * Export a runnable, SNF configuration that implements a
+ * service chain in a distributed, hardware-assisted fashion.
  * The conditional part of the chain (i.e., read and classify flows)
  * is exported to a programmable NIC. The NIC encodes the traffic
  * classes using FlowDirector filters and sends the matching packets to
@@ -63,7 +63,7 @@ FlowDirectorGenerator::generate_flow_director_split_pipelines(const bool &to_fil
 	//std::streambuf *def_cout       = NULL;
 	//std::string all_out_files;
 
-	if ( to_file ) {
+	if (to_file) {
 		// Open the output files to host our synthesized chain
 		//soft_out_file = new std::ofstream(this->soft_configuration_filename);
 
@@ -72,7 +72,7 @@ FlowDirectorGenerator::generate_flow_director_split_pipelines(const bool &to_fil
 		// Output files (one per interface) to host the Flow director commands of each SNF interface.
 		/*hard_out_file = new std::ofstream*[nic_classifiers_no];
 		unsigned short i = 0;
-		for ( auto &it : this->synthesizer->get_snf_ifaces() ) {
+		for (auto &it : this->synthesizer->get_snf_ifaces()) {
 			std::string nf = it.first;
 			std::string iface = it.second;
 
@@ -93,7 +93,7 @@ FlowDirectorGenerator::generate_flow_director_split_pipelines(const bool &to_fil
 	// ....
 
 	// Reset to standard output again
-	if ( to_file ) {
+	if (to_file) {
 		//std::cout.rdbuf(def_cout);
 		//soft_out_file->close();
 		//hard_out_file->close();
@@ -123,7 +123,6 @@ FlowDirectorGenerator::generate_flow_director_configuration(
 	for (unsigned short nic = 0 ; nic < nics_no ; nic++) {
 		// Move cout to the files where we write the hardware configuration
 		def_cout = std::cout.rdbuf(hw_out_file[nic]->rdbuf());
-		//std::cout << "OOOOOOOOOOOOOO" << std::endl;
 	}
 
 	(void)def_cout;

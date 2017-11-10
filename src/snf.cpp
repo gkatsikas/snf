@@ -40,7 +40,7 @@ bool dpdk_enabled = true;
  * User guide to start SNF
  */
 void
-usage(Logger &main_log, const char* program)
+usage(Logger &main_log, const char *program)
 {
 	error_chatter(main_log, "Usage: " << program << " -p [propertyFile] [-v]");
 	exit(WRONG_INPUT_ARGS);
@@ -85,7 +85,7 @@ parse_arguments(
 	const char *program = cmd_args[0];
 
 	// Check number of arguments
-	if (	(cmd_args_no != 2) &&
+	if ((cmd_args_no != 2) &&
 		(cmd_args_no != 3) &&
 		(cmd_args_no != 4)
 	) {
@@ -136,7 +136,7 @@ parse_arguments(
  * Based on user's input, decide which code generation class to use
  * in order to produce a runnable synthesized Click chain.
  */
-Generator*
+Generator *
 identify_code_generator(
 	Logger                   &main_log,
 	Synthesizer              *synthesizer,

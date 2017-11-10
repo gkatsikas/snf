@@ -95,14 +95,14 @@ class DisjointSegmentList {
 		// Translate all the segments by value, either forward or backwards
 		void translate(uint32_t value, bool forward=true);
 
-		DisjointSegmentList& operator= (const DisjointSegmentList &rhs);
+		DisjointSegmentList &operator= (const DisjointSegmentList &rhs);
 		bool operator== (const DisjointSegmentList &rhs) const;
 		bool operator!= (const DisjointSegmentList &rhs) const;
 
 		std::string to_str   (void) const;
 		std::string to_ip_str(void) const;
 
-		std::vector<std::pair<uint32_t,uint32_t> > get_segments(void) const;
+		std::vector<std::pair<uint32_t,uint32_t>> get_segments(void) const;
 };
 
 #endif

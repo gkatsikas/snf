@@ -4,7 +4,7 @@
 /*
  * chameleon.hpp
  *
- * Class that covers several types of input properties' primitives
+ * Class that covers several types of input properties' primitives.
  *
  * Copyright (c) 2015-2016 KTH Royal Institute of Technology
  * Copyright (c) 2015-2016 Georgios Katsikas, Marcel Enguehard

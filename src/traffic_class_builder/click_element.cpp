@@ -215,7 +215,7 @@ ClickElement::get_type(void) const
 	return this->m_type;
 }
 
-ElementVertex*
+ElementVertex *
 ClickElement::get_ev(void) const
 {
 	return this->m_ev;
@@ -365,7 +365,7 @@ ClickElement::parse_ip_filter(const std::string &configuration)
 	}
 
 	uint32_t discard_port = this->m_nb_ports;
-	for(auto &pf : to_discard) {
+	for (auto &pf : to_discard) {
 		OutputClass port(discard_port);
 		port.set_child(discard_elem_ptr);
 		port.set_filter(pf);
@@ -454,7 +454,7 @@ ClickElement::parse_ip_rewriter(
 	short input_port,
 	std::unordered_map< short, std::vector<std::string> > *extra_conf)
 {
-	debug_chatter(this->log, "\tEntering IPRewriter at port "+std::to_string(input_port));
+	debug_chatter(this->log, "\tEntering IPRewriter at port " + std::to_string(input_port));
 
 	if (extra_conf && (extra_conf->find(input_port) != extra_conf->end())) {
 		std::vector<std::string> rr_ip_mapper_conf = extra_conf->at(input_port);
@@ -553,7 +553,7 @@ void
 ClickElement::parse_vlan_decap_configuration(const std::string &configuration)
 {
 	if (configuration.empty()) {
-		//TODO do we handle ANNO and if yes how?
+		// TODO do we handle ANNO and if yes how?
 		FANCY_BUG(this->log, "\tVLAN annotation not implemented yet");
 	}
 	OutputClass port(0);
@@ -566,12 +566,12 @@ ClickElement::parse_vlan_decap_configuration(const std::string &configuration)
 void
 ClickElement::parse_set_vlan_anno_configuration(const std::string &configuration __attribute__((unused)))
 {
-	//TODO complete
+	// TODO complete
 	def_chatter(this->log, configuration);
 	FANCY_BUG(this->log, "\tVLAN annotation not implemented yet");
 }
 
-//New syntax: [IPSRC|IPDST] xxx.xxx.xxx.xxx-yyy.yyy.yyy.yyy
+// New syntax: [IPSRC|IPDST] xxx.xxx.xxx.xxx-yyy.yyy.yyy.yyy
 void
 ClickElement::parse_rr_ip_mapper(const std::string &configuration)
 {
@@ -601,7 +601,7 @@ ClickElement::parse_rr_ip_mapper(const std::string &configuration)
 	end = configuration.find('-',start);
 
 	uint32_t start_ip = aton(configuration.substr(start,end-start));
-	start = end+1;
+	start = end + 1;
 	end = configuration.find_first_of(separators,start);
 	uint32_t end_ip = aton(configuration.substr(start,end-start));
 

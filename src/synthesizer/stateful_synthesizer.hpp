@@ -35,7 +35,7 @@ class StatefulSynthesizer {
 	public:
 		StatefulSynthesizer();
 
-		//Returns the input port on which to connect
+		// Returns the input port on which to connect
 		unsigned short add_traffic_class(
 			const struct ConsolidatedTc &tc, const std::string &src_iface
 		);

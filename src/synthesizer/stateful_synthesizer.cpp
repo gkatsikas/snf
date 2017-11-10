@@ -55,7 +55,7 @@ StatefulSynthesizer::compute_conf(void)
 	std::string output;
 
 	for(auto &it : this->m_input_port_to_iface) {
-		if ( this->m_iface_to_output_port.find (it) == this->m_iface_to_output_port.end() ) {
+		if (this->m_iface_to_output_port.find (it) == this->m_iface_to_output_port.end()) {
 			this->m_output_port_to_iface.push_back(it);
 			this->m_iface_to_output_port.emplace(it, this->m_output_port_to_iface.size()-1);
 		}
@@ -63,8 +63,8 @@ StatefulSynthesizer::compute_conf(void)
 
 	this->m_outbound_port = this->m_output_port_to_iface.size();
 	for (size_t i=0; i<this->m_conf_string.size(); i++) {
-
-		if ( this->m_conf_string[i][0] == 'R' ) { //if RRIPMapper then include ports in the RR conf
+		// If RRIPMapper then include ports in the RR conf
+		if (this->m_conf_string[i][0] == 'R') {
 			std::string conf_str = this->m_conf_string[i];
 			std::string ports = " " + std::to_string(this->m_outbound_port) + " "
 					+ std::to_string(this->m_iface_to_output_port[this->m_input_port_to_iface[i]]);

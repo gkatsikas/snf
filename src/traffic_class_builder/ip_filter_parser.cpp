@@ -53,7 +53,7 @@ add_filter_to_pf(PacketFilter &base_pf, const Filter &f)
 	HeaderField field = f.get_field();
 	auto got = base_pf.find(field);
 
-	if ( got == base_pf.end() ) {
+	if (got == base_pf.end()) {
 		base_pf[field] = f;
 	}
 	else {
@@ -188,10 +188,12 @@ filter_from_src_option(const Option &option, const std::string &arg)
 			f = Filter::get_filter_from_prefix_pattern (ip_src, arg);
 			break;
 		case Option::SRC_UDP_PORT:
+			// TODO: Replace number with constant variable
 			f = Filter(ip_proto, 17);
 			add_filter_to_pf(pf, f);
 			goto add_port;
 		case Option::SRC_TCP_PORT:
+			// TODO: Replace number with constant variable
 			f = Filter(ip_proto, 6);
 			add_filter_to_pf(pf, f);
 			goto add_port;
@@ -222,10 +224,12 @@ filter_from_dst_option(const Option &option, const std::string &arg)
 			f = Filter::get_filter_from_prefix_pattern (ip_dst, arg);
 			break;
 		case Option::DST_UDP_PORT:
+			// TODO: Replace number with constant variable
 			f = Filter(ip_proto, 17);
 			add_filter_to_pf(pf, f);
 			goto add_port;
 		case Option::DST_TCP_PORT:
+			// TODO: Replace number with constant variable
 			f = Filter(ip_proto, 6);
 			add_filter_to_pf(pf, f);
 			goto add_port;
@@ -279,12 +283,15 @@ filter_from_ip_option(const Option &option, const std::string &arg)
 			break;
 		case Option::IP_PROTO:
 			if (!arg.compare("tcp")) {
+				// TODO: Replace number with constant variable
 				f = Filter(ip_proto, 6);
 			}
 			else if (!arg.compare("udp")) {
+				// TODO: Replace number with constant variable
 				f = Filter(ip_proto, 17);
 			}
-			else if(!arg.compare("icmp")) {
+			else if (!arg.compare("icmp")) {
+				// TODO: Replace number with constant variable
 				f = Filter(ip_proto, 1);
 			}
 			else if (arg.find_first_not_of("0123456789") == std::string::npos) {

@@ -2,8 +2,10 @@
 /* click_parser.cpp
  *
  * Modified parts of click_path/userlevel/click.cc
- * to load and parse a Click configurations. The code used to
- * instantiate the router is intentionally bypassed.
+ * to facilitate the loading and parsing operations of SNF.
+ * The code used to instantiate the router is intentionally bypassed
+ * because the sheer goal of SNF is to use Click's configuration
+ * graph as a basis to produce a highly-optimized equivalent DAG.
  *
  * Copyright (c) 1999-2000 Massachusetts Institute of Technology
  * Copyright (c) 2000 Mazu Networks, Inc.
@@ -11,6 +13,7 @@
  * Copyright (c) 2004-2006 Regents of the University of California
  * Copyright (c) 2008-2009 Meraki, Inc.
  * Copyright (c) 1999-2015 Eddie Kohler
+ * Copyright (c) 2015-2016 KTH Royal Institute of Technology
  * Copyright (c) 2015-2016 Georgios Katsikas
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -94,10 +97,10 @@ parse_configuration(const String &text, const bool &text_is_expr, ErrorHandler *
 bool
 generate_flat_configuration(char **output_file, const short &position)
 {
-	if ( !click_router )
+	if (!click_router)
 		return CLICK_PARSING_PROBLEM;
 
-	if ( ! (*output_file) ) {
+	if (! (*output_file)) {
 		*output_file = new char[strlen("nf_repo/temp.click")+3];
 		sprintf(*output_file, "nf_repo/temp_%d.click",position);
 	}
@@ -209,7 +212,7 @@ input_a_click_configuration (const char *click_source_configuration)
 		click_router = parse_configuration(router_file, file_is_expr, errh);
 
 		// Error while parsing the router
-		if ( !click_router ) {
+		if (!click_router) {
 			error_chatter(logger, "Error while parsing the Network Function in " + std::string(router_file));
 			// Do not clean now, the caller will do so
 			return NULL;
@@ -220,7 +223,7 @@ input_a_click_configuration (const char *click_source_configuration)
 
 		// If the new error status is the same as before parsing the router,
 		// then everything OK
-		if ( errh->nerrors() != before_errors )
+		if (errh->nerrors() != before_errors)
 			return NULL;
 
 		return click_router;

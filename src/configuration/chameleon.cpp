@@ -3,8 +3,8 @@
  *
  * Implementation of methods that read input properties of various types.
  *
- * Copyright (c) 2015-2016  KTH Royal Institute of Technology
- * Copyright (c) 2015-today Georgios Katsikas, Marcel Enguehard
+ * Copyright (c) 2015-2016 KTH Royal Institute of Technology
+ * Copyright (c) 2015-2016 Georgios Katsikas, Marcel Enguehard
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by

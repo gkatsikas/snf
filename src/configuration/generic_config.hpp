@@ -4,7 +4,7 @@
 /*
  * generic_config.hpp
  *
- * Input Parameters' configuration library
+ * Input Parameters' configuration library.
  *
  * Copyright (c) 2015-2016 KTH Royal Institute of Technology
  * Copyright (c) 2015-2016 Georgios Katsikas, Marcel Enguehard
@@ -66,27 +66,27 @@ class GenericConfiguration {
 		 */
 		void read_multi_line(std::ifstream &file, std::string &value, unsigned short &lines_to_skip);
 
-		Chameleon const& get_value
+		Chameleon const &get_value
 		(
 			std::string const &section, std::string const &entry
 		) const;
-		Chameleon const& get_value
+		Chameleon const &get_value
 		(
 			std::string const &section, std::string const &entry, int value
 		);
-		Chameleon const& get_value
+		Chameleon const &get_value
 		(
 			std::string const &section, std::string const &entry, unsigned short value
 		);
-		Chameleon const& get_value
+		Chameleon const &get_value
 		(
 			std::string const &section, std::string const &entry, bool value
 		);
-		Chameleon const& get_value
+		Chameleon const &get_value
 		(
 			std::string const &section, std::string const &entry, double value
 		);
-		Chameleon const& get_value
+		Chameleon const &get_value
 		(
 			std::string const &section, std::string const &entry, std::string const &value
 		);

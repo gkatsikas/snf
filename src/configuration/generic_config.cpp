@@ -30,7 +30,7 @@ GenericConfiguration::GenericConfiguration(const std::string &config_file)
 {
 	this->log.set_logger_file(__FILE__);
 
-	if ( ! file_exists(config_file) ) {
+	if (! file_exists(config_file)) {
 		error_chatter(this->log, "\tProperty file " + config_file + "does not exist");
 		exit(FAILURE);
 	}
@@ -42,8 +42,9 @@ GenericConfiguration::GenericConfiguration(const std::string &config_file)
 
 GenericConfiguration::~GenericConfiguration()
 {
-	if ( !content.empty() )
+	if (!content.empty()) {
 		content.clear();
+	}
 }
 
 void
@@ -55,15 +56,15 @@ GenericConfiguration::load_in_memory(void)
 	std::string in_section;
 
 	// Read line-by-line
-	while ( std::getline(file, line) ) {
+	while (std::getline(file, line)) {
 
 		// Any non alphabetic characters in the beginning make the parser to ignore the line.
-		if ( ! line.length() ) continue;
-		if ( forbidden.find(line[0]) != std::string::npos ) continue;
+		if (! line.length()) continue;
+		if (forbidden.find(line[0]) != std::string::npos) continue;
 
 		// Expect for the character [
 		// We start a new section with this
-		if ( line[0] == '[' ) {
+		if (line[0] == '[') {
 			in_section = trim( line.substr(1, line.find(']')-1) );
 			continue;
 		}
@@ -72,18 +73,19 @@ GenericConfiguration::load_in_memory(void)
 		std::string value;
 
 		std::size_t pos_equal = line.find('=');
-		if ( pos_equal != std::string::npos ) {
+		if (pos_equal != std::string::npos) {
 			name  = trim(line.substr(0, pos_equal));
 			// Get the value of this line until the end of line
 			value = trim(line.substr(pos_equal+1));
 
-			if ( name.empty() || value.empty() ) {
+			if (name.empty() || value.empty()) {
 				error_chatter(this->log, "\tLine with [property = value] is not correct");
 				exit(CHAIN_PARSING_PROBLEM);
 			}
 		}
-		else
+		else {
 			continue;
+		}
 
 		// However, the user migth have expanded his input across multiple lines.
 		// Keep the current position of the file stream.
@@ -95,7 +97,7 @@ GenericConfiguration::load_in_memory(void)
 
 		// Rewind back to the original position if the next line is not the continuation of this one.
 		// We want to properly parse that new line.
-		if ( lines_to_skip == 0 ) {
+		if (lines_to_skip == 0) {
 			file.seekg(curr_pos);
 		}
 		// We can skip a few lines as they are concatenated to the current one
@@ -120,15 +122,15 @@ GenericConfiguration::read_multi_line(std::ifstream &file, std::string &value, u
 	std::string line;
 	lines_to_skip = 0;
 
-	while ( std::getline(file, line) ) {
+	while (std::getline(file, line)) {
 
 		std::size_t pos_equal = line.find('=');
-		if ( pos_equal != std::string::npos ) return;
-		if ( line[0] == '[' ) return;
+		if (pos_equal != std::string::npos) return;
+		if (line[0] == '[') return;
 
 		//if ( (line[0] == '#') || (line[0] == ';') || (! line.length()) ||
 		//	((line[0] == '/') && (line[1] == '/')) ) {
-		if ( forbidden.find(line[0]) != std::string::npos ) {
+		if (forbidden.find(line[0]) != std::string::npos) {
 			lines_to_skip++;
 			continue;
 		}
@@ -139,24 +141,25 @@ GenericConfiguration::read_multi_line(std::ifstream &file, std::string &value, u
 	}
 }
 
-Chameleon const&
+Chameleon const &
 GenericConfiguration::get_value(std::string const &section, std::string const &entry) const
 {
 	std::map<std::string, Chameleon>::const_iterator ci = content.find(section + '/' + entry);
 
-	if (ci == content.end())
+	if (ci == content.end()) {
 		throw("\t" + entry + " does not exist in section " + section);
+	}
 
 	return ci->second;
 }
 
-Chameleon const&
+Chameleon const &
 GenericConfiguration::get_value(std::string const &section, std::string const &entry, int value)
 {
 	try {
 		return get_value(section, entry);
 	}
-	catch(const std::exception& e) {
+	catch(const std::exception &e) {
 		return content.insert(make_pair(section+'/'+entry, Chameleon(value))).first->second;
 	}
 }
@@ -167,40 +170,40 @@ GenericConfiguration::get_value(std::string const &section, std::string const &e
 	try {
 		return get_value(section, entry);
 	}
-	catch(const std::exception& e) {
+	catch(const std::exception &e) {
 		return content.insert(make_pair(section+'/'+entry, Chameleon(value))).first->second;
 	}
 }
 
-Chameleon const&
+Chameleon const &
 GenericConfiguration::get_value(std::string const &section, std::string const &entry, bool value)
 {
 	try {
 		return get_value(section, entry);
 	}
-	catch(const std::exception& e) {
+	catch(const std::exception &e) {
 		return content.insert(make_pair(section+'/'+entry, Chameleon(value))).first->second;
 	}
 }
 
-Chameleon const&
+Chameleon const &
 GenericConfiguration::get_value(std::string const &section, std::string const &entry, double value)
 {
 	try {
 		return get_value(section, entry);
 	}
-	catch(const std::exception& e) {
+	catch(const std::exception &e) {
 		return content.insert(make_pair(section+'/'+entry, Chameleon(value))).first->second;
 	}
 }
 
-Chameleon const&
-GenericConfiguration::get_value(std::string const &section, std::string const &entry, std::string const& value)
+Chameleon const &
+GenericConfiguration::get_value(std::string const &section, std::string const &entry, std::string const &value)
 {
 	try {
 		return get_value(section, entry);
 	}
-	catch(const std::exception& e) {
+	catch(const std::exception &e) {
 		return content.insert(make_pair(section+'/'+entry, Chameleon(value))).first->second;
 	}
 }
@@ -212,7 +215,7 @@ GenericConfiguration::count_section_elements(std::string const &section)
 
 	for(auto const &entry : content) {
 		// Count only the parameters that belong to the given section
-		if ( entry.first.find(section) == 0 )
+		if (entry.first.find(section) == 0)
 			counter++;
 	}
 

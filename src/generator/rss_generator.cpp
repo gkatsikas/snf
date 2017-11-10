@@ -4,7 +4,7 @@
  * Export a runnable, hardware-assisted SNF configuration that
  * exploits the hardware queues of modern NICs together with the
  * powerful processing capacities of multi-core architectures, to
- * parallelize NFV chain deployments.
+ * parallelize NFV service chain deployments.
  *
  * Copyright (c) 2015-2016 KTH Royal Institute of Technology
  * Copyright (c) 2015-2016 Georgios Katsikas, Marcel Enguehard
@@ -34,10 +34,10 @@ RSSGenerator::RSSGenerator(Synthesizer *synth) : Generator(synth)
 	this->rss_cores              = this->input_properties->get_cpu_cores_no    ();
 	this->cpu_sockets_no         = this->input_properties->get_cpu_sockets_no  ();
 	this->cores_per_socket       = this->rss_cores / this->cpu_sockets_no;
-	this->cores_step             = ( (this->cpu_sockets_no > 1) && (this->numa) ) ? 2 : 1;
+	this->cores_step             = ((this->cpu_sockets_no > 1) && (this->numa)) ? 2 : 1;
 	this->rss_aggressive_pinning = this->input_properties->get_rss_aggressive_pinning();
 
-	this->fast_click             = ( this->click_type == FastClick ) ? true : false;
+	this->fast_click             = (this->click_type == FastClick) ? true : false;
 	/*if ( this->fast_click ) {
 		this->rss_queues = 1;
 	}*/
@@ -125,10 +125,10 @@ RSSGenerator::generate_rss_cloned_pipelines(const bool &to_file)
 	// modified (i.e., rewritten by Click IPSynthesizer already) traffic
 	// class out of Click. This path of elements follows IPSynthesizer and
 	// preceeds the above-defined output elements.
-	if ( ! this->replicate_write_and_output_part_of_synthesis(
+	if (! this->replicate_write_and_output_part_of_synthesis(
 			config_stream,
 			out_nic_desc_to_core,
-			classifier_repl_to_rewriter) ) {
+			classifier_repl_to_rewriter)) {
 		return TO_BOOL(CODE_GENERATION_PROBLEM);
 	}
 
@@ -141,11 +141,11 @@ RSSGenerator::generate_rss_cloned_pipelines(const bool &to_file)
 	// Step 5: Construct the IPClassifier(s) and the path of Click elements
 	// that lead to all its/their traffic classes. Replicate this set of
 	// elements across all input elements.
-	if ( ! this->replicate_read_part_of_synthesis(
+	if (! this->replicate_read_part_of_synthesis(
 			config_stream,
 			nic_to_classifier,
 			nic_to_classifier_repl,
-			classifier_repl_to_rewriter_repl) ) {
+			classifier_repl_to_rewriter_repl)) {
 		return TO_BOOL(CODE_GENERATION_PROBLEM);
 	}
 
@@ -153,22 +153,22 @@ RSSGenerator::generate_rss_cloned_pipelines(const bool &to_file)
 
 	// Step 6: Construct the input Click elements that capture incoming traffic to be sent to the Classifiers.
 	// Replicate this set of elements across all hardware queues and assign queues to cores.
-	if ( ! this->replicate_input_part_of_synthesis(
+	if (! this->replicate_input_part_of_synthesis(
 			config_stream,
 			nic_to_classifier,
 			in_nic_desc_to_core,
 			nic_to_classifier_repl,
 			classifier_to_nic_desc,
-			classifier_to_core) ) {
+			classifier_to_core)) {
 		return TO_BOOL(CODE_GENERATION_PROBLEM);
 	}
 
 	def_chatter(this->log, "\tGenerate Input Part...");
 
 	// Step 7: Schedule the In->Proc->Out paths according to the input congifuration.
-	if ( ! this->scheduling(
+	if (! this->scheduling(
 				in_nic_desc_to_core, out_nic_desc_to_core, classifier_to_core,
-				classifier_repl_to_rewriter_repl, config_stream) ) {
+				classifier_repl_to_rewriter_repl, config_stream)) {
 
 		error_chatter(this->log, "\tFailed to schedule SNF");
 		return TO_BOOL(CODE_GENERATION_PROBLEM);
@@ -177,7 +177,7 @@ RSSGenerator::generate_rss_cloned_pipelines(const bool &to_file)
 	def_chatter(this->log, "\tGenerate Pinning...");
 
 	// The generated Click configuration will be written to a file
-	if ( to_file ) {
+	if (to_file) {
 		// Output file to host our synthesized Click-DPDK chain
 		out_file = new std::ofstream(this->soft_configuration_filename);
 
@@ -189,14 +189,14 @@ RSSGenerator::generate_rss_cloned_pipelines(const bool &to_file)
 	std::cout << config_stream.str();
 
 	// Reset to standard output again
-	if ( to_file ) {
+	if (to_file) {
 		std::cout.rdbuf(def_cout);
 		out_file->close();
 		delete out_file;
 		out_file = NULL;
 	}
 
-	def_chatter(this->log,	"\tSuccessfully generated the NF chain synthesis to: \n" <<
+	def_chatter(this->log,	"\tSuccessfully generated the service chain synthesis to: \n" <<
 				"\t\t\t\t\t\t\t|--> " << this->soft_configuration_filename);
 
 	return DONE;
@@ -208,7 +208,7 @@ RSSGenerator::generate_rss_cloned_pipelines(const bool &to_file)
 void
 RSSGenerator::generate_static_configuration(std::stringstream &config_stream)
 {
-	unsigned short snf_ifaces_no = (this->synthesizer->get_snf_ifaces_no() <= this->number_of_nics ) ?
+	unsigned short snf_ifaces_no = (this->synthesizer->get_snf_ifaces_no() <= this->number_of_nics) ?
 		this->number_of_nics : this->synthesizer->get_snf_ifaces_no();
 
 	// Chain parameters
@@ -251,9 +251,9 @@ RSSGenerator::replicate_input_part_of_synthesis(
 	debug_chatter(this->log, "\tTarget System has " << this->cpu_sockets_no
 							<< " sockets with " << this->cores_per_socket << " CPU cores/socket");
 	for (unsigned short i=0; i < this->synthesizer->get_snf_ifaces_no() ; i++) {
-		if ( !this->assign_nic_queues_to_cores(
+		if (!this->assign_nic_queues_to_cores(
 				in_nic_desc_to_core, classifier_to_nic_desc,
-				config_stream, i, nic_to_classifier[i]) ) {
+				config_stream, i, nic_to_classifier[i])) {
 			return TO_BOOL(CODE_GENERATION_PROBLEM);
 		}
 	}
@@ -271,12 +271,12 @@ RSSGenerator::replicate_input_part_of_synthesis(
 		// Search for the NIC ID of this classifier
 		short nic = -1;
 		for (auto &n : nic_to_classifier) {
-			if ( n.second == ipc_class ) {
+			if (n.second == ipc_class) {
 				nic = n.first;
 				break;
 			}
 		}
-		if ( nic < 0 ) {
+		if (nic < 0) {
 			error_chatter(this->log, "\tCould not find the NIC of IPClassifier: " + ipc_class);
 			return TO_BOOL(CODE_GENERATION_PROBLEM);
 		}
@@ -293,7 +293,7 @@ RSSGenerator::replicate_input_part_of_synthesis(
 
 			// If only one core does all of the I/O, we want to exclude that core from processing
 			// are round-robin the remaining cores of the same socket.
-			if ( this->io_mode == SingleCore ) {
+			if (this->io_mode == SingleCore) {
 				std::vector< unsigned short > proc_cores = this->get_proc_cores_of_this_socket(core_of_this_fd);
 				core_of_cl = proc_cores.at(current_core % proc_cores.size());
 				current_core++;
@@ -305,7 +305,7 @@ RSSGenerator::replicate_input_part_of_synthesis(
 			// Check if this classifier has an associated NIC
 			std::string class_repl;
 			std::stringstream action;
-			if ( nic_to_classifier_repl.find(nic) != nic_to_classifier_repl.end () ) {
+			if (nic_to_classifier_repl.find(nic) != nic_to_classifier_repl.end ()) {
 				class_repl = nic_to_classifier_repl[nic][replica_counter];
 				classifier_to_core[class_repl] = core_of_cl;
 				debug_chatter(this->log, "\t\t[NIC" << nic << "] --> Classifier "
@@ -360,7 +360,7 @@ RSSGenerator::replicate_read_part_of_synthesis(
 	// Construct the IPClassifier(s) and the path of Click elements that will undertake
 	// the modifications of its/their traffic classes. Replicate this set of elements
 	// across input elements.
-	for ( auto &it : this->synthesizer->get_tc_per_input_iface() ) {
+	for (auto &it : this->synthesizer->get_tc_per_input_iface()) {
 
 		std::unordered_map< std::string, ConsolidatedTc > tc_group = it.second;
 
@@ -463,15 +463,14 @@ RSSGenerator::replicate_write_and_output_part_of_synthesis(
 	unsigned short core_modulo = 0;
 
 	std::string ip_modifier = "IPSynthesizer";
-	if ( fast_click ) {
+	if (fast_click) {
 		this->rss_queues = 1;
-		//ip_modifier = "IPRewriter";
 	}
 
 	// Costruct the path of Click elements that will lead each modified
 	// (i.e., rewritten by Click IPSynthesizer) traffic class out of Click.
 	// This path of elements follows IPSynthesizer.
-	for ( auto &it : this->synthesizer->get_stateful_rewriter_per_output_iface() ) {
+	for (auto &it : this->synthesizer->get_stateful_rewriter_per_output_iface()) {
 
 		std::string out_nf_and_iface = it.first;
 
@@ -510,17 +509,17 @@ RSSGenerator::replicate_write_and_output_part_of_synthesis(
 			this->synthesizer->get_chain_parser()->get_chain_graph()->get_chain_length();
 		std::string last_nf = "NF_" + std::to_string(chain_len);
 
-		if ( nf == last_nf ) {
+		if (nf == last_nf) {
 			core_no = 0;
 		}
 		else {
-			if ( cur_snf_iface <= 0 ) {
+			if (cur_snf_iface <= 0) {
 				cur_snf_iface = 0;
 			}
 			// The pinning at the exit of the chain should be the reverse of the entry pinning.
 			// Cores form the same socket must handle both I and O.
 			// E.g., If packets --> NIC 0 [Core 0] --> Processing --> [Core 0] NIC 1 --> out
-			core_no = ( (cur_snf_iface % this->cpu_sockets_no) % 2 == 0 ) ? 1:0;
+			core_no = ((cur_snf_iface % this->cpu_sockets_no) % 2 == 0) ? 1:0;
 		}
 
 		snf_iface = std::to_string(cur_snf_iface);
@@ -546,8 +545,9 @@ RSSGenerator::replicate_write_and_output_part_of_synthesis(
 
 			// If I/O is distributed among multiple cores (one per queue), then
 			// select a core in a round-robin fashion (across all queues).
-			if ( this->io_mode == ShareNothing )
+			if (this->io_mode == ShareNothing) {
 				core_modulo = core_no % this->rss_cores;
+			}
 
 			// Rewriter replica's name now includes the queue number
 			std::string rewriter_name_of_queue = 	rewriter_name +
@@ -562,7 +562,7 @@ RSSGenerator::replicate_write_and_output_part_of_synthesis(
 					<< cur_snf_iface << ");" << std::endl;
 
 			std::stringstream out_str;
-			if ( this->fast_click ) {
+			if (this->fast_click) {
 				out_str << OutputClassName << "(" << snf_iface << ", $queueSize);" << std::endl;
 			}
 			else {
@@ -573,12 +573,12 @@ RSSGenerator::replicate_write_and_output_part_of_synthesis(
 					<< core_modulo << ");" << std::endl;
 			}
 
-			// Only a SNF interface will take a ToDevice element.
-			if ( this->synthesizer->is_snf_iface(nf, iface) ) {
+			// Only an SNF interface will take a ToDevice element.
+			if (this->synthesizer->is_snf_iface(nf, iface)) {
 
 				this->synthesizer->add_nic_of_snf_iface( std::make_pair(nf, iface), snf_iface );
 
-				if ( (this->rss_queues <= 1) && (! this->fast_click) ) {
+				if ((this->rss_queues <= 1) && (! this->fast_click)) {
 					config_stream 	<< rewriter_name_of_queue << "[" << rewriter->get_outbound_port()
 							<< "] -> " + snf_encap_conf + " -> "
 							<< output_fd
@@ -614,7 +614,7 @@ RSSGenerator::replicate_write_and_output_part_of_synthesis(
 		}
 
 		// Keep track of the interfaces
-		if ( this->synthesizer->is_snf_iface(nf, iface) ) {
+		if (this->synthesizer->is_snf_iface(nf, iface)) {
 			debug_chatter(this->log, "\tSNF " << nf << " with iface: " << iface);
 			cur_snf_iface++;
 		}
@@ -641,7 +641,7 @@ RSSGenerator::construct_classifier_to_rewriter_map(
 	unsigned short ipc_no = 0;
 
 	// One Classifier per SNF interface
-	for ( auto &it : this->synthesizer->get_tc_per_input_iface() ) {
+	for (auto &it : this->synthesizer->get_tc_per_input_iface()) {
 
 		// The group of traffic classes of this Classifier is the value of the map
 		std::unordered_map< std::string, ConsolidatedTc > tc_group = it.second;
@@ -693,13 +693,13 @@ RSSGenerator::from_rewriter_to_classifier(
 		>                                            &classifier_repl_to_rewriter,
 		const std::string                            &rewriter_name)
 {
-	for ( auto &class_to_rw : classifier_repl_to_rewriter ) {
+	for (auto &class_to_rw : classifier_repl_to_rewriter) {
 		std::string    classifier_repl      = class_to_rw.first.first;
 		unsigned short classifier_repl_port = class_to_rw.first.second;
 		std::string    rewriter             = class_to_rw.second.first;
 
-		for ( auto &token : split(rewriter, "_") ) {
-			if ( token == rewriter_name ) {
+		for (auto &token : split(rewriter, "_")) {
+			if (token == rewriter_name) {
 				std::string class_repl_without_queue = get_substr_before(classifier_repl, this->queue_ext_prefix);
 				return std::make_pair(class_repl_without_queue, classifier_repl_port);
 			}
@@ -729,15 +729,15 @@ RSSGenerator::assign_nic_queues_to_cores(
 	unsigned short core_modulo = 0;
 
 	// We start from the appropriate core (and socket)
-	//unsigned short sock = ( nic_no % this->cpu_sockets_no == 0 )? true:false;
-	core_no = ( (nic_no % this->cpu_sockets_no) % 2 == 0 ) ? 0:1;
+	//unsigned short sock = (nic_no % this->cpu_sockets_no == 0)? true:false;
+	core_no = ((nic_no % this->cpu_sockets_no) % 2 == 0) ? 0:1;
 	core_no = 0;
 	debug_chatter(this->log, "\t\t[NIC " 	<< nic_no << " with " << this->rss_queues
 						<< " queues]: Starts from CPU core " << core_no
 						<< " with step " << this->cores_step);
 
 	// One core will take all I/O of this NIC
-	if ( this->io_mode == SingleCore )
+	if (this->io_mode == SingleCore)
 		core_modulo = core_no;
 
 	// Each FromDPDKDevice has a name that indicates the interface and queue number.
@@ -751,19 +751,19 @@ RSSGenerator::assign_nic_queues_to_cores(
 
 		// If I/O is distributed among multiple cores (one per queue), then
 		// select a core in a round-robin fashion (across all queues).
-		if ( this->io_mode == ShareNothing )
+		if (this->io_mode == ShareNothing)
 			core_modulo = core_no % this->rss_cores;
 
 		// If only one queue is requested (or even fewer), we omit the QUEUE argument
 		// in order to read frames from all queues.
-		if ( (this->rss_queues <= 1) && (! this->fast_click) ) {
+		if ((this->rss_queues <= 1) && (! this->fast_click)) {
 			config_stream 	<< input_nic_desc << std::left << std::setw(2) << queue
 					<< " :: FromDPDKDevice(" << nic_no
 					<< ", BURST $burstIn, NDESC $rxNdesc);" << std::endl;
 		}
 		// Define a Click-DPDK input element per queue per NIC
 		else {
-			if ( this->fast_click ) {
+			if (this->fast_click) {
 				config_stream 	<< input_nic_desc << std::left << std::setw(2) << queue
 						<< " :: " << InputClassName << "(" << nic_no
 						<< ", $burstIn);" << std::endl;
@@ -801,7 +801,7 @@ RSSGenerator::scheduling(
 		>                                               &classifier_repl_to_rewriter_repl,
 		std::stringstream                               &config_stream)
 {
-	if ( this->fast_click )
+	if (this->fast_click)
 		return DONE;
 
 	// Fast-Click handles the pinning internally
@@ -811,23 +811,23 @@ RSSGenerator::scheduling(
 	config_stream << "StaticThreadSched(" << std::endl;
 
 	// Schedule the I/O descriptors
-	if ( ! this->static_path_scheduling(in_nic_desc_to_core, config_stream, "") )
+	if (! this->static_path_scheduling(in_nic_desc_to_core, config_stream, ""))
 		return TO_BOOL(CODE_GENERATION_PROBLEM);
 
-	if ( ! this->static_path_scheduling(out_nic_desc_to_core, config_stream, "") )
+	if (! this->static_path_scheduling(out_nic_desc_to_core, config_stream, ""))
 		return TO_BOOL(CODE_GENERATION_PROBLEM);
 
 	// Schedule paths between IPClassifiers and IPSynthesizers (Core SNF processing)
-	if ( this->rss_aggressive_pinning ) {
+	if (this->rss_aggressive_pinning) {
 		//warn_chatter(this->log,	"\tAggressive pinning of potentially stateful paths...");
 		//warn_chatter(this->log,	"\tPerformance might be affected due to increased inter-core communication");
 
 		//const std::string ipc_purpose = "Pin IPClassifiers to CPU cores";
-		if ( ! this->static_path_scheduling(classifier_to_core, config_stream, "") )
+		if (! this->static_path_scheduling(classifier_to_core, config_stream, ""))
 			return TO_BOOL(CODE_GENERATION_PROBLEM);
 
-		if ( ! this->stateful_path_scheduling(
-				classifier_to_core, classifier_repl_to_rewriter_repl, config_stream) )
+		if (! this->stateful_path_scheduling(
+				classifier_to_core, classifier_repl_to_rewriter_repl, config_stream))
 			return TO_BOOL(CODE_GENERATION_PROBLEM);
 	}
 
@@ -846,7 +846,7 @@ RSSGenerator::static_path_scheduling(
 		std::stringstream                      &config_stream,
 		const std::string                      &purpose)
 {
-	if ( !purpose.empty() )
+	if (!purpose.empty())
 		config_stream << "/** " + purpose + " **/"  << std::endl;
 
 	unsigned short desc_no = 0;
@@ -881,13 +881,13 @@ RSSGenerator::stateful_path_scheduling(
 	//unsigned short cl_inst_no  = classifier_repl_to_rewriter_repl.size();
 	unsigned short cl_inst_cnt = 0;
 
-	for ( auto &class_to_rw : classifier_repl_to_rewriter_repl ) {
+	for (auto &class_to_rw : classifier_repl_to_rewriter_repl) {
 		std::string classifier_repl = class_to_rw.first;
 		unsigned short core_of_this_class = classifier_to_core[classifier_repl];
 
 		//unsigned short rw_inst_no  = class_to_rw.second.size();
 		unsigned short rw_inst_cnt = 0;
-		for ( auto &rw_repl : class_to_rw.second ) {
+		for (auto &rw_repl : class_to_rw.second) {
 			std::string rewriter_repl = rw_repl.first;
 			debug_chatter(this->log, "\tClassifier Replica: " + classifier_repl + " --> " + rewriter_repl);
 
@@ -925,15 +925,15 @@ RSSGenerator::build_cpu_layout(void)
 		for (unsigned short c=core_start; c<this->rss_cores ; c+=this->cores_step) {
 
 			// This core is already mapped to a socket
-			if ( ! exists_in_vector(all_cores, c) )
+			if (! exists_in_vector(all_cores, c))
 				continue;
 
 			// NUMA architecture splits even/odd cores
-			if ( (numa) && (soc%2 != c%2) )
+			if ((numa) && (soc%2 != c%2))
 				continue;
 
 			// We exhausted the available cores
-			if ( all_cores.size() == 0 )
+			if (all_cores.size() == 0)
 				return;
 
 			// Remove this core from the list of all available cores
@@ -943,7 +943,7 @@ RSSGenerator::build_cpu_layout(void)
 			debug_chatter(this->log, "\tCore: " << c << " added to socket: " << soc);
 
 			// Socket is full
-			if ( this->cpu_layout[soc].size() >= this->cores_per_socket )
+			if (this->cpu_layout[soc].size() >= this->cores_per_socket)
 				break;
 		}
 	}
@@ -961,7 +961,7 @@ RSSGenerator::get_proc_cores_of_this_socket(const unsigned short &core_to_exclud
 	for (auto &scm : this->cpu_layout) {
 
 		// We found the socket of this core
-		if ( exists_in_vector(scm.second, core_to_exclude) ) {
+		if (exists_in_vector(scm.second, core_to_exclude)) {
 			proc_cores_of_target_socket = scm.second;
 			break;
 		}
@@ -978,7 +978,7 @@ RSSGenerator::get_proc_cores_of_this_socket(const unsigned short &core_to_exclud
 std::string
 RSSGenerator::get_nic_desc_for_queue(const unsigned short &nic_no, const std::string &mode)
 {
-	assert( (mode != "in") || (mode != "out") );
+	assert((mode != "in") || (mode != "out"));
 	return "fd_" + mode + "_nic" + std::to_string(nic_no) + this->queue_ext_prefix;
 }
 
@@ -993,7 +993,7 @@ RSSGenerator::print_cpu_layout(void)
 		info_chatter(this->log, "\tSocket: " << scm.first);
 
 		// The cores of this socket
-		for ( auto &c __attribute__((unused)) : scm.second ) {
+		for (auto &c __attribute__((unused)) : scm.second) {
 			info_chatter(this->log, "\t\tCore: " << c);
 		}
 	}
@@ -1002,7 +1002,7 @@ RSSGenerator::print_cpu_layout(void)
 std::string
 RSSGenerator::get_io_classes_by_type(void) const
 {
-	if ( this->fast_click ) {
+	if (this->fast_click) {
 		return ""
 "elementclass "+ InputClassName +" {\n"
 "	// Module's arguments\n"

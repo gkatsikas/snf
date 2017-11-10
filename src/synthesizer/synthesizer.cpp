@@ -68,7 +68,7 @@ ConsolidatedTc::add_tc(const TrafficClass &tc, const TrafficClassFormat &tc_form
 
 		case ClickIPClassifier:
 		case RSSHashing:
-			if( !this->m_pattern.empty() ) {
+			if (!this->m_pattern.empty()) {
 				this->m_pattern += " || ";
 			}
 			this->m_pattern += "(" + tc.to_ip_classifier_pattern() + ")";
@@ -171,7 +171,7 @@ Synthesizer::build_traffic_classes(void)
 	// Get all NFs, one-by-one
 	for (Vertex *v : this->get_chain_parser()->get_chain_graph()->get_chain()->get_vertex_order()) {
 		// The node of this NF in the chain graph
-		ChainVertex *cv = static_cast<ChainVertex*>(v);
+		ChainVertex *cv = static_cast<ChainVertex *>(v);
 		unsigned short nf_position = cv->get_position();
 
 		// Vector that accumulates all the NFs seen across a path
@@ -180,7 +180,7 @@ Synthesizer::build_traffic_classes(void)
 		nfs_traversed.push_back(nf_position);
 
 		// The Click DAG of this NF
-		NFGraph* nf_graph = this->get_chain_parser()->get_nf_graph_at(nf_position);
+		NFGraph *nf_graph = this->get_chain_parser()->get_nf_graph_at(nf_position);
 		if (!nf_graph) {
 			return TO_BOOL(NO_MEM_AVAILABLE);
 		}
@@ -475,7 +475,7 @@ Synthesizer::test_traffic_class_builder(void)
 void
 TrafficBuilder::traffic_class_builder_dfs(
 	Graph                         *graph,
-	NF_Map<NFGraph*>              nf_chain,
+	NF_Map<NFGraph *>             nf_chain,
 	std::vector<unsigned short>   nfs_traversed,
 	unsigned short                nf_position,
 	std::shared_ptr<ClickElement> elem,
@@ -571,9 +571,9 @@ TrafficBuilder::traffic_class_builder_dfs(
 		def_chatter(log, "\t\t From " << nf_vertex->get_name() << " to " << neighbour.second->get_name());
 
 		std::shared_ptr<ClickElement> child(
-			new ClickElement(static_cast<ElementVertex*> (neighbour.second), neighbour.first)
+			new ClickElement(static_cast<ElementVertex *> (neighbour.second), neighbour.first)
 		);
-		child->set_nf_name(static_cast<ChainVertex*> (graph->get_vertex_by_position(nf_position))->get_name());
+		child->set_nf_name(static_cast<ChainVertex *> (graph->get_vertex_by_position(nf_position))->get_name());
 		elem->set_child(child, count++);
 
 		// Unvisited node --> recursion

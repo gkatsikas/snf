@@ -4,8 +4,8 @@
 /*
  * nf_graph.hpp
  *
- * Extensions of basic Vertex and Graph classes to represent a NF
- * as a DAG of Click elements.
+ * Extensions of basic Vertex and Graph classes to represent an
+ * NF as a DAG of Click elements.
  *
  * Copyright (c) 2015-2016 KTH Royal Institute of Technology
  * Copyright (c) 2015-2016 Georgios Katsikas, Marcel Enguehard
@@ -114,10 +114,10 @@ class NFGraph : public Graph {
 		/*
 		 * Get subset of vertices based on several characteristics.
 		 */
-		Vector<ElementVertex*> get_vertices_by_stage      (const VertexType &t) const;
-		ElementVertex         *get_vertex_by_click_element(const Element    *e) const;
-		Vector<ElementVertex*> get_all_endpoint_vertices  (void)                const;
-		Vector<ElementVertex*> get_endpoint_vertices      (const VertexType &t) const;
+		Vector<ElementVertex *> get_vertices_by_stage      (const VertexType &t) const;
+		ElementVertex          *get_vertex_by_click_element(const Element    *e) const;
+		Vector<ElementVertex *> get_all_endpoint_vertices  (void)                const;
+		Vector<ElementVertex *> get_endpoint_vertices      (const VertexType &t) const;
 };
 
 #endif

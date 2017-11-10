@@ -136,7 +136,7 @@ Filter::get_filter_from_ipclass_pattern(HeaderField field, const std::string &ar
 	Filter f;
 
 	switch (pos) {
-		//1234
+		// 1234
 		case std::string::npos: {
 			return Filter(field, to_uint(args));
 		}
@@ -300,7 +300,7 @@ Filter::is_none(void) const
 	return (m_filter.empty() || m_to_subtract.contains_seglist(m_filter));
 }
 
-Filter&
+Filter &
 Filter::translate(uint32_t value, bool forward)
 {
 	m_filter.translate(value, forward);
@@ -308,7 +308,7 @@ Filter::translate(uint32_t value, bool forward)
 	return *this;
 }
 
-Filter&
+Filter &
 Filter::unite(const Filter &filter)
 {
 	debug_chatter(tc_log, "Unite: " + to_str() + " with " + filter.to_str());
@@ -322,7 +322,7 @@ Filter::unite(const Filter &filter)
 	return *this;
 }
 
-Filter&
+Filter &
 Filter::intersect(const Filter &filter)
 {
 	debug_chatter(tc_log, "Intersect: " + to_str() + " with " + filter.to_str());
@@ -333,7 +333,7 @@ Filter::intersect(const Filter &filter)
 	return *this;
 }
 
-Filter&
+Filter &
 Filter::differentiate(const Filter &filter)
 {
 	debug_chatter(tc_log, "Differentiate: " + filter.to_str() + " from " + to_str());
@@ -344,7 +344,7 @@ Filter::differentiate(const Filter &filter)
 }
 
 bool
-Filter::operator== (const Filter& rhs) const
+Filter::operator== (const Filter &rhs) const
 {
 	DisjointSegmentList lhs_dsl = this->m_filter;
 	lhs_dsl.substract_seglist(this->m_to_subtract);
@@ -356,7 +356,7 @@ Filter::operator== (const Filter& rhs) const
 }
 
 bool
-Filter::operator!= (const Filter& rhs) const
+Filter::operator!= (const Filter &rhs) const
 {
 	return !(*this == rhs);
 }
@@ -496,8 +496,8 @@ Filter::to_ip_classifier_pattern(void) const
 
 	std::vector<std::pair<uint32_t, uint32_t> > segments = m_filter.get_segments();
 
-	for  (auto &seg : segments) {
-		//FIXME: handle IP subnets differently
+	for (auto &seg : segments) {
+		// FIXME: handle IP subnets differently
 		if (seg.first == seg.second) {
 			output+= "("+keyword + std::to_string(seg.first) + ") || ";
 		}
@@ -527,7 +527,7 @@ Filter::to_ip_classifier_pattern(void) const
 		segments = m_to_subtract.get_segments ();
 
 		for (auto &seg:segments) {
-			//FIXME: handle IP subnets differently
+			// FIXME: handle IP subnets differently
 			if (seg.first == seg.second) {
 				output+= "(" + keyword + std::to_string(seg.first) + ") || ";
 			}
@@ -778,7 +778,7 @@ TrafficClass::is_source_nated(void)
  * by SNF's IPSytnhesizer.
  */
 void
-TrafficClass::add_post_routing_operation(const ElementType& et)
+TrafficClass::add_post_routing_operation(const ElementType &et)
 {
 	// These elements modify part of the header, checksum(s) need(s)
 	// to be re-calculated.
@@ -801,7 +801,7 @@ TrafficClass::add_post_routing_operation(const ElementType& et)
  * element internally.
  */
 bool
-TrafficClass::has_post_routing_operation(const ElementType& et)
+TrafficClass::has_post_routing_operation(const ElementType &et)
 {
 	return exists_in_vector(this->m_post_operations, et);
 }
@@ -864,7 +864,7 @@ TrafficClass::to_ip_classifier_pattern(void) const
 		output += "(" + it.second.to_ip_classifier_pattern() + ") && ";
 	}
 
-	//Removes trailing " && "
+	// Removes trailing " && "
 	return output.substr(0, output.size() - 4);
 }
 
@@ -884,7 +884,7 @@ TrafficClass::to_ip_filter_pattern(bool allowed) const
 		output += "(" + it.second.to_ip_classifier_pattern() + ") && ";
 	}
 
-	//Removes trailing " && "
+	// Removes trailing " && "
 	return output.substr(0, output.size() - 4);
 }
 
@@ -937,7 +937,7 @@ TrafficClass::intersect_condition(const Filter &condition, const FieldOperation 
 }
 
 int
-TrafficClass::add_element(std::shared_ptr<ClickElement> element, const int port, unsigned short* wr_op_no)
+TrafficClass::add_element(std::shared_ptr<ClickElement> element, const int port, unsigned short *wr_op_no)
 {
 	int nb_none_filters = 0;
 	(this->m_element_path).push_back(element);
@@ -1006,7 +1006,7 @@ TrafficClass::add_element(std::shared_ptr<ClickElement> element, const int port,
 					if (!filter.contains(write_condition)) {
 						write_condition.intersect (filter);
 						nb_none_filters += intersect_condition (write_condition, *field_op);
-						//FIXME: what if I have successive range writes?
+						// FIXME: what if I have successive range writes?
 					}
 					if (wr_op_no) {
 						debug_chatter(tc_log, "\t\tWrite RR/Ra/SF");
@@ -1023,7 +1023,7 @@ TrafficClass::add_element(std::shared_ptr<ClickElement> element, const int port,
 					if (!filter.contains(write_condition)) {
 						write_condition.intersect (filter);
 						nb_none_filters += intersect_condition (write_condition, *field_op);
-						//FIXME: what if I have successive range writes?
+						// FIXME: what if I have successive range writes?
 					}
 					if (wr_op_no) {
 						debug_chatter(tc_log, "\t\tWrite LB");

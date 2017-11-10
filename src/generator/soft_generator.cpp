@@ -1,7 +1,7 @@
 // -*- c-basic-offset: 4 -*-
 /* soft_generator.cpp
  *
- * Export a runnable, software-based (Click) only SNF configuration.
+ * Export a runnable, software-based (Click) SNF configuration.
  *
  * Copyright (c) 2015-2016 KTH Royal Institute of Technology
  * Copyright (c) 2015-2016 Georgios Katsikas, Marcel Enguehard
@@ -66,7 +66,7 @@ SoftGenerator::generate_all_in_soft_configuration(const bool &to_file)
 	// Step 2: Construct the path of Click elements that will lead each
 	// modified (i.e., rewritten by Click IPSynthesizer already) traffic
 	// class out of Click. This path of elements follows IPSynthesizer.
-	if ( ! this->generate_write_and_output_part_of_synthesis(config_stream) )
+	if (! this->generate_write_and_output_part_of_synthesis(config_stream))
 		return TO_BOOL(CODE_GENERATION_PROBLEM);
 
 	def_chatter(this->log, "\tGenerate Write & Output Parts...");
@@ -77,7 +77,7 @@ SoftGenerator::generate_all_in_soft_configuration(const bool &to_file)
 
 	// Step 3: Construct the IPClassifier(s) and the path of Click elements
 	// that lead to all its/their traffic classes.
-	if ( ! this->generate_read_part_of_synthesis(
+	if (! this->generate_read_part_of_synthesis(
 			config_stream,
 			nic_to_ip_classifier)) {
 		return TO_BOOL(CODE_GENERATION_PROBLEM);
@@ -87,16 +87,16 @@ SoftGenerator::generate_all_in_soft_configuration(const bool &to_file)
 
 	// Step 4: Construct the input Click elements that capture incoming traffic
 	// to be sent to the Classifiers.
-	if ( ! this->generate_input_part_of_synthesis(
+	if (! this->generate_input_part_of_synthesis(
 			config_stream,
-			nic_to_ip_classifier) ) {
+			nic_to_ip_classifier)) {
 		return TO_BOOL(CODE_GENERATION_PROBLEM);
 	}
 
 	def_chatter(this->log, "\tGenerate Input Part...");
 
 	// The generated Click configuration will be written to a file
-	if ( to_file ) {
+	if (to_file) {
 		// Open the output file to host our synthesized chain
 		out_file = new std::ofstream(this->soft_configuration_filename);
 
@@ -108,13 +108,13 @@ SoftGenerator::generate_all_in_soft_configuration(const bool &to_file)
 	std::cout << config_stream.str();
 
 	// Reset to standard output again
-	if ( to_file ) {
+	if (to_file) {
 		std::cout.rdbuf(def_cout);
 		out_file->close();
 		delete out_file;
 	}
 
-	def_chatter(this->log,	"\tSuccessfully generated the NF chain synthesis to: \n" <<
+	def_chatter(this->log,	"\tSuccessfully generated the service chain synthesis to: \n" <<
 				"\t\t\t\t\t\t\t|--> " << this->soft_configuration_filename);
 
 	return DONE;
@@ -178,7 +178,7 @@ SoftGenerator::generate_input_part_of_synthesis(
 		driven_nics.push_back(nic);
 	}
 
-	if ( driven_nics.size() == this->synthesizer->get_snf_ifaces_no() ) {
+	if (driven_nics.size() == this->synthesizer->get_snf_ifaces_no()) {
 		return DONE;
 	}
 
@@ -188,10 +188,12 @@ SoftGenerator::generate_input_part_of_synthesis(
 	// We currently disable them but they should technically fall
 	// into the same Classifier and stateful rewriter as the other
 	// direction.
-	for ( auto &pair_if : this->synthesizer->get_snf_ifaces() ) {
+	for (auto &pair_if : this->synthesizer->get_snf_ifaces()) {
 		std::string nic = this->synthesizer->get_nic_of_snf_iface(pair_if);
 
-		if ( exists_in_vector(driven_nics, nic) ) continue;
+		if (exists_in_vector(driven_nics, nic)) {
+			continue;
+		}
 
 		#ifdef HAVE_DPDK
 			config_stream 	<< InputClassName << "(" << nic
@@ -228,7 +230,7 @@ SoftGenerator::generate_read_part_of_synthesis(
 
 	// Construct the IPClassifier(s) and the path of Click elements
 	// that lead to all its/their traffic classes.
-	for ( auto &it : this->synthesizer->get_tc_per_input_iface() ) {
+	for (auto &it : this->synthesizer->get_tc_per_input_iface()) {
 		std::string ipc_name = "ipc" + std::to_string(ipc_no);
 		config_stream << ipc_name + " :: IPClassifier(" << std::endl;
 		std::vector<std::string> chains;
@@ -275,7 +277,7 @@ SoftGenerator::generate_write_and_output_part_of_synthesis(std::stringstream &co
 	// Costruct the path of Click elements that will lead this modified
 	// (i.e., rewritten by Click IPSynthesizer already) traffic class out
 	// of Click. This set of elements follows IPSynthesizer.
-	for ( auto &it : this->synthesizer->get_stateful_rewriter_per_output_iface() ) {
+	for (auto &it : this->synthesizer->get_stateful_rewriter_per_output_iface()) {
 
 		std::string out_nf_and_iface = it.first;
 
@@ -304,7 +306,7 @@ SoftGenerator::generate_write_and_output_part_of_synthesis(std::stringstream &co
 			this->synthesizer->get_chain_parser()->get_chain_graph()->get_chain_length();
 		std::string last_nf = "NF_" + std::to_string(chain_len);
 		// This interface is the very first one
-		if ( nf != last_nf ) {
+		if (nf != last_nf) {
 			if ( cur_snf_iface <= 0 ) {
 				cur_snf_iface = 0;
 			}
@@ -346,7 +348,7 @@ SoftGenerator::generate_write_and_output_part_of_synthesis(std::stringstream &co
 				<< cur_snf_iface << ");" << std::endl;
 
 		// Only a SNF interface will take a ToDevice element.
-		if ( this->synthesizer->is_snf_iface(nf, iface) ) {
+		if (this->synthesizer->is_snf_iface(nf, iface)) {
 			this->synthesizer->add_nic_of_snf_iface( std::make_pair(nf, iface), snf_iface );
 			config_stream 	<< rewriter->get_name() << "[" << rewriter->get_outbound_port()
 					<< "] -> " << snf_encap_conf << " -> " << snf_to_device.str()

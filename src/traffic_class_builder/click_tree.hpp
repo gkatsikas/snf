@@ -54,7 +54,7 @@ class ClickTree {
 		ClickTree(std::shared_ptr<ClickElement> root) ;
 		ClickTree(int input_nf, std::string input_interface, std::shared_ptr<ClickElement> root);
 
-		void set_behind_proxy(const bool& bn);
+		void set_behind_proxy(const bool &bn);
 		bool get_behind_proxy(void);
 		std::vector<TrafficClass> get_traffic_classes(void) const;
 };

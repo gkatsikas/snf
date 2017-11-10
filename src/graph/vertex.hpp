@@ -90,7 +90,7 @@ class Vertex {
 		/*
 		 * Overload = for vertex operations
 		 */
-		Vertex& operator=(Vertex &v);
+		Vertex &operator=(Vertex &v);
 
 		/*
 		 * Getters
@@ -147,7 +147,7 @@ class ChainVertex : public Vertex {
 				Vertex(std::move(name), pos, type), source_code_path(std::move(path)) {};
 		~ChainVertex() {};
 		ChainVertex (const ChainVertex &cv);
-		ChainVertex& operator=(ChainVertex &cv);
+		ChainVertex &operator=(ChainVertex &cv);
 
 		/*
 		 * Setters & Getters
