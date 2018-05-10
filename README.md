@@ -2,7 +2,26 @@ SNF: Synthesizing high performance NFV service chains
 =========
 
 A framework to turn a chain of Click-based network functions (NFs) into a sythesized network function (SNF).
-Our PeerJ Computer Science journal article provides more information about SNF: https://peerj.com/articles/cs-98/.
+Our [PeerJ Computer Science journal article][snf-paper] provides more information about SNF.
+
+If you use SNF in your work, please cite our [article][snf-paper]:
+```
+@inproceedings{katsikas-snf.peerjcs16,
+	author       = {Katsikas, Georgios P. and Enguehard, Marcel and Ku\'{z}niar, Maciej and Maguire Jr., Gerald Q. and Kosti\'{c}, Dejan},
+	title        = {{SNF: Synthesizing high performance NFV service chains}},
+	journal      = {PeerJ Computer Science},
+	volume       = {2},
+	pages        = {e98},
+	numpages     = {30},
+	month        = nov,
+	year         = {2016},
+	doi          = {10.7717/peerj-cs.98},
+	issn         = {2376-5992},
+	url          = {http://dx.doi.org/10.7717/peerj-cs.98},
+	publisher    = {PeerJ Inc.},
+	keywords     = {NFV, service chains, synthesis, single-read-single-write, line-rate, 40 Gbps},
+}
+```
 
 Moreover, the licentiate thesis of Georgios P. Katsikas presents an even more thorough performance evaluation of SNF in Chapter 7: http://kth.diva-portal.org/smash/record.jsf?pid=diva2%3A1044355&dswid=-1244.
 
@@ -127,3 +146,33 @@ with:
 	dev_conf.rx_adv_conf.rss_conf.rss_key = symmetric_hashkey;
 
 Our snf branch in Click takes care of this.
+
+
+III. SNF as part of Metron (USENIX NSDI 2018)
+------
+
+SNF is used by [Metron][metron-agent] to realize NFV service chains at the true speed of the underlying hardware.
+For more information read our [USENIX NSDI 2018 paper][metron-paper] and watch my [talk at NSDI][metron-nsdi-page].
+
+```
+@inproceedings{katsikas-metron.nsdi18,
+	author       = {Katsikas, Georgios P. and Barbette, Tom and Kosti\'{c}, Dejan and Steinert, Rebecca and Maguire Jr., Gerald Q.},
+	title        = {{Metron: NFV Service Chains at the True Speed of the Underlying Hardware}},
+	booktitle    = {15th USENIX Conference on Networked Systems Design and Implementation (NSDI 18)},
+	series       = {NSDI'18},
+	year         = {2018},
+	isbn         = {978-1-931971-43-0},
+	pages        = {171--186},
+	numpages     = {16},
+	url          = {https://www.usenix.org/system/files/conference/nsdi18/nsdi18-katsikas.pdf},
+	address      = {Renton, WA},
+	acmid        = {},
+	publisher    = {{USENIX} Association}
+}
+```
+
+
+[snf-paper]: https://peerj.com/articles/cs-98/
+[metron-paper]: https://www.usenix.org/system/files/conference/nsdi18/nsdi18-katsikas.pdf
+[metron-agent]: https://github.com/tbarbette/fastclick/tree/metron
+[metron-nsdi-page]: https://www.usenix.org/conference/nsdi18/presentation/katsikas
