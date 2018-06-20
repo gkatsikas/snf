@@ -1,7 +1,7 @@
 SNF: Synthesizing high performance NFV service chains
 =========
 
-A framework to turn a chain of Click-based network functions (NFs) into a sythesized network function (SNF).
+A framework to turn a chain of Click-based network functions (NFs) into a synthesized network function (SNF).
 Our [PeerJ Computer Science journal article][snf-paper] provides more information about SNF.
 
 If you use SNF in your work, please cite our [article][snf-paper]:
@@ -35,7 +35,6 @@ A. Download SNF
   * `cd snf/`
   * `export SNF_HOME=$(pwd)`
   * `./build_deps`
-  * `cd ../`
 
 B. Download and Configure Click
 ----
@@ -71,15 +70,16 @@ However, SNF allows to generate a FastClick-compatible synthesized chain out of 
     * Click-DPDK (User-space, after building DPDK):
 
 		`./configure    RTE_SDK=${DPDK_DIR}
-				RTE_TARGET=x86_64-native-linuxapp-gcc --enable-multithread
-				--disable-linuxmodule --enable-intel-cpu
-				--enable-user-multithread --verbose
-				CFLAGS="-g -O3" CXXFLAGS="-g -std=gnu++11 -O3"
-				--disable-dynamic-linking --enable-poll
-				--enable-bound-port-transfer --enable-dpdk --with-netmap=no
-				--enable-local --enable-nanotimestamp --enable-ipsec
-				--enable-analysis --enable-ip6 --enable-simple
-				--enable-etherswitch`
+				RTE_TARGET=x86_64-native-linuxapp-gcc
+				--verbose CFLAGS="-std=gnu11 -g -O3"
+				CXXFLAGS="-g -std=gnu++14 -O3"
+				--disable-linuxmodule
+				--enable-intel-cpu --enable-multithread
+				--enable-user-multithread --disable-dynamic-linking
+				--enable-poll --enable-bound-port-transfer
+				--enable-dpdk --enable-dpdk-pool --disable-dpdk-packet
+				--with-netmap=no --enable-zerocopy --enable-batch
+				--enable-nanotimestamp --enable-json --enable-all-elements`
 
   * `make install` (uses default prefix=/usr/local/)
 
@@ -87,9 +87,9 @@ C. Build SNF
 ----
   * `cd ${SNF_HOME}`
   * Build SNF according to INSTALL
-  * Create an input property of your wished service chain, following the example in: `input/tests/tests.prop`
+  * Create an input property φιλε of your wished service chain, following the example in: `input/tests/tests.prop`
     * Make sure that the Click configurations you specify in the property file are valid paths.
-  * SNF can be instructed (via the property file) to generate either a Click or a FastClick synthesized service chain. This allows to reap the benefits of FastClick's advanced thread scheduling, computational batching, and fast user-space I/O, while maintainig compatibility with Click.
+  * SNF can be instructed (via the property file) to generate either a Click or a FastClick synthesized service chain. This allows to reap the benefits of FastClick's advanced thread scheduling, computational batching, and fast user-space I/O, while maintaining compatibility with Click.
 
 D. Run SNF
 ----
@@ -97,7 +97,7 @@ To synthesize and deploy your service chain do:
 
   * `./run.sh <snf-exec> <your property file>` will load the property file and generate the synthesized chain in the specified folder.
   * To run a Click-based SNF: `click <path-to-snf.click>`
-  * To run a (Fast)Click-based SNF with DPDK: `click --dpdk -c ffff -n 4 -- <path-to-dpdk-snf.click>`
+  * To run a (Fast)Click-based SNF with DPDK: `click --dpdk -c ffff -n 4 -v -- <path-to-dpdk-snf.click>`
 
 II. Multi-core SNF
 ------
@@ -110,7 +110,7 @@ There are various ways to deploy SNF across multiple cores. We currently support
     * HARDWARE_CLASSIFICATION_FORMAT = RSS-Hashing
     * CPU_SOCKETS   = <M> (M is the number of the target machine's sockets)
     * CPU_CORES     = <N> (N is the total number of CPU cores on this machine)
-    * NIC_HW_QUEUES = <K> (K is the number of hardware queues in your NIC. Indicatively, this number should be adhusted to the number of available cores above)
+    * NIC_HW_QUEUES = <K> (K is the number of hardware queues in your NIC. Indicatively, this number should be adjusted to the number of available cores above)
   * Run SNF and check the folder OUTPUT_FOLDER for a file OUTPUT_FILE.click as specified in the property file.
   * You will see a synthesized SNF chain, replicated across all the requested queues. Each queue has a dedicated thread that is statically assigned to a CPU core,
 hence your SNF chain can read packets from all of these queues and execute the chain pipeline in parallel.
