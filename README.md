@@ -87,7 +87,7 @@ C. Build SNF
 ----
   * `cd ${SNF_HOME}`
   * Build SNF according to INSTALL
-  * Create an input property φιλε of your wished service chain, following the example in: `input/tests/tests.prop`
+  * Create an input property file of your wished service chain, following the example in: `input/tests/tests.prop`
     * Make sure that the Click configurations you specify in the property file are valid paths.
   * SNF can be instructed (via the property file) to generate either a Click or a FastClick synthesized service chain. This allows to reap the benefits of FastClick's advanced thread scheduling, computational batching, and fast user-space I/O, while maintaining compatibility with Click.
 
