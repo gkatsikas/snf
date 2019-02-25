@@ -23,13 +23,13 @@ If you use SNF in your work, please cite our [article][snf-paper]:
 }
 ```
 
-Moreover, the licentiate thesis of Georgios P. Katsikas presents an even more thorough performance evaluation of SNF in Chapter 7: http://kth.diva-portal.org/smash/record.jsf?pid=diva2%3A1044355&dswid=-1244.
+Moreover, the [doctoral thesis][katsikas-phd-thesis] of Georgios P. Katsikas presents an even more thorough performance evaluation of SNF in Chapter 7.
 
 I. Basic Installation
 ------
 SNF is implemented in C++11 and uses autotools. To build and run SNF, follow the steps below:
 
-A. Download SNF
+A. Checkout SNF and Build Dependencies
 ----
   * `git clone git@bitbucket.org:nslab/snf.git`
   * `cd snf/`
@@ -39,16 +39,14 @@ A. Download SNF
 B. Download and Configure Click
 ----
 Note that currently, the build process assumes that your Click binaries reside in the default location `/usr/local/`.
-We plan to get rid of this limitation soon.
 In case you want to use the DPDK I/O, compile DPDK 17.08. Earlier versions such as 16.XX and 2.2.0 are also tested and work well.
-In case you want to use FastClick input NFs instead of Click input NFs, SNF provides a patch to extend FastClick.
-This patch allows SNF to compile against FastClick but it does not run correctly at the moment.
-However, SNF allows to generate a FastClick-compatible synthesized chain out of an initial Click chain, hence you can still exploit the accelerations offered by FastClick.
+Moreover, SNF can be configured to generate synthesized service chains based on [FastClick][fastclick]; a faster variant of the [Click modular router][click].
+More information about SNF's configuration is provided in [Section II](#multi-core-snf).
 
   * `git clone https://github.com/gkatsikas/click.git`
   * `cd ./click`
   * `export CLICK_HOME=$(pwd)`
-  * `git co snf`
+  * `git checkout snf`
     * Normal Click (User-space):
 
 		`./configure    --enable-user-multithread --enable-multithread --enable-ip6
@@ -77,8 +75,8 @@ However, SNF allows to generate a FastClick-compatible synthesized chain out of 
 				--enable-intel-cpu --enable-multithread
 				--enable-user-multithread --disable-dynamic-linking
 				--enable-poll --enable-bound-port-transfer
-				--enable-dpdk --enable-dpdk-pool --disable-dpdk-packet
-				--with-netmap=no --enable-zerocopy --enable-batch
+				--enable-dpdk --disable-dpdk-pool --disable-dpdk-packet
+				--with-netmap=no --enable-zerocopy
 				--enable-nanotimestamp --enable-json --enable-all-elements`
 
   * `make install` (uses default prefix=/usr/local/)
@@ -97,14 +95,14 @@ To synthesize and deploy your service chain do:
 
   * `./run.sh <snf-exec> <your property file>` will load the property file and generate the synthesized chain in the specified folder.
   * To run a Click-based SNF: `click <path-to-snf.click>`
-  * To run a (Fast)Click-based SNF with DPDK: `click --dpdk -c ffff -n 4 -v -- <path-to-dpdk-snf.click>`
+  * To run a (Fast)Click-based SNF with DPDK: `click --dpdk -c 0xffff -v -- <path-to-dpdk-snf.click>`
 
 II. Multi-core SNF
 ------
-There are various ways to deploy SNF across multiple cores. We currently support Click-DPDK and FastClick (with DPDK) using Receive-Side Scaling (RSS) as follows:
+There are various ways to deploy SNF across multiple cores. We currently support Click-DPDK and FastClick with DPDK, both using Receive-Side Scaling (RSS) as follows:
 
   * Build SNF with DPDK support following the steps above.
-  * Input a set of Click-based NFs, even if they do not use Click-DPDK I/O!
+  * Input a set of Click-based NFs, even if they do not use DPDK-based I/O. SNF will output DPDK-based I/O instructions if configured with DPDK.
   * In the [GENERIC] section of the input property file set:
     * HARDWARE_CLASSIFICATION = true
     * HARDWARE_CLASSIFICATION_FORMAT = RSS-Hashing
@@ -112,9 +110,9 @@ There are various ways to deploy SNF across multiple cores. We currently support
     * CPU_CORES     = <N> (N is the total number of CPU cores on this machine)
     * NIC_HW_QUEUES = <K> (K is the number of hardware queues in your NIC. Indicatively, this number should be adjusted to the number of available cores above)
   * Run SNF and check the folder OUTPUT_FOLDER for a file OUTPUT_FILE.click as specified in the property file.
-  * You will see a synthesized SNF chain, replicated across all the requested queues. Each queue has a dedicated thread that is statically assigned to a CPU core,
-hence your SNF chain can read packets from all of these queues and execute the chain pipeline in parallel.
-  * Underneath this system, the DPDK I/O uses RSS to hash incoming packets to different hardware queues. See the RSS section below.
+  * You will see a synthesized service chain, replicated across all the requested queues. Each queue has a dedicated thread that is statically assigned to a CPU core,
+hence your SNF service chain can read packets from all of these queues and execute the service chain's pipeline in parallel.
+  * Underneath this system, the DPDK I/O uses RSS to hash incoming packets to different hardware queues. See the RSS sections below.
 
 A. Receive-Side Scaling (RSS)
 ----
@@ -129,7 +127,7 @@ B. Symmetric RSS
 ----
 Many networking applications operate on a per-flow basis and you don't want this information being shared among different CPUs.
 Therefore, it is very important to have the same CPU handling both sides of a connection (bi-directional or symmetrical flows).
-A group of researchers found that there is a specific hash key which offers this property.
+A group of researchers found that there is a specific hash key which offers this property for TCP flows.
 You can read more details in their paper: http://www.ndsl.kaist.edu/~kyoungsoo/papers/TR-symRSS.pdf
 The hash key (in case you don't want to read the document) is:
 static uint8_t symmetric_hashkey[40] = {
@@ -176,3 +174,6 @@ For more information read our [USENIX NSDI 2018 paper][metron-paper] and watch m
 [metron-paper]: https://www.usenix.org/system/files/conference/nsdi18/nsdi18-katsikas.pdf
 [metron-agent]: https://github.com/tbarbette/fastclick/tree/metron
 [metron-nsdi-page]: https://www.usenix.org/conference/nsdi18/presentation/katsikas
+[katsikas-phd-thesis]: http://urn.kb.se/resolve?urn=urn:nbn:se:kth:diva-233629
+[fastclick]: https://github.com/tbarbette/fastclick
+[click]: https://github.com/kohler/click
