@@ -128,8 +128,8 @@ B. Symmetric RSS
 Many networking applications operate on a per-flow basis and you don't want this information being shared among different CPUs.
 Therefore, it is very important to have the same CPU handling both sides of a connection (bi-directional or symmetrical flows).
 A group of researchers found that there is a specific hash key which offers this property for TCP flows.
-You can read more details in their paper: http://www.ndsl.kaist.edu/~kyoungsoo/papers/TR-symRSS.pdf
-The hash key (in case you don't want to read the document) is:
+You can read more details in their [paper][symrss-kaist].
+The hash key (in case you don't want to read the paper) is:
 static uint8_t symmetric_hashkey[40] = {
 	0x6D, 0x5A, 0x6D, 0x5A, 0x6D, 0x5A, 0x6D, 0x5A, 0x6D, 0x5A, 0x6D, 0x5A, 0x6D, 0x5A, 0x6D, 0x5A, 0x6D, 0x5A, 0x6D, 0x5A,
 	0x6D, 0x5A, 0x6D, 0x5A, 0x6D, 0x5A, 0x6D, 0x5A, 0x6D, 0x5A, 0x6D, 0x5A, 0x6D, 0x5A, 0x6D, 0x5A, 0x6D, 0x5A, 0x6D, 0x5A
@@ -164,11 +164,11 @@ For more information read our [USENIX NSDI 2018 paper][metron-paper] and watch m
 	numpages     = {16},
 	url          = {https://www.usenix.org/system/files/conference/nsdi18/nsdi18-katsikas.pdf},
 	address      = {Renton, WA},
-	acmid        = {},
 	publisher    = {{USENIX} Association}
 }
 ```
 
+Additional information about Metron can be found in my [doctoral thesis][katsikas-phd-thesis].
 
 [snf-paper]: https://peerj.com/articles/cs-98/
 [metron-paper]: https://www.usenix.org/system/files/conference/nsdi18/nsdi18-katsikas.pdf
@@ -177,3 +177,4 @@ For more information read our [USENIX NSDI 2018 paper][metron-paper] and watch m
 [katsikas-phd-thesis]: http://urn.kb.se/resolve?urn=urn:nbn:se:kth:diva-233629
 [fastclick]: https://github.com/tbarbette/fastclick
 [click]: https://github.com/kohler/click
+[symrss-kaist]: http://www.ndsl.kaist.edu/~kyoungsoo/papers/TR-symRSS.pdf
