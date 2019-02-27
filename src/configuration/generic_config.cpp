@@ -82,8 +82,7 @@ GenericConfiguration::load_in_memory(void)
 				error_chatter(this->log, "\tLine with [property = value] is not correct");
 				exit(CHAIN_PARSING_PROBLEM);
 			}
-		}
-		else {
+		} else {
 			continue;
 		}
 
@@ -99,9 +98,8 @@ GenericConfiguration::load_in_memory(void)
 		// We want to properly parse that new line.
 		if (lines_to_skip == 0) {
 			file.seekg(curr_pos);
-		}
-		// We can skip a few lines as they are concatenated to the current one
-		else {
+		} else {
+			// We can skip a few lines as they are concatenated to the current one
 			file.seekg(curr_pos + lines_to_skip - 1);
 		}
 

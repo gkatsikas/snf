@@ -55,8 +55,7 @@ add_filter_to_pf(PacketFilter &base_pf, const Filter &f)
 
 	if (got == base_pf.end()) {
 		base_pf[field] = f;
-	}
-	else {
+	} else {
 		base_pf[field].intersect(f);
 	}
 
@@ -285,19 +284,15 @@ filter_from_ip_option(const Option &option, const std::string &arg)
 			if (!arg.compare("tcp")) {
 				// TODO: Replace number with constant variable
 				f = Filter(ip_proto, 6);
-			}
-			else if (!arg.compare("udp")) {
+			} else if (!arg.compare("udp")) {
 				// TODO: Replace number with constant variable
 				f = Filter(ip_proto, 17);
-			}
-			else if (!arg.compare("icmp")) {
+			} else if (!arg.compare("icmp")) {
 				// TODO: Replace number with constant variable
 				f = Filter(ip_proto, 1);
-			}
-			else if (arg.find_first_not_of("0123456789") == std::string::npos) {
+			} else if (arg.find_first_not_of("0123456789") == std::string::npos) {
 				f = Filter::get_filter_from_ipclass_pattern(ip_proto, arg);
-			}
-			else {
+			} else {
 				error_chatter(ip_par_lg, "\tUnknown protocol name: " << arg);
 				exit(CLICK_PARSING_PROBLEM);
 			}
@@ -326,40 +321,52 @@ filter_from_tcp_option(const Option &option, const std::string &arg)
 				exit(CLICK_PARSING_PROBLEM);
 			}
 			switch (arg[0]) {
-				case 'a':
+				case 'a': {
 					if (!arg.compare("ack")) {
 						f = Filter(tcp_flag_ack, 1);
 						break;
 					}
-				case 'f':
+					[[gnu::fallthrough]];
+				}
+				case 'f': {
 					if (!arg.compare("fin")) {
 						f = Filter(tcp_flag_fin, 1);
 						break;
 					}
-				case 'p':
+					[[gnu::fallthrough]];
+				}
+				case 'p': {
 					if (!arg.compare("psh")) {
 						f = Filter(tcp_flag_psh, 1);
 						break;
 					}
-				case 'r':
+					[[gnu::fallthrough]];
+				}
+				case 'r': {
 					if (!arg.compare("rst")) {
 						f = Filter(tcp_flag_rst, 1);
 						break;
 					}
-				case 's':
+					[[gnu::fallthrough]];
+				}
+				case 's': {
 					if (!arg.compare("syn")) {
 						f = Filter(tcp_flag_syn, 1);
 						break;
 					}
-				case 'u':
+					[[gnu::fallthrough]];
+				}
+				case 'u': {
 					if (!arg.compare("urg")) {
 						f = Filter(tcp_flag_urg, 1);
 						break;
 					}
 					break;
-				default:
+				}
+				default: {
 					error_chatter(ip_par_lg, "\tUnknown TCP option: " + arg);
 					exit(CLICK_PARSING_PROBLEM);
+				}
 			}
 			break;
 		case Option::TCP_WIN:
@@ -381,49 +388,56 @@ primitive_from_string(const std::string &str)
 	if (str.size()) {
 		// Let's make it linear
 		switch (str[0]) {
-			case '&':
+			case '&': {
 				if (str.size()==2 && str[1] =='&') {
 					return Primitive::AND;
 				}
 				break;
-			case '|':
+			}
+			case '|': {
 				if (str.size()==2 && str[1] =='|') {
 					return Primitive::OR;
 				}
 				break;
-			case 'a':
+			}
+			case 'a': {
 				if (str.size() == 3 && str[1] == 'n' && str[2] == 'd') {
 					return Primitive::AND;
 				}
 				break;
-			case 'o':
+			}
+			case 'o': {
 				if (str.size()==2 && str[1] =='r') {
 					return Primitive::OR;
 				}
 				break;
-			case 'i':
+			}
+			case 'i': {
 				if (str.size() == 2 && str[1] == 'p') {
 					return Primitive::IP;
-				}
-				else if (!str.compare("icmp")) {
+				} else if (!str.compare("icmp")) {
 					return Primitive::ICMP;
 				}
 				break;
-			case 't':
+			}
+			case 't': {
 				if (str.size() == 3 && str[1] == 'c' && str[2] == 'p') {
 					return Primitive::TCP;
 				}
 				break;
-			case 's':
+			}
+			case 's': {
 				if (str.size() == 3 && str[1] == 'r' && str[2] == 'c') {
 					return Primitive::SRC;
 				}
 				break;
-			case 'd':
+			}
+			case 'd': {
 				if (str.size() == 3 && str[1] == 's' && str[2] == 't') {
 					return Primitive::DST;
 				}
 				break;
+			}
 			default:
 				break;
 		}
@@ -437,61 +451,70 @@ ip_option_from_string(const std::string &str)
 {
 	if (str.size()) {
 		switch (str[0]) {
-			case 'c':
+			case 'c': {
 				if (str.size() == 2 && str[1]=='e') {
 					return Option::IP_CE;
 				}
 				break;
-			case 'd':
+			}
+			case 'd': {
 				if (!str.compare("dscp")) {
 					return Option::IP_DSCP;
 				}
 				break;
-			case 'e':
+			}
+			case 'e': {
 				if (str.size() == 3 && str[1] == 'c' && str[2] == 't') {
 					return Option::IP_ECT;
 				}
 				break;
-			case 'f':
+			}
+			case 'f': {
 				if (!str.compare("frag")) {
 					return Option::IP_FRAG;
 				}
 				break;
-			case 'h':
+			}
+			case 'h': {
 				if (str.size() == 2 && str[1]=='l') {
 					return Option::IP_HL;
 				}
 				break;
-			case 'i':
+			}
+			case 'i': {
 				if (str.size() == 2 && str[1]=='d') {
 					return Option::IP_ID;
 				}
 				break;
-			case 'p':
+			}
+			case 'p': {
 				if (!str.compare("proto")) {
 					return Option::IP_PROTO;
 				}
 				break;
-			case 't':
+			}
+			case 't': {
 				if (str.size() == 3) {
 					if (str[1] == 'o' && str[2] == 's') {
 						return Option::IP_ToS;
-					}
-					else if (str[1] == 't' && str[2]=='l') {
+					} else if (str[1] == 't' && str[2]=='l') {
 						return Option::IP_TtL;
 					}
 				}
 				break;
-			case 'u':
+			}
+			case 'u': {
 				if (!str.compare("unfrag")) {
 					return Option::IP_UNFRAG;
 				}
 				break;
-			case 'v':
+			}
+			case 'v': {
 				if (!str.compare("vers")) {
 					return Option::IP_VERS;
 				}
 				break;
+			}
 			default:
 				break;
 		}
@@ -511,51 +534,56 @@ srcdst_option_from_string(const Primitive &prim, const std::string &str)
 {
 	if (str.size() ) {
 		switch (str[0]) {
-			case 'h':
+			case 'h': {
 				if (!str.compare("host")) {
 					if (prim == Primitive::SRC) {
 						return Option::SRC_HOST;
-					}
-					else if (prim == Primitive::DST) {
+					} else if (prim == Primitive::DST) {
 						return Option::DST_HOST;
 					}
 				}
-			case 'n':
+				[[gnu::fallthrough]];
+			}
+			case 'n': {
 				if (str.size() == 3 && str[1] == 'e' && str[2] == 't') {
 					if (prim == Primitive::SRC) {
 						return Option::SRC_NET;
-					}
-					else if (prim == Primitive::DST) {
+					} else if (prim == Primitive::DST) {
 						return Option::DST_NET;
 					}
 				}
-			case 'p':
+				[[gnu::fallthrough]];
+			}
+			case 'p': {
 				if (!str.compare("port")) {
 					if (prim == Primitive::SRC) {
 						return Option::SRC_PORT;
-					}
-					else if (prim == Primitive::DST) {
+					} else if (prim == Primitive::DST) {
 						return Option::DST_PORT;
 					}
 				}
-			case 't':
+				[[gnu::fallthrough]];
+			}
+			case 't': {
 				if (str.size() == 3 && str[1] == 'c' && str[2] == 'p') {
 					if (prim == Primitive::SRC) {
 						return Option::SRC_TCP_PORT;
-					}
-					else if (prim == Primitive::DST) {
+					} else if (prim == Primitive::DST) {
 						return Option::DST_TCP_PORT;
 					}
 				}
-			case 'u':
+				[[gnu::fallthrough]];
+			}
+			case 'u': {
 				if (str.size() == 3 && str[1] == 'd' && str[2] == 'p') {
 					if (prim == Primitive::SRC) {
 						return Option::SRC_UDP_PORT;
-					}
-					else if (prim == Primitive::DST) {
+					} else if (prim == Primitive::DST) {
 						return Option::DST_UDP_PORT;
 					}
 				}
+				[[gnu::fallthrough]];
+			}
 			default:
 				break;
 		}
@@ -569,14 +597,18 @@ tcp_option_from_string(const std::string &str)
 {
 	if (str.size()) {
 		switch (str[0])	{
-			case 'o':
+			case 'o': {
 				if (str.size() == 3 && str[1] == 'p' && str[2] == 't') {
 					return Option::TCP_OPT;
 				}
-			case 'w':
+				[[gnu::fallthrough]];
+			}
+			case 'w': {
 				if (str.size() == 3 && str[1] == 'i' && str[2] == 'n') {
 					return Option::TCP_WIN;
 				}
+				[[gnu::fallthrough]];
+			}
 			default:
 				break;
 		}
@@ -596,14 +628,19 @@ option_from_string(const Primitive &curr_prim, const std::string &str)
 			return srcdst_option_from_string(curr_prim, str);
 		case Primitive::TCP:
 			return tcp_option_from_string(str);
-		case Primitive::ICMP:
+		case Primitive::ICMP: {
 			if (!str.compare("type")) {
 				return Option::ICMP_TYPE;
 			}
-		default:
+			[[gnu::fallthrough]];
+		}
+		default: {
 			error_chatter(ip_par_lg, "\tUndefined primitive, cannot parse option");
 			exit(CLICK_PARSING_PROBLEM);
+		}
 	}
+
+	return Option::Undefined;
 }
 
 bool
@@ -630,34 +667,26 @@ parse_value(char **position, char *end)
 			/**
 			 * New primitive, end of the value
 			 */
-			if (
-				(p != Primitive::Undefined) &&
-				(p != Primitive::TCP && p != Primitive::ICMP) &&
-				!is_operator(p))
-			{
+			if ((p != Primitive::Undefined) && (p != Primitive::TCP && p != Primitive::ICMP) && !is_operator(p)) {
 				break;
-			}
-			// We wait to see whether the next one is a primitive or not
-			else if (is_operator(p)) {
+			} else if (is_operator(p)) {
+				// We wait to see whether the next one is a primitive or not
 				temp = current_word + " ";
 				current_word.clear();
-			}
-			/**
-			 * Normal  case: p is not a primitive --> We found a value
-			 * Special case: We found a primitive (TCP or ICMP) but it is actually a value.
-			 *               E.g., `ip proto tcp` -> tcp is not the primitive but the value!
-			 */
-			else {
+			} else {
+				/**
+				 * Normal  case: p is not a primitive --> We found a value
+				 * Special case: We found a primitive (TCP or ICMP) but it is actually a value.
+				 *               E.g., `ip proto tcp` -> tcp is not the primitive but the value!
+				 */
 				*position = current_position;
 				value += temp + current_word + ' ';
 				current_word.clear();
 				temp.clear();
 			}
-		}
-		else if (!value.empty() && is_opening_char(*current_position)) {
+		} else if (!value.empty() && is_opening_char(*current_position)) {
 			break;
-		}
-		else {
+		} else {
 			current_word.push_back(*current_position);
 		}
 		current_position++;
@@ -665,8 +694,7 @@ parse_value(char **position, char *end)
 	if ((current_position == end) || (*current_position == ')')) {
 		value += temp + current_word;
 		*position = current_position;
-	}
-	else {
+	} else {
 		debug_chatter(ip_par_lg, "\tAbout to pop: " + value);
 		value.pop_back();
 		(*position)++;
@@ -702,7 +730,7 @@ filters_from_substr(char **position, char *end)
 	Primitive curr_operator = Primitive::AND;
 	Option curr_opt = Option::Undefined;
 
-	// debug_chatter(ip_par_lg, "\tRule: \"" + std::string(*position) + "\"");
+	debug_chatter(ip_par_lg, "\tRule: \"" + std::string(*position) + "\"");
 
 	while ((*position < end) && (**position != ')')) {
 
@@ -711,8 +739,7 @@ filters_from_substr(char **position, char *end)
 		if (**position == '!') {
 			negate = true;
 			(*position)++;
-		}
-		else if (**position == '(') {
+		} else if (**position == '(') {
 			(*position)++;
 
 			std::vector<PacketFilter> pf_vec = filters_from_substr(position, end);
@@ -739,8 +766,7 @@ filters_from_substr(char **position, char *end)
 			curr_operator = curr_prim = Primitive::Undefined;
 			curr_opt = Option::Undefined;
 			(*position)++; // Go past blank space
-		}
-		else if (**position == ' ') {
+		} else if (**position == ' ') {
 			(*position)++;
 			if (curr_operator == Primitive::Undefined) {
 				curr_operator = primitive_from_string(current_word);
@@ -751,13 +777,11 @@ filters_from_substr(char **position, char *end)
 					);
 					exit(CLICK_PARSING_PROBLEM);
 				}
-			}
-			// Current word is a primitive
-			else if (curr_prim == Primitive::Undefined) {
+			} else if (curr_prim == Primitive::Undefined) {
+				// Current word is a primitive
 				curr_prim = primitive_from_string(current_word);
-			}
-			// Current word is an option
-			else if (curr_opt == Option::Undefined) {
+			} else if (curr_opt == Option::Undefined) {
+				// Current word is an option
 				curr_opt = option_from_string(curr_prim, current_word);
 
 				// We expect a value OR an operator primitive
@@ -771,7 +795,7 @@ filters_from_substr(char **position, char *end)
 					case Option::SRC_UDP_PORT:
 					case Option::SRC_TCP_PORT:
 					case Option::DST_UDP_PORT:
-					case Option::DST_TCP_PORT:
+					case Option::DST_TCP_PORT: {
 						current_word.clear();
 						while ((*position < end) && (**position != ')') && (**position != ' ')) {
 							current_word.push_back(**position);
@@ -779,15 +803,16 @@ filters_from_substr(char **position, char *end)
 						}
 
 						if (current_word.compare("port")) {
-							error_chatter(
-								ip_par_lg, "\tExpected \"port\" after " +
-								option_names[(size_t) curr_opt]
-							);
+							error_chatter(ip_par_lg, "\tExpected \"port\" after " + option_names[(size_t) curr_opt]);
 							exit(CLICK_PARSING_PROBLEM);
 						}
 						(*position)++;
-					default:
+						[[gnu::fallthrough]];
+					}
+					default: {
 						value = parse_value(position, end);
+						break;
+					}
 				}
 
 				PacketFilter pf = filter_from_option(curr_prim, curr_opt, value);
@@ -796,30 +821,31 @@ filters_from_substr(char **position, char *end)
 				if (negate) {
 					temp = negate_pf(pf);
 					negate = false;
-				}
-				else {
+				} else {
 					temp.push_back(pf);
 				}
 
 				switch (curr_operator) {
-					case Primitive::OR:
+					case Primitive::OR: {
 						insert_last(finished_filters, open_filters);
 						reset_pf_vec(open_filters);
 						open_filters[0] = pf;
+						[[gnu::fallthrough]];
+					}
 					case Primitive::AND: {
 						open_filters = and_pf_vec(open_filters, temp);
 						break;
 					}
-					default:
+					default: {
 						error_chatter(ip_par_lg, "\tExpected operator");
 						exit(CLICK_PARSING_PROBLEM);
+					}
 				}
 				curr_operator = curr_prim = Primitive::Undefined;
 				curr_opt = Option::Undefined;
 			}
 			current_word.clear();
-		}
-		else {
+		} else {
 			current_word.push_back(**position);
 			(*position)++;
 		}

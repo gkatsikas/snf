@@ -64,8 +64,7 @@ filters_from_classifier_line(const std::string &line)
 			if ((basic_type == "IP") || (basic_type == "ARP")) {
 				rule_no++;
 				continue;
-			}
-			else {
+			} else {
 				return {finished_filters, ClassifierAction::DROP};
 			}
 		}
@@ -75,8 +74,7 @@ filters_from_classifier_line(const std::string &line)
 		// ICMP, TCP, and UDP fields
 		if (basic_type == "IP") {
 			filter_from_ip_option(finished_filters, h_field_pos, h_field_val);
-		}
-		else {
+		} else {
 			// Further classify ARP
 			basic_type = which_arp(h_field_pos, h_field_val);
 			// FIXME: Add ARP support to IPClassifer

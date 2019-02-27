@@ -2,7 +2,7 @@
 /*
  * ip_filter_test.cpp
  *
- * Generates and benchmarks Click's IPFilter.
+ * Generates IPFilter configurations with increasing number of traffic classes.
  *
  * Copyright (c) 2015-2017 KTH Royal Institute of Technology
  * Copyright (c) 2015-2017 Georgios Katsikas, Marcel Enguehard

@@ -2,7 +2,8 @@
 /*
  * classifier_kernel_test.cpp
  *
- * Generates and benchmarks Click's IPClassifier for the Linux kernel.
+ * Generates IPClassifier configurations with increasing number of traffic classes
+ * for the Linux kernel.
  *
  * Copyright (c) 2015-2017 KTH Royal Institute of Technology
  * Copyright (c) 2015-2017 Georgios Katsikas, Marcel Enguehard

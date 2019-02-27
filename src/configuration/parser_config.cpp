@@ -500,19 +500,15 @@ ParserConfiguration::parse_topology(const std::string &nf_topo)
 			// Extract the interface from the brackets
 			interface = elem->substr (left_bracket+1, right_bracket-left_bracket-1);
 
-			// LEFT-side element parsing
 			if (tokens == 0) {
 				// Left-side element is before the output interface
 				nf = elem->substr(0, left_bracket);
-				//log << info << "\t" << nf << "[" << interface << "] -> " << def;
-			}
-			// RIGHT-side element parsing
-			else if (tokens == 1) {
+				// log << info << "\t" << nf << "[" << interface << "] -> " << def;
+			} else if (tokens == 1) {
 				// Right-side element is after the input interface
 				nf = elem->substr(right_bracket+1);
-				//log << info << "[" << interface << "]" << nf << def << std::endl;
-			}
-			else {
+				// log << info << "[" << interface << "]" << nf << def << std::endl;
+			} else {
 				this->usage(
 					"\tInvalid interface specification.",
 					"\tSyntax: NF_1[iface]->[iface]NF_2;"
@@ -542,10 +538,9 @@ ParserConfiguration::parse_topology(const std::string &nf_topo)
 				if ( !v ) {
 					return TO_BOOL(CHAIN_PARSING_PROBLEM);
 				}
-			}
-			// If it exists, check if the interface to be inserted already exists.
-			// One interface maps to only one NF
-			else {
+			} else {
+				// If it exists, check if the interface to be inserted already exists.
+				// One interface maps to only one NF
 				if (v->has_chain_interface(interface)) {
 					this->usage(
 						"\tInvalid interface specification.",
@@ -598,8 +593,7 @@ ParserConfiguration::parse_topology(const std::string &nf_topo)
 			"\tGo to [NF_TOPO]->TOPOLOGY and make sure that you complete the pipeline properly."
 		);
 		return TO_BOOL(CHAIN_PARSING_PROBLEM);
-	}
-	else if (elements_in_property < graph_elements) {
+	} else if (elements_in_property < graph_elements) {
 		this->usage(
 			"\tThere are " + std::to_string(graph_elements - elements_in_property) +
 			" missing elements in [NF] section of the property file.",
@@ -741,10 +735,7 @@ ParserConfiguration::parse_domains(const std::string &nf_domains) {
 				"\tPlease cross check NF_MODULES and NF_TOPO sections"
 			);
 			return TO_BOOL(CHAIN_PARSING_PROBLEM);
-		}
-		// If it exists, check if the interface to be inserted already exists in the list of chain interfaces.
-		// One interface maps to only one NF
-		else {
+		} else {
 			// Check if this interface exists in the set chain interfaces. It must not!
 			if (v->has_chain_interface(interface)) {
 				this->usage(

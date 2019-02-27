@@ -199,9 +199,8 @@ ChainParser::build_nf_dag(const std::string &nf_name __attribute__((unused)), co
 			if (receiver_pos >= 0) {
 				implicit_conf_mappings[receiver_pos] = implicit_conf;
 				implicit_port_mappings[receiver_pos] = implicit_port;
-			}
-			// This is definitely a bug!
-			else {
+			} else {
+				// This is definitely a bug!
 				error_chatter(this->log, "\tERROR while retrieving IPMapper's patterns");
 				delete nf_graph;
 				return TO_BOOL(CLICK_PARSING_PROBLEM);
@@ -216,8 +215,7 @@ ChainParser::build_nf_dag(const std::string &nf_name __attribute__((unused)), co
 		// Turn this Click element into a Vertex for our DAG
 		if (!nf_graph->contains(e->eindex())) {
 			u = new ElementVertex(e, e->class_name(), e->eindex());
-		}
-		else {
+		} else {
 			u = static_cast<ElementVertex *> ( nf_graph->get_vertex_by_position(e->eindex()) );
 		}
 
@@ -404,16 +402,15 @@ ChainParser::verify_and_connect_nfs(const std::string &nf_name, const unsigned s
 
 			// This is an entry interface that connects the chain to a domain
 			if (this_nf->has_entry_interface(interface)) {
-				//def_chatter(this->log, "\tInterface Type: ENTRY");
+				// def_chatter(this->log, "\tInterface Type: ENTRY");
 				element->set_endpoint(true);
 
 				// Count only this side of the interface (not the ToDevice counterpart).
 				if (type == VertexType::Input)
 					seen_entry_ifaces++;
-			}
-			// This is an internal interface that connects the NF with a subsequent NF
-			else if (this_nf->has_chain_interface(interface)) {
-				//def_chatter(this->log, "\tInterface Type: CHAIN");
+			} else if (this_nf->has_chain_interface(interface)) {
+				// This is an internal interface that connects this NF with a subsequent NF
+				// def_chatter(this->log, "\tInterface Type: CHAIN");
 
 				// Count only this side of the interface (not the ToDevice counterpart).
 				if (type == VertexType::Input)
@@ -448,11 +445,10 @@ ChainParser::verify_and_connect_nfs(const std::string &nf_name, const unsigned s
 					// Create the link between the Output vertex of this NF and the Input vertex of the next one
 					element->set_glue_info(next_nf_position, next_nf_iface);
 				}
-			}
-			// It can happen for chain interfaces that are attached to the inputs of the NFs
-			// If you check property file, section [NF_TOPO], you will see that we do not specify
-			// the input interfaces if these are not entry interfaces.
-			else {
+			} else {
+				// It can happen for chain interfaces that are attached to the inputs of the NFs
+				// If you check property file, section [NF_TOPO], you will see that we do not specify
+				// the input interfaces if these are not entry interfaces.
 				debug_chatter(this->log, "\tUndeclared interface " << interface);
 				element->set_endpoint(true);
 			}

@@ -353,11 +353,11 @@ dfs(
 		for (auto& neighbour : adjacency_list.at(vertex)) {
 			Colour &neighbour_colour = visited[neighbour.second];
 
-			// Unvisited node --> recursion
-			if (neighbour_colour == White)
+			if (neighbour_colour == White) {
+				// Unvisited node --> recursion
 				dfs(neighbour.second, neighbour_colour, adjacency_list, visited, sorted);
-			// Ambiguous color denotes a cycle!
-			else if (neighbour_colour == Grey) {
+			} else if (neighbour_colour == Grey) {
+				// Ambiguous color denotes a cycle!
 				error_chatter(log, "\tCycle in graph");
 				exit(NF_CHAIN_NOT_ACYCLIC);
 			}

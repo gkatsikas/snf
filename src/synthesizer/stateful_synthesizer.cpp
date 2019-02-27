@@ -75,8 +75,7 @@ StatefulSynthesizer::compute_conf(void)
 				pos = conf_str.rfind(',',pos);
 			}
 			output += conf_str + ", ";
-		}
-		else {
+		} else {
 			output += this->m_conf_string[i] + std::to_string(this->m_outbound_port) + " "
 				+ std::to_string(this->m_iface_to_output_port[this->m_input_port_to_iface[i]]) +", ";
 		}

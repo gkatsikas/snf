@@ -58,56 +58,8 @@ FlowDirectorGenerator::generate_equivalent_configuration(const bool to_file)
 bool
 FlowDirectorGenerator::generate_flow_director_split_pipelines(const bool &to_file)
 {
-	//std::ofstream  *soft_out_file  = NULL;
-	//std::ofstream  **hard_out_file = NULL;
-	//std::streambuf *def_cout       = NULL;
-	//std::string all_out_files;
-
-	if (to_file) {
-		// Open the output files to host our synthesized chain
-		//soft_out_file = new std::ofstream(this->soft_configuration_filename);
-
-		//all_out_files = "\t\t\t\t\t\t\t\t|--> " + this->soft_configuration_filename + "\n";
-
-		// Output files (one per interface) to host the Flow director commands of each SNF interface.
-		/*hard_out_file = new std::ofstream*[nic_classifiers_no];
-		unsigned short i = 0;
-		for (auto &it : this->synthesizer->get_snf_ifaces()) {
-			std::string nf = it.first;
-			std::string iface = it.second;
-
-			std::pair<std::string, std::string> comb_key = std::make_pair(nf, iface);
-			this->hrdw_configuration_per_nic[comb_key] =
-				this->basic_configuration_filename + "_" + nf + "_" + iface + ".flowdir";
-			//std::cout << this->hrdw_configuration_per_nic[comb_key] << std::endl;
-
-			hard_out_file[i] = new std::ofstream(this->hrdw_configuration_per_nic[comb_key]);
-			all_out_files += "\t\t\t\t\t\t\t\t|--> " + this->hrdw_configuration_per_nic[comb_key] + "\n";
-			i++;
-		}*/
-
-		// Save old cout buffer and redirect cout to the file above.
-		//def_cout = std::cout.rdbuf(soft_out_file->rdbuf());
-	}
-
-	// ....
-
-	// Reset to standard output again
-	if (to_file) {
-		//std::cout.rdbuf(def_cout);
-		//soft_out_file->close();
-		//hard_out_file->close();
-		//delete soft_out_file;
-
-		//for (unsigned short i = 0 ; i < this->get_snf_ifaces_no() ; i++) {
-		//	hard_out_file[i]->close();
-		//	delete hard_out_file[i];
-		//}
-		//delete[] hard_out_file;
-		//hard_out_file = NULL;
-	}
-
-	MISSING_FEATURE(this->log, "Flow Director traffic class generator not implemented yet");
+	(void) to_file;
+	MISSING_FEATURE(this->log, "Flow Director traffic class generator is not implemented yet");
 	return DONE;
 }
 

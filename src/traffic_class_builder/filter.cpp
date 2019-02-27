@@ -83,8 +83,7 @@ Filter::get_filter_from_v4_prefix(HeaderField field, uint32_t value, uint32_t pr
 {
 	if (prefix > 32) {
 		FANCY_BUG(tc_log, "\tNetwork prefix greater than 32");
-	}
-	else if (prefix == 32) {
+	} else if (prefix == 32) {
 		return Filter(field, value);
 	}
 
@@ -150,8 +149,7 @@ Filter::get_filter_from_ipclass_pattern(HeaderField field, const std::string &ar
 				case '=':
 					if (args.size() < 2 || args[1] != '=') {
 						FANCY_BUG(tc_log, "\tWrong argument in IPFilter: " + args + "\n\tExpected '=' after =");
-					}
-					else {
+					} else {
 						f = Filter(field, to_uint(args.substr(2, args.size() - 2)));
 					}
 					break;
@@ -184,8 +182,7 @@ Filter::get_filter_from_ipclass_pattern(HeaderField field, const std::string &ar
 				case '!':
 					if (args[1] != '=') {
 						FANCY_BUG(tc_log, "\tWrong argument in IPFilter: " + args + "\n\tExpected '=' after !");
-					}
-					else {
+					} else {
 						f = Filter(field);
 						f.differentiate(Filter(field, to_uint(args.substr(2,args.size()-2))));
 					}
@@ -203,8 +200,7 @@ Filter::get_filter_from_ipclass_pattern(HeaderField field, const std::string &ar
 				pos = args.find_first_not_of(numbers, start);
 				uint32_t upper = to_uint(args.substr(start, pos));
 				f = Filter(field, lower, upper);
-			}
-			else {
+			} else {
 				f = Filter(field, to_uint(args.substr(0, pos)));
 			}
 
@@ -222,8 +218,7 @@ Filter::get_filter_from_ipclass_pattern(HeaderField field, const std::string &ar
 					uint32_t upper = to_uint(args.substr(start, pos));
 
 					f.unite(Filter(field, lower, upper));
-				}
-				else {
+				} else {
 					std::string s = args.substr(start, pos-start);
 					f.unite(Filter(field,to_uint(args.substr(start, pos - start))));
 				}
@@ -415,15 +410,13 @@ Filter::to_ip_classifier_pattern(void) const
 		case ip_ect:
 			if (match(1)) {
 				return "ip ect";
-			}
-			else {
+			} else {
 				return "!(ip ect)";
 			}
 		case ip_ce:
 			if (match(1)) {
 				return "ip ce";
-			}
-			else {
+			} else {
 				return "!(ip ce)";
 			}
 		case ip_TTL:
@@ -441,43 +434,37 @@ Filter::to_ip_classifier_pattern(void) const
 		case tcp_flag_syn:
 			if (match(1)) {
 				return "syn";
-			}
-			else {
+			} else {
 				return "!(syn)";
 			}
 		case tcp_flag_ack:
 			if (match(1)) {
 				return "ack";
-			}
-			else {
+			} else {
 				return "!(ack)";
 			}
 		case tcp_flag_psh:
 			if (match(1)) {
 				return "tcp opt psh";
-			}
-			else {
+			} else {
 				return "!(tcp opt psh)";
 			}
 		case tcp_flag_rst:
 			if (match(1)) {
 				return "tcp opt rst";
-			}
-			else {
+			} else {
 				return "!(tcp opt rst)";
 			}
 		case tcp_flag_fin:
 			if (match(1)) {
 				return "tcp opt fin";
-			}
-			else {
+			} else {
 				return "!(tcp opt fin)";
 			}
 		case tcp_flag_urg:
 			if (match(1)) {
 				return "tcp opt urg";
-			}
-			else {
+			} else {
 				return "!(tcp opt urg)";
 			}
 		case tcp_win:
@@ -500,16 +487,13 @@ Filter::to_ip_classifier_pattern(void) const
 		// FIXME: handle IP subnets differently
 		if (seg.first == seg.second) {
 			output+= "("+keyword + std::to_string(seg.first) + ") || ";
-		}
-		else {
+		} else {
 			if (seg.first == 0) {
 				output += keyword + "<= " + std::to_string(seg.second);
-			}
-			else {
+			} else {
 				if (seg.second == 0xffffffff) {
 					output += keyword + ">= " + std::to_string(seg.first);
-				}
-				else {
+				} else {
 					output += "(" + keyword + ">= " + std::to_string(seg.first) + " && "
 						+ keyword + "<= " + std::to_string(seg.second) + ")";
 				}
@@ -529,9 +513,8 @@ Filter::to_ip_classifier_pattern(void) const
 		for (auto &seg:segments) {
 			// FIXME: handle IP subnets differently
 			if (seg.first == seg.second) {
-				output+= "(" + keyword + std::to_string(seg.first) + ") || ";
-			}
-			else {
+				output += "(" + keyword + std::to_string(seg.first) + ") || ";
+			} else {
 				output += "(" + keyword + ">= " + std::to_string(seg.first) + " && "
 						+ keyword + "<= " + std::to_string(seg.second) + ") || ";
 			}
@@ -640,8 +623,7 @@ ip_segment_to_ip_class_pattern(std::string keyword, uint32_t lower, uint32_t upp
 
 		if (prefix_size == 32) {
 			current_low++;
-		}
-		else {
+		} else {
 			current_low += (0xffffffff >> prefix_size) + 1;
 		}
 
@@ -874,8 +856,7 @@ TrafficClass::to_ip_filter_pattern(bool allowed) const
 	std::string action;
 	if (allowed) {
 		action = "allow ";
-	}
-	else {
+	} else {
 		action = "drop ";
 	}
 
@@ -907,8 +888,7 @@ TrafficClass::intersect_filter(const Filter &filter)
 
 	if (got == this->m_filters.end()) {
 		this->m_filters[field] = filter;
-	}
-	else {
+	} else {
 		this->m_filters[field].intersect(filter);
 	}
 
@@ -921,15 +901,12 @@ TrafficClass::intersect_condition(const Filter &condition, const FieldOperation 
 	HeaderField field = condition.get_field();
 	auto got = this->m_write_conditions.find(field);
 
-	if (
-		got == this->m_write_conditions.end() ||
-		!this->m_write_conditions[field].back().is_same_write(operation)
-	) {
+	if (got == this->m_write_conditions.end() ||
+		!this->m_write_conditions[field].back().is_same_write(operation)) {
 		this->m_write_conditions[field].push_back(
 			Condition(field, this->m_element_path.back(), condition, operation)
 		);
-	}
-	else {
+	} else {
 		this->m_write_conditions[field].back().intersect(condition);
 	}
 
@@ -952,12 +929,10 @@ TrafficClass::add_element(std::shared_ptr<ClickElement> element, const int port,
 		(element->get_type() == IPFragmenter)
 	) {
 		this->add_post_routing_operation(element->get_type());
-	}
-	// Interface configuration
-	else if (
+	} else if (
 			(element->get_type() == EtherEncap) ||
-			(element->get_type() == StoreEtherAddress)
-	) {
+			(element->get_type() == StoreEtherAddress)) {
+		// Interface configuration
 		this->m_ether_encap_conf = element->get_configuration();
 	}
 
@@ -1034,8 +1009,7 @@ TrafficClass::add_element(std::shared_ptr<ClickElement> element, const int port,
 				default:
 					FANCY_BUG(tc_log, "\tFound non modifying operation");
 			}
-		}
-		else {
+		} else {
 			nb_none_filters += intersect_filter(filter);
 			debug_chatter(tc_log, "\t\tNo operation");
 		}
@@ -1185,10 +1159,9 @@ TrafficClass::to_str(void) const
 	for (auto it : m_element_path) {
 		output += element_names[it->get_type()];
 		if (it->is_leaf()) {
-			output+="\n";
-		}
-		else {
-			output+="->";
+			output += "\n";
+		} else {
+			output += "->";
 		}
 	}
 	output += "=================  End Traffic Class  =================\n";

@@ -313,8 +313,9 @@ ClickElement::parse_fix_ip_src(const std::string &configuration)
 			}
 			new_ip_value = aton(split_conf[1]);
 			break;
-		default:
+		default: {
 			configuration_fail();
+		}
 	}
 
 	fix_ip_src_op.m_value[0] = new_ip_value;
@@ -341,11 +342,9 @@ ClickElement::parse_ip_filter(const std::string &configuration)
 		int16_t output = -1;
 		if (!behaviour.compare("allow")) {
 			output = 0;
-		}
-		else if (behaviour.find_first_not_of("0123456789") == std::string::npos) {
+		} else if (behaviour.find_first_not_of("0123456789") == std::string::npos) {
 			output = atoi(behaviour.c_str());
-		}
-		else if (behaviour.compare("deny") && behaviour.compare("drop") ) {
+		} else if (behaviour.compare("deny") && behaviour.compare("drop") ) {
 			FANCY_BUG(this->log, "\tUnknown action for IP Filter: " + behaviour);
 		}
 
@@ -354,8 +353,7 @@ ClickElement::parse_ip_filter(const std::string &configuration)
 
 		if (output == -1) {
 			to_discard.insert(to_discard.end(), outputs.begin(), outputs.end());
-		}
-		else {
+		} else {
 			for (auto &pf : outputs) {
 				OutputClass port(output);
 				port.set_filter (pf);
@@ -465,8 +463,7 @@ ClickElement::parse_ip_rewriter(
 			if (!(split_line.size() == 6)) {
 				debug_chatter(this->log, line);
 				configuration_fail();
-			}
-			else {
+			} else {
 				field_op.m_lb_values.push_back(aton(split_line[2]));
 				error_chatter(this->log, "\tPushed back: " << aton(split_line[2]));
 				output_port = (unsigned short) atoi(split_line[5].c_str());
@@ -477,8 +474,7 @@ ClickElement::parse_ip_rewriter(
 		port.add_field_op(field_op);
 		error_chatter(this->log, "\tCurrent port: " << port.to_str());
 		this->add_output_class(port);
-	}
-	else {
+	} else {
 		std::string conf_line = separate_args(configuration)[input_port];
 		std::vector<std::string> split_inputsec = split(conf_line, spaces);
 
@@ -488,19 +484,20 @@ ClickElement::parse_ip_rewriter(
 					OutputClass discard(0);
 					discard.set_child(discard_elem_ptr);
 					this->add_output_class(discard);
-					break;
+				} else {
+					configuration_fail();
 				}
-				else{ configuration_fail(); }
+				break;
 			}
 			case 7: {
 				std::pair<OutputClass,OutputClass> ports =
 						OutputClass::output_class_from_pattern(split_inputsec);
 				this->add_output_class(ports.first);
-				//this->add_output_class(ports.second);
 				break;
 			}
-			default:
+			default: {
 				configuration_fail();
+			}
 		}
 	}
 }
@@ -522,16 +519,13 @@ ClickElement::parse_vlan_encap_configuration(const std::string &configuration)
 		pcp = value >> 13;                     // Removes 13 last bits
 		dei = (value>>12) & (0xffffffff << 1); // Gets 12th bit from smaller endian
 		vid = value & (0xffffffff << 12);      // Gets 12 last bits
-	}
-	else {
+	} else {
 		while (pos != std::string::npos) {
 			if (!keyword.compare("VLAN_PCP")) {
 				pcp  = atoi (configuration.substr(pos+1,configuration.size()-pos-1).c_str());
-			}
-			else if (!keyword.compare("VLAN_ID")) {
+			} else if (!keyword.compare("VLAN_ID")) {
 				vid = atoi (configuration.substr(pos+1,configuration.size()-pos-1).c_str());
-			}
-			else {
+			} else {
 				FANCY_BUG(this->log, "\tUnknown keyword in VLANEncap: "+keyword);
 			}
 
@@ -585,15 +579,12 @@ ClickElement::parse_rr_ip_mapper(const std::string &configuration)
 	if ((end == 5) && (configuration[0] == 'I') && (configuration[1] == 'P')) {
 		if ((configuration[2] == 'S') && (configuration[3] == 'R') && (configuration[4] == 'C')) {
 			field = ip_src;
-		}
-		else if ((configuration[2] == 'D') && (configuration[3] == 'S') && (configuration[4] == 'T')) {
+		} else if ((configuration[2] == 'D') && (configuration[3] == 'S') && (configuration[4] == 'T')) {
 			field = ip_dst;
-		}
-		else {
+		} else {
 			configuration_fail();
 		}
-	}
-	else {
+	} else {
 		configuration_fail();
 	}
 

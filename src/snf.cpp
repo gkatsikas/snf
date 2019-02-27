@@ -37,7 +37,7 @@ bool dpdk_enabled = true;
 #endif
 
 /*
- * User guide to start SNF
+ * User guide to start SNF.
  */
 void
 usage(Logger &main_log, const char *program)
@@ -47,14 +47,14 @@ usage(Logger &main_log, const char *program)
 }
 
 /*
- * Version report and license
+ * Version report and license.
  */
 void
 version_report(const std::string &version)
 {
 	std::cout << "SNF "+ version + "\n" << std::endl;
-	std::cout << "Copyright (C) 2015-2016 Georgios Katsikas, Marcel Enguehard.\n\
-Copyright (C) 2015-2016 KTH Royal Institute of Technology.\n\
+	std::cout << "Copyright (C) 2015 Georgios Katsikas, Marcel Enguehard.\n\
+Copyright (C) 2015 KTH Royal Institute of Technology.\n\
 \n\
 This program is free software: you can redistribute it and/or modify\n\
 it under the terms of the GNU General Public License as published by\n\
@@ -72,7 +72,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>" << std::en
 }
 
 /*
- * Parse command line arguments
+ * Parse command line arguments.
  */
 void
 parse_arguments(
@@ -104,13 +104,11 @@ parse_arguments(
 			if (*cmd_args) {
 				*property_file = (std::string) *cmd_args;
 				continue;
-			}
-			else {
+			} else {
 				break;
 			}
-		}
 		// SNF version
-		else if (strcmp(*cmd_args, "-v") == 0) {
+		} else if (strcmp(*cmd_args, "-v") == 0) {
 			#ifdef VERSION
 				*version = " v." + std::string(VERSION);
 			#else
@@ -122,8 +120,7 @@ parse_arguments(
 				version_report(*version);
 			}
 			cmd_args++;
-		}
-		else {
+		} else {
 			// Ignore irrelevant arguments
 			cmd_args++;
 		}
@@ -149,30 +146,26 @@ identify_code_generator(
 				case RSSHashing:
 					return new RSSGenerator(std::move(synthesizer));
 				case FlowDirector:
-					//return new FlowDirectorGenerator(std::move(synthesizer));
+					return new FlowDirectorGenerator(std::move(synthesizer));
 				case OpenFlow:
-					//return new OpenFlowGenerator(std::move(synthesizer));
+					return new OpenFlowGenerator(std::move(synthesizer));
 				default:
-					error_chatter(
-						main_log,
-						"Unimplemented Traffic Class Format: " + tc_to_label(tc_format)
-					);
+					error_chatter(main_log, "Unimplemented Traffic Class Format: " + tc_to_label(tc_format));
 					return NULL;
 			}
 		#else
 			error_chatter(main_log, "Hardware classification requires DPDK support!");
 			return NULL;
 		#endif
-	}
-	// Pure software based implementation in Click.
-	else {
+	// Pure software based implementation in Click
+	} else {
 		(void)tc_format;
 		return new SoftGenerator(std::move(synthesizer));
 	}
 }
 
 /*
- * SNF's bootstrapping function
+ * SNF's bootstrapping function.
  */
 int
 main(int argc, char **argv)
@@ -190,7 +183,7 @@ main(int argc, char **argv)
 
 	// Check input arguments validity
 	parse_arguments(argc, argv, main_log, &property_file, &version);
-	info_chatter(main_log, "SNF" + version + ": A synthesizer of Click-based chained Network Functions");
+	info_chatter(main_log, "SNF" + version + ": A synthesizer for chained Network Functions based on Click");
 
 	//////////////////////////////////// Load property file ///////////////////////////////////
 	ParserConfiguration *pcf = NULL;
@@ -230,13 +223,13 @@ main(int argc, char **argv)
 			exit(CHAIN_PARSING_PROBLEM);
 		}
 
-		// 1. Load and verify all the Click configuration of the chain
+		// 1. Load and verify the Click configuration of the service chain
 		if (!(exit_status=parser->load_nf_configurations())) {
 			delete parser;
 			exit(exit_status);
 		}
 
-		// 2. Link the edges of all NF DAGs so as to prepare the Traffic Class Builder
+		// 2. Link the edges of all NF DAGs, so as to prepare the Traffic Class Builder
 		if (!(exit_status=parser->chain_nf_configurations())) {
 			delete parser;
 			exit(exit_status);
@@ -295,7 +288,7 @@ main(int argc, char **argv)
 
 	total_exec_time += task_exec_time;
 
-	////////////////////////////// Generate SNF Configuration ////////////////////////////
+	//////////////////////////////// Generate SNF Configuration ///////////////////////////////
 	Generator *generator = NULL;
 	std::string output_files;
 

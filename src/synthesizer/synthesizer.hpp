@@ -214,9 +214,8 @@ class Synthesizer {
 		 */
 		bool synthesize_stateful       (void);
 
-
 		/*
-		 * Test the traffic classes's construction
+		 * Test the traffic classes' construction
 		 */
 		void test_traffic_class_builder(void);
 };

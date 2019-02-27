@@ -82,17 +82,23 @@ bool
 FieldOperation::is_same_value(const FieldOperation &rhs) const
 {
 	bool result = true;
+
 	switch (m_type) {
 		case WriteRR:
 		case WriteRa:
-		case WriteSF:
+		case WriteSF: {
 			result = (result && m_value[1] == rhs.m_value[1]);
+			break;
+		}
 		case Write:
-		case Translate:
+		case Translate: {
 			result = (result && m_value[0] == rhs.m_value[0]);
+			break;
+		}
 		default:
 			break;
 	}
+
 	return result;
 }
 
@@ -204,8 +210,7 @@ Operation::add_field_op(const FieldOperation &field_op)
 			//If we don't have any operation yet
 			if (m_field_ops.find(field) == m_field_ops.end() ) {
 				this->m_field_ops.emplace(field, field_op);
-			}
-			else {
+			} else {
 				m_field_ops[field].compose(field_op);
 			}
 	}
@@ -241,13 +246,11 @@ Operation::to_iprw_conf(void) const
 	if (field_op != m_field_ops.end()) {
 		if (field_op->second.m_type == Write) {
 			ipsrc = ntoa(field_op->second.m_value[0]);
-		}
-		else {
+		} else {
 			FANCY_BUG(op_log, "\tUnexpected write operation");
 		}
-	}
-	else {
-		ipsrc= "-";
+	} else {
+		ipsrc = "-";
 	}
 
 	// Source port
@@ -263,20 +266,17 @@ Operation::to_iprw_conf(void) const
 		// TODO: add support for load balancing
 		if (field_op->second.m_type == Write) {
 			return ipsrc + " " + tpsrc + " " + ntoa(field_op->second.m_value[0]) + " " + tpdst + " ";
-		}
-		else if (field_op->second.m_type == WriteLB) {
+		} else if (field_op->second.m_type == WriteLB) {
 			std::string output = "RoundRobinIPMapper(";
 			for (auto &ip : field_op->second.m_lb_values) {
 				output += ipsrc + " " + tpsrc + " " + ntoa(ip) + " " + tpdst + ", ";
 			}
 			output[output.size()-2] = ')';
 			return output.substr(0,output.size()-1);
-		}
-		else {
+		} else {
 			FANCY_BUG(op_log, "\tExpected write operation, got "+to_str());
 		}
-	}
-	else {
+	} else {
 		return "pattern " + ipsrc + " " + tpsrc + " " + "- " + tpdst + " ";
 	}
 }

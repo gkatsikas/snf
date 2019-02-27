@@ -114,9 +114,8 @@ ClickTree::find_classes(void)
 						" to " << element_names[child->get_type()]
 					);
 					nodes_to_visit.push(next_node);
-				}
-				// This is possible in case of NATing
-				else {
+				} else {
+					// This is possible in case of NATing
 					debug_chatter(this->log, "\t\tFailed to add element " << element_names[curr_element->get_type()]);
 				}
 			}
@@ -129,9 +128,8 @@ ClickTree::find_classes(void)
 			if (wr_ops == curr_element->get_output_classes().size()) {
 				this->set_behind_proxy(true);
 			}
-		}
-		// It's a leaf
-		else {
+		} else {
+			// It's a leaf
 			debug_chatter(this->log, "\t\tFound leaf of type " << element_names[curr_element->get_type()]);
 			curr_tc.add_element(curr_element);
 			this->m_traffic_classes.push_back(curr_tc);

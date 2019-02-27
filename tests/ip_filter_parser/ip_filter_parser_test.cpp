@@ -38,7 +38,7 @@ main()
 	info_chatter(test_log, "IPFilter parser test started");
 
 	info_chatter(test_log, "");
-        info_chatter(test_log, "------------ Test 0 ------------");
+	info_chatter(test_log, "------------ Test 1 ------------");
 	std::string line = "(dst tcp port > 1023), (dst net 10.0.0.0/24) && (ip proto icmp)";
 	std::vector<std::string> rules = separate_args(line);
 	std::vector<PacketFilter> pf_vec;
@@ -49,14 +49,14 @@ main()
 	}
 
 	info_chatter(test_log, "");
-	info_chatter(test_log, "------------ Test 1 ------------");
+	info_chatter(test_log, "------------ Test 2 ------------");
 
 	std::string pattern = "(ip ttl 5 or ip vers < 6)";
 	pf_vec = filters_from_ipfilter_line(pattern);
 	def_chatter(test_log, "\tPacket filter t1: " << pf_vec_to_str(pf_vec));
 
 	info_chatter(test_log, "");
-	info_chatter(test_log, "------------ Test 2 ------------");
+	info_chatter(test_log, "------------ Test 3 ------------");
 
 	pattern = "10.0.0.4";
 	Filter f1 = Filter::get_filter_from_ipclass_pattern(ip_dst, pattern);
@@ -82,7 +82,7 @@ main()
 	def_chatter(test_log, "Merged pf: " << pf_vec_to_str(pf_vec));
 
 	info_chatter(test_log, "");
-	info_chatter(test_log, "------------ Test 3 ------------");
+	info_chatter(test_log, "------------ Test 4 ------------");
 
 	std::vector<PacketFilter> neg_pf_vec_sin = negate_pf(pf1);
 	def_chatter(test_log, "Negated pf (Single): " << pf_vec_to_str(neg_pf_vec_sin));
@@ -92,20 +92,19 @@ main()
 
 	if (neg_pf_vec_sin == neg_pf_vec_list) {
 		info_chatter(test_log, "Correct negations");
-	}
-	else {
+	} else {
 		throw std::runtime_error("Negations do not agree");
 	}
 
 	info_chatter(test_log, "");
-	info_chatter(test_log, "------------ Test 4 ------------");
+	info_chatter(test_log, "------------ Test 5 ------------");
 
 	std::string a = "tcp opt syn && tcp win < 20";
 	pf_vec = filters_from_ipfilter_line(a);
 	def_chatter(test_log, pf_vec_to_str(pf_vec));
 
 	info_chatter(test_log, "");
-	info_chatter(test_log, "------------ Test 5 ------------");
+	info_chatter(test_log, "------------ Test 6 ------------");
 
 	a = "(dst net 10.0.0.0/24) and (ip proto icmp)";
 	pf_vec = filters_from_ipfilter_line(a);

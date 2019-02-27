@@ -14,6 +14,6 @@ find . -name "*.in" -exec rm {} \;
 find . -name "*.in~" -exec rm {} \;
 find . -name "*.log" -exec rm {} \;
 
-rm -f configure libtool
+rm -f configure libtool config.status
 
 cd - > /dev/null

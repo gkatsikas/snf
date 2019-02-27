@@ -108,8 +108,7 @@ OutputClass::output_class_from_pattern(std::vector<std::string> &pattern)
 		std::vector<std::string> split_pattern = split(pattern[2], "-");
 		if (split_pattern.size() == 1){
 			foutput.add_field_op({Write, tp_src_port, (uint32_t) atoi(pattern[2].c_str())});
-		}
-		else if (split_pattern.size() == 2) {
+		} else if (split_pattern.size() == 2) {
 			OperationType op_type = WriteSF;
 			switch (split_pattern[1][split_pattern[1].size() - 1]) {
 				case '#':
@@ -131,8 +130,7 @@ OutputClass::output_class_from_pattern(std::vector<std::string> &pattern)
 			field_op.m_value[1] = (uint32_t) atoi(split_pattern[1].c_str());
 
 			foutput.add_field_op(field_op);
-		}
-		else {
+		} else {
 			FANCY_BUG(oc_log, "\tIncorrect port pattern: " << pattern[2]);
 		}
 	}
@@ -147,8 +145,7 @@ OutputClass::output_class_from_pattern(std::vector<std::string> &pattern)
 		std::vector<std::string> split_pattern = split(pattern[4], "-");
 		if (split_pattern.size() == 1){
 			foutput.add_field_op({Write, tp_dst_port, (uint32_t) atoi(pattern[4].c_str())});
-		}
-		else if (split_pattern.size() == 2) {
+		} else if (split_pattern.size() == 2) {
 			OperationType op_type = WriteSF;
 			switch (split_pattern[1][split_pattern[1].size() - 1]) {
 				case '#':
@@ -169,13 +166,12 @@ OutputClass::output_class_from_pattern(std::vector<std::string> &pattern)
 			field_op.m_value[0] = (uint32_t) atoi(split_pattern[0].c_str());
 			field_op.m_value[1] = (uint32_t) atoi(split_pattern[1].c_str());
 			foutput.add_field_op(field_op);
-		}
-		else {
+		} else {
 			FANCY_BUG(oc_log, "\tIncorrect destination port pattern: " << pattern[4]);
 		}
 	}
 
-	debug_chatter(oc_log, "\tCreated output class: " + foutput.to_str());
+	debug_chatter(oc_log, "\tCreated output class: \n" + foutput.to_str());
 
 	return std::pair<OutputClass,OutputClass>(foutput, OutputClass(unmodified_port_nb));
 }

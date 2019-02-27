@@ -2,7 +2,7 @@
 /*
  * filter_test.cpp
  *
- * Generates and benchmarks SNF packet filters.
+ * Tests SNF's packet filters.
  *
  * Copyright (c) 2015-2017 KTH Royal Institute of Technology
  * Copyright (c) 2015-2017 Georgios Katsikas, Marcel Enguehard
@@ -51,7 +51,7 @@ main()
 
 void create_filters()
 {
-	info_chatter(test_log, "\t>>>>>>>>>>>>>> Create Filters");
+	info_chatter(test_log, "\t Create Filters");
 
 	Filter f1(ip_dst, aton("200.0.0.2"));
 	def_chatter(test_log, "\t\tFilter f1: " << f1.to_str());
@@ -96,7 +96,7 @@ void create_filters()
 void intersect_filters()
 {
 	std::cout << std::endl;
-	info_chatter(test_log, "\t>>>>>>>>>>>>>> Intersect Filters");
+	info_chatter(test_log, "\t Intersect Filters");
 
 	std::string pattern = "10.0.0.4/24";
 	Filter f1 = Filter::get_filter_from_v4_prefix_str(ip_src, pattern);
@@ -114,5 +114,5 @@ void intersect_filters()
 	def_chatter(test_log, "\t\tFilter f3: " << f3.to_str());
 
 	f1.intersect(f3);
-	def_chatter(test_log, "\t\tIntersection of (f1Λf2) Λ f3: " << f1.to_str());
+	def_chatter(test_log, "\t\tIntersection of (f1 Λ f2) Λ f3: " << f1.to_str());
 }

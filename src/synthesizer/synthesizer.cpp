@@ -163,7 +163,7 @@ Synthesizer::build_traffic_classes(void)
 {
 	info_chatter(this->log, "");
 	info_chatter(this->log, "==============================================================================");
-	info_chatter(this->log, "Build Traffic Classes ...");
+	info_chatter(this->log, "Building Traffic Classes ...");
 
 	// The output format of a traffic class
 	TrafficClassFormat tc_format = this->traffic_classification_format;
@@ -250,8 +250,7 @@ Synthesizer::build_traffic_classes(void)
 						/*unsigned short direction;
 						if (is_snf_iface(nf_of_tc_out_iface, tc_out_iface) && (nf_of_tc_out_iface == "NF_1")) {
 							direction = 0;
-						}
-						else {
+						} else {
 							direction = 1;
 						}*/
 
@@ -277,8 +276,7 @@ Synthesizer::build_traffic_classes(void)
 
 					good_tc++;
 					def_chatter(this->log, "\t\tTraffic class " << good_tc << ": " << tc.to_str());
-				}
-				else {
+				} else {
 					discarded_tc++;
 					def_chatter(this->log, "\t\tDiscarded Traffic class " << discarded_tc << ": " << tc.to_str());
 				}
@@ -384,6 +382,7 @@ Synthesizer::get_snf_iface_of_nic(std::string nic)
 			return it.first;
 		}
 	}
+
 	return std::make_pair("", "");
 }
 
@@ -432,41 +431,6 @@ Synthesizer::print_snf_ifaces_to_nics(void)
 	}
 }
 
-void
-Synthesizer::test_traffic_class_builder(void)
-{
-	setvbuf(stdout, NULL, _IONBF, 0);
-
-	std::string routing_table = "10/8 0,192.168.5/24 1,0/0 2";
-	std::shared_ptr<ClickElement> lookup  (new ClickElement("RadixIPLookup",routing_table));
-
-	std::string empty;
-	std::shared_ptr<ClickElement> discard (new ClickElement("Discard", empty));
-
-	std::shared_ptr<ClickElement> ttl     (new ClickElement("DecIPTTL", empty));
-
-	std::string address = "192.10.0.1";
-	std::shared_ptr<ClickElement> fixip   (new ClickElement("FixIPSrc", address ));
-
-	//std::string rewrite = "- - 192.168.0.1 100-200# 0 1";
-	//std::shared_ptr<ClickElement> iprewriter(new ClickElement(IPRewriter, rewrite));
-
-	std::string filter = "allow src port 100-150";
-	std::shared_ptr<ClickElement> ipfilter(new ClickElement("IPFilter", filter));
-
-	//fixip->set_child(iprewriter, 0);
-	//iprewriter->set_child(ipfilter, 0);
-	fixip->set_child(ipfilter, 0);
-	ipfilter->set_child(ttl, 0);
-	lookup->set_child(ttl, 2);
-	ttl->set_child(discard, 0);
-	ClickTree tree(fixip);
-
-	for (auto &it : tree.get_traffic_classes()) {
-		std::cout<<it.to_str();
-	}
-}
-
 /*
  * Recursive DFS function to visit all vertices from 'vertex'.
  * The vertices can also belong to different graph, so in reality,
@@ -499,12 +463,11 @@ TrafficBuilder::traffic_class_builder_dfs(
 		if ((nf_vertex->is_endpoint()) && (nf_vertex->get_interface() != nf_iface)) {
 			def_chatter(log, "\t\t ----->  ENDPOINT " << nf_vertex->get_name() << "(" << nf_vertex->get_interface() << ")");
 			return;
-		}
-		// A way to continue in the chain.
-		// Initial position must be always different from the next position
-		// to avoid looping around the same NFs
-		else if ((! nf_vertex->is_endpoint()) && (nf_vertex->get_interface() != nf_iface) &&
-			 !exists_in_vector(nfs_traversed, next_nf_position)) {
+		} else if ((! nf_vertex->is_endpoint()) && (nf_vertex->get_interface() != nf_iface) &&
+					!exists_in_vector(nfs_traversed, next_nf_position)) {
+			// A way to continue in the chain.
+			// Initial position must be always different from the next position to avoid looping around the same NFs
+
 			// Give me the 'good' paths
 			if ((nf_vertex->get_class() != "Discard")) {
 				std::string next_nf_iface = nf_vertex->get_glue_iface();
@@ -542,20 +505,17 @@ TrafficBuilder::traffic_class_builder_dfs(
 
 				// 5. Add this NF to the list of traversed NFs so as not to come back again (for this path).
 				nfs_traversed.push_back(next_nf_position);
-			}
-			// A path that leads to the cliff
-			else {
+			} else {
+				// A path that leads to the cliff
 				def_chatter(log, "\t\t ----->      DROP " << nf_vertex->get_name() << "("
 									<< nf_vertex->get_interface() << ")");
 			}
-		}
-		// Do not chain because a loop will be created
-		else if ((nf_vertex->get_interface() == nf_iface) || exists_in_vector(nfs_traversed, next_nf_position)) {
+		} else if ((nf_vertex->get_interface() == nf_iface) || exists_in_vector(nfs_traversed, next_nf_position)) {
+			// Do not chain because a loop will be created
 			def_chatter(log, "\t\t ----->      LOOP " << nf_vertex->get_name() << "("
 								<< nf_vertex->get_interface() << ")");
 			return;
-		}
-		else {
+		} else {
 			def_chatter(log, "\t\t ----->       BUG " << nf_vertex->get_name() << "("
 								<< nf_vertex->get_interface() << ")");
 			return;
@@ -609,4 +569,39 @@ TrafficBuilder::retrieve_lb_patterns_from_st_element(ElementVertex *ev)
 	}
 
 	return patterns;
+}
+
+void
+Synthesizer::test_traffic_class_builder(void)
+{
+	setvbuf(stdout, NULL, _IONBF, 0);
+
+	std::string routing_table = "10/8 0,192.168.5/24 1,0/0 2";
+	std::shared_ptr<ClickElement> lookup  (new ClickElement("RadixIPLookup",routing_table));
+
+	std::string empty;
+	std::shared_ptr<ClickElement> discard (new ClickElement("Discard", empty));
+
+	std::shared_ptr<ClickElement> ttl     (new ClickElement("DecIPTTL", empty));
+
+	std::string address = "192.10.0.1";
+	std::shared_ptr<ClickElement> fixip   (new ClickElement("FixIPSrc", address ));
+
+	//std::string rewrite = "- - 192.168.0.1 100-200# 0 1";
+	//std::shared_ptr<ClickElement> iprewriter(new ClickElement(IPRewriter, rewrite));
+
+	std::string filter = "allow src port 100-150";
+	std::shared_ptr<ClickElement> ipfilter(new ClickElement("IPFilter", filter));
+
+	//fixip->set_child(iprewriter, 0);
+	//iprewriter->set_child(ipfilter, 0);
+	fixip->set_child(ipfilter, 0);
+	ipfilter->set_child(ttl, 0);
+	lookup->set_child(ttl, 2);
+	ttl->set_child(discard, 0);
+	ClickTree tree(fixip);
+
+	for (auto &it : tree.get_traffic_classes()) {
+		std::cout<<it.to_str();
+	}
 }

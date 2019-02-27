@@ -86,8 +86,7 @@ parse_configuration(const String &text, const bool &text_is_expr, ErrorHandler *
 	if ( (errh->nerrors() == before_errors) && (router->initialize(errh, initialize_only_dag) >= 0) ) {
 		def_chatter(logger, "\tNF parsed successfully");
 		return router;
-	}
-	else {
+	} else {
 		error_chatter(logger, "\tNF is problematic");
 		delete router;
 		return NULL;
@@ -102,9 +101,8 @@ generate_flat_configuration(char **output_file, const short &position)
 
 	if (! (*output_file)) {
 		*output_file = new char[strlen("nf_repo/temp.click")+3];
-		sprintf(*output_file, "nf_repo/temp_%d.click",position);
-	}
-	else {
+		sprintf(*output_file, "nf_repo/temp_%u.click", position);
+	} else {
 		delete *output_file;
 		*output_file = new char[strlen("nf_repo/temp.click")+1];
 		sprintf(*output_file, "nf_repo/temp.click");
@@ -142,8 +140,7 @@ input_a_click_configuration (const char *click_source_configuration)
 		if ( !file_exists(std::string(CLICK_PATH)) ) {
 			error_chatter(logger, "Click's executable " + std::string(CLICK_PATH) + " does not exist.");
 			return NULL;
-		}
-		else {
+		} else {
 			argv[0] = CLICK_PATH;
 		}
 		argv[1] = click_source_configuration;
@@ -176,14 +173,16 @@ input_a_click_configuration (const char *click_source_configuration)
 					break;
 
 			case Clp_NotOption:
-				for (const char *s = clp->vstr; *s; s++)
+				for (const char *s = clp->vstr; *s; s++) {
 					if (*s == '=' && s > clp->vstr) {
-						if (!click_lexer()->global_scope().define(String(clp->vstr, s), s + 1, false))
-							errh->error("parameter %<%.*s%> multiply defined", s - clp->vstr, clp->vstr);
+						if (!click_lexer()->global_scope().define(String(clp->vstr, s), s + 1, false)) {
+							errh->error("Parameter %<%.*s%> multiply defined", s - clp->vstr, clp->vstr);
+						}
 						goto next_argument;
+					} else if (!isalnum((unsigned char) *s) && *s != '_') {
+						break;
 					}
-					else if (!isalnum((unsigned char) *s) && *s != '_')
-					break;
+				}
 				goto router_file;
 
 			case CLICKPATH_OPT:

@@ -61,11 +61,9 @@ Generator::get_output_files_list_str(void)
 	TrafficClassFormat tc_format = this->traffic_classification_format;
 
 	// A single configuration file is produced if we are in Click or RSS mode.
-	if (
-		(!this->hw_classification) ||
-		((tc_format != FlowDirector) && (tc_format != OpenFlow))
-	)
+	if ((!this->hw_classification) || ((tc_format != FlowDirector) && (tc_format != OpenFlow))) {
 		return all_out_files;
+	}
 
 	std::string extension;
 
@@ -109,12 +107,9 @@ Generator::get_output_files_list_str(void)
 void
 Generator::generate_indicative_chain_parameters(unsigned short &snf_ifaces_no, std::stringstream &config_stream)
 {
-	if (snf_ifaces_no < 4)
-		return;
-
 	config_stream << "define(" << std::endl;
 
-	for (unsigned short i=0 ; i<snf_ifaces_no ; i++) {
+	for (unsigned short i = 0; i < snf_ifaces_no; i++) {
 		if (i == 0) {
 			config_stream << "\t$iface0         0,"                 << std::endl;
 			config_stream << "\t$macAddr0       ec:f4:bb:d5:fe:08," << std::endl;
@@ -124,8 +119,7 @@ Generator::generate_indicative_chain_parameters(unsigned short &snf_ifaces_no, s
 			config_stream << "\t$ipNet0         10.0.0.0/24,"       << std::endl;
 			config_stream << "\t$color0         1,"                 << std::endl;
 			config_stream << "\t$gwMACAddr0     ec:f4:bb:d5:fe:d0," << std::endl;
-		}
-		else if (i == 1) {
+		} else if (i == 1) {
 			config_stream << "\t$iface1         1,"                 << std::endl;
 			config_stream << "\t$macAddr1       ec:f4:bb:d5:fe:0a," << std::endl;
 			config_stream << "\t$ipAddr1        100.0.0.1,"         << std::endl;
@@ -134,8 +128,7 @@ Generator::generate_indicative_chain_parameters(unsigned short &snf_ifaces_no, s
 			config_stream << "\t$ipNet1         100.0.0.0/24,"      << std::endl;
 			config_stream << "\t$color1         2,"                 << std::endl;
 			config_stream << "\t$gwMACAddr1     ec:f4:bb:d5:fe:d2," << std::endl;
-		}
-		else if (i == 2) {
+		} else if (i == 2) {
 			config_stream << "\t$iface2         2,"               << std::endl;
 			config_stream << "\t$macAddr2       00:1b:21:4b:09:c8," << std::endl;
 			config_stream << "\t$ipAddr2        150.0.0.1,"         << std::endl;
@@ -144,8 +137,7 @@ Generator::generate_indicative_chain_parameters(unsigned short &snf_ifaces_no, s
 			config_stream << "\t$ipNet2         150.0.0.0/24,"      << std::endl;
 			config_stream << "\t$color2         3,"                 << std::endl;
 			config_stream << "\t$gwMACAddr2     ec:f4:bb:d6:06:d8," << std::endl;
-		}
-		else if (i == 3) {
+		} else if (i == 3) {
 			config_stream << "\t$iface3         3,"                 << std::endl;
 			config_stream << "\t$macAddr3       00:1b:21:4b:09:c9," << std::endl;
 			config_stream << "\t$ipAddr3        200.0.0.1,"         << std::endl;
@@ -162,12 +154,16 @@ Generator::generate_indicative_chain_parameters(unsigned short &snf_ifaces_no, s
 	config_stream << std::endl;
 	config_stream << "\t$queueSize      1024," << std::endl;
 	config_stream << "\t$mtuSize        9000," << std::endl;
+#ifdef HAVE_DPDK
 	config_stream << "\t$ioMethod       DPDK," << std::endl;
+#else
+	config_stream << "\t$ioMethod       PCAP," << std::endl;
+#endif
 	config_stream << std::endl;
 	config_stream << "\t$burst          32,"   << std::endl;
-	config_stream << "\t$burstIn        128,"  << std::endl;
+	config_stream << "\t$burstIn        32,"   << std::endl;
 	config_stream << "\t$burstOut       32,"   << std::endl;
-	config_stream << "\t$txNdesc        1024," << std::endl;
+	config_stream << "\t$txNdesc        256,"  << std::endl;
 	config_stream << "\t$rxNdesc        256,"  << std::endl;
 	config_stream << std::endl;
 	config_stream << "\t$ioCore0        0,"    << std::endl;

@@ -128,8 +128,7 @@ DisjointSegmentList::contains(uint32_t value) const
 	while (current_node) {
 		if (value < current_node->m_lowerLimit) {
 			return false;
-		}
-		else if (value <= current_node->m_upperLimit) {
+		} else if (value <= current_node->m_upperLimit) {
 			return true;
 		}
 		current_node = current_node->m_child;
@@ -158,8 +157,7 @@ DisjointSegmentList::include(
 
 	if (!containee) {
 		return true;
-	}
-	else if (!container) {
+	} else if (!container) {
 		return false;
 	}
 
@@ -251,9 +249,8 @@ DisjointSegmentList::unify(std::shared_ptr<SegmentNode> &container, const std::s
 
 	if (current_parent) {
 		update_relation(current_parent, seg);
-	}
-	// If we have no parent we're the lowest one
-	else {
+	} else {
+		// If we have no parent we're the lowest one
 		return seg;
 	}
 
@@ -312,16 +309,14 @@ DisjointSegmentList::differentiate(
 
 		if (current_parent) {
 			update_relation(current_parent,new_parent);
-		}
-		else {
+		} else {
 			container = new_parent;
 		}
 
 		current_parent = new_parent;
 		if (current_child->m_upperLimit > upper_limit) {
 			current_child->m_lowerLimit = upper_limit+1;
-		}
-		else {
+		} else {
 			current_child = current_child->m_child;
 		}
 	}
@@ -340,20 +335,17 @@ DisjointSegmentList::differentiate(
 	if (!current_child) {
 		if(current_parent) {
 			current_parent->m_child.reset();
-		}
-		else {
+		} else {
 			return std::shared_ptr<SegmentNode>();
 		}
-	}
-	else {
+	} else {
 		// We are in the last segment
 		if (current_child->m_lowerLimit <= upper_limit) {
 			current_child->m_lowerLimit = upper_limit+1;
 		}
 		if (current_parent) {
 			update_relation(current_parent, current_child);
-		}
-		else {
+		} else {
 			container = current_child;
 		}
 	}
@@ -428,8 +420,7 @@ DisjointSegmentList::intersect(
 	std::shared_ptr<SegmentNode> new_child = intersect(current_node->m_child, to_intersect->m_child);
 	if (!new_child) {
 		current_node->m_child.reset();
-	}
-	else {
+	} else {
 		update_relation(current_node, new_child);
 	}
 
@@ -462,8 +453,7 @@ DisjointSegmentList::translate(uint32_t value, bool forward)
 {
 	if (forward) {
 		this->move_forward(value);
-	}
-	else {
+	} else {
 		this->move_backwards(value);
 	}
 }

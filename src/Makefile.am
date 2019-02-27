@@ -12,11 +12,13 @@ SUBDIRS = 	\
 bin_PROGRAMS = 	snf
 
 # The main file of SNF
-snf_SOURCES = 	snf.cpp \
+snf_SOURCES = \
+		snf.cpp \
 		logger/logger.hpp
 
 # Linked with
-snf_LDADD =  	graph/libgraph.a \
+snf_LDADD = \
+		graph/libgraph.a \
 		configuration/libconf.a \
 		parser/libchainparser.a \
 		synthesizer/libsynthesizer.a \

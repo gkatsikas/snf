@@ -2,7 +2,7 @@
 /*
  * output_class_test.cpp
  *
- * Generates and benchmarks SNF output classes.
+ * Tests SNF's output classes.
  *
  * Copyright (c) 2015-2017 KTH Royal Institute of Technology
  * Copyright (c) 2015-2017 Georgios Katsikas, Marcel Enguehard
@@ -31,14 +31,16 @@
 #include "../../src/traffic_class_builder/filter.hpp"
 #include "../../src/traffic_class_builder/output_class.hpp"
 
+// Initialize logger
+Logger test_log(__FILE__);
+
 int
 main()
 {
-	// Initialize logger
-	Logger test_log(__FILE__);
-
 	info_chatter(test_log, "Output Class test started");
 
+	info_chatter(test_log, "");
+	info_chatter(test_log, "------------ Test 1 ------------");
 
 	std::string pattern("pattern - - 10.0.0.4 1024-10000 0 0");
 	std::vector<std::string> v = split(pattern, " ");
@@ -50,6 +52,8 @@ main()
 
 	std::cout << std::endl;
 
+	info_chatter(test_log, "");
+	info_chatter(test_log, "------------ Test 2 ------------");
 
 	pattern = "pattern 192.168.23.45 67-590 103.50.60.48 34567-60000 0 1";
 	v = split(pattern, " ");
@@ -61,6 +65,8 @@ main()
 
 	std::cout << std::endl;
 
+	info_chatter(test_log, "");
+	info_chatter(test_log, "------------ Test 3 ------------");
 
 	Filter f1 = Filter::get_filter_from_v4_prefix_str(ip_dst, "192.168.70.2/24");
 	pattern = "204.56.78.98 0";

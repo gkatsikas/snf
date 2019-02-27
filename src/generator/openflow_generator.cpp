@@ -64,28 +64,7 @@ OpenFlowGenerator::generate_equivalent_configuration(const bool to_file)
 bool
 OpenFlowGenerator::generate_openflow_split_pipelines (const bool &to_file)
 {
-	if (to_file) {
-		// Open the output files to host our synthesized chain
-		//soft_out_file = new std::ofstream(this->soft_configuration_filename);
-		// One per nic
-		// this->hrdw_configuration_per_nic
-		//hard_out_file[i] = new std::ofstream(this->hrdw_configuration_per_nic + nic.rss);
-
-		// Save old cout buffer and redirect cout to the file above.
-		//def_cout = std::cout.rdbuf(soft_out_file->rdbuf());
-	}
-
-	// ....
-
-	// Reset to standard output again
-	if (to_file) {
-		//std::cout.rdbuf(def_cout);
-		//soft_out_file->close();
-		//hard_out_file->close();
-		//delete soft_out_file;
-		//delete hard_out_file;
-	}
-
-	MISSING_FEATURE(this->log, "OpenFlow traffic class generator not implemented yet");
+	(void) to_file;
+	MISSING_FEATURE(this->log, "OpenFlow traffic class generator is not implemented yet");
 	return DONE;
 }

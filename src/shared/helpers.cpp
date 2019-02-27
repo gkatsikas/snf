@@ -85,31 +85,36 @@ separate_args(const std::string &s)
 		switch (s[position]) {
 			case ' ':
 			case '\t':
-			case '\n':
+			case '\n': {
 				current_arg.push_back(' ');
-				position = s.find_first_not_of(spaces,position);
+				position = s.find_first_not_of(spaces, position);
 				break;
-			case ',':
+			}
+			case ',': {
 				args.push_back(current_arg);
 				current_arg.clear();
-				position = s.find_first_not_of(spaces,position+1);
+				position = s.find_first_not_of(spaces, position + 1);
 				break;
-			case '/':
-				if (position < size-1 && s[position+1] =='*') {
+			}
+			case '/': {
+				if ((position < size - 1) && (s[position+1] == '*')) {
 					position++;
 					do {
-						position = s.find('*',position);
-					} while (position<size-1 && s[++position] != '/');
+						position = s.find('*', position);
+					} while ((position < size - 1) && (s[++position] != '/'));
 					position++;
 					break;
-				}
-				else if (position < size-1 && s[position+1] =='/') {
-					position = s.find('\n',position)+1;
+				} else if ((position < size - 1) && (s[position+1] =='/')) {
+					position = s.find('\n', position)+1;
 					break;
 				}
-			default:
+				[[gnu::fallthrough]];
+			}
+			default: {
 				current_arg.push_back(s[position]);
 				position++;
+				break;
+			}
 		}
 	}
 
@@ -188,10 +193,11 @@ trim(std::string const &s, char const *to_trim)
 		result.erase(++index);
 
 	index = result.find_first_not_of(to_trim);
-	if (index != std::string::npos)
+	if (index != std::string::npos) {
 		result.erase(0, index);
-	else
+	} else {
 		result.erase();
+	}
 
 	return result;
 }
@@ -359,15 +365,14 @@ create_directory_path(const std::string &dir_path)
 
 	int result = mkdir( dir_path.c_str(), mode );
 	if (result < 0) {
-		switch( errno )	{
+		switch (errno) {
 			case ENOENT:
 				// Try to create the parent folder
 				sub_path = dir_path.substr(0, dir_path.find_last_of('/'));
 
 				if (! create_directory_path(sub_path)) {
 					status = false;
-				}
-				else {
+				} else {
 					// Try again... you might be lucky this time
 					status = (
 						(mkdir( dir_path.c_str(), mode ) == 0) ||
@@ -383,8 +388,7 @@ create_directory_path(const std::string &dir_path)
 				status = false;
 				break;
 		}
-	}
-	else {
+	} else {
 		status = true;
 	}
 

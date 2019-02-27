@@ -29,12 +29,13 @@
 ElementVertex::ElementVertex(Element *element, const std::string &name, const unsigned short &pos)
 	: Vertex(std::move(name), pos, VertexType::None), click_element(element), _is_endpoint(false)
 {
-	if      (element->ninputs() == 0)
+	if      (element->ninputs() == 0) {
 		this->type = Input;
-	else if (element->noutputs() == 0)
+	} else if (element->noutputs() == 0) {
 		this->type = Output;
-	else
+	} else {
 		this->type = Processing;
+	}
 }
 
 ElementVertex &ElementVertex::operator=(ElementVertex &ev)
@@ -156,8 +157,7 @@ NFGraph::add_vertex_and_neighbours(ElementVertex *u)
 				v = new ElementVertex(neighbour, neighbour->class_name(), (unsigned short) neighbour->eindex());
 			}
 			this->add_edge(std::move(v), std::move(u), i);
-		}
-		else {
+		} else {
 			// Search with diameter=1
 			ElementNeighborhoodTracker tracker(e->router(), 1);
 
@@ -196,8 +196,7 @@ NFGraph::add_vertex_and_neighbours(ElementVertex *u)
 				v = new ElementVertex(neighbour, neighbour->class_name(), (unsigned short) neighbour->eindex());
 			}
 			this->add_edge(std::move(u), std::move(v), e->output(i).port());
-		}
-		else {
+		} else {
 			// Search with diameter=1
 			ElementNeighborhoodTracker tracker(e->router());
 
