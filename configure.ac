@@ -44,6 +44,7 @@ AC_TYPE_SIZE_T
 AC_TYPE_INT16_T
 AC_TYPE_UINT16_T
 AC_TYPE_UINT32_T
+AC_TYPE_UINT64_T
 
 # Checks for system functions\libraries.
 AC_FUNC_ERROR_AT_LINE
@@ -74,7 +75,9 @@ AC_TRY_CPP([#include<boost/tokenizer.hpp>], , AC_MSG_ERROR([Cannot find boost/to
 # Checks for external tools' libraries.
 AC_CHECK_LIB([dl],      [dlopen])
 AC_CHECK_LIB([pcap],    [pcap_open_live])
+AC_CHECK_LIB([numa],    [numa_available])
 AC_CHECK_LIB([pthread], [pthread_create])
+
 
 # Click is key part of SNF
 AC_CHECK_LIB([click], [main])
@@ -106,7 +109,7 @@ if test x"$debug" = x"true"; then
 	AC_DEFINE([DEBUG_MODE],[1],[Debug Mode])
 	AM_CXXFLAGS="-g -O3 -std=c++11 -pedantic -Wall -Wno-uninitialized -Wextra"
 else
-	AM_CXXFLAGS="   -O3 -std=c++11 -pedantic -Wall -Wextra"
+	AM_CXXFLAGS="-O3 -std=c++11 -pedantic -Wall -Wextra"
 fi
 
 #### VERBOSE_MODE
@@ -269,11 +272,11 @@ fi
 AM_CONDITIONAL([DPDK], [test x"$enable_dpdk" = x"yes"])
 ################################################################################
 
-LIBS="-ldl -lpthread -lpcap -lclick $LIBS"
-AM_LDFLAGS="-L/usr/local/lib/ -lclick -ldl -lpthread -lpcap"
+LIBS="-ldl -lpthread -lpcap -lnuma -lclick"
+AM_LDFLAGS="-L/usr/local/lib/"
 
-#LDFLAGS="$LDFLAGS -L/usr/local/lib/ -lclick -ldl -lpthread -lpcap"
-#CXXFLAGS="$CXXFLAGS -O3 -Wall -std=c++11 -pedantic -Wextra -g"
+# AM_CXXFLAGS has what we want
+CXXFLAGS=""
 
 # Fix warnings because of $ symbols appearing in Makefile.am
 AC_SUBST([DOLLAR_SIGN],[$])
@@ -295,6 +298,7 @@ AC_CONFIG_FILES(
 	src/synthesizer/Makefile
 	src/traffic_class_builder/Makefile
 	tests/Makefile
+	tests/benchmarks/Makefile
 	tests/benchmarks/classifier/Makefile
 	tests/benchmarks/classifier_kernel/Makefile
 	tests/benchmarks/ip_filter/Makefile
