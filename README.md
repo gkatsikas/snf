@@ -49,37 +49,35 @@ More information about SNF's configuration is provided in [Section II](#multi-co
   * `git checkout snf`
     * Normal Click (User-space):
 
-		`./configure    --enable-user-multithread --enable-multithread --enable-ip6
-				--enable-nanotimestamp --enable-intel-cpu --enable-analysis
-				--enable-ipsec --enable-local --enable-simple
-				--enable-etherswitch --enable-all-elements`
+		`./configure    --enable-user-multithread --enable-multithread \
+				--enable-intel-cpu --enable-nanotimestamp \
+				--enable-all-elements`
 
     * Click-Netmap (User-space, after building Netmap):
 
-		`./configure    --with-netmap=${NETMAP_DIR}/sys --enable-multithread
-				--disable-linuxmodule --enable-intel-cpu
-				--enable-user-multithread --verbose --enable-select=poll
-				CFLAGS="-O3" CXXFLAGS="-std=gnu++11 -O3"
-				--disable-dynamic-linking --enable-poll
-				--enable-bound-port-transfer --enable-local
-				--enable-nanotimestamp --enable-ipsec --enable-analysis
-				--enable-ip6 --enable-simple --enable-etherswitch`
+		`./configure    --with-netmap=${NETMAP_DIR}/sys --enable-multithread \
+				--disable-linuxmodule --enable-intel-cpu \
+				--enable-user-multithread --verbose --enable-select=poll \
+				CFLAGS="-O3" CXXFLAGS="-std=gnu++11 -O3" \
+				--disable-dynamic-linking --enable-poll \
+				--enable-bound-port-transfer --enable-nanotimestamp \
+				--enable-all-elements`
 
     * Click-DPDK (User-space, after building DPDK):
 
-		`./configure    RTE_SDK=${DPDK_DIR}
-				RTE_TARGET=x86_64-native-linuxapp-gcc
-				--verbose CFLAGS="-std=gnu11 -g -O3"
-				CXXFLAGS="-g -std=gnu++14 -O3"
-				--disable-linuxmodule
-				--enable-intel-cpu --enable-multithread
-				--enable-user-multithread --disable-dynamic-linking
-				--enable-poll --enable-bound-port-transfer
-				--enable-dpdk --disable-dpdk-pool --disable-dpdk-packet
-				--with-netmap=no --enable-zerocopy
+		`./configure    RTE_SDK=${DPDK_DIR} RTE_TARGET=x86_64-native-linuxapp-gcc \
+				--verbose CFLAGS="-std=gnu11 -g -O3" \
+				CXXFLAGS="-g -std=gnu++14 -O3" \
+				--disable-linuxmodule \
+				--enable-intel-cpu --enable-multithread \
+				--enable-user-multithread --disable-dynamic-linking \
+				--enable-poll --enable-bound-port-transfer \
+				--enable-dpdk --with-netmap=no \
 				--enable-nanotimestamp --enable-json --enable-all-elements`
 
-  * `make install` (uses default prefix=/usr/local/)
+  * `make -j 8`
+
+  * `sudo make install` (uses default prefix=/usr/local/)
 
 C. Build SNF
 ----
@@ -106,9 +104,10 @@ There are various ways to deploy SNF across multiple cores. We currently support
   * In the [GENERIC] section of the input property file set:
     * HARDWARE_CLASSIFICATION = true
     * HARDWARE_CLASSIFICATION_FORMAT = RSS-Hashing
+    * NUMA = true/false
     * CPU_SOCKETS   = <M> (M is the number of the target machine's sockets)
     * CPU_CORES     = <N> (N is the total number of CPU cores on this machine)
-    * NIC_HW_QUEUES = <K> (K is the number of hardware queues in your NIC. Indicatively, this number should be adjusted to the number of available cores above)
+    * NIC_HW_QUEUES = <K> (K is the number of hardware queues in your NIC. Indicatively, this number should be adjusted to the number of available CPU cores above)
   * Run SNF and check the folder OUTPUT_FOLDER for a file OUTPUT_FILE.click as specified in the property file.
   * You will see a synthesized service chain, replicated across all the requested queues. Each queue has a dedicated thread that is statically assigned to a CPU core,
 hence your SNF service chain can read packets from all of these queues and execute the service chain's pipeline in parallel.

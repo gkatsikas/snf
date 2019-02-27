@@ -1,18 +1,18 @@
 SNF INSTALLATION INSTRUCTIONS
 ===============================
 
-To compile any version of SNF, you will need the GNU C compiler;
-a recent version of the GNU C++ compiler with C++11; and GNU Make. The
-'./configure' script will complain if it cannot find the required software.
+To compile any version of SNF, you will need the GNU C compiler, a recent version of the GNU C++ compiler with C++11, and GNU Make.
+The 'configure' script will complain if it cannot find the required software.
 
 CONFIGURE
 -----------
 
-Change to the SNF source directory and run:
+Change to SNF's root directory and run:
 
 	./bootstrap
 
-This will initialize the required autotools to support the build process.
+This will initialize the required autotools for the build process.
+
 To build SNF with basic Click support run:
 
 	./configure --with-click=<path-to-your-click-folder>
@@ -38,14 +38,14 @@ Example for Standard Click (with more verbosity but no debug messages):
 Example for Click-DPDK (with more verbosity but no debug messages):
 
 	./configure \
-			RTE_SDK=~/nfv/dpdk \
+			RTE_SDK=/home/user/nfv/dpdk \
 			RTE_TARGET=x86_64-native-linuxapp-gcc \
-			--with-click=~/nfv/click \
+			--with-click=/home/user/nfv/click \
 			--enable-dpdk=yes --enable-debug=no --enable-verbose=yes
 
 INSTALL
 ---------
-After `configure` stay at the SNF source directory and run:
+After `configure` stay at SNF's root directory and run:
 
 	./install <your preferred destination for the SNF binaries, libraries, headers>
 
@@ -57,9 +57,9 @@ One can execute the following synthesis examples:
 
 	./run bin/usr/local/bin/snf input/tests/tests.prop
 
-UN-INSTALL
+UNINSTALL
 ---------
-To un-install SNF change to the SNF source directory and run:
+To uninstall SNF, run:
 
 	./uninstall <your existing folder that contains the SNF binaries, libraries, headers>
 
@@ -67,10 +67,10 @@ If no argument is given, the local bin directory will be used.
 
 CLEAN
 ---------
-To clean the repository change to the SNF source directory and run:
+To clean the repository, run:
 
 	./clean
 
 REPORT
 ---------
-Please report bugs, issues, comments, suggestions for improvements at: katsikas at kth dot se
+Please report bugs, issues, comments, and suggestions for improvements at: katsikas at kth dot se
