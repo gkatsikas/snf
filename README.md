@@ -39,7 +39,7 @@ A. Checkout SNF and Build Dependencies
 B. Download and Configure Click
 ----
 Note that currently, the build process assumes that your Click binaries reside in the default location `/usr/local/`.
-In case you want to use the DPDK I/O, compile DPDK 17.08. Earlier versions such as 16.XX and 2.2.0 are also tested and work well.
+In case you want to use the DPDK I/O, compile DPDK 19.02. Earlier versions are also tested and work well.
 Moreover, SNF can be configured to generate synthesized service chains based on [FastClick][fastclick]; a faster variant of the [Click modular router][click].
 More information about SNF's configuration is provided in [Section II](#multi-core-snf).
 
