@@ -107,9 +107,9 @@ AC_MSG_RESULT([$enableval])
 
 if test x"$debug" = x"true"; then
 	AC_DEFINE([DEBUG_MODE],[1],[Debug Mode])
-	AM_CXXFLAGS="-g -O3 -std=c++11 -pedantic -Wall -Wno-uninitialized -Wextra"
+	AM_CXXFLAGS="-g -O3 -std=c++17 -pedantic -Wall -Wno-uninitialized -Wextra"
 else
-	AM_CXXFLAGS="-O3 -std=c++11 -pedantic -Wall -Wextra"
+	AM_CXXFLAGS="-O3 -std=c++17 -pedantic -Wall -Wextra"
 fi
 
 #### VERBOSE_MODE

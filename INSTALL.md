@@ -1,7 +1,8 @@
 SNF INSTALLATION INSTRUCTIONS
 ===============================
 
-To compile any version of SNF, you will need the GNU C compiler, a recent version of the GNU C++ compiler with C++11, and GNU Make.
+To compile any version of SNF, you will need the GNU C compiler, a recent version of the GNU C++ compiler with C++11 or above, and GNU Make.
+Currently SNF's compilation uses the C++17 standard. C++11 and C++14 are also tested and work.
 The 'configure' script will complain if it cannot find the required software.
 
 CONFIGURE

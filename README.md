@@ -27,7 +27,7 @@ Moreover, the [doctoral thesis][katsikas-phd-thesis] of Georgios P. Katsikas pre
 
 I. Basic Installation
 ------
-SNF is implemented in C++11 and uses autotools. To build and run SNF, follow the steps below:
+SNF is implemented in C++ and uses autotools. To build and run SNF, follow the steps below:
 
 A. Checkout SNF and Build Dependencies
 ----
